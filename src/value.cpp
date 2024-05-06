@@ -2,26 +2,61 @@
 #include "ast.hpp"
 #include <memory>
 
-shared_ptr<Bool_T> Value_T::True = make_shared<::Bool_T>(true);
-shared_ptr<Bool_T> Value_T::False = make_shared<::Bool_T>(false);
+Bool Value_T::True = make_shared<::Bool_T>(true);
+Bool Value_T::False = make_shared<::Bool_T>(false);
 Value Value_T::Null = make_shared<::Null>();
 Value Value_T::Undefined = make_shared<::Undefined>();
-
-Value Object_T::GetMember(const string &name) {
-  return scope->variables[name];
-}
-Value Object_T::GetMember(unique_ptr<Identifier> &name) {
-  return scope->variables[name->name];
-}
-
+Value Object_T::GetMember(const string &name) { return scope->variables[name]; }
 void Object_T::SetMember(const string &name, Value &value) {
   scope->variables[name] = value;
 }
-void Object_T::SetMember(unique_ptr<Identifier> &name, Value &value) {
-  scope->variables[name->name] = value;
+Value Callable_T::Call(unique_ptr<Arguments> args) {
+  auto scope = ASTNode::context.PushScope();
+  for (int i = 0; i < params->names.size(); ++i) {
+    if (i < args->values.size()) {
+      auto value = args->values[i]->Evaluate();
+      scope->variables[params->names[i]] = value;
+    }
+  }
+  // TODO: call it.
 }
 
-Value Callable_T::Call(unique_ptr<Arguments>) {
-  // TODO:
-  return Null;
+Array_T::Array_T(vector<unique_ptr<Expression>> &&init) {
+  initializer = std::move(init);
+  is_initialized = false;
+}
+Value Array_T::At(Int index) { return values.at(index->value); }
+void Array_T::Push(Value value) { values.push_back(value); }
+Value Array_T::Pop() {
+  auto val = values.back();
+  values.pop_back();
+  return val;
+}
+Value Array_T::Remove(Int index) {
+  int idx = index->value;
+  auto &values = this->values;
+
+  if (idx < 0 || idx >= values.size()) {
+    throw std::out_of_range("Index out of range");
+  }
+
+  Value removedValue = values[idx];
+  values.erase(values.begin() + idx);
+
+  return removedValue;
+}
+void Array_T::Insert(Int index, Value value) {
+  int idx = index->value;
+  auto &values = this->values;
+  if (idx < 0 || idx > values.size()) {
+    throw std::out_of_range("Index out of range");
+  }
+  values.insert(values.begin() + idx, value);
+}
+Callable_T::Callable_T(unique_ptr<Block>&& block, unique_ptr<Parameters> &&params) : block(std::move(block)), params(std::move(params)) {
+  
+
+}
+Array_T::Array_T() {
+  is_initialized = true;
 }

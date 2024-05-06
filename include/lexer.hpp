@@ -31,7 +31,8 @@ enum class TType {
   RParen,
   LCurly,
   RCurly,
-
+  SubscriptLeft,
+  SubscriptRight,
   Not,
 
   Add,
@@ -47,7 +48,7 @@ enum class TType {
   Equals,
 
   Assign,
-  
+  Comma,
   
   // Keywords.
   Func,
@@ -55,7 +56,12 @@ enum class TType {
   For,
   If,
   Else,
-
+  
+  False,
+  True,
+  Null,
+  Undefined,
+  
   Break,
   Continue,
   Return,
@@ -193,7 +199,10 @@ struct Lexer {
       
       {"{", TType::LCurly},
       {"}", TType::RCurly},
-
+      
+      {"[", TType::SubscriptLeft},
+      {"]", TType::SubscriptRight},
+      {",", TType::Comma},
       {"=", TType::Assign},
   };
   std::unordered_map<string, TType> keywords{
@@ -204,6 +213,11 @@ struct Lexer {
     {"return", TType::Return},
     {"if", TType::If},
     {"else", TType::Else},
+    {"false", TType::False},
+    {"true", TType::True},
+    {"null", TType::Null},
+    {"undefined", TType::Undefined},
+    
   };
   vector<Token> Lex(const string &input) {
     this->input = input;

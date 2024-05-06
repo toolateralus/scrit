@@ -10,18 +10,27 @@ using std::make_unique;
 
 struct ASTNode  {
   static Context context;
-  virtual ~ASTNode();
+  virtual ~ASTNode() {
+    
+  }
   virtual Value Evaluate() =0;
 };
 
 struct Expression {
-  virtual ~Expression();
+  virtual ~Expression() {
+    
+  }
   virtual Value Evaluate() = 0;
 };
 
 struct Statement : ASTNode{
-  virtual ~Statement();
-  virtual Value Evaluate() =0;
+  virtual ~Statement() {
+    
+  }
+  virtual Value Evaluate() override {
+    throw std::runtime_error("Cannot evaluate a statement to a value");
+  }
+  virtual unique_ptr<ASTNode> EvaluateStatement() = 0;
 };
 
 struct Program : ASTNode {
@@ -30,7 +39,7 @@ struct Program : ASTNode {
   Value Evaluate() override {
     Value result;
     for (auto &statement : statements) {
-      result = statement->Evaluate();
+      statement->EvaluateStatement();
     }
     return result;
   }
@@ -38,12 +47,13 @@ struct Program : ASTNode {
 
 
 struct Operand : Expression {
-  Operand(Value &value): value(value){}
+  Operand(Value value): value(value){}
   Value value;
   Value Evaluate() override {
     return value;
   }
 };
+
 
 struct Identifier : Expression {
   Identifier(string &name): name(name){}
@@ -69,15 +79,78 @@ struct Arguments : Expression {
 struct Parameters : Statement {
   vector<string> names;
   Parameters(vector<string> &&names) : names(std::move(names)){} 
+  unique_ptr<ASTNode> EvaluateStatement() override {
+    return nullptr;
+  }
+};
+
+struct Continue : Statement {
+  unique_ptr<ASTNode> EvaluateStatement() override {
+    return nullptr;
+  }
+};
+
+struct Break : Statement {
+  unique_ptr<ASTNode> EvaluateStatement() override {
+    return nullptr;
+  }
+};
+
+struct Return : Statement {
+  Return(unique_ptr<Expression> &&value) : value(std::move(value)) {}
+  unique_ptr<Expression> value;
   Value Evaluate() override {
-    //do nothing here.
-    return Value_T::Null;
+    return value->Evaluate();
+  }
+  unique_ptr<ASTNode> EvaluateStatement() override {
+    return nullptr;
+  }
+};
+
+struct Block : Statement  {
+  Block(vector<unique_ptr<Statement>> &&statements) : statements(std::move(statements)) {
+    
+  }
+  vector<unique_ptr<Statement>> statements;
+  unique_ptr<ASTNode> EvaluateStatement() override {
+    ASTNode::context.PushScope();
+    for (auto &statement : statements) {
+      if (dynamic_cast<Return*>(statement.get()) || dynamic_cast<Break*>(statement.get()) || dynamic_cast<Continue*>(statement.get())) {
+        auto value = statement->Evaluate();
+        // todo: figure out how to return values. we might need to just have 
+        // a field called returnValeu or something and get it where w ewant it
+        return nullptr;
+      }else {
+        statement->EvaluateStatement();
+      }
+    }
+    ASTNode::context.PopScope();
+    return nullptr;
+  }
+};
+
+
+struct ObjectInitializer : Expression {
+  unique_ptr<Block> block;
+  shared_ptr<Scope> scope;
+  ObjectInitializer(unique_ptr<Block> block) : block(std::move(block)) {
+    
+  }
+  Value Evaluate() override {
+    scope = ASTNode::context.PushScope();
+    auto value = block->Evaluate();
+    ASTNode::context.PopScope();
+    return value;
   }
 };
 
 struct Call : Expression, Statement {
   unique_ptr<Operand> operand;
   unique_ptr<Arguments> args;
+  
+  Call(unique_ptr<Operand> &&operand, unique_ptr<Arguments> &&args) : operand(std::move(operand)), args(std::move(args)) {
+    
+  }
   
   Value Evaluate() override {
     auto lvalue = operand->Evaluate();
@@ -86,13 +159,36 @@ struct Call : Expression, Statement {
     }
     return Value_T::Undefined;
   }
+  unique_ptr<ASTNode> EvaluateStatement() override {
+    Evaluate();
+    return nullptr;
+  }
+};
+
+struct UnaryExpr : Expression {
+  UnaryExpr(unique_ptr<Expression> &&left, TType op) :
+  left(std::move(left)), op(op){
+  }
+  unique_ptr<Expression> left;
+  TType op;
+  Value Evaluate() override {
+    auto lvalue = left->Evaluate();
+    
+    if (op == TType::Sub) {
+      return lvalue->Negate();
+    } else if (op == TType::Not) {
+      return lvalue->Not();
+    }
+    
+    
+  }
 };
 
 struct BinExpr : Expression {
   unique_ptr<Expression> left;
   unique_ptr<Expression> right;
    TType op;
-  BinExpr(unique_ptr<Expression> left, unique_ptr<Expression> right, TType op) :
+  BinExpr(unique_ptr<Expression> &&left, unique_ptr<Expression> &&right, TType op) :
   left(std::move(left)), right(std::move(right)), op(op){
     
   }

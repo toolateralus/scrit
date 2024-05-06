@@ -5,6 +5,7 @@
 #include <vector>
 #include "ast.hpp"
 #include "lexer.hpp"
+#include "value.hpp"
 
 using std::unique_ptr;
 using std::make_unique;
@@ -44,7 +45,8 @@ struct Parser {
   unique_ptr<Statement> ParseStatement();
   unique_ptr<Statement> ParseKeyword();
   unique_ptr<Statement> ParseIdentifierStatement();
-  unique_ptr<Statement> ParseExpression();
+  
+  unique_ptr<Expression> ParseExpression();
   unique_ptr<Expression> ParseLogicalOr();
   unique_ptr<Expression> ParseLogicalAnd();
   unique_ptr<Expression> ParseEquality();
@@ -52,5 +54,10 @@ struct Parser {
   unique_ptr<Expression> ParseTerm();
   unique_ptr<Expression> ParseFactor();
   unique_ptr<Expression> ParsePostfix();
+  unique_ptr<Block> ParseBlock();
+  unique_ptr<Parameters> ParseParameters();
+  unique_ptr<Arguments> ParseArguments();
+  unique_ptr<Expression> ParseUnary();
   unique_ptr<Expression> ParseOperand();
+  unique_ptr<Operand> ParseArrayInitializer();
 };
