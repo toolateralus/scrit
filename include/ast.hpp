@@ -387,8 +387,8 @@ struct BinExpr : Expression {
 
   Value Evaluate() override {
     auto left = this->left->Evaluate();
-    auto right = this->left->Evaluate();
-
+    auto right = this->right->Evaluate();
+    
     switch (op) {
     case TType::Add:
       return left->Add(right);
