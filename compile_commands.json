@@ -1,0 +1,30 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-std=c++2b",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "obj/main.o",
+      "src/main.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/main.cpp",
+    "output": "/home/josh/source/c++/lang/obj/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-std=c++2b",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "obj/value.o",
+      "src/value.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/value.cpp",
+    "output": "/home/josh/source/c++/lang/obj/value.o"
+  }
+]
