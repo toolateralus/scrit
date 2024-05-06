@@ -185,13 +185,13 @@ struct For : Statement {
   unique_ptr<Statement> increment;
   unique_ptr<Block> block;
   shared_ptr<Scope> scope;
-
+  
   For(unique_ptr<Statement> &&decl, unique_ptr<Expression> &&condition,
       unique_ptr<Statement> &&inc, unique_ptr<Block> &&block,
       shared_ptr<Scope> scope)
       : decl(std::move(decl)), condition(std::move(condition)),
         increment(std::move(inc)), block(std::move(block)), scope(scope) {}
-
+  
   unique_ptr<ASTNode> EvaluateStatement() override {
     context.PushScope(scope);
     if (decl != nullptr)
@@ -208,7 +208,7 @@ struct For : Statement {
         }
 
         auto blockResult = block->EvaluateStatement();
-        increment->Evaluate();
+        increment->EvaluateStatement();
 
         if (dynamic_cast<Return *>(blockResult.get()) ||
             dynamic_cast<Continue *>(blockResult.get()) ||
@@ -220,7 +220,7 @@ struct For : Statement {
     } else {
       while (true) {
         if (increment)
-          increment->Evaluate();
+          increment->EvaluateStatement();
         
         auto blockResult = block->EvaluateStatement();
         if (dynamic_cast<Return *>(blockResult.get()) ||
