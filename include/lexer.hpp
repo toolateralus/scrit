@@ -47,9 +47,11 @@ enum class TType {
   Equals,
 
   Assign,
-
+  
+  
+  // Keywords.
   Func,
-
+  
   For,
   If,
   Else,
@@ -200,6 +202,8 @@ struct Lexer {
     {"continue", TType::Continue},
     {"break", TType::Break},
     {"return", TType::Return},
+    {"if", TType::If},
+    {"else", TType::Else},
   };
   vector<Token> Lex(const string &input) {
     this->input = input;
