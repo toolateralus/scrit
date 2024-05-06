@@ -1,4 +1,5 @@
 #include "ast.hpp"
+#include <iostream>
 
 Context ASTNode::context = {};
 
@@ -12,10 +13,11 @@ unique_ptr<ASTNode> If::EvaluateStatement() {
           dynamic_cast<Break *>(result.get())) {
         return result;
       }
-    }
-  } else {
+    } else {
+    std::cout << "evalutaing else" << "\n";
     return elseStmnt->EvaluateStatement();
-  }
+    }
+  } 
   return nullptr;
 }
 If::If(unique_ptr<Expression> &&condition, unique_ptr<Block> &&block,

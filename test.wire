@@ -1,3 +1,5 @@
-for {
-  println(10)
+if false {
+  println("was false")
+} else {
+  println("was true")
 }

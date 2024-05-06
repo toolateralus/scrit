@@ -275,6 +275,9 @@ struct String_T : Value_T {
       this->value = s->value;
     }
   }
+  string ToString() const override {
+    return value;
+  }
 };
 struct Bool_T : Value_T {
   bool value = false;
