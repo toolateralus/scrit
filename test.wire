@@ -1,0 +1,18 @@
+
+
+i = 0
+
+i = 10
+
+
+func main() {
+  return 0
+}
+
+object = {
+  x=1
+  z=2
+  b=2
+}
+
+main()

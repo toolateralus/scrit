@@ -325,6 +325,7 @@ struct Array_T : Value_T {
   vector<unique_ptr<Expression>> initializer;
   vector<Value> values;
   Value At(Int index);
+  void Assign(Int index, Value value);
   void Push(Value value);
   void Insert(Int index, Value value);
   Value Pop();

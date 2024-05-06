@@ -46,6 +46,7 @@ enum class TType {
   GreaterEQ,
   LessEQ,
   Equals,
+  NotEquals,
 
   Assign,
   Comma,
@@ -191,6 +192,7 @@ struct Lexer {
       {">=", TType::GreaterEQ},
       {"<=", TType::LessEQ},
       {"==", TType::Equals},
+      {"!=", TType::NotEquals},
 
       {"!", TType::Not},
       // punctuation

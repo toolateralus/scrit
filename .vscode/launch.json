@@ -5,11 +5,12 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "preLaunchTask": "prebuild",
       "type": "lldb",
       "request": "launch",
       "name": "Debug",
       "program": "${workspaceFolder}/bin/app",
-      "args": [],
+      "args": ["test.wire"],
       "cwd": "${workspaceFolder}"
     }
   ]

@@ -1,6 +1,7 @@
 #pragma once
 #include "value.hpp"
 #include <map>
+#include <memory>
 #include <stdexcept>
 
 struct Scope {
@@ -8,7 +9,9 @@ struct Scope {
 };
 
 struct Context {
-  std::vector<std::shared_ptr<Scope>> scopes = {};
+  std::vector<std::shared_ptr<Scope>> scopes = {
+    make_shared<Scope>(),
+  };
 
   std::shared_ptr<Scope> PushScope(std::shared_ptr<Scope> scope = nullptr) {
     if (scope == nullptr) {

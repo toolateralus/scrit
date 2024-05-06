@@ -18,7 +18,12 @@ Value Callable_T::Call(unique_ptr<Arguments> args) {
       scope->variables[params->names[i]] = value;
     }
   }
-  // TODO: call it.
+  auto result = block->EvaluateStatement();
+  
+  if (auto ret = dynamic_cast<Return*>(result.get())) {
+    return ret->Evaluate();
+  }
+  return Value_T::Null;
 }
 
 Array_T::Array_T(vector<unique_ptr<Expression>> &&init) {
@@ -53,6 +58,17 @@ void Array_T::Insert(Int index, Value value) {
   }
   values.insert(values.begin() + idx, value);
 }
+void Array_T::Assign(Int index, Value value) {
+  int idx = index->value;
+  auto &values = this->values;
+  if (idx < 0 || idx >= values.size()) {
+    throw std::out_of_range("Index out of range");
+  }
+  values[idx] = value;
+}
+
+
+
 Callable_T::Callable_T(unique_ptr<Block>&& block, unique_ptr<Parameters> &&params) : block(std::move(block)), params(std::move(params)) {
   
 
