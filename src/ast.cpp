@@ -1,5 +1,4 @@
 #include "ast.hpp"
-#include <iostream>
 
 Context ASTNode::context = {};
 
@@ -14,7 +13,6 @@ unique_ptr<ASTNode> If::EvaluateStatement() {
         return result;
       }
     } else {
-    std::cout << "evalutaing else" << "\n";
     return elseStmnt->EvaluateStatement();
     }
   } 

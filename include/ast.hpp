@@ -105,10 +105,10 @@ struct ObjectInitializer : Expression {
   shared_ptr<Scope> scope;
   ObjectInitializer(unique_ptr<Block> block) : block(std::move(block)) {}
   Value Evaluate() override {
-    scope = ASTNode::context.PushScope();
+    auto obj = make_shared<Object_T>();
     auto value = block->EvaluateStatement();
-    ASTNode::context.PopScope();
-    return Value_T::Null;
+    obj->scope = block->scope;
+    return obj;
   }
 };
 

@@ -12,13 +12,8 @@ void test_token();
 #define TEST false
 
 REGISTER_FUNCTION(println) {
-  try {
-    for (const auto arg: args) {
-      std::cout << arg->ToString() << "\n";
-    }
-  }
-  catch (std::runtime_error &e) {
-    std::cout << "error : " << e.what() << "\n";
+  for (const auto arg: args) {
+    std::cout << arg->ToString() << "\n";
   }
   return Value_T::Undefined;
 }

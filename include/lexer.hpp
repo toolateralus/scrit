@@ -57,7 +57,7 @@ enum class TType {
   For,
   If,
   Else,
-  
+  Dot,
   False,
   True,
   Null,
@@ -193,7 +193,7 @@ struct Lexer {
       {"<=", TType::LessEQ},
       {"==", TType::Equals},
       {"!=", TType::NotEquals},
-
+      {".", TType::Dot},
       {"!", TType::Not},
       // punctuation
       {"(", TType::LParen},

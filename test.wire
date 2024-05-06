@@ -1,1 +1,9 @@
-println("xary..u" + "  --..xaryu")
+object = {
+  xaryu = 1 * 2 * 3
+  
+  func print(value) {
+    println(value)
+  }
+}
+
+println(object)

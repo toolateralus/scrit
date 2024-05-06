@@ -84,6 +84,7 @@ string Object_T::ToString() const {
     ss << '\"' << key <<  "\" : " << var->ToString() << "\n";
   }
   ss << "}";
+  return ss.str();
 }
 string Callable_T::ToString() const {
   std::stringstream ss = {};
