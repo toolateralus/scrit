@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cctype>
 #include <ostream>
 #include <sstream>
@@ -46,13 +47,13 @@ enum class TType {
   Equals,
 
   Assign,
-  
+
   Func,
-  
+
   For,
   If,
   Else,
-  
+
   Break,
   Continue,
   Return,
@@ -60,86 +61,83 @@ enum class TType {
 
 static string TTypeToString(const TType &type) {
   switch (type) {
-    case TType::Identifier:
-      return "Identifier";
-    case TType::Int:
-      return "Int";
-    case TType::Float:
-      return "Float";
-    case TType::Bool:
-      return "Bool";
-    case TType::String:
-      return "String";
-    case TType::LParen:
-      return "LParen";
-    case TType::RParen:
-      return "RParen";
-    case TType::LCurly:
-      return "LCurly";
-    case TType::RCurly:
-      return "RCurly";
-    case TType::Not:
-      return "Not";
-    case TType::Add:
-      return "Add";
-    case TType::Sub:
-      return "Sub";
-    case TType::Mul:
-      return "Mul";
-    case TType::Div:
-      return "Div";
-    case TType::Or:
-      return "Or";
-    case TType::And:
-      return "And";
-    case TType::Greater:
-      return "Greater";
-    case TType::Less:
-      return "Less";
-    case TType::GreaterEQ:
-      return "GreaterEQ";
-    case TType::LessEQ:
-      return "LessEQ";
-    case TType::Equals:
-      return "Equals";
-    case TType::Assign:
-      return "Assign";
-    case TType::Func:
-      return "Func";
-    case TType::For:
-      return "For";
-    case TType::If:
-      return "If";
-    case TType::Else:
-      return "Else";
-    case TType::Break:
-      return "Break";
-    case TType::Continue:
-      return "Continue";
-    case TType::Return:
-      return "Return";
-    default:
-      return "Unknown";
+  case TType::Identifier:
+    return "Identifier";
+  case TType::Int:
+    return "Int";
+  case TType::Float:
+    return "Float";
+  case TType::Bool:
+    return "Bool";
+  case TType::String:
+    return "String";
+  case TType::LParen:
+    return "LParen";
+  case TType::RParen:
+    return "RParen";
+  case TType::LCurly:
+    return "LCurly";
+  case TType::RCurly:
+    return "RCurly";
+  case TType::Not:
+    return "Not";
+  case TType::Add:
+    return "Add";
+  case TType::Sub:
+    return "Sub";
+  case TType::Mul:
+    return "Mul";
+  case TType::Div:
+    return "Div";
+  case TType::Or:
+    return "Or";
+  case TType::And:
+    return "And";
+  case TType::Greater:
+    return "Greater";
+  case TType::Less:
+    return "Less";
+  case TType::GreaterEQ:
+    return "GreaterEQ";
+  case TType::LessEQ:
+    return "LessEQ";
+  case TType::Equals:
+    return "Equals";
+  case TType::Assign:
+    return "Assign";
+  case TType::Func:
+    return "Func";
+  case TType::For:
+    return "For";
+  case TType::If:
+    return "If";
+  case TType::Else:
+    return "Else";
+  case TType::Break:
+    return "Break";
+  case TType::Continue:
+    return "Continue";
+  case TType::Return:
+    return "Return";
+  default:
+    return "Unknown";
   }
 }
 
 static string TFamilyToString(const TFamily &family) {
   switch (family) {
-    case TFamily::Operator:
-      return "Operator";
-    case TFamily::Literal:
-      return "Literal";
-    case TFamily::Keyword:
-      return "Keyword";
-    case TFamily::Identifier:
-      return "Identifier";
-    default:
-      return "Unknown";
+  case TFamily::Operator:
+    return "Operator";
+  case TFamily::Literal:
+    return "Literal";
+  case TFamily::Keyword:
+    return "Keyword";
+  case TFamily::Identifier:
+    return "Identifier";
+  default:
+    return "Unknown";
   }
 }
-
-
-
 
 struct Token {
   Token(const int &loc, const int &col, const string &value, const TType type,
@@ -150,10 +148,11 @@ struct Token {
   int loc = 0, col = 0;
   TType type;
   TFamily family;
-  
+
   string ToString() const {
     stringstream stream = {};
-    stream << "Token(" << value << ") type::" << TTypeToString(type) << " family::" << TFamilyToString(family) << "\n";
+    stream << "Token(" << value << ") type::" << TTypeToString(type)
+           << " family::" << TFamilyToString(family) << "\n";
     return stream.str();
   }
 };
@@ -171,7 +170,7 @@ struct Lexer {
   int loc;
   int col;
   string input;
-  
+
   std::unordered_map<string, TType> operators = {
       {"+", TType::Add},
       {"-", TType::Sub},
@@ -189,21 +188,22 @@ struct Lexer {
       // punctuation
       {"(", TType::LParen},
       {")", TType::RParen},
-
+      
       {"{", TType::LCurly},
       {"}", TType::RCurly},
 
       {"=", TType::Assign},
   };
   std::unordered_map<string, TType> keywords{
-    {"func", TType::Func},
+      {"func", TType::Func},
   };
   vector<Token> Lex(const string &input) {
-    this->input = input;  
+    this->input = input;
     vector<Token> tokens = {};
     char cur = input[pos];
-    
+
     while (pos < input.length()) {
+      cur = input[pos];
       if (cur == '\n') {
         pos++;
         loc++;
@@ -231,13 +231,11 @@ struct Lexer {
         tokens.push_back(LexIden());
       } else if (ispunct(cur)) {
         tokens.push_back(LexOp());
+      } else {
+        throw std::runtime_error(string("failed to parse character ") + cur);
       }
-
-      pos++;
-      col++;
-      cur = input[pos];
     }
-    
+
     return tokens;
   }
 
@@ -245,19 +243,21 @@ struct Lexer {
     stringstream stream = std::stringstream{};
     int startLoc = loc;
     int startCol = col;
-    
-    while (isalnum(input[pos])) {
+
+    while (isalnum(input[pos]) || input[pos] == '_') {
       stream << input[pos];
       pos++;
       col++;
     }
-    
+
     auto value = stream.str();
-    
+
     if (keywords.count(value) > 0) {
-      return Token(startLoc, startCol, value, keywords[value], TFamily::Keyword);
+      return Token(startLoc, startCol, value, keywords[value],
+                   TFamily::Keyword);
     } else {
-      return Token(startLoc, startCol, value, TType::Identifier, TFamily::Identifier);
+      return Token(startLoc, startCol, value, TType::Identifier,
+                   TFamily::Identifier);
     }
   }
 
@@ -266,7 +266,7 @@ struct Lexer {
     int startLoc = loc;
     int startCol = col;
     
-    pos++;
+    pos++; // move past opening "
     col++;
     
     while (input[pos] != '\"') {
@@ -275,9 +275,9 @@ struct Lexer {
       col++;
     }
     
-    pos++;
+    pos++; // move past closing "
     col++;
-    
+
     auto value = stream.str();
     return Token(startLoc, startCol, value, TType::String, TFamily::Literal);
   }
@@ -286,13 +286,13 @@ struct Lexer {
     stringstream stream = {};
     int startLoc = loc;
     int startCol = col;
-    
+
     while (isdigit(input[pos])) {
       stream << input[pos];
       pos++;
       col++;
     }
-    
+
     if (input[pos] == '.') {
       stream << input[pos];
       pos++;
@@ -303,21 +303,29 @@ struct Lexer {
         pos++;
         col++;
       }
-      
-      return Token(startLoc, startCol, stream.str(), TType::Float, TFamily::Literal);
+
+      return Token(startLoc, startCol, stream.str(), TType::Float,
+                   TFamily::Literal);
     } else {
-      return Token(startLoc, startCol, stream.str(), TType::Int, TFamily::Literal);
+      return Token(startLoc, startCol, stream.str(), TType::Int,
+                   TFamily::Literal);
     }
   }
-
   Token LexOp() {
     stringstream stream = {};
     int startLoc = loc;
     int startCol = col;
     string value;
 
-    for (const auto& op : operators) {
-      if (input.substr(pos).find(op.first) == 0) {
+    std::vector<std::pair<string, TType>> sorted_operators(operators.begin(),
+                                                           operators.end());
+    std::sort(sorted_operators.begin(), sorted_operators.end(),
+              [](const auto &a, const auto &b) {
+                return a.first.size() > b.first.size();
+              });
+
+    for (const auto &op : sorted_operators) {
+      if (input.substr(pos, op.first.size()) == op.first) {
         value = op.first;
         stream << value;
         pos += value.length();
@@ -325,7 +333,7 @@ struct Lexer {
         return Token(startLoc, startCol, value, op.second, TFamily::Operator);
       }
     }
-    
+
     throw std::runtime_error("failed to parse operator " + value);
   }
 };

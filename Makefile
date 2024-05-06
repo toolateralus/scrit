@@ -2,7 +2,7 @@
 CXX := clang++
 
 # Compiler flags
-CXXFLAGS := -std=c++2b -Iinclude
+CXXFLAGS := -g -std=c++2b -Iinclude
 
 # Directories
 SRCDIR := src
