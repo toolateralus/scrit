@@ -4,7 +4,7 @@
 #include <stdexcept>
 
 struct Scope {
-  std::map<string, shared_ptr<Value> > variables = {};
+  std::map<string, Value > variables = {};
 };
 
 struct Context {
@@ -27,7 +27,7 @@ struct Context {
     return scope;
   }
 
-  std::shared_ptr<Value> Find(string &name) {
+  Value Find(string &name) {
     for (const auto &scope : scopes) {
       for (const auto &[key, var] : scope->variables) {
         if (key == name) {
@@ -38,7 +38,7 @@ struct Context {
     return nullptr;
   }
 
-  void Insert(string &name, std::shared_ptr<Value> value) {
+  void Insert(string &name, Value value) {
     for (const auto &scope : scopes) {
       for (auto &[key, var] : scope->variables) {
         if (key == name) {
