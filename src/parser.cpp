@@ -344,16 +344,13 @@ unique_ptr<Arguments> Parser::ParseArguments() {
   auto next = Peek();
   vector<unique_ptr<Expression>> values = {};
   
-  if (next.type == TType::RParen) {
-    Eat();
-    return make_unique<Arguments>(std::move(values));
-  }
-  
   while (tokens.size() > 0 && next.type != TType::RParen) {
     auto value = ParseExpression();
     values.push_back(std::move(value));
     if (Peek().type == TType::Comma) {
       Eat();
+    } else {
+      next = Peek();
     }
   }
   Expect(TType::RParen);

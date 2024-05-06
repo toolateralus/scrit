@@ -97,3 +97,19 @@ string Callable_T::ToString() const {
   ss << ")";
   return ss.str();
 }
+string Array_T::ToString() const {
+  std::stringstream ss = {};
+  ss << "[";
+  for (const auto value : values) {
+    ss << value->ToString();
+    if (value != values.back()) {
+      ss << ", ";
+    }
+  }
+  ss << "]";
+  return ss.str();
+}
+Array Array_T::New(vector<unique_ptr<Expression>> &&init) {
+  return make_shared<Array_T>(std::move(init));
+}
+Array Array_T::New() { return make_shared<Array_T>(); }

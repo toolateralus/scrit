@@ -1,6 +1,7 @@
-
+#pragma once
 #include "context.hpp"
 #include "lexer.hpp"
+#include "native.hpp"
 #include "value.hpp"
 #include <memory>
 #include <stdexcept>
@@ -110,17 +111,30 @@ struct ObjectInitializer : Expression {
     return Value_T::Null;
   }
 };
+
 struct Call : Expression, Statement {
   unique_ptr<Expression> operand;
   unique_ptr<Arguments> args;
   
   Call(unique_ptr<Expression> &&operand, unique_ptr<Arguments> &&args)
       : operand(std::move(operand)), args(std::move(args)) {}
-
+  
+  vector<Value> GetArgsValueList(unique_ptr<Arguments> &args) {
+    vector<Value> values ={};
+    for (auto &expr : args->values) {
+      values.push_back(expr->Evaluate());
+    }
+    return values;
+  }
+  
   Value Evaluate() override {
     auto lvalue = operand->Evaluate();
     if (auto callable = dynamic_cast<Callable_T *>(lvalue.get())) {
       return callable->Call(std::move(args));
+    } else if (auto id = dynamic_cast<Identifier* >(operand.get())) {
+      if (NativeFunctions::GetRegistry().count(id->name) > 0) {
+        return NativeFunctions::GetRegistry()[id->name](GetArgsValueList(this->args));
+      }
     }
     return Value_T::Undefined;
   }

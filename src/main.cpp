@@ -3,17 +3,24 @@
 #include <cassert>
 #include <iostream>
 #include <fstream>
+#include <stdexcept>
 #include "native.hpp"
-#include "value.hpp"
+
 
 void test_token();
 
 #define TEST false
 
 REGISTER_FUNCTION(println) {
-  for (const auto arg: args) {
-    std::cout << arg->ToString() << "\n";
+  try {
+    for (const auto arg: args) {
+      std::cout << arg->ToString() << "\n";
+    }
   }
+  catch (std::runtime_error &e) {
+    std::cout << "error : " << e.what() << "\n";
+  }
+  return Value_T::Undefined;
 }
 
 

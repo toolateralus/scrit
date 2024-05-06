@@ -11,6 +11,8 @@ using std::vector;
 using std::shared_ptr;
 using std::make_shared;
 
+
+// forward declare value types
 struct Value_T;
 struct Bool_T;
 struct Int_T;
@@ -19,6 +21,16 @@ struct String_T;
 struct Object_T;
 struct Array_T;
 
+
+// forward declare AST nodes.
+struct Scope;
+struct Identifier;
+struct Block;
+struct Parameters;
+struct Arguments;
+struct Expression;
+
+// ease of use typedef.
 typedef shared_ptr<Value_T> Value;
 typedef shared_ptr<Bool_T> Bool;
 typedef shared_ptr<String_T> String;
@@ -304,8 +316,8 @@ struct Bool_T : Value_T {
   }
 };
 
-struct Scope;
-struct Identifier;
+
+
 using std::unique_ptr;
 
 struct Object_T : Value_T {
@@ -315,9 +327,7 @@ struct Object_T : Value_T {
   virtual string ToString() const override;
 };
 
-struct Block;
-struct Parameters;
-struct Arguments;
+
 
 struct Callable_T : Value_T {
   Callable_T(unique_ptr<Block> &&block, unique_ptr<Parameters> &&params);
@@ -327,14 +337,9 @@ struct Callable_T : Value_T {
   string ToString() const override;
 };
 
-struct Expression;
 struct Array_T : Value_T {
-  static Array New() {
-    return make_shared<Array_T>();
-  }
-  static Array New(vector<unique_ptr<Expression>> &&init) {
-    return make_shared<Array_T>(std::move(init));
-  }
+  static Array New();
+  static Array New(vector<unique_ptr<Expression>> &&init);
   Array_T();
   Array_T(vector<unique_ptr<Expression>> &&init);
   bool is_initialized;
@@ -346,16 +351,5 @@ struct Array_T : Value_T {
   void Insert(Int index, Value value);
   Value Pop();
   Value Remove(Int index);
-  string ToString() const override {
-    std::stringstream ss = {};
-    ss << "[";
-    for (const auto value : values) {
-      ss << value->ToString();
-      if (value != values.back()) {
-        ss << ", ";
-      }
-    }
-    ss << "]";
-    return ss.str();    
-  }
+  string ToString() const override;
 };
