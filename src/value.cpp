@@ -1,6 +1,7 @@
 #include "value.hpp"
 #include "ast.hpp"
 #include <memory>
+#include <sstream>
 
 Bool Value_T::True = make_shared<::Bool_T>(true);
 Bool Value_T::False = make_shared<::Bool_T>(false);
@@ -75,4 +76,24 @@ Callable_T::Callable_T(unique_ptr<Block>&& block, unique_ptr<Parameters> &&param
 }
 Array_T::Array_T() {
   is_initialized = true;
+}
+string Object_T::ToString() const {
+  std::stringstream ss = {};
+  ss << "{";
+  for (const auto [key, var] : scope->variables) {
+    ss << '\"' << key <<  "\" : " << var->ToString() << "\n";
+  }
+  ss << "}";
+}
+string Callable_T::ToString() const {
+  std::stringstream ss = {};
+  ss << "callable(";
+  for (const auto &name : params->names) {
+    ss << name;
+    if (name != params->names.back()) {
+      ss << ", ";
+    }
+  }
+  ss << ")";
+  return ss.str();
 }

@@ -343,6 +343,12 @@ unique_ptr<Arguments> Parser::ParseArguments() {
   Expect(TType::LParen);
   auto next = Peek();
   vector<unique_ptr<Expression>> values = {};
+  
+  if (next.type == TType::RParen) {
+    Eat();
+    return make_unique<Arguments>(std::move(values));
+  }
+  
   while (tokens.size() > 0 && next.type != TType::RParen) {
     auto value = ParseExpression();
     values.push_back(std::move(value));

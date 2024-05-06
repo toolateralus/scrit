@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 
+#include <sstream>
 #include <string>
 #include <typeinfo>
 #include <vector>
@@ -33,6 +34,9 @@ struct Value_T : std::enable_shared_from_this<Value_T> {
   static Bool False;
   static Bool True;
   virtual ~Value_T() {}
+  virtual string ToString() const {
+   return "null"; 
+  }
   virtual bool Equals(Value value) { return value == Null; }
   virtual Value Add(Value other) { return Null; }
   virtual Value Subtract(Value other) { return Null; }
@@ -141,6 +145,9 @@ struct Int_T : Value_T {
   virtual Value Negate() override { 
     return make_shared<Int_T>(-value);
   }
+  virtual string ToString() const override {
+   return std::to_string(value); 
+  }
 };
 struct Float_T : Value_T {
   float value = 0.0f;
@@ -225,6 +232,10 @@ struct Float_T : Value_T {
   virtual Value Negate() override { 
     return make_shared<Float_T>(-value);
   }
+  virtual string ToString() const override {
+   return std::to_string(value); 
+  }
+ 
 };
 struct String_T : Value_T {
   string value;
@@ -288,6 +299,9 @@ struct Bool_T : Value_T {
       this->value = b->value;
     }
   }
+   virtual string ToString() const override {
+   return std::to_string(value); 
+  }
 };
 
 struct Scope;
@@ -298,6 +312,7 @@ struct Object_T : Value_T {
   shared_ptr<Scope> scope;
   Value GetMember(const string &name);
   void SetMember(const string &name, Value &value);
+  virtual string ToString() const override;
 };
 
 struct Block;
@@ -309,6 +324,7 @@ struct Callable_T : Value_T {
   unique_ptr<Block> block;
   unique_ptr<Parameters> params;
   Value Call(unique_ptr<Arguments> args);
+  string ToString() const override;
 };
 
 struct Expression;
@@ -330,4 +346,16 @@ struct Array_T : Value_T {
   void Insert(Int index, Value value);
   Value Pop();
   Value Remove(Int index);
+  string ToString() const override {
+    std::stringstream ss = {};
+    ss << "[";
+    for (const auto value : values) {
+      ss << value->ToString();
+      if (value != values.back()) {
+        ss << ", ";
+      }
+    }
+    ss << "]";
+    return ss.str();    
+  }
 };
