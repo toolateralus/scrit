@@ -195,7 +195,11 @@ struct Lexer {
       {"=", TType::Assign},
   };
   std::unordered_map<string, TType> keywords{
-      {"func", TType::Func},
+    {"func", TType::Func},
+    {"for", TType::For},
+    {"continue", TType::Continue},
+    {"break", TType::Break},
+    {"return", TType::Return},
   };
   vector<Token> Lex(const string &input) {
     this->input = input;
