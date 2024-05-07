@@ -136,3 +136,228 @@ string NativeCallable_T::ToString() const {
   return ss.str();
 }
 
+Int_T::Int_T(int value) : Value_T(ValueType::Int) { this->value = value; }
+bool Int_T::Equals(Value_T *value) {
+  if (value->type == ValueType::Int) {
+    return static_cast<Int_T *>(value)->value == this->value;
+  }
+  return false;
+};
+Value Int_T::Add(Value other) {
+  if (other->type == ValueType::Int) {
+    return make_shared<Int_T>(this->value +
+                              static_cast<Int_T *>(other.get())->value);
+  }
+  return Value_T::Null;
+}
+Value Int_T::Subtract(Value other) {
+  if (other->type == ValueType::Int) {
+    return make_shared<Int_T>(this->value -
+                              static_cast<Int_T *>(other.get())->value);
+  }
+  return Value_T::Null;
+}
+Value Int_T::Multiply(Value other) {
+  if (other->type == ValueType::Int) {
+    return make_shared<Int_T>(this->value *
+                              static_cast<Int_T *>(other.get())->value);
+  }
+  return Value_T::Null;
+}
+Value Int_T::Divide(Value other) {
+  if (other->type == ValueType::Int) {
+    return make_shared<Int_T>(this->value /
+                              static_cast<Int_T *>(other.get())->value);
+  }
+  return Value_T::Null;
+}
+void Int_T::Set(Value newValue) {
+  if (newValue->type == ValueType::Int) {
+    this->value = static_cast<Int_T *>(newValue.get())->value;
+  }
+}
+Bool Int_T::Or(Value other) {
+  if (other->type == ValueType::Int) {
+    return make_shared<Bool_T>(this->value ||
+                               static_cast<Int_T *>(other.get())->value);
+  }
+  return False;
+}
+Bool Int_T::And(Value other) {
+  if (other->type == ValueType::Int) {
+    return make_shared<Bool_T>(this->value &&
+                               static_cast<Int_T *>(other.get())->value);
+  }
+  return False;
+}
+Bool Int_T::Less(Value other) {
+  if (other->type == ValueType::Int) {
+    return make_shared<Bool_T>(this->value <
+                               static_cast<Int_T *>(other.get())->value);
+  }
+  return False;
+}
+Bool Int_T::Greater(Value other) {
+  if (other->type == ValueType::Int) {
+    return make_shared<Bool_T>(this->value >
+                               static_cast<Int_T *>(other.get())->value);
+  }
+  return False;
+}
+Bool Int_T::GreaterEquals(Value other) {
+  if (other->type == ValueType::Int) {
+    return make_shared<Bool_T>(this->value >=
+                               static_cast<Int_T *>(other.get())->value);
+  }
+  return False;
+}
+Bool Int_T::LessEquals(Value other) {
+  if (other->type == ValueType::Int) {
+    return make_shared<Bool_T>(this->value <=
+                               static_cast<Int_T *>(other.get())->value);
+  }
+  return False;
+}
+Value Int_T::Negate() { return make_shared<Int_T>(-value); }
+string Int_T::ToString() const { return std::to_string(value); }
+Float_T::Float_T(float value) : Value_T(ValueType::Float) {
+  this->value = value;
+}
+bool Float_T::Equals(Value value) {
+  if (value->type == ValueType::Float) {
+    return static_cast<Float_T *>(value.get())->value == this->value;
+  }
+  return false;
+}
+Value Float_T::Add(Value other) {
+  if (other->type == ValueType::Float) {
+    return make_shared<Float_T>(this->value +
+                                static_cast<Float_T *>(other.get())->value);
+  }
+  return Value_T::Null;
+}
+Value Float_T::Subtract(Value other) {
+  if (other->type == ValueType::Float) {
+    return make_shared<Float_T>(this->value -
+                                static_cast<Float_T *>(other.get())->value);
+  }
+  return Value_T::Null;
+}
+Value Float_T::Multiply(Value other) {
+  if (other->type == ValueType::Float) {
+    return make_shared<Float_T>(this->value *
+                                static_cast<Float_T *>(other.get())->value);
+  }
+  return Value_T::Null;
+}
+Value Float_T::Divide(Value other) {
+  if (other->type == ValueType::Float) {
+    return make_shared<Float_T>(this->value /
+                                static_cast<Float_T *>(other.get())->value);
+  }
+  return Value_T::Null;
+}
+void Float_T::Set(Value newValue) {
+  if (newValue->type == ValueType::Float) {
+    this->value = static_cast<Float_T *>(newValue.get())->value;
+  }
+}
+Bool Float_T::Or(Value other) {
+  if (other->type == ValueType::Float) {
+    return make_shared<Bool_T>(this->value ||
+                               static_cast<Float_T *>(other.get())->value);
+  }
+  return False;
+}
+Bool Float_T::And(Value other) {
+  if (other->type == ValueType::Float) {
+    return make_shared<Bool_T>(this->value &&
+                               static_cast<Float_T *>(other.get())->value);
+  }
+  return False;
+}
+Bool Float_T::Less(Value other) {
+  if (other->type == ValueType::Float) {
+    return make_shared<Bool_T>(this->value <
+                               static_cast<Float_T *>(other.get())->value);
+  }
+  return False;
+}
+Bool Float_T::Greater(Value other) {
+  if (other->type == ValueType::Float) {
+    return make_shared<Bool_T>(this->value >
+                               static_cast<Float_T *>(other.get())->value);
+  }
+  return False;
+}
+Bool Float_T::GreaterEquals(Value other) {
+  if (other->type == ValueType::Float) {
+    return make_shared<Bool_T>(this->value >=
+                               static_cast<Float_T *>(other.get())->value);
+  }
+  return False;
+}
+Bool Float_T::LessEquals(Value other) {
+  if (other->type == ValueType::Float) {
+    return make_shared<Bool_T>(this->value <=
+                               static_cast<Float_T *>(other.get())->value);
+  }
+  return False;
+}
+Value Float_T::Negate() { return make_shared<Float_T>(-value); }
+string Float_T::ToString() const { return std::to_string(value); }
+String_T::String_T(const string &value) : Value_T(ValueType::String) {
+  this->value = value;
+}
+bool String_T::Equals(Value value) {
+  if (value->type == ValueType::String) {
+    return static_cast<String_T *>(value.get())->value == this->value;
+  }
+  return false;
+}
+Value String_T::Add(Value other) {
+  if (other->type == ValueType::String) {
+    return make_shared<String_T>(this->value +
+                                 static_cast<String_T *>(other.get())->value);
+  }
+  return Value_T::Null;
+}
+void String_T::Set(Value newValue) {
+  if (newValue->type == ValueType::String) {
+    this->value = static_cast<String_T *>(newValue.get())->value;
+  }
+}
+string String_T::ToString() const { return value; }
+Bool_T::Bool_T(bool value) : Value_T(ValueType::Bool) { this->value = value; }
+bool Bool_T::Equals(Value value) {
+  if (value->type == ValueType::Bool) {
+    return static_cast<Bool_T *>(value.get())->value == this->value;
+  }
+  return false;
+}
+Bool Bool_T::Or(Value other) {
+  if (other->type == ValueType::Bool) {
+    return make_shared<Bool_T>(this->value ||
+                               static_cast<Bool_T *>(other.get())->value);
+  }
+  return False;
+}
+Bool Bool_T::And(Value other) {
+  if (other->type == ValueType::Bool) {
+    return make_shared<Bool_T>(this->value &&
+                               static_cast<Bool_T *>(other.get())->value);
+  }
+  return False;
+}
+Bool Bool_T::Not() { return make_shared<Bool_T>(!value); }
+void Bool_T::Set(Value newValue) {
+  if (newValue->type == ValueType::Bool) {
+    this->value = static_cast<Bool_T *>(newValue.get())->value;
+  }
+}
+string Bool_T::ToString() const { return std::to_string(value); }
+Object_T::Object_T() : Value_T(ValueType::Object) {}
+string Undefined::ToString() const { return "undefined"; }
+Undefined::Undefined() : Value_T(ValueType::None) {}
+string Null::ToString() const { return "null"; }
+Null::Null() : Value_T(ValueType::None) {}
