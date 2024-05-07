@@ -44,13 +44,16 @@ $(OBJDIR)/release/%.o: $(SRCDIR)/%.cpp
 	@mkdir -p $(OBJDIR)/release
 	$(CXX) $(CXXFLAGS) $(RELEASEFLAGS) -c $< -o $@
 
-run: run_debug
 
 run_debug: $(BINDIR)/debug/app
-	@./$(BINDIR)/debug/app test.wire
+	@./$(BINDIR)/debug/app $(filter-out $@,$(MAKECMDGOALS))
 
 run_release: $(BINDIR)/release/app
-	@./$(BINDIR)/release/app test.wire
+	@./$(BINDIR)/release/app $(filter-out $@,$(MAKECMDGOALS))
 
+run:
+	$(MAKE) run_debug $(filter-out $@,$(MAKECMDGOALS))
+	
+	
 clean:
 	rm -rf $(OBJDIR) $(BINDIR)/debug $(BINDIR)/release
