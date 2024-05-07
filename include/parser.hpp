@@ -1,8 +1,6 @@
 #pragma once
 
-#include <algorithm>
 #include <memory>
-#include <stdexcept>
 #include <vector>
 #include "ast.hpp"
 #include <string>
@@ -15,34 +13,11 @@ using std::vector;
 
 struct Parser {
   vector<Token> tokens;
-  inline Token Peek() {
-    return tokens.back();
-  }
-  inline Token Eat() {
-    auto tkn = tokens.back();
-    tokens.pop_back();
-    return tkn;
-  }
-  inline Token Expect(const TType ttype) {
-    if (tokens.back().type != ttype) {
-      throw std::runtime_error("Expected " + TTypeToString(ttype) + " got " + TTypeToString(tokens.back().type));
-    }
-    auto tkn =tokens.back();
-    tokens.pop_back();
-    return tkn;
-  }
-  
-  unique_ptr<Program> Parse(vector<Token> &&tokens) {
-    std::reverse(tokens.begin(), tokens.end());
-    this->tokens = std::move(tokens);
-    vector<StatementPtr> statements;
-    while (this->tokens.size() > 0) {
-      auto statement = ParseStatement();
-      statements.push_back(std::move(statement));
-    }
-    auto program = make_unique<Program>(std::move(statements));
-    return program;
-  }
+  Token Peek();
+  Token Eat();
+  Token Expect(const TType ttype);
+
+  unique_ptr<Program> Parse(vector<Token> &&tokens);
 
   StatementPtr ParseImport();
 

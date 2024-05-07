@@ -4,6 +4,7 @@
 #include <typeinfo>
 #include <vector>
 #include <map>
+#include "native.hpp"
 
 using std::string;
 using std::vector;
