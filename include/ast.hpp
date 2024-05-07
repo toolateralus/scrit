@@ -137,7 +137,7 @@ struct Call : Expression, Statement {
   ExpressionPtr operand;
   ArgumentsPtr args;
   Call(ExpressionPtr &&operand, ArgumentsPtr &&args);
-  vector<Value> GetArgsValueList(ArgumentsPtr &args);
+  static vector<Value> GetArgsValueList(ArgumentsPtr &args);
   Value Evaluate() override;
   ExecutionResult Execute() override;
 };
