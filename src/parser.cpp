@@ -291,10 +291,10 @@ unique_ptr<Expression> Parser::ParseOperand() {
     return make_unique<Operand>(Value_T::Null);
   case TType::Float:
     Eat();
-    return make_unique<Operand>(make_shared<Int_T>(stoi(token.value)));
+    return make_unique<Operand>(make_shared<Float_T>(stof(token.value)));
   case TType::Int:
     Eat();
-    return make_unique<Operand>(make_shared<Float_T>(stof(token.value)));
+    return make_unique<Operand>(make_shared<Int_T>(stoi(token.value)));
   case TType::Identifier:
     Eat();
     return make_unique<Identifier>(token.value);

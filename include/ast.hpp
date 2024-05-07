@@ -125,8 +125,11 @@ struct Call : Expression, Statement {
       auto callable = static_cast<Callable_T*>(lvalue.get());
       return callable->Call(std::move(args));
     } else if (auto id = dynamic_cast<Identifier* >(operand.get())) {
-      if (NativeFunctions::GetRegistry().count(id->name) > 0) {
-        return NativeFunctions::GetRegistry()[id->name](GetArgsValueList(this->args));
+      auto registry = NativeFunctions::GetRegistry();
+      const auto &size = registry.size();
+      auto it = registry.find(id->name);
+      if (it != registry.end()) {
+        return it->second(GetArgsValueList(this->args));
       }
     }
     return Value_T::Undefined;

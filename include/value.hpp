@@ -363,7 +363,6 @@ struct Array_T : Value_T {
   static Array New(vector<unique_ptr<Expression>> &&init);
   Array_T();
   Array_T(vector<unique_ptr<Expression>> &&init);
-  bool is_initialized;
   vector<unique_ptr<Expression>> initializer;
   vector<Value> values;
   Value At(Int index);

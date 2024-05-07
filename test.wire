@@ -1,11 +1,14 @@
 object = {
   xaryu = 1 * 2 * 3
-  
+  arr = [0,1,2,3]
   func print(value) {
-    println(value)
+    return [1,2,3]
   }
 }
 
 
-for i=0,i<10000000,i=i+1 {
+for i=0,i< len(object.arr),i=i+1 {
+  push(object.arr, i)
+  println(object.arr[i])
+ 
 }

@@ -4,18 +4,14 @@
 #include <iostream>
 #include <fstream>
 #include "native.hpp"
+#include "value.hpp"
 
 
 void test_token();
 
 #define TEST false
 
-REGISTER_FUNCTION(println) {
-  for (const auto arg: args) {
-    std::cout << arg->ToString() << "\n";
-  }
-  return Value_T::Undefined;
-}
+
 
 
 int main(int argc, char **argv) { 
