@@ -1,5 +1,7 @@
 #include "value.hpp"
 #include "ast.hpp"
+#include "context.hpp"
+
 #include <memory>
 #include <sstream>
 

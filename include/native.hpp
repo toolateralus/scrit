@@ -1,8 +1,10 @@
 #pragma once
-
-#include "value.hpp"
+#include <memory>
 #include <unordered_map>
 #include <vector>
+
+struct Value_T;
+typedef std::shared_ptr<Value_T> Value;
 
 typedef Value (*NativeFunction)(std::vector<Value>);
 
@@ -27,3 +29,6 @@ static void RegisterFunction(const std::string& name, NativeFunction function) {
     } name##_register; \
   } \
   Value name(std::vector<Value> args)
+  
+  
+  

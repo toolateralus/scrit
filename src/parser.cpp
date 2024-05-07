@@ -2,6 +2,8 @@
 #include "ast.hpp"
 #include "lexer.hpp"
 #include "value.hpp"
+#include "context.hpp"
+
 #include <memory>
 #include <stdexcept>
 

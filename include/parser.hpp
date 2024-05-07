@@ -4,8 +4,8 @@
 #include <stdexcept>
 #include <vector>
 #include "ast.hpp"
-#include "lexer.hpp"
-#include "value.hpp"
+
+struct Token;
 
 using std::unique_ptr;
 using std::make_unique;
@@ -13,16 +13,15 @@ using std::vector;
 
 struct Parser {
   vector<Token> tokens;
-  
-  Token Peek() {
+  inline Token Peek() {
     return tokens.back();
   }
-  Token Eat() {
+  inline Token Eat() {
     auto tkn = tokens.back();
     tokens.pop_back();
     return tkn;
   }
-  Token Expect(const TType ttype) {
+  inline Token Expect(const TType ttype) {
     if (tokens.back().type != ttype) {
       throw std::runtime_error("Expected " + TTypeToString(ttype) + " got " + TTypeToString(tokens.back().type));
     }
