@@ -16,12 +16,9 @@ typedef Value (*NativeFunctionPtr)(std::vector<Value>);
 
 
 extern "C" struct ScritModDef {
-  char * description;
+  std::string *description;
   Context *context;
-  char **funcNames;
-  NativeFunctionPtr *funcs;
-  size_t fnCount;
-  size_t fnMax;
+  std::unordered_map<std::string, NativeFunctionPtr> *functions;
 };
 
 ScritModDef* CreateModDef();

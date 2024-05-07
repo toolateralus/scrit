@@ -13,15 +13,7 @@ std::unordered_map<std::string, NativeCallable>
 
 extern "C" void ScritMod_AddFunction(ScritModDef *mod, const std::string &name,
                 NativeFunctionPtr function) {
-                
-  if (mod->fnCount == mod->fnMax) {
-    mod->funcs = (NativeFunctionPtr*)realloc(mod->funcs, sizeof(NativeFunctionPtr) * (mod->fnMax + 1));
-    mod->funcNames = (char**)realloc(mod->funcNames, sizeof(char*) * (mod->fnMax + 1));
-  }
-  auto &count = mod->fnCount;
-  mod->funcs[count] = function;
-  mod->funcNames[count] = const_cast<char*>(name.c_str());
-  count++;
+  (*mod->functions)[name]=function;
 }
 
 extern "C" void ScritMod_AddVariable(ScritModDef *mod, const std::string &name, Value value) {
@@ -37,15 +29,9 @@ Object ScritModDefAsObject(ScritModDef *mod) {
 
 void m_InstantiateCallables(ScritModDef *module) {
   auto context = module->context;
-  auto funcs = module->funcs;
-  auto funcCount = module->fnCount;
-  
-  for (size_t i = 0; i < funcCount; ++i) {
-    auto name = module->funcNames[i];
-    auto func = funcs[i];
+  for (const auto [name, func] : *module->functions) {
     context->Insert(name, NativeFunctions::MakeCallable(func));
   }
-  
 }
 
 NativeCallable NativeFunctions::MakeCallable(const NativeFunctionPtr fn) {
@@ -96,14 +82,7 @@ ScritModDef* LoadScritModule(const std::string &name, const std::string &path) {
 ScritModDef* CreateModDef() { 
   ScritModDef *mod = (ScritModDef*)malloc(sizeof(ScritModDef));
   mod->context = new Context(); 
-  mod->description = (char*)malloc(sizeof(char*));
-  mod->fnCount = 0;
-  mod->funcs = nullptr;
-  mod->funcNames = nullptr;
-  mod->fnMax = 10;
-  mod->funcs = (NativeFunctionPtr*)malloc(sizeof(NativeFunctionPtr) * 10);
-  mod->funcNames = (char**)malloc(sizeof(char*) * 10);
-  
-  
+  mod->description = new string();
+  mod->functions = new std::unordered_map<string, NativeFunctionPtr>();  
   return mod;
 }
