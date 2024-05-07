@@ -62,6 +62,8 @@ enum class TType {
   Break,
   Continue,
   Return,
+  Import,
+  From
 };
 struct Token {
   Token(const int &loc, const int &col, const string &value, const TType type,
@@ -74,9 +76,9 @@ struct Token {
   string ToString() const;
 };
 struct Lexer {
-  int pos;
-  int loc;
-  int col;
+  int pos = 0;
+  int loc = 0;
+  int col = 0;
   string input;
   std::unordered_map<string, TType> operators;
   std::unordered_map<string, TType> keywords;

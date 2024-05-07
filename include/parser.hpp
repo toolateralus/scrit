@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include "ast.hpp"
+#include <string>
 
 struct Token;
 
@@ -17,6 +18,9 @@ struct Parser {
   Token Expect(const TType ttype);
 
   unique_ptr<Program> Parse(vector<Token> &&tokens);
+
+  StatementPtr ParseImport();
+
   StatementPtr ParseLValuePostFix(ExpressionPtr &&expr);
   StatementPtr ParseFor();
   StatementPtr ParseFuncDecl();

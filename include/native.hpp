@@ -2,6 +2,7 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include <string>
 
 struct Value_T;
 struct Object_T;
@@ -13,21 +14,24 @@ typedef std::shared_ptr<Value_T> Value;
 typedef std::shared_ptr<Object_T> Object;
 typedef Value (*NativeFunctionPtr)(std::vector<Value>);
 
-struct ScritModDef {
-  std::string description;
-  ScritModDef();
-  ~ScritModDef();
+
+extern "C" struct ScritModDef {
+  char * description;
   Context *context;
-  std::unordered_map<std::string, NativeFunctionPtr> functions;
-
-  void AddFunction(const std::string &name, NativeFunctionPtr function);
-  void AddVariable(const std::string &name, Value value);
-  Object AsObject();
-
-private:
-  void m_InstantiateCallables();
+  char **funcNames;
+  NativeFunctionPtr *funcs;
+  size_t fnCount;
+  size_t fnMax;
 };
-typedef ScritModDef (*ScritModInitFunc)();
+
+ScritModDef* CreateModDef();
+
+extern "C" void ScritMod_AddFunction(ScritModDef *mod, const std::string &name, NativeFunctionPtr function);
+extern "C" void ScritMod_AddVariable(ScritModDef *mod, const std::string &name, Value value);
+Object ScritModDefAsObject(ScritModDef *mod);
+void m_InstantiateCallables(ScritModDef *mod);
+
+typedef ScritModDef* (*ScriptModInitFuncPtr)();
 
 struct NativeFunctions {
   static std::unordered_map<std::string, NativeCallable> instantiatedCallables;
@@ -50,4 +54,4 @@ void RegisterFunction(const std::string &name, NativeFunctionPtr function);
   } \
   Value name(std::vector<Value> args)
 
-void LoadScritModule(const std::string &name, const std::string &path);
+ScritModDef* LoadScritModule(const std::string &name, const std::string &path);

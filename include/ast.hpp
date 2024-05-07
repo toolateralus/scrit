@@ -22,7 +22,9 @@ struct Else;
 struct Identifier;
 struct Parameters;
 struct Operand;
+struct Import;
 // typedefs
+typedef unique_ptr<Import> ImportPtr;
 typedef unique_ptr<Statement> StatementPtr;
 typedef unique_ptr<Expression> ExpressionPtr;
 typedef unique_ptr<Block> BlockPtr;
@@ -203,6 +205,16 @@ struct BinExpr : Expression {
   TType op;
   BinExpr(ExpressionPtr &&left, ExpressionPtr &&right, TType op);
   Value Evaluate() override;
+};
+
+
+struct Import : Statement {
+  Import(const string &name);
+  Import(const string &name, vector<string> &symbols);
+  vector<string> symbols;
+  string moduleName;
+  const string moduleRoot = "/usr/local/scrit/modules/";
+  ExecutionResult Execute() override;
 };
 
 string CC_ToString(ControlChange controlChange);

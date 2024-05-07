@@ -12,16 +12,12 @@
 StatementPtr
 Parser::ParseLValuePostFix(ExpressionPtr &&expr) {
   if (DotExpr *dot = dynamic_cast<DotExpr *>(expr.get())) {
-    auto next = Peek().type;
-    // TODO: allow for compound assignment on LValue postfix
-    // obj.value += 01
-    // obj.array[]++
-    // etc
-    if (next == TType::Assign) {
+    if (!tokens.empty() && Peek().type == TType::Assign) {
       Eat();
       auto value = ParseExpression();
       return make_unique<DotAssignment>(std::move(expr), std::move(value));
-    } else if (Call *callable = dynamic_cast<Call *>(dot->right.get())) {
+    }
+    else if (Call *callable = dynamic_cast<Call *>(dot->right.get())) {
       return make_unique<DotCallStmnt>(std::move(expr));
     }
   } else if (Subscript *subscript = dynamic_cast<Subscript *>(expr.get())) {
@@ -34,7 +30,7 @@ Parser::ParseLValuePostFix(ExpressionPtr &&expr) {
   } else if (auto call = dynamic_cast<Call *>(expr.get())) {
     return make_unique<Call>(std::move(call->operand), std::move(call->args));
   }
-
+  
   throw std::runtime_error("Failed to parse LValue postfix statement");
 }
 
@@ -43,7 +39,7 @@ StatementPtr Parser::ParseStatement() {
     auto token = Peek();
     switch (token.family) {
     case TFamily::Identifier: {
-      auto operand = ParsePostfix();
+      auto operand = ParseExpression();
       if (auto id = dynamic_cast<Identifier *>(operand.get())) {
         return ParseIdentifierStatement(make_unique<Identifier>(id->name));
       } else {
@@ -108,10 +104,9 @@ StatementPtr Parser::ParseKeyword(Token token) {
   //   Expect(TType::Identifier);
   //   return new NoopStatement();
   // }
-  // case TType::Import: {
-  //     Expect(TType::String);
-  //     return new NoopStatement();
-  //   }
+  case TType::Import: {
+      return ParseImport();
+    }
   case TType::Break: {
     return ParseBreak();
   }
@@ -509,4 +504,47 @@ unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
   }
   auto program = make_unique<Program>(std::move(statements));
   return program;
+}
+StatementPtr Parser::ParseImport() {
+  auto next = Peek();
+  
+  
+  // import all * widlcard
+  if (next.type == TType::Mul) {
+    Eat();
+    Expect(TType::From);
+    auto iden = Expect(TType::Identifier);
+    return make_unique<Import>(iden.value);
+    
+  }
+   // plain 'import raylib' statement
+  else if (next.type == TType::Identifier) {
+    auto iden = Expect(TType::Identifier);
+    return make_unique<Import>(iden.value);
+  }
+  // 'import {iden, iden} from raylib'
+  else if (next.type == TType::LCurly) {
+    Eat();
+    vector<string> names = {};
+    while (!tokens.empty()) {
+      auto next = Peek();
+      if (next.type == TType::RCurly) {
+        break;
+      }
+      auto operand = ParseOperand();
+      
+      if (auto iden = dynamic_cast<Identifier*>(operand.get())) {
+        names.push_back(iden->name);
+      } else {
+        throw std::runtime_error("invalid import statement");
+      }
+    }
+    Expect(TType::RCurly);
+    Expect(TType::From);
+    auto iden = Expect(TType::Identifier);
+    
+    return make_unique<Import>(iden.value, names);
+    
+  }
+  throw std::runtime_error("Failed to parse import statement");
 }

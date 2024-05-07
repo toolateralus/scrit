@@ -130,3 +130,9 @@ NativeCallable_T::NativeCallable_T(NativeFunctionPtr ptr) : function(ptr) {
 }
 Callable_T::Callable_T() : Value_T(ValueType::Callable) {}
 Callable_T::~Callable_T() {}
+string NativeCallable_T::ToString() const {
+  stringstream ss = {};
+  ss << "native_callable()";
+  return ss.str();
+}
+

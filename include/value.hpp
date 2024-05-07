@@ -366,6 +366,7 @@ struct NativeCallable_T : Callable_T {
   NativeCallable_T(NativeFunctionPtr ptr);
   NativeFunctionPtr function;
   Value Call(ArgumentsPtr &args) override;
+  string ToString() const override;
 };
 
 
