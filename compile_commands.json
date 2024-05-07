@@ -2,29 +2,148 @@
   {
     "arguments": [
       "/usr/bin/clang++",
+      "-g",
       "-std=c++2b",
       "-Iinclude",
       "-c",
+      "-I",
+      "/usr/include/c++",
+      "-I",
+      "/usr/include/c++",
+      "-I",
+      ".",
       "-o",
-      "obj/main.o",
-      "src/main.cpp"
+      "obj/ast.o",
+      "src/ast.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/main.cpp",
-    "output": "/home/josh/source/c++/lang/obj/main.o"
+    "directory": "/home/cooper/Repos/scrit",
+    "file": "/home/cooper/Repos/scrit/src/ast.cpp",
+    "output": "/home/cooper/Repos/scrit/obj/ast.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
+      "-g",
       "-std=c++2b",
       "-Iinclude",
       "-c",
+      "-I",
+      "/usr/include/c++",
+      "-I",
+      "/usr/include/c++",
+      "-I",
+      ".",
+      "-o",
+      "obj/context.o",
+      "src/context.cpp"
+    ],
+    "directory": "/home/cooper/Repos/scrit",
+    "file": "/home/cooper/Repos/scrit/src/context.cpp",
+    "output": "/home/cooper/Repos/scrit/obj/context.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-g",
+      "-std=c++2b",
+      "-Iinclude",
+      "-c",
+      "-I",
+      "/usr/include/c++",
+      "-I",
+      "/usr/include/c++",
+      "-I",
+      ".",
+      "-o",
+      "obj/main.o",
+      "src/main.cpp"
+    ],
+    "directory": "/home/cooper/Repos/scrit",
+    "file": "/home/cooper/Repos/scrit/src/main.cpp",
+    "output": "/home/cooper/Repos/scrit/obj/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-g",
+      "-std=c++2b",
+      "-Iinclude",
+      "-c",
+      "-I",
+      "/usr/include/c++",
+      "-I",
+      "/usr/include/c++",
+      "-I",
+      ".",
+      "-o",
+      "obj/parser.o",
+      "src/parser.cpp"
+    ],
+    "directory": "/home/cooper/Repos/scrit",
+    "file": "/home/cooper/Repos/scrit/src/parser.cpp",
+    "output": "/home/cooper/Repos/scrit/obj/parser.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-g",
+      "-std=c++2b",
+      "-Iinclude",
+      "-c",
+      "-I",
+      "/usr/include/c++",
+      "-I",
+      "/usr/include/c++",
+      "-I",
+      ".",
+      "-o",
+      "obj/raylib.o",
+      "src/raylib.cpp"
+    ],
+    "directory": "/home/cooper/Repos/scrit",
+    "file": "/home/cooper/Repos/scrit/src/raylib.cpp",
+    "output": "/home/cooper/Repos/scrit/obj/raylib.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-g",
+      "-std=c++2b",
+      "-Iinclude",
+      "-c",
+      "-I",
+      "/usr/include/c++",
+      "-I",
+      "/usr/include/c++",
+      "-I",
+      ".",
+      "-o",
+      "obj/std.o",
+      "src/std.cpp"
+    ],
+    "directory": "/home/cooper/Repos/scrit",
+    "file": "/home/cooper/Repos/scrit/src/std.cpp",
+    "output": "/home/cooper/Repos/scrit/obj/std.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-g",
+      "-std=c++2b",
+      "-Iinclude",
+      "-c",
+      "-I",
+      "/usr/include/c++",
+      "-I",
+      "/usr/include/c++",
+      "-I",
+      ".",
       "-o",
       "obj/value.o",
       "src/value.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/value.cpp",
-    "output": "/home/josh/source/c++/lang/obj/value.o"
+    "directory": "/home/cooper/Repos/scrit",
+    "file": "/home/cooper/Repos/scrit/src/value.cpp",
+    "output": "/home/cooper/Repos/scrit/obj/value.o"
   }
 ]
