@@ -21,6 +21,14 @@
       "program": "${workspaceFolder}/bin/release/app",
       "args": ["test.wire"],
       "cwd": "${workspaceFolder}"
-    }
+    },
+    {
+      "preLaunchTask": "test-build",
+      "type": "lldb",
+      "request": "launch",
+      "name": "Test",
+      "program": "${workspaceFolder}/bin/test/app",
+      "cwd": "${workspaceFolder}"
+    },
   ]
 }
