@@ -361,3 +361,8 @@ string Undefined::ToString() const { return "undefined"; }
 Undefined::Undefined() : Value_T(ValueType::None) {}
 string Null::ToString() const { return "null"; }
 Null::Null() : Value_T(ValueType::None) {}
+Array Array_T::New(vector<Value> &values) {
+  auto array = make_shared<Array_T>();
+  array->values = values;
+  return array;
+}

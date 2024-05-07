@@ -3,7 +3,8 @@
 #include <cassert>
 #include <iostream>
 #include <fstream>
-#include "native.hpp"
+#include <memory>
+#include "context.hpp"
 #include "value.hpp"
 
 
@@ -32,6 +33,16 @@ int main(int argc, char **argv) {
 
         auto tokens = lexer.Lex(code);
         auto ast = parser.Parse(std::move(tokens));
+        
+        Array args = std::make_shared<Array_T>();
+        
+        for (int i = 2; i < argc; ++i) {
+          auto str = string(argv[i]);
+          args->Push(make_shared<String_T>(str));
+        }
+        
+        ASTNode::context.Insert("args", args);
+        
         if (ast) {
           ast->Execute();
         } else {

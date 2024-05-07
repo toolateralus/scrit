@@ -423,7 +423,7 @@ ElsePtr Parser::ParseElse() {
 IfPtr Parser::ParseIf() {
   auto condition = ParseExpression();
   auto block = ParseBlock();
-  if (Peek().type == TType::Else) {
+  if (!tokens.empty() && Peek().type == TType::Else) {
     auto elseStmnt = ParseElse();
     return If::WithElse(std::move(condition), std::move(block),
                         std::move(elseStmnt));
@@ -433,7 +433,7 @@ IfPtr Parser::ParseIf() {
 
 StatementPtr Parser::ParseFor() {
   auto scope = ASTNode::context.PushScope();
-  if (Peek().type == TType::LParen) {
+  if (!tokens.empty() && Peek().type == TType::LParen) {
     Eat();
   }
   StatementPtr decl = nullptr;
