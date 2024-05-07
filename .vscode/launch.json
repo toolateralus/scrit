@@ -5,11 +5,20 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "preLaunchTask": "prebuild",
+      "preLaunchTask": "debug-build",
       "type": "lldb",
       "request": "launch",
       "name": "Debug",
-      "program": "${workspaceFolder}/bin/app",
+      "program": "${workspaceFolder}/bin/debug/app",
+      "args": ["test.wire"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "preLaunchTask": "release-build",
+      "type": "lldb",
+      "request": "launch",
+      "name": "Release",
+      "program": "${workspaceFolder}/bin/release/app",
       "args": ["test.wire"],
       "cwd": "${workspaceFolder}"
     }

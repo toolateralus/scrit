@@ -14,7 +14,6 @@ typedef std::shared_ptr<Value_T> Value;
 typedef std::shared_ptr<Object_T> Object;
 typedef Value (*NativeFunctionPtr)(std::vector<Value>);
 
-
 extern "C" struct ScritModDef {
   std::string *description;
   Context *context;
