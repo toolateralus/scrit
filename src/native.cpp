@@ -15,12 +15,12 @@ extern "C" void ScritMod_AddFunction(ScritModDef *mod, const std::string &name,
                 NativeFunctionPtr function) {
                 
   if (mod->fnCount == mod->fnMax) {
-  mod->funcs = (NativeFunctionPtr*)realloc(mod->funcs, sizeof(NativeFunctionPtr) * (mod->fnMax + 1));
-  mod->funcNames = (char**)realloc(mod->funcNames, sizeof(char*) * (mod->fnMax + 1));
+    mod->funcs = (NativeFunctionPtr*)realloc(mod->funcs, sizeof(NativeFunctionPtr) * (mod->fnMax + 1));
+    mod->funcNames = (char**)realloc(mod->funcNames, sizeof(char*) * (mod->fnMax + 1));
   }
   auto &count = mod->fnCount;
   mod->funcs[count] = function;
-  mod->funcNames[count] = (char*)name.c_str();
+  mod->funcNames[count] = const_cast<char*>(name.c_str());
   count++;
 }
 
