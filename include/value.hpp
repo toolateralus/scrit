@@ -49,9 +49,10 @@ enum class ValueType {
   Callable,
 };
 
-struct Value_T : std::enable_shared_from_this<Value_T> {
+struct Value_T {
   static Value Null;
   static Value Undefined;
+  static Value InvalidCastException;
   static Bool False;
   static Bool True;
   ValueType type = ValueType::None;
@@ -75,7 +76,6 @@ struct Value_T : std::enable_shared_from_this<Value_T> {
   virtual Bool LessEquals(Value other) { return False; }
   virtual Bool Not() { return False; }
   virtual Value Negate() { return Null; }
-  virtual Value Get() { return Null; }
   virtual void Set(Value newValue) {}
   bool TypeEquals(Value other) { return typeid(other.get()) == typeid(*this); }
 };
@@ -95,9 +95,7 @@ struct Int_T : Value_T {
   Int_T(int value) : Value_T(ValueType::Int) {
     this->value = value;
   }
-  ~Int_T() {
-    
-  }
+  ~Int_T() {}
   virtual bool Equals(Value_T* value) {
     if (value->type == ValueType::Int) {
       return static_cast<Int_T*>(value)->value == this->value;
@@ -127,9 +125,6 @@ struct Int_T : Value_T {
       return make_shared<Int_T>(this->value / static_cast<Int_T*>(other.get())->value);
     }
     return Value_T::Null;
-  }
-  virtual Value Get() override  {
-    return shared_from_this();
   }
   virtual void Set(Value newValue) override  {
     if (newValue->type == ValueType::Int) {
@@ -215,9 +210,6 @@ struct Float_T : Value_T {
     }
     return Value_T::Null;
   }
-  virtual Value Get() override {
-    return shared_from_this();
-  }
   virtual void Set(Value newValue) override {
     if (newValue->type == ValueType::Float) {
       this->value = static_cast<Float_T*>(newValue.get())->value;
@@ -285,9 +277,6 @@ struct String_T : Value_T {
     }
     return Value_T::Null;
   }
-  virtual Value Get() override {
-    return shared_from_this();
-  }
   virtual void Set(Value newValue) override {
     if (newValue->type == ValueType::String) {
       this->value = static_cast<String_T*>(newValue.get())->value;
@@ -320,9 +309,6 @@ struct Bool_T : Value_T {
       return make_shared<Bool_T>(this->value && static_cast<Bool_T*>(other.get())->value);
     }
     return False;
-  }
-  virtual Value Get() override {
-    return shared_from_this();
   }
   virtual Bool Not() override {
     return make_shared<Bool_T>(!value);

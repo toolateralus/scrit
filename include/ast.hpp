@@ -9,32 +9,91 @@
 using std::make_unique;
 using std::unique_ptr;
 
+static Object MakeException(const string &msg, const string &type) {
+  auto e = make_shared<Object_T>();
+  e->scope = make_shared<Scope>();
+  e->scope->variables["msg"] = make_shared<String_T>(msg);
+  e->scope->variables["type"] = make_shared<String_T>(type);
+  return e;
+}
+
+enum struct ControlChange {
+  None,
+  Return,
+  Continue,
+  Break,
+  Goto,
+  ContinueLabel,
+  BreakLabel,
+  Exception
+};
+
+static string CC_ToString(ControlChange controlChange) {
+  switch (controlChange) {
+  case ControlChange::None:
+    return "None";
+  case ControlChange::Return:
+    return "Return";
+  case ControlChange::Continue:
+    return "Continue";
+  case ControlChange::Break:
+    return "Break";
+  case ControlChange::Goto:
+    return "Goto";
+  case ControlChange::ContinueLabel:
+    return "ContinueLabel";
+  case ControlChange::BreakLabel:
+    return "BreakLabel";
+  case ControlChange::Exception:
+    return "Exception";
+  }
+}
+
+struct ExecutionResult {
+  ExecutionResult(ControlChange controlChange, Value value) : 
+    controlChange(controlChange), value(value) {}
+  static ExecutionResult None;
+  static ExecutionResult Break;
+  static ExecutionResult Continue;
+  ControlChange controlChange;
+  Value value;
+};
+
 struct ASTNode {
   static Context context;
   virtual ~ASTNode() {}
-  virtual Value Evaluate() = 0;
 };
 struct Expression {
   virtual ~Expression() {}
   virtual Value Evaluate() = 0;
 };
-struct Statement : ASTNode {
-  virtual ~Statement() {}
-  virtual Value Evaluate() override {
-    throw std::runtime_error("Cannot evaluate a statement to a value");
-  }
-  virtual unique_ptr<ASTNode> EvaluateStatement() = 0;
+struct Executable : ASTNode {
+  virtual ~Executable() {}
+  virtual ExecutionResult Execute() = 0;
 };
-struct Program : ASTNode {
+struct Statement : Executable {};
+struct Program : Executable {
   vector<unique_ptr<Statement>> statements;
   Program(vector<unique_ptr<Statement>> &&statements)
       : statements(std::move(statements)) {}
-  Value Evaluate() override {
-    Value result;
+  ExecutionResult Execute() override {
     for (auto &statement : statements) {
-      statement->EvaluateStatement();
+      auto result = statement->Execute();
+      switch (result.controlChange) {
+      case ControlChange::Exception:
+        throw std::runtime_error("Uncaught Exception: " + result.value->ToString());
+      case ControlChange::Goto:
+      case ControlChange::ContinueLabel:
+      case ControlChange::BreakLabel:
+        // TODO: Check for label Here
+        throw std::runtime_error(CC_ToString(result.controlChange) + " not implemented");
+      case ControlChange::None:
+        continue;
+      default:
+        throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
+      }
     }
-    return result;
+    return ExecutionResult::None;
   }
 };
 struct Operand : Expression {
@@ -64,32 +123,54 @@ struct Arguments : Expression {
 struct Parameters : Statement {
   vector<string> names;
   Parameters(vector<string> &&names) : names(std::move(names)) {}
-  unique_ptr<ASTNode> EvaluateStatement() override { return nullptr; }
+  ExecutionResult Execute() override {
+    return ExecutionResult::None;
+  }
 };
 struct Continue : Statement {
-  unique_ptr<ASTNode> EvaluateStatement() override { return nullptr; }
+  ExecutionResult Execute() override {
+    return ExecutionResult::Continue;
+  }
 };
 struct Break : Statement {
-  unique_ptr<ASTNode> EvaluateStatement() override { return nullptr; }
+  ExecutionResult Execute() override {
+    return ExecutionResult::Break;
+  }
 };
 struct Return : Statement {
   Return(unique_ptr<Expression> &&value) : value(std::move(value)) {}
   unique_ptr<Expression> value;
-  Value Evaluate() override { return value->Evaluate(); }
-  unique_ptr<ASTNode> EvaluateStatement() override { return nullptr; }
+  ExecutionResult Execute() override {
+    return ExecutionResult(ControlChange::Return, value->Evaluate());
+  }
 };
 struct Block : Statement {
   Block(vector<unique_ptr<Statement>> &&statements)
       : statements(std::move(statements)) {}
   vector<unique_ptr<Statement>> statements;
   shared_ptr<Scope> scope;
-  unique_ptr<ASTNode> EvaluateStatement() override {
+  ExecutionResult Execute() override {
     scope = ASTNode::context.PushScope();
     for (auto &statement : statements) {
-      statement->EvaluateStatement();
+      auto result = statement->Execute();
+      switch (result.controlChange) {
+      case ControlChange::Goto:
+      case ControlChange::ContinueLabel:
+      case ControlChange::BreakLabel:
+        // TODO: Check for label Here
+        throw std::runtime_error(CC_ToString(result.controlChange) + " not implemented");
+      case ControlChange::Continue:
+      case ControlChange::Break:
+      case ControlChange::Return:
+      case ControlChange::Exception:
+        ASTNode::context.PopScope();
+        return result;
+      case ControlChange::None:
+        continue;
+      }
     }
     ASTNode::context.PopScope();
-    return nullptr;
+    return ExecutionResult::None;
   }
 };
 struct ObjectInitializer : Expression {
@@ -98,7 +179,10 @@ struct ObjectInitializer : Expression {
   ObjectInitializer(unique_ptr<Block> block) : block(std::move(block)) {}
   Value Evaluate() override {
     auto obj = make_shared<Object_T>();
-    auto value = block->EvaluateStatement();
+    auto controlChange = block->Execute().controlChange;
+    if (controlChange != ControlChange::None) {
+      throw std::runtime_error(CC_ToString(controlChange) + " not allowed in object initialization.");
+    }
     obj->scope = block->scope;
     return obj;
   }
@@ -134,9 +218,9 @@ struct Call : Expression, Statement {
     }
     return Value_T::Undefined;
   }
-  unique_ptr<ASTNode> EvaluateStatement() override {
+  ExecutionResult Execute() override {
     Evaluate();
-    return nullptr;
+    return ExecutionResult::None;
   }
 };
 struct Else;
@@ -156,7 +240,7 @@ struct If : Statement {
   unique_ptr<Expression> condition;
   unique_ptr<Block> block;
   unique_ptr<Else> elseStmnt;
-  unique_ptr<ASTNode> EvaluateStatement() override;
+  ExecutionResult Execute() override;
 };
 struct Else : Statement {
   unique_ptr<If> ifStmnt;
@@ -165,11 +249,11 @@ struct Else : Statement {
   static unique_ptr<Else> NoIf(unique_ptr<Block> &&block);
   static unique_ptr<Else> New(unique_ptr<If> &&ifStmnt);
 
-  unique_ptr<ASTNode> EvaluateStatement() override {
+  ExecutionResult Execute() override {
     if (ifStmnt != nullptr) {
-      return ifStmnt->EvaluateStatement();
+      return ifStmnt->Execute();
     } else {
-      return block->EvaluateStatement();
+      return block->Execute();
     }
   }
 };
@@ -188,39 +272,119 @@ struct For : Statement {
       : decl(std::move(decl)), condition(std::move(condition)),
         increment(std::move(inc)), block(std::move(block)), scope(scope) {}
   
-  unique_ptr<ASTNode> EvaluateStatement() override {
+  ExecutionResult Execute() override {
     context.PushScope(scope);
-    if (decl != nullptr)
-      decl->EvaluateStatement();
+    if (decl != nullptr) {
+      auto result = decl->Execute();
+      switch (result.controlChange) {
+      case ControlChange::None:
+        break;
+      case ControlChange::Continue:
+      case ControlChange::Break:
+      case ControlChange::Goto:
+      case ControlChange::ContinueLabel:
+      case ControlChange::BreakLabel:
+        throw std::runtime_error(CC_ToString(result.controlChange) + " not allowed in for initialization.");
+      case ControlChange::Return:
+      case ControlChange::Exception:
+        return result;
+      }
+    }
     
     if (condition != nullptr) {
       while (true) {
         auto conditionResult = condition->Evaluate();
         
         if (conditionResult->type != ValueType::Bool) {
-          return nullptr;
+          return ExecutionResult::None;
         }
         
         auto b = static_cast<Bool_T *>(conditionResult.get());
 
         if (b->Equals(Bool_T::False)) {
           context.PopScope();
-          return nullptr;
+          return ExecutionResult::None;
         }
         
-        block->EvaluateStatement();
-        increment->EvaluateStatement();
+        auto result = block->Execute();
+        switch (result.controlChange) {
+        case ControlChange::None:
+        case ControlChange::Continue:
+          break;
+        case ControlChange::Return:
+        case ControlChange::Exception:
+          context.PopScope();
+          return result;
+        case ControlChange::Break:
+          context.PopScope();
+          return ExecutionResult::None;
+        case ControlChange::Goto:
+        case ControlChange::ContinueLabel:
+        case ControlChange::BreakLabel:
+          // TODO: Check for label Here
+          throw std::runtime_error(CC_ToString(result.controlChange) + " not implemented");
+        }
+        result = increment->Execute();
+        switch (result.controlChange) {
+        case ControlChange::None:
+          break;
+        case ControlChange::Continue:
+        case ControlChange::Return:
+        case ControlChange::Break:
+          throw std::runtime_error(CC_ToString(result.controlChange) + " not allowed in for initialization.");
+        case ControlChange::Exception:
+          context.PopScope();
+          return result;
+        case ControlChange::Goto:
+        case ControlChange::ContinueLabel:
+        case ControlChange::BreakLabel:
+          // TODO: Check for label Here
+          throw std::runtime_error(CC_ToString(result.controlChange) + " not implemented");
+        }
       }
     } else {
       while (true) {
-        if (increment)
-          increment->EvaluateStatement();
-        
-        block->EvaluateStatement();
+        if (increment) {
+          auto result = increment->Execute();
+          switch (result.controlChange) {
+          case ControlChange::None:
+            break;
+          case ControlChange::Continue:
+          case ControlChange::Return:
+          case ControlChange::Break:
+            throw std::runtime_error(CC_ToString(result.controlChange) + " not allowed in for initialization.");
+          case ControlChange::Exception:
+            context.PopScope();
+            return result;
+          case ControlChange::Goto:
+          case ControlChange::ContinueLabel:
+          case ControlChange::BreakLabel:
+            // TODO: Check for label Here
+            throw std::runtime_error(CC_ToString(result.controlChange) + " not implemented");
+          }
+        }
+        auto result = block->Execute();
+        switch (result.controlChange) {
+        case ControlChange::None:
+        case ControlChange::Continue:
+          break;
+        case ControlChange::Return:
+        case ControlChange::Exception:
+          context.PopScope();
+          return result;
+        case ControlChange::Break:
+          context.PopScope();
+          return ExecutionResult::None;
+        case ControlChange::Goto:
+        case ControlChange::ContinueLabel:
+        case ControlChange::BreakLabel:
+          // TODO: Check for label Here
+          throw std::runtime_error(CC_ToString(result.controlChange) + " not implemented");
+        }
       }
     }
     context.PopScope();
-    return nullptr;
+    return ExecutionResult::None;
   }
 };
 struct Assignment : Statement {
@@ -228,9 +392,9 @@ struct Assignment : Statement {
   unique_ptr<Expression> expr;
   Assignment(unique_ptr<Identifier> &&iden, unique_ptr<Expression> &&expr)
       : iden(std::move(iden)), expr(std::move(expr)) {}
-  unique_ptr<ASTNode> EvaluateStatement() override {
+  ExecutionResult Execute() override {
     context.Insert(iden->name, expr->Evaluate());
-    return nullptr;
+    return ExecutionResult::None;
   }
 };
 struct FuncDecl : Statement {
@@ -242,11 +406,11 @@ struct FuncDecl : Statement {
   unique_ptr<Block> body;
   unique_ptr<Parameters> parameters;
 
-  unique_ptr<ASTNode> EvaluateStatement() override {
+  ExecutionResult Execute() override {
     auto callable =
         make_shared<Callable_T>(std::move(body), std::move(parameters));
     context.Insert(name->name, callable);
-    return nullptr;
+    return ExecutionResult::None;
   }
 };
 struct DotExpr : Expression {
@@ -289,18 +453,18 @@ struct DotAssignment : Statement {
       : dot(std::move(dot)), value(std::move(value)) {}
   unique_ptr<Expression> dot;
   unique_ptr<Expression> value;
-  unique_ptr<ASTNode> EvaluateStatement() override {
+  ExecutionResult Execute() override {
     if (auto dot = dynamic_cast<DotExpr*>(this->dot.get()))
       dot->Assign(value->Evaluate());
-    return nullptr;
+    return ExecutionResult::None;
   }
 };
 struct DotCallStmnt : Statement {
   DotCallStmnt(unique_ptr<Expression> &&dot) : dot(std::move(dot)) {}
   unique_ptr<Expression> dot;
-  unique_ptr<ASTNode> EvaluateStatement() override {
+  ExecutionResult Execute() override {
     dot->Evaluate();
-    return nullptr;
+    return ExecutionResult::None;
   }
 };
 struct Subscript : Expression {
@@ -330,7 +494,7 @@ struct SubscriptAssignStmnt : Statement {
       : subscript(std::move(subscript)), value(std::move(value)) {}
   unique_ptr<Expression> subscript;
   unique_ptr<Expression> value;
-  unique_ptr<ASTNode> EvaluateStatement() override {
+  ExecutionResult Execute() override {
     auto subscript = dynamic_cast<Subscript*>(this->subscript.get());
     
     if (!subscript) {
@@ -349,7 +513,7 @@ struct SubscriptAssignStmnt : Statement {
     }
 
     array->Assign(number, value->Evaluate());
-    return nullptr;
+    return ExecutionResult::None;
   }
 };
 struct UnaryExpr : Expression {

@@ -2,19 +2,52 @@
 #include "value.hpp"
 
 Context ASTNode::context = {};
+auto ExecutionResult::None = ExecutionResult(ControlChange::None, Value_T::Undefined);
+auto ExecutionResult::Break = ExecutionResult(ControlChange::Break, Value_T::Undefined);
+auto ExecutionResult::Continue = ExecutionResult(ControlChange::Continue, Value_T::Undefined);
 
-unique_ptr<ASTNode> If::EvaluateStatement() {
+ExecutionResult If::Execute() {
   auto condResult = condition->Evaluate();
   if (condResult->type != ValueType::Bool) {
-    return nullptr;
+    return ExecutionResult::None;
   }
   auto b = static_cast<Bool_T *>(condResult.get());
   
   if (b->Equals(Value_T::True)) {
-    auto result = block->EvaluateStatement();
+    auto result = block->Execute();
+    switch (result.controlChange) {
+    case ControlChange::None:
+      break;
+    case ControlChange::Return:
+    case ControlChange::Exception:
+    case ControlChange::Continue:
+    case ControlChange::Break:
+      return result;
+    case ControlChange::Goto:
+    case ControlChange::ContinueLabel:
+    case ControlChange::BreakLabel:
+      // TODO: Check for label Here
+      throw std::runtime_error(CC_ToString(result.controlChange) + " not implemented");
+    }
   }
-    
-  return elseStmnt->EvaluateStatement();
+  if (elseStmnt) {
+    auto result = elseStmnt->Execute();
+    switch (result.controlChange) {
+    case ControlChange::None:
+      break;
+    case ControlChange::Return:
+    case ControlChange::Exception:
+    case ControlChange::Continue:
+    case ControlChange::Break:
+      return result;
+    case ControlChange::Goto:
+    case ControlChange::ContinueLabel:
+    case ControlChange::BreakLabel:
+      // TODO: Check for label Here
+      throw std::runtime_error(CC_ToString(result.controlChange) + " not implemented");
+    }
+  }
+  return ExecutionResult::None;
 }
 If::If(unique_ptr<Expression> &&condition, unique_ptr<Block> &&block,
        unique_ptr<Else> &&elseStmnt)

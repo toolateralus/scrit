@@ -6,6 +6,7 @@
 Bool Value_T::True = make_shared<::Bool_T>(true);
 Bool Value_T::False = make_shared<::Bool_T>(false);
 Value Value_T::Null = make_shared<::Null>();
+Value Value_T::InvalidCastException = make_shared<::Null>();
 Value Value_T::Undefined = make_shared<::Undefined>();
 Value Object_T::GetMember(const string &name) { return scope->variables[name]; }
 void Object_T::SetMember(const string &name, Value &value) {
@@ -19,12 +20,17 @@ Value Callable_T::Call(unique_ptr<Arguments> args) {
       scope->variables[params->names[i]] = value;
     }
   }
-  auto result = block->EvaluateStatement();
+  auto result = block->Execute();
   
-  if (auto ret = dynamic_cast<Return*>(result.get())) {
-    return ret->Evaluate();
+  switch (result.controlChange) {
+  case ControlChange::None:
+    return Value_T::Null;
+  case ControlChange::Return:
+  case ControlChange::Exception:
+    return result.value;
+  default:
+    throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
   }
-  return Value_T::Null;
 }
 
 Array_T::Array_T(vector<unique_ptr<Expression>> &&init) : Value_T(ValueType::Array){
