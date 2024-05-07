@@ -88,12 +88,28 @@ Token Lexer::LexString() {
   stringstream stream = {};
   int startLoc = loc;
   int startCol = col;
-
+  
   pos++; // move past opening "
   col++;
 
-  while (input[pos] != '\"') {
-    stream << input[pos];
+  while (input[pos] != '\"' || (input[pos] == '\"' && input[pos-1] == '\\')) {
+    if (input[pos] == '\\' && pos+1 < input.size()) {
+      switch (input[pos+1]) {
+        case '\"':
+          stream << '\"';
+          pos++;
+          break;
+        case 'n':
+          stream << '\n';
+          pos++;
+          break;
+        default:
+          stream << '\\';
+          break;
+      }
+    } else {
+      stream << input[pos];
+    }
     pos++;
     col++;
   }

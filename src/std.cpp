@@ -1,5 +1,6 @@
 #include "native.hpp"
 #include "value.hpp"
+#include <iostream>
 
 REGISTER_FUNCTION(println) {
   for (const auto arg: args) {
@@ -7,6 +8,13 @@ REGISTER_FUNCTION(println) {
   }
   return Value_T::Undefined;
 }
+
+REGISTER_FUNCTION(readln) {
+  string input;
+  std::cin >> input;
+  return make_shared<String_T>(input);
+}
+
 
 REGISTER_FUNCTION(push) {
   if (args.empty()) {

@@ -537,6 +537,8 @@ Value BinExpr::Evaluate() {
     return left->LessEquals(right);
   case TType::Equals:
     return make_shared<Bool_T>(left->Equals(right));
+  case TType::NotEquals: 
+    return make_shared<Bool_T>(!left->Equals(right));
   case TType::Assign:
     left->Set(right);
     return left;
