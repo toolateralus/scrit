@@ -25,6 +25,7 @@ TESTSRCS := $(wildcard $(TESTDIR)/*.cpp)
 DEBUGOBJS := $(patsubst $(SRCDIR)/%.cpp,$(OBJDIR)/debug/%.o,$(SRCS))
 RELEASEOBJS := $(patsubst $(SRCDIR)/%.cpp,$(OBJDIR)/release/%.o,$(SRCS))
 TESTOBJS := $(patsubst $(TESTDIR)/%.cpp,$(OBJDIR)/test/%.o,$(TESTSRCS))
+NOMAINDEBUGOBJS := $(filter-out $(OBJDIR)/debug/main.o, $(DEBUGOBJS))
 
 all: debug release
 
@@ -45,7 +46,7 @@ $(BINDIR)/release/app: $(RELEASEOBJS)
 	@mkdir -p $(BINDIR)/release
 	$(CXX) $(RELEASEFLAGS) $^ -o $@ $(LDFLAGS)
 
-$(BINDIR)/test/app: $(TESTOBJS)
+$(BINDIR)/test/app: $(NOMAINDEBUGOBJS) $(TESTOBJS)
 	@mkdir -p $(BINDIR)/test
 	$(CXX) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(TESTLINKERFLAGS)
 
