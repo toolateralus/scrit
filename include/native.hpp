@@ -4,18 +4,44 @@
 #include <vector>
 
 struct Value_T;
+struct Object_T;
+struct NativeCallable_T;
+typedef std::shared_ptr<Value_T> NativeCallable;
 typedef std::shared_ptr<Value_T> Value;
+typedef std::shared_ptr<Object_T> Object;
+typedef Value (*NativeFunctionPtr)(std::vector<Value>);
+struct Context;
 
-typedef Value (*NativeFunction)(std::vector<Value>);
+struct ScritModDef {
+  std::string description;
+  ScritModDef();
+  ~ScritModDef();
+  Context *context;
+  std::unordered_map<std::string, NativeFunctionPtr> functions;
+  
+  void AddFunction(const std::string &name, NativeFunctionPtr function);
+  void AddVariable(const std::string &name, Value value);
+  Object AsObject();
+  
+  private:
+    void m_InstantiateCallables();
+};
+typedef ScritModDef (*ScritModInitFunc)();
 
 struct NativeFunctions {
-  static std::unordered_map<std::string, NativeFunction>& GetRegistry() {
-    static std::unordered_map<std::string, NativeFunction> reg;
+  static std::unordered_map<std::string, NativeCallable> instantiatedCallables;
+  static std::unordered_map<std::string, NativeFunctionPtr>& GetRegistry() {
+    static std::unordered_map<std::string, NativeFunctionPtr> reg;
     return reg;
   }
+  static bool Exists(const std::string &name) {
+    return GetRegistry().contains(name);
+  }
+  static NativeCallable GetCallable(const std::string &name);
+  static NativeCallable MakeCallable(const NativeFunctionPtr fn);
 };
 
-static void RegisterFunction(const std::string& name, NativeFunction function) {
+static void RegisterFunction(const std::string& name, NativeFunctionPtr function) {
   NativeFunctions::GetRegistry()[name] = function;
 }
 
@@ -30,5 +56,7 @@ static void RegisterFunction(const std::string& name, NativeFunction function) {
   } \
   Value name(std::vector<Value> args)
   
-  
-  
+
+
+void LoadScritModule(const std::string &name, const std::string& path);
+

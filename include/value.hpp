@@ -345,12 +345,23 @@ struct Object_T : Value_T {
 
 
 struct Callable_T : Value_T {
+  ~Callable_T();
+  Callable_T();
   Callable_T(unique_ptr<Block> &&block, unique_ptr<Parameters> &&params);
   unique_ptr<Block> block;
   unique_ptr<Parameters> params;
-  Value Call(unique_ptr<Arguments> args);
+  virtual Value Call(unique_ptr<Arguments> &args);
   string ToString() const override;
 };
+
+typedef Value (*NativeFunctionPtr)(std::vector<Value>);
+
+struct NativeCallable_T : Callable_T {
+  NativeCallable_T(NativeFunctionPtr ptr);
+  NativeFunctionPtr function;
+  Value Call(unique_ptr<Arguments> &args) override;
+};
+
 
 struct Array_T : Value_T {
   static Array New();

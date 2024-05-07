@@ -14,13 +14,11 @@ Value Object_T::GetMember(const string &name) { return scope->variables[name]; }
 void Object_T::SetMember(const string &name, Value &value) {
   scope->variables[name] = value;
 }
-Value Callable_T::Call(unique_ptr<Arguments> args) {
+Value Callable_T::Call(unique_ptr<Arguments> &args) {
   auto scope = ASTNode::context.PushScope();
+  auto values = Call::GetArgsValueList(args);
   for (int i = 0; i < params->names.size(); ++i) {
-    if (i < args->values.size()) {
-      auto value = args->values[i]->Evaluate();
-      scope->variables[params->names[i]] = value;
-    }
+    scope->variables[params->names[i]] = values[i];
   }
   auto result = block->Execute();
   
@@ -120,3 +118,15 @@ Array Array_T::New(vector<unique_ptr<Expression>> &&init) {
   return make_shared<Array_T>(std::move(init));
 }
 Array Array_T::New() { return make_shared<Array_T>(); }
+
+Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
+  auto values = Call::GetArgsValueList(args);
+  if (function)
+    return function(values);
+  return Value_T::Undefined;
+}
+NativeCallable_T::NativeCallable_T(NativeFunctionPtr ptr) : function(ptr) {
+  
+}
+Callable_T::Callable_T() : Value_T(ValueType::Callable) {}
+Callable_T::~Callable_T() {}
