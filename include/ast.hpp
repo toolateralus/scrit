@@ -13,34 +13,15 @@ using std::make_unique;
 using std::unique_ptr;
 
 // forawrd declarations
-struct ExecutionResult;
-struct ASTNode;
-struct Executable;
 struct Statement;
-struct Program;
 struct Expression;
-struct Operand;
-struct Identifier;
-struct Arguments;
-struct Parameters;
-struct Continue;
-struct Break;
-struct Return;
 struct Block;
-struct ObjectInitializer;
-struct Call;
+struct Arguments;
 struct If;
 struct Else;
-struct For;
-struct Assignment;
-struct FuncDecl;
-struct DotExpr;
-struct DotAssignment;
-struct DotCallStmnt;
-struct Subscript;
-struct SubscriptAssignStmnt;
-struct UnaryExpr;
-struct BinExpr;
+struct Identifier;
+struct Parameters;
+struct Operand;
 struct Import;
 // typedefs
 typedef unique_ptr<Import> ImportPtr;
