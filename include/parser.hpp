@@ -4,8 +4,8 @@
 #include <stdexcept>
 #include <vector>
 #include "ast.hpp"
-#include "lexer.hpp"
-#include "value.hpp"
+
+struct Token;
 
 using std::unique_ptr;
 using std::make_unique;
