@@ -15,9 +15,39 @@ ExecutionResult If::Execute() {
   
   if (b->Equals(Value_T::True)) {
     auto result = block->Execute();
+    switch (result.controlChange) {
+    case ControlChange::None:
+      break;
+    case ControlChange::Return:
+    case ControlChange::Exception:
+    case ControlChange::Continue:
+    case ControlChange::Break:
+      return result;
+    case ControlChange::Goto:
+    case ControlChange::ContinueLabel:
+    case ControlChange::BreakLabel:
+      // TODO: Check for label Here
+      throw std::runtime_error(CC_ToString(result.controlChange) + " not implemented");
+    }
   }
-    
-  return elseStmnt->Execute();
+  if (elseStmnt) {
+    auto result = elseStmnt->Execute();
+    switch (result.controlChange) {
+    case ControlChange::None:
+      break;
+    case ControlChange::Return:
+    case ControlChange::Exception:
+    case ControlChange::Continue:
+    case ControlChange::Break:
+      return result;
+    case ControlChange::Goto:
+    case ControlChange::ContinueLabel:
+    case ControlChange::BreakLabel:
+      // TODO: Check for label Here
+      throw std::runtime_error(CC_ToString(result.controlChange) + " not implemented");
+    }
+  }
+  return ExecutionResult::None;
 }
 If::If(unique_ptr<Expression> &&condition, unique_ptr<Block> &&block,
        unique_ptr<Else> &&elseStmnt)

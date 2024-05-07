@@ -1,15 +1,8 @@
-object = {
-  xaryu = 1 * 2 * 3
-  arr = [0,1,2,3]
-  func print(value) {
-    return [1,2,3]
+println(0 == 1)
+for i=0,i<1,i=i+1 {
+  if (i == 0) {
+    println("breaking...")
+    break
   }
+  println("dindt break")
 }
-
-for i=0,i<1000000,i=i+1 {
-  push(object.arr, null)
-}
-for i=0,i<1000000,i=i+1 {
-  println(pop(object.arr))
-}
-println(len(object.arr))
