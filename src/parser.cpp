@@ -3,6 +3,8 @@
 #include "lexer.hpp"
 #include "value.hpp"
 #include "context.hpp"
+#include <algorithm>
+#include <stdexcept>
 
 #include <memory>
 #include <stdexcept>
@@ -482,3 +484,29 @@ StatementPtr Parser::ParseReturn() {
   return make_unique<Return>(ParseExpression());
 }
 StatementPtr Parser::ParseBreak() { return make_unique<Break>(); }
+Token Parser::Peek() { return tokens.back(); }
+Token Parser::Eat() {
+  auto tkn = tokens.back();
+  tokens.pop_back();
+  return tkn;
+}
+Token Parser::Expect(const TType ttype) {
+  if (tokens.back().type != ttype) {
+    throw std::runtime_error("Expected " + TTypeToString(ttype) + " got " +
+                             TTypeToString(tokens.back().type));
+  }
+  auto tkn = tokens.back();
+  tokens.pop_back();
+  return tkn;
+}
+unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
+  std::reverse(tokens.begin(), tokens.end());
+  this->tokens = std::move(tokens);
+  vector<StatementPtr> statements;
+  while (this->tokens.size() > 0) {
+    auto statement = ParseStatement();
+    statements.push_back(std::move(statement));
+  }
+  auto program = make_unique<Program>(std::move(statements));
+  return program;
+}
