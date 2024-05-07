@@ -192,8 +192,9 @@ Lexer::Lexer() {
       {"return", TType::Return},       {"if", TType::If},
       {"else", TType::Else},           {"false", TType::False},
       {"true", TType::True},           {"null", TType::Null},
-      {"undefined", TType::Undefined},
-
+      {"undefined", TType::Undefined}, {"import", TType::Import},
+      {"from", TType::From},
+  
   };
 }
 string TTypeToString(const TType &type) {
