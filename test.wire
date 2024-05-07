@@ -6,9 +6,10 @@ object = {
   }
 }
 
-
-for i=0,i< len(object.arr),i=i+1 {
-  push(object.arr, i)
-  println(object.arr[i])
- 
+for i=0,i<1000000,i=i+1 {
+  push(object.arr, null)
 }
+for i=0,i<1000000,i=i+1 {
+  println(pop(object.arr))
+}
+println(len(object.arr))

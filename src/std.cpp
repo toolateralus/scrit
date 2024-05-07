@@ -33,7 +33,6 @@ REGISTER_FUNCTION(pop) {
   return array->Pop();
 }
 
-
 REGISTER_FUNCTION(len) {
   if (args.empty()) {
     return Value_T::Undefined;
