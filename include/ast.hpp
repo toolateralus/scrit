@@ -70,23 +70,23 @@ struct Program : Executable {
       : statements(std::move(statements)) {}
   ExecutionResult Execute() override {
     for (auto &statement : statements) {
-      auto controlChange = statement->Execute().controlChange;
-      switch (controlChange) {
+      auto result = statement->Execute();
+      switch (result.controlChange) {
       case ControlChange::Return:
         throw std::runtime_error("Return outside of function body");
-        break;
       case ControlChange::Continue:
         throw std::runtime_error("Continue outside of loop body");
-        break;
       case ControlChange::Exception:
-        throw std::runtime_error("Uncaught Exception: " + Value.ToString());
-        break;
-      case ControlChange::None:
+        throw std::runtime_error("Uncaught Exception: " + result.value->ToString());
       case ControlChange::Break:
+        throw std::runtime_error("Break outside of loop body");
       case ControlChange::Goto:
       case ControlChange::ContinueLabel:
       case ControlChange::BreakLabel:
-        break;
+        // TODO: Check for label Here
+        throw std::runtime_error(ToString(result.controlChange) + " not implemented");
+      case ControlChange::None:
+        continue;
       }
     }
     return ExecutionResult::None;
@@ -149,15 +149,24 @@ struct Block : Statement {
     scope = ASTNode::context.PushScope();
     for (auto &statement : statements) {
       auto result = statement->Execute();
-      if (result.controlChange != ControlChange::None) {
+      switch (result.controlChange) {
+      case ControlChange::Goto:
+      case ControlChange::ContinueLabel:
+      case ControlChange::BreakLabel:
+        // TODO: Check for label Here
+        throw std::runtime_error(ToString(result.controlChange) + " not implemented");
+      case ControlChange::Continue:
+      case ControlChange::Break:
+      case ControlChange::Return:
+      case ControlChange::Exception:
         ASTNode::context.PopScope();
         return result;
-      } else {
-        statement->EvaluateStatement();
+      case ControlChange::None:
+        continue;
       }
     }
     ASTNode::context.PopScope();
-    return nullptr;
+    return ExecutionResult::None;
   }
 };
 struct ObjectInitializer : Expression {
@@ -166,7 +175,10 @@ struct ObjectInitializer : Expression {
   ObjectInitializer(unique_ptr<Block> block) : block(std::move(block)) {}
   Value Evaluate() override {
     auto obj = make_shared<Object_T>();
-    auto value = block->EvaluateStatement();
+    auto controlChange = block->Execute().controlChange;
+    if (controlChange != ControlChange::None) {
+      throw std::runtime_error(ToString(controlChange) + " not allowed in object initialization.");
+    }
     obj->scope = block->scope;
     return obj;
   }

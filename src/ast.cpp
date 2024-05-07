@@ -2,9 +2,9 @@
 #include "value.hpp"
 
 Context ASTNode::context = {};
-auto ExecutionResult::None = ExecutionResult(ControlChange::None, nullptr);
-auto ExecutionResult::Break = ExecutionResult(ControlChange::Break, nullptr);
-auto ExecutionResult::Continue = ExecutionResult(ControlChange::Continue, nullptr);
+auto ExecutionResult::None = ExecutionResult(ControlChange::None, Value_T::Undefined);
+auto ExecutionResult::Break = ExecutionResult(ControlChange::Break, Value_T::Undefined);
+auto ExecutionResult::Continue = ExecutionResult(ControlChange::Continue, Value_T::Undefined);
 
 unique_ptr<ASTNode> If::EvaluateStatement() {
   auto condResult = condition->Evaluate();
