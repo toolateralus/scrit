@@ -91,10 +91,16 @@ struct Value_T {
 struct Null : Value_T {
   Null();
   string ToString() const override;
+  bool Equals(Value value) override {
+    return value == Value_T::Null;
+  }
 };
 struct Undefined : Value_T{
   Undefined();
   string ToString() const override;
+  bool Equals(Value value) override {
+    return value == Value_T::Undefined;
+  }
 };
 struct Int_T : Value_T {
   int value = 0;

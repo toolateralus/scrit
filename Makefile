@@ -26,12 +26,11 @@ DEBUGOBJS := $(patsubst $(SRCDIR)/%.cpp,$(OBJDIR)/debug/%.o,$(SRCS))
 RELEASEOBJS := $(patsubst $(SRCDIR)/%.cpp,$(OBJDIR)/release/%.o,$(SRCS))
 TESTOBJS := $(patsubst $(TESTDIR)/%.cpp,$(OBJDIR)/test/%.o,$(TESTSRCS))
 
-# Targets
-test: test-build
-	@./$(BINDIR)/test/app
-
 all: debug release
 
+test: test-build
+	@./$(BINDIR)/test/app
+	
 debug: $(BINDIR)/debug/app
 
 release: $(BINDIR)/release/app
