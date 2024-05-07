@@ -2,6 +2,7 @@
 #include "native.hpp"
 #include "value.hpp"
 #include <stdexcept>
+#include "context.hpp"
 
 Context ASTNode::context = {};
 auto ExecutionResult::None =
