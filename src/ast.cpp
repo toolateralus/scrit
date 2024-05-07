@@ -1,6 +1,9 @@
 #include "ast.hpp"
 
 Context ASTNode::context = {};
+auto ExecutionResult::None = ExecutionResult(ControlChange::None, nullptr);
+auto ExecutionResult::Break = ExecutionResult(ControlChange::Break, nullptr);
+auto ExecutionResult::Continue = ExecutionResult(ControlChange::Continue, nullptr);
 
 unique_ptr<ASTNode> If::EvaluateStatement() {
   auto condResult = condition->Evaluate();

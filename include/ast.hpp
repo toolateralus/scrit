@@ -9,32 +9,87 @@
 using std::make_unique;
 using std::unique_ptr;
 
+enum struct ControlChange {
+  None,
+  Return,
+  Continue,
+  Break,
+  Goto,
+  ContinueLabel,
+  BreakLabel,
+  Exception
+};
+
+string ToString(ControlChange controlChange) {
+  switch (controlChange) {
+  case ControlChange::None:
+    return "None";
+  case ControlChange::Return:
+    return "Return";
+  case ControlChange::Continue:
+    return "Continue";
+  case ControlChange::Break:
+    return "Break";
+  case ControlChange::Goto:
+    return "Goto";
+  case ControlChange::ContinueLabel:
+    return "ContinueLabel";
+  case ControlChange::BreakLabel:
+    return "BreakLabel";
+  case ControlChange::Exception:
+    return "Exception";
+  }
+}
+
+struct ExecutionResult {
+  ExecutionResult(ControlChange controlChange, Value value) : 
+    controlChange(controlChange), value(value) {}
+  static ExecutionResult None;
+  static ExecutionResult Break;
+  static ExecutionResult Continue;
+  ControlChange controlChange;
+  Value value;
+};
+
 struct ASTNode {
   static Context context;
   virtual ~ASTNode() {}
-  virtual Value Evaluate() = 0;
 };
 struct Expression {
   virtual ~Expression() {}
   virtual Value Evaluate() = 0;
 };
-struct Statement : ASTNode {
-  virtual ~Statement() {}
-  virtual Value Evaluate() override {
-    throw std::runtime_error("Cannot evaluate a statement to a value");
-  }
-  virtual unique_ptr<ASTNode> EvaluateStatement() = 0;
+struct Executable : ASTNode {
+  virtual ~Executable() {}
+  virtual ExecutionResult Execute() = 0;
 };
-struct Program : ASTNode {
+struct Statement : Executable {};
+struct Program : Executable {
   vector<unique_ptr<Statement>> statements;
   Program(vector<unique_ptr<Statement>> &&statements)
       : statements(std::move(statements)) {}
-  Value Evaluate() override {
-    Value result;
+  ExecutionResult Execute() override {
     for (auto &statement : statements) {
-      statement->EvaluateStatement();
+      auto controlChange = statement->Execute().controlChange;
+      switch (controlChange) {
+      case ControlChange::Return:
+        throw std::runtime_error("Return outside of function body");
+        break;
+      case ControlChange::Continue:
+        throw std::runtime_error("Continue outside of loop body");
+        break;
+      case ControlChange::Exception:
+        throw std::runtime_error("Uncaught Exception: " + Value.ToString());
+        break;
+      case ControlChange::None:
+      case ControlChange::Break:
+      case ControlChange::Goto:
+      case ControlChange::ContinueLabel:
+      case ControlChange::BreakLabel:
+        break;
+      }
     }
-    return result;
+    return ExecutionResult::None;
   }
 };
 struct Operand : Expression {
@@ -64,34 +119,39 @@ struct Arguments : Expression {
 struct Parameters : Statement {
   vector<string> names;
   Parameters(vector<string> &&names) : names(std::move(names)) {}
-  unique_ptr<ASTNode> EvaluateStatement() override { return nullptr; }
+  ExecutionResult Execute() override {
+    return ExecutionResult::None;
+  }
 };
 struct Continue : Statement {
-  unique_ptr<ASTNode> EvaluateStatement() override { return nullptr; }
+  ExecutionResult Execute() override {
+    return ExecutionResult::Continue;
+  }
 };
 struct Break : Statement {
-  unique_ptr<ASTNode> EvaluateStatement() override { return nullptr; }
+  ExecutionResult Execute() override {
+    return ExecutionResult::Break;
+  }
 };
 struct Return : Statement {
   Return(unique_ptr<Expression> &&value) : value(std::move(value)) {}
   unique_ptr<Expression> value;
-  Value Evaluate() override { return value->Evaluate(); }
-  unique_ptr<ASTNode> EvaluateStatement() override { return nullptr; }
+  ExecutionResult Execute() override {
+    return ExecutionResult(ControlChange::Return, value->Evaluate());
+  }
 };
 struct Block : Statement {
   Block(vector<unique_ptr<Statement>> &&statements)
       : statements(std::move(statements)) {}
   vector<unique_ptr<Statement>> statements;
   shared_ptr<Scope> scope;
-  unique_ptr<ASTNode> EvaluateStatement() override {
+  ExecutionResult Execute() override {
     scope = ASTNode::context.PushScope();
     for (auto &statement : statements) {
-      if (dynamic_cast<Return *>(statement.get()) ||
-          dynamic_cast<Break *>(statement.get()) ||
-          dynamic_cast<Continue *>(statement.get())) {
-        auto value = statement->EvaluateStatement();
+      auto result = statement->Execute();
+      if (result.controlChange != ControlChange::None) {
         ASTNode::context.PopScope();
-        return value;
+        return result;
       } else {
         statement->EvaluateStatement();
       }
