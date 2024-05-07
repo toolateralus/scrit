@@ -1,27 +1,22 @@
 #pragma once
 #include "value.hpp"
-#include <map>
 #include <memory>
 #include <stdexcept>
 
-struct Scope {
-  std::map<string, Value > variables = {};
-};
-
 struct Context {
-  std::vector<std::shared_ptr<Scope>> scopes = {
-    make_shared<Scope>(),
+  std::vector<std::shared_ptr<Scope_T>> scopes = {
+    make_shared<Scope_T>(),
   };
 
-  std::shared_ptr<Scope> PushScope(std::shared_ptr<Scope> scope = nullptr) {
+  std::shared_ptr<Scope_T> PushScope(std::shared_ptr<Scope_T> scope = nullptr) {
     if (scope == nullptr) {
-      scope = std::make_shared<Scope>();
+      scope = std::make_shared<Scope_T>();
     }
     scopes.push_back(scope);
     return scope;
   }
 
-  std::shared_ptr<Scope> PopScope() {
+  std::shared_ptr<Scope_T> PopScope() {
     if (scopes.empty()) {
       throw std::runtime_error("Cannot pop: Scope stack is empty");
     }

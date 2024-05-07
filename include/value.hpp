@@ -3,6 +3,7 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
+#include <map>
 
 using std::string;
 using std::vector;
@@ -19,10 +20,10 @@ struct Float_T;
 struct String_T;
 struct Object_T;
 struct Array_T;
+struct Scope_T;
 
 
 // forward declare AST nodes.
-struct Scope;
 struct Identifier;
 struct Block;
 struct Parameters;
@@ -37,6 +38,7 @@ typedef shared_ptr<Array_T> Array;
 typedef shared_ptr<Int_T> Int;
 typedef shared_ptr<Float_T> Float;
 typedef shared_ptr<Object_T> Object;
+typedef shared_ptr<Scope_T> Scope;
 
 enum class ValueType {
   None,
@@ -48,6 +50,12 @@ enum class ValueType {
   Array,
   Callable,
 };
+
+
+struct Scope_T {
+  std::map<string, Value > variables = {};
+};
+
 
 struct Value_T {
   static Value Null;
@@ -328,7 +336,7 @@ struct Object_T : Value_T {
   Object_T() : Value_T(ValueType::Object) {
     
   }
-  shared_ptr<Scope> scope;
+  Scope scope;
   Value GetMember(const string &name);
   void SetMember(const string &name, Value &value);
   virtual string ToString() const override;
