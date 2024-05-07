@@ -22,6 +22,8 @@ Value Callable_T::Call(ArgumentsPtr &args) {
   }
   auto result = block->Execute();
   
+  ASTNode::context.PopScope();
+  
   switch (result.controlChange) {
   case ControlChange::None:
     return Value_T::Null;
@@ -120,10 +122,13 @@ Array Array_T::New(vector<ExpressionPtr> &&init) {
 Array Array_T::New() { return make_shared<Array_T>(); }
 
 Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
+  ASTNode::context.PushScope();
   auto values = Call::GetArgsValueList(args);
+  Value result;
   if (function)
-    return function(values);
-  return Value_T::Undefined;
+    result = function(values);
+  ASTNode::context.PopScope();
+  return result == nullptr ? Value_T::Undefined : result;
 }
 NativeCallable_T::NativeCallable_T(NativeFunctionPtr ptr) : function(ptr) {
   
