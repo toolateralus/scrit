@@ -1,8 +1,5 @@
-println(0 == 1)
-for i=0,i<1,i=i+1 {
-  if (i == 0) {
-    println("breaking...")
-    break
-  }
-  println("dindt break")
+InitWindow(0,0,"Title")
+
+for {
+  
 }
