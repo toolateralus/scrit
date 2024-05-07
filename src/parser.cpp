@@ -500,6 +500,12 @@ StatementPtr Parser::ParseImport() {
     vector<string> names = {};
     while (!tokens.empty()) {
       auto next = Peek();
+      
+      if (next.type == TType::Comma) {
+        Eat();
+        continue;
+      }
+      
       if (next.type == TType::RCurly) {
         break;
       }
@@ -510,6 +516,8 @@ StatementPtr Parser::ParseImport() {
       } else {
         throw std::runtime_error("invalid import statement");
       }
+      
+      
     }
     Expect(TType::RCurly);
     Expect(TType::From);

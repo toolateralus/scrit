@@ -548,16 +548,19 @@ Value BinExpr::Evaluate() {
 ExecutionResult Import::Execute() {
   auto path = moduleRoot + moduleName + ".dll";
   auto module = LoadScritModule(moduleName, path);
-  
+  // we do this even when we ignore the object becasue it registers the native
+  // callables.
+  auto object = ScritModDefAsObject(module);
   if (symbols.empty()) {
-    ASTNode::context.Insert(moduleName, ScritModDefAsObject(module));
+    ASTNode::context.Insert(moduleName, object);
   } else {
     vector<Value> values = {};
     for (const auto &name : symbols) {
       auto value = module->context->Find(name);
+      ASTNode::context.Insert(name, value);
     }
   }
-  
+  delete module;
   return ExecutionResult::None;
 }
 

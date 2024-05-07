@@ -76,7 +76,6 @@ ScritModDef* LoadScritModule(const std::string &name, const std::string &path) {
   }
   
   auto mod = function();
-  dlclose(handle);
   return mod;
 }
 ScritModDef* CreateModDef() { 
