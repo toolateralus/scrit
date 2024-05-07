@@ -31,3 +31,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 
 run: $(BINDIR)/app
 	@./$(BINDIR)/app
+	
+	
+clean:
+	rm -rf $(OBJDIR) $(BINDIR)/app
