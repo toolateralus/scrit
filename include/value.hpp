@@ -38,12 +38,26 @@ typedef shared_ptr<Int_T> Int;
 typedef shared_ptr<Float_T> Float;
 typedef shared_ptr<Object_T> Object;
 
+enum class ValueType {
+  None,
+  Float,
+  Int,
+  Bool,
+  String,
+  Object,
+  Array,
+  Callable,
+};
 
 struct Value_T : std::enable_shared_from_this<Value_T> {
   static Value Null;
   static Value Undefined;
   static Bool False;
   static Bool True;
+  ValueType type = ValueType::None;
+  
+  Value_T(ValueType type) : type(type) {}
+  
   virtual ~Value_T() {}
   virtual string ToString() const {
    return "null"; 
@@ -68,46 +82,49 @@ struct Value_T : std::enable_shared_from_this<Value_T> {
 
 
 
-struct Null : Value_T {};
-struct Undefined : Value_T {};
+struct Null : Value_T {
+  Null() : Value_T(ValueType::None){}
+};
 
-
+struct Undefined : Value_T{ 
+  Undefined(): Value_T(ValueType::None){}
+};
 
 struct Int_T : Value_T {
   int value = 0;
-  Int_T(int value) {
+  Int_T(int value) : Value_T(ValueType::Int) {
     this->value = value;
   }
   ~Int_T() {
     
   }
   virtual bool Equals(Value_T* value) {
-    if (auto i = dynamic_cast<Int_T*>(value)) {
-      return i == value;
+    if (value->type == ValueType::Int) {
+      return static_cast<Int_T*>(value)->value == this->value;
     }
     return false;
   };
   virtual Value Add(Value other) override {
-    if (auto i = dynamic_cast<Int_T*>(other.get())) {
-      return make_shared<Int_T>(this->value + i->value);
+    if (other->type == ValueType::Int) {
+      return make_shared<Int_T>(this->value + static_cast<Int_T*>(other.get())->value);
     }
     return Value_T::Null;
   }
   virtual Value Subtract(Value other) override {
-    if (auto i = dynamic_cast<Int_T*>(other.get())) {
-      return make_shared<Int_T>(this->value - i->value);
+    if (other->type == ValueType::Int) {
+      return make_shared<Int_T>(this->value - static_cast<Int_T*>(other.get())->value);
     }
     return Value_T::Null;
   }
   virtual Value Multiply(Value other) override {
-    if (auto i = dynamic_cast<Int_T*>(other.get())) {
-      return make_shared<Int_T>(this->value * i->value);
+    if (other->type == ValueType::Int) {
+      return make_shared<Int_T>(this->value * static_cast<Int_T*>(other.get())->value);
     }
     return Value_T::Null;
   }
   virtual Value Divide(Value other) override {
-    if (auto i = dynamic_cast<Int_T*>(other.get())) {
-      return make_shared<Int_T>(this->value / i->value);
+    if (other->type == ValueType::Int) {
+      return make_shared<Int_T>(this->value / static_cast<Int_T*>(other.get())->value);
     }
     return Value_T::Null;
   }
@@ -115,43 +132,43 @@ struct Int_T : Value_T {
     return shared_from_this();
   }
   virtual void Set(Value newValue) override  {
-    if (auto i = dynamic_cast<Int_T*>(newValue.get())) {
-      this->value = i->value;
+    if (newValue->type == ValueType::Int) {
+      this->value = static_cast<Int_T*>(newValue.get())->value;
     }
   }
   virtual Bool Or(Value other) override {
-    if (auto i = dynamic_cast<Int_T*>(other.get())) {
-      return make_shared<Bool_T>(this->value || i->value);
+    if (other->type == ValueType::Int) {
+      return make_shared<Bool_T>(this->value || static_cast<Int_T*>(other.get())->value);
     }
     return False;
   }
   virtual Bool And(Value other) override { 
-    if (auto i = dynamic_cast<Int_T*>(other.get())) {
-      return make_shared<Bool_T>(this->value && i->value);
+    if (other->type == ValueType::Int) {
+      return make_shared<Bool_T>(this->value && static_cast<Int_T*>(other.get())->value);
     }
     return False;
   }
   virtual Bool Less(Value other) override { 
-    if (auto i = dynamic_cast<Int_T*>(other.get())) {
-      return make_shared<Bool_T>(this->value < i->value);
+    if (other->type == ValueType::Int) {
+      return make_shared<Bool_T>(this->value < static_cast<Int_T*>(other.get())->value);
     }
     return False;
    }
   virtual Bool Greater(Value other) override  { 
-    if (auto i = dynamic_cast<Int_T*>(other.get())) {
-      return make_shared<Bool_T>(this->value > i->value);
+    if (other->type == ValueType::Int) {
+      return make_shared<Bool_T>(this->value > static_cast<Int_T*>(other.get())->value);
     }
     return False;
    }
   virtual Bool GreaterEquals(Value other) override { 
-    if (auto i = dynamic_cast<Int_T*>(other.get())) {
-      return make_shared<Bool_T>(this->value >= i->value);
+    if (other->type == ValueType::Int) {
+      return make_shared<Bool_T>(this->value >= static_cast<Int_T*>(other.get())->value);
     }
     return False;
   }
   virtual Bool LessEquals(Value other) override { 
-    if (auto i = dynamic_cast<Int_T*>(other.get())) {
-      return make_shared<Bool_T>(this->value <= i->value);
+    if (other->type == ValueType::Int) {
+      return make_shared<Bool_T>(this->value <= static_cast<Int_T*>(other.get())->value);
     }
     return False;
   }
@@ -164,37 +181,37 @@ struct Int_T : Value_T {
 };
 struct Float_T : Value_T {
   float value = 0.0f;
-  Float_T(float value) {
+  Float_T(float value) : Value_T(ValueType::Float) {
     this->value = value;
   }
   ~Float_T() {}
   virtual bool Equals(Value value) override {
-    if (auto f = dynamic_cast<Float_T*>(value.get())) {
-      return f->value == this->value;
+    if (value->type == ValueType::Float) {
+      return static_cast<Float_T*>(value.get())->value == this->value;
     }
     return false;
   }
   virtual Value Add(Value other) override {
-    if (auto f = dynamic_cast<Float_T*>(other.get())) {
-      return make_shared<Float_T>(this->value + f->value);
+    if (other->type == ValueType::Float) {
+      return make_shared<Float_T>(this->value + static_cast<Float_T*>(other.get())->value);
     }
     return Value_T::Null;
   }
   virtual Value Subtract(Value other) override {
-    if (auto f = dynamic_cast<Float_T*>(other.get())) {
-      return make_shared<Float_T>(this->value - f->value);
+    if (other->type == ValueType::Float) {
+      return make_shared<Float_T>(this->value - static_cast<Float_T*>(other.get())->value);
     }
     return Value_T::Null;
   }
   virtual Value Multiply(Value other) override {
-    if (auto f = dynamic_cast<Float_T*>(other.get())) {
-      return make_shared<Float_T>(this->value * f->value);
+    if (other->type == ValueType::Float) {
+      return make_shared<Float_T>(this->value * static_cast<Float_T*>(other.get())->value);
     }
     return Value_T::Null;
   }
   virtual Value Divide(Value other) override {
-    if (auto f = dynamic_cast<Float_T*>(other.get())) {
-      return make_shared<Float_T>(this->value / f->value);
+    if (other->type == ValueType::Float) {
+      return make_shared<Float_T>(this->value / static_cast<Float_T*>(other.get())->value);
     }
     return Value_T::Null;
   }
@@ -202,43 +219,43 @@ struct Float_T : Value_T {
     return shared_from_this();
   }
   virtual void Set(Value newValue) override {
-    if (auto f = dynamic_cast<Float_T*>(newValue.get())) {
-      this->value = f->value;
+    if (newValue->type == ValueType::Float) {
+      this->value = static_cast<Float_T*>(newValue.get())->value;
     }
   }
   virtual Bool Or(Value other) override {
-    if (auto f = dynamic_cast<Float_T*>(other.get())) {
-      return make_shared<Bool_T>(this->value || f->value);
+    if (other->type == ValueType::Float) {
+      return make_shared<Bool_T>(this->value || static_cast<Float_T*>(other.get())->value);
     }
     return False;
   }
   virtual Bool And(Value other) override {
-    if (auto f = dynamic_cast<Float_T*>(other.get())) {
-      return make_shared<Bool_T>(this->value && f->value);
+    if (other->type == ValueType::Float) {
+      return make_shared<Bool_T>(this->value && static_cast<Float_T*>(other.get())->value);
     }
     return False;
   }
   virtual Bool Less(Value other) override {
-    if (auto f = dynamic_cast<Float_T*>(other.get())) {
-      return make_shared<Bool_T>(this->value < f->value);
+    if (other->type == ValueType::Float) {
+      return make_shared<Bool_T>(this->value < static_cast<Float_T*>(other.get())->value);
     }
     return False;
   }
   virtual Bool Greater(Value other) override {
-    if (auto f = dynamic_cast<Float_T*>(other.get())) {
-      return make_shared<Bool_T>(this->value > f->value);
+    if (other->type == ValueType::Float) {
+      return make_shared<Bool_T>(this->value > static_cast<Float_T*>(other.get())->value);
     }
     return False;
   }
   virtual Bool GreaterEquals(Value other) override {
-    if (auto f = dynamic_cast<Float_T*>(other.get())) {
-      return make_shared<Bool_T>(this->value >= f->value);
+    if (other->type == ValueType::Float) {
+      return make_shared<Bool_T>(this->value >= static_cast<Float_T*>(other.get())->value);
     }
     return False;
   }
   virtual Bool LessEquals(Value other) override {
-    if (auto f = dynamic_cast<Float_T*>(other.get())) {
-      return make_shared<Bool_T>(this->value <= f->value);
+    if (other->type == ValueType::Float) {
+      return make_shared<Bool_T>(this->value <= static_cast<Float_T*>(other.get())->value);
     }
     return False;
   }
@@ -252,19 +269,19 @@ struct Float_T : Value_T {
 };
 struct String_T : Value_T {
   string value;
-  String_T(const string& value) {
+  String_T(const string& value) : Value_T(ValueType::String){
     this->value = value;
   }
   ~String_T() {}
   virtual bool Equals(Value value) override {
-    if (auto s = dynamic_cast<String_T*>(value.get())) {
-      return s->value == this->value;
+    if (value->type == ValueType::String) {
+      return static_cast<String_T*>(value.get())->value == this->value;
     }
     return false;
   }
   virtual Value Add(Value other) override {
-    if (auto s = dynamic_cast<String_T*>(other.get())) {
-      return make_shared<String_T>(this->value + s->value);
+    if (other->type == ValueType::String) {
+      return make_shared<String_T>(this->value + static_cast<String_T*>(other.get())->value);
     }
     return Value_T::Null;
   }
@@ -272,8 +289,8 @@ struct String_T : Value_T {
     return shared_from_this();
   }
   virtual void Set(Value newValue) override {
-    if (auto s = dynamic_cast<String_T*>(newValue.get())) {
-      this->value = s->value;
+    if (newValue->type == ValueType::String) {
+      this->value = static_cast<String_T*>(newValue.get())->value;
     }
   }
   string ToString() const override {
@@ -282,25 +299,25 @@ struct String_T : Value_T {
 };
 struct Bool_T : Value_T {
   bool value = false;
-  Bool_T(bool value) {
+  Bool_T(bool value) : Value_T(ValueType::Bool){
     this->value = value;
   }
   ~Bool_T() {}
   virtual bool Equals(Value value) override {
-    if (auto b = dynamic_cast<Bool_T*>(value.get())) {
-      return b->value == this->value;
+    if (value->type == ValueType::Bool) {
+      return static_cast<Bool_T*>(value.get())->value == this->value;
     }
     return false;
   }
   virtual Bool Or(Value other) override {
-    if (auto b = dynamic_cast<Bool_T*>(other.get())) {
-      return make_shared<Bool_T>(this->value || b->value);
+    if (other->type == ValueType::Bool) {
+      return make_shared<Bool_T>(this->value || static_cast<Bool_T*>(other.get())->value);
     }
     return False;
   }
   virtual Bool And(Value other) override {
-    if (auto b = dynamic_cast<Bool_T*>(other.get())) {
-      return make_shared<Bool_T>(this->value && b->value);
+    if (other->type == ValueType::Bool) {
+      return make_shared<Bool_T>(this->value && static_cast<Bool_T*>(other.get())->value);
     }
     return False;
   }
@@ -311,8 +328,8 @@ struct Bool_T : Value_T {
     return make_shared<Bool_T>(!value);
   }
   virtual void Set(Value newValue) override {
-    if (auto b = dynamic_cast<Bool_T*>(newValue.get())) {
-      this->value = b->value;
+    if (newValue->type == ValueType::Bool) {
+      this->value = static_cast<Bool_T*>(newValue.get())->value;
     }
   }
    virtual string ToString() const override {
@@ -322,6 +339,9 @@ struct Bool_T : Value_T {
 
 
 struct Object_T : Value_T {
+  Object_T() : Value_T(ValueType::Object) {
+    
+  }
   shared_ptr<Scope> scope;
   Value GetMember(const string &name);
   void SetMember(const string &name, Value &value);
