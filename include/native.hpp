@@ -6,7 +6,6 @@
 
 typedef Value (*NativeFunction)(std::vector<Value>);
 
-
 struct NativeFunctions {
   static std::unordered_map<std::string, NativeFunction>& GetRegistry() {
     static std::unordered_map<std::string, NativeFunction> reg;
@@ -28,4 +27,3 @@ static void RegisterFunction(const std::string& name, NativeFunction function) {
     } name##_register; \
   } \
   Value name(std::vector<Value> args)
-

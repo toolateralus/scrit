@@ -4,6 +4,9 @@ CXX := clang++
 # Compiler flags
 CXXFLAGS := -O3 -std=c++2b -Iinclude
 
+# Linker flags
+LDFLAGS := -lraylib
+
 # Directories
 SRCDIR := src
 OBJDIR := obj
@@ -20,7 +23,7 @@ all: $(BINDIR)/app
 
 $(BINDIR)/app: $(OBJS)
 	@mkdir -p $(BINDIR)
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	@mkdir -p $(OBJDIR)
@@ -28,8 +31,3 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 
 run: $(BINDIR)/app
 	@./$(BINDIR)/app
-
-clean:
-	@rm -rf $(OBJDIR) $(BINDIR)
-
-.PHONY: all run clean
