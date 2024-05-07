@@ -215,6 +215,8 @@ Value Identifier::Evaluate() {
   auto value = ASTNode::context.Find(name);
   if (value != nullptr) {
     return value;
+  } else if (NativeFunctions::Exists(name)) {
+    return NativeFunctions::GetCallable(name);
   }
   return Value_T::Undefined;
 }
@@ -279,14 +281,7 @@ Value Call::Evaluate() {
   auto lvalue = operand->Evaluate();
   if (lvalue->type == ValueType::Callable) {
     auto callable = static_cast<Callable_T *>(lvalue.get());
-    return callable->Call(std::move(args));
-  } else if (auto id = dynamic_cast<Identifier *>(operand.get())) {
-    auto registry = NativeFunctions::GetRegistry();
-    const auto &size = registry.size();
-    auto it = registry.find(id->name);
-    if (it != registry.end()) {
-      return it->second(GetArgsValueList(this->args));
-    }
+    return callable->Call(args);
   }
   return Value_T::Undefined;
 }
