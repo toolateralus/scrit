@@ -35,7 +35,10 @@ Value Callable_T::Call(unique_ptr<Arguments> args) {
 
 Array_T::Array_T(vector<unique_ptr<Expression>> &&init) : Value_T(ValueType::Array){
   initializer = std::move(init);
-  is_initialized = false;
+  for (auto &arg: initializer) {
+    auto value = arg->Evaluate();
+    Push(value);
+  }
 }
 Value Array_T::At(Int index) { return values.at(index->value); }
 void Array_T::Push(Value value) { values.push_back(value); }
@@ -74,14 +77,9 @@ void Array_T::Assign(Int index, Value value) {
   values[idx] = value;
 }
 
-
-
 Callable_T::Callable_T(unique_ptr<Block>&& block, unique_ptr<Parameters> &&params) : Value_T(ValueType::Callable), block(std::move(block)), params(std::move(params)) {
-  
-
 }
 Array_T::Array_T() : Value_T(ValueType::Array) {
-  is_initialized = true;
 }
 string Object_T::ToString() const {
   std::stringstream ss = {};
