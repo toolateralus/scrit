@@ -38,49 +38,91 @@ string CC_ToString(ControlChange controlChange) {
     return "Exception";
   }
 }
-ExecutionResult::ExecutionResult(ControlChange controlChange, Value value)
-    : controlChange(controlChange), value(value) {}
-If::If(Expression_up &&condition, Block_up &&block, Else_up &&elseStmnt)
-    : condition(std::move(condition)), block(std::move(block)),
-      elseStmnt(std::move(elseStmnt)) {}
-If::If(Expression_up &&condition, Block_up &&block)
-    : condition(std::move(condition)), block(std::move(block)) {}
-Arguments::Arguments(vector<Expression_up> &&args)
-    : values(std::move(args)) {}
-Parameters::Parameters(vector<string> &&names) : names(std::move(names)) {}
-Identifier::Identifier(string &name) : name(name) {}
-Operand::Operand(Value value) : value(value) {}
-Program::Program(vector<Statement_up> &&statements)
-    : statements(std::move(statements)) {}
-Return::Return(Expression_up &&value) : value(std::move(value)) {}
-Block::Block(vector<Statement_up> &&statements)
-    : statements(std::move(statements)) {}
-ObjectInitializer::ObjectInitializer(Block_up block)
-    : block(std::move(block)) {}
-Call::Call(Expression_up &&operand, Arguments_up &&args)
-    : operand(std::move(operand)), args(std::move(args)) {}
-For::For(Statement_up &&decl, Expression_up &&condition, Statement_up &&inc, Block_up &&block, Scope scope)
-    : decl(std::move(decl)), condition(std::move(condition)),
-      increment(std::move(inc)), block(std::move(block)), scope(scope) {}
-Assignment::Assignment(Identifier_up &&iden, Expression_up &&expr)
-    : iden(std::move(iden)), expr(std::move(expr)) {}
-FuncDecl::FuncDecl(Identifier_up &&name, Block_up &&body, Parameters_up &&parameters)
-    : name(std::move(name)), body(std::move(body)),
-      parameters(std::move(parameters)) {}
-DotExpr::DotExpr(Expression_up &&left, Expression_up &&right)
-    : left(std::move(left)), right(std::move(right)) {}
-DotAssignment::DotAssignment(Expression_up &&dot, Expression_up &&value)
-    : dot(std::move(dot)), value(std::move(value)) {}
-DotCallStmnt::DotCallStmnt(Expression_up &&dot)
-    : dot(std::move(dot)) {}
-Subscript::Subscript(Expression_up &&left, Expression_up &&idx)
-    : left(std::move(left)), index(std::move(idx)) {}
-SubscriptAssignStmnt::SubscriptAssignStmnt(Expression_up &&subscript, Expression_up &&value)
-    : subscript(std::move(subscript)), value(std::move(value)) {}
-UnaryExpr::UnaryExpr(Expression_up &&left, TType op)
-    : left(std::move(left)), op(op) {}
-BinExpr::BinExpr(Expression_up &&left, Expression_up &&right, TType op)
-    : left(std::move(left)), right(std::move(right)), op(op) {}
+ExecutionResult::ExecutionResult(ControlChange controlChange, Value value) {
+  this->controlChange = controlChange;
+  this->value = value;
+}
+If::If(Expression_up &&condition, Block_up &&block, Else_up &&elseStmnt) {
+  this->condition = std::move(condition);
+  this->block = std::move(block);
+  this->elseStmnt = std::move(elseStmnt);
+}
+If::If(Expression_up &&condition, Block_up &&block) {
+  this->condition = std::move(condition);
+  this->block = std::move(block);
+}
+Arguments::Arguments(vector<Expression_up> &&args) {
+  this->values = std::move(args);
+}
+Parameters::Parameters(vector<string> &&names) {
+  this->names = std::move(names);
+}
+Identifier::Identifier(string &name) {
+  this->name = name;
+}
+Operand::Operand(Value value) {
+  this->value = value;
+}
+Program::Program(vector<Statement_up> &&statements) {
+  this->statements = std::move(statements);
+}
+Return::Return(Expression_up &&value) {
+  this->value = std::move(value);
+}
+Block::Block(vector<Statement_up> &&statements) {
+  this->statements = std::move(statements);
+}
+ObjectInitializer::ObjectInitializer(Block_up block) {
+  this->block = std::move(block);
+}
+Call::Call(Expression_up &&operand, Arguments_up &&args) {
+  this->operand = std::move(operand);
+  this->args = std::move(args);
+}
+For::For(Statement_up &&decl, Expression_up &&condition, Statement_up &&inc, Block_up &&block, Scope scope) {
+  this->decl = std::move(decl);
+  this->condition = std::move(condition);
+  this->increment = std::move(inc);
+  this->block = std::move(block);
+  this->scope = scope;
+}
+Assignment::Assignment(Identifier_up &&iden, Expression_up &&expr) {
+  this->iden = std::move(iden);
+  this->expr = std::move(expr);
+}
+FuncDecl::FuncDecl(Identifier_up &&name, Block_up &&body, Parameters_up &&parameters) {
+  this->name = std::move(name);
+  this->body = std::move(body);
+  this->parameters = std::move(parameters);
+}
+DotExpr::DotExpr(Expression_up &&left, Expression_up &&right) {
+  this->left = std::move(left);
+  this->left = std::move(left);
+}
+DotAssignment::DotAssignment(Expression_up &&dot, Expression_up &&value) {
+  this->dot = std::move(dot);
+  this->value = std::move(value);
+}
+DotCallStmnt::DotCallStmnt(Expression_up &&dot) {
+  this->dot = std::move(dot);
+}
+Subscript::Subscript(Expression_up &&left, Expression_up &&idx) {
+  this->left = std::move(left);
+  this->index = std::move(idx);
+}
+SubscriptAssignStmnt::SubscriptAssignStmnt(Expression_up &&subscript, Expression_up &&value) {
+  this->subscript = std::move(subscript);
+  this->value = std::move(value);
+}
+UnaryExpr::UnaryExpr(Expression_up &&left, TType op) {
+  this->left = std::move(left);
+  this->op = op;
+}
+BinExpr::BinExpr(Expression_up &&left, Expression_up &&right, TType op) {
+  this->left = std::move(left);
+  this->right = std::move(right);
+  this->op = op;
+}
 ExecutionResult If::Execute() {
   auto condResult = condition->Evaluate();
   if (condResult->type != ValueType::Bool) {
