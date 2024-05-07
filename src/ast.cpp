@@ -6,18 +6,18 @@ auto ExecutionResult::None = ExecutionResult(ControlChange::None, Value_T::Undef
 auto ExecutionResult::Break = ExecutionResult(ControlChange::Break, Value_T::Undefined);
 auto ExecutionResult::Continue = ExecutionResult(ControlChange::Continue, Value_T::Undefined);
 
-unique_ptr<ASTNode> If::EvaluateStatement() {
+ExecutionResult If::Execute() {
   auto condResult = condition->Evaluate();
   if (condResult->type != ValueType::Bool) {
-    return nullptr;
+    return ExecutionResult::None;
   }
   auto b = static_cast<Bool_T *>(condResult.get());
   
   if (b->Equals(Value_T::True)) {
-    auto result = block->EvaluateStatement();
+    auto result = block->Execute();
   }
     
-  return elseStmnt->EvaluateStatement();
+  return elseStmnt->Execute();
 }
 If::If(unique_ptr<Expression> &&condition, unique_ptr<Block> &&block,
        unique_ptr<Else> &&elseStmnt)

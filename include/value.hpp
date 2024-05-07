@@ -52,6 +52,7 @@ enum class ValueType {
 struct Value_T {
   static Value Null;
   static Value Undefined;
+  static Value InvalidCastException;
   static Bool False;
   static Bool True;
   ValueType type = ValueType::None;

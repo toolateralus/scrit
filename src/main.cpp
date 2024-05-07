@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
         auto tokens = lexer.Lex(code);
         auto ast = parser.Parse(std::move(tokens));
         if (ast) {
-          ast->Evaluate();
+          ast->Execute();
         } else {
           std::cout << "Parsing failed\n";
         }
