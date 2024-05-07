@@ -27,7 +27,7 @@ Value Callable_T::Call(unique_ptr<Arguments> args) {
   return Value_T::Null;
 }
 
-Array_T::Array_T(vector<unique_ptr<Expression>> &&init) {
+Array_T::Array_T(vector<unique_ptr<Expression>> &&init) : Value_T(ValueType::Array){
   initializer = std::move(init);
   is_initialized = false;
 }
@@ -70,11 +70,11 @@ void Array_T::Assign(Int index, Value value) {
 
 
 
-Callable_T::Callable_T(unique_ptr<Block>&& block, unique_ptr<Parameters> &&params) : block(std::move(block)), params(std::move(params)) {
+Callable_T::Callable_T(unique_ptr<Block>&& block, unique_ptr<Parameters> &&params) : Value_T(ValueType::Callable), block(std::move(block)), params(std::move(params)) {
   
 
 }
-Array_T::Array_T() {
+Array_T::Array_T() : Value_T(ValueType::Array) {
   is_initialized = true;
 }
 string Object_T::ToString() const {
@@ -84,6 +84,7 @@ string Object_T::ToString() const {
     ss << '\"' << key <<  "\" : " << var->ToString() << "\n";
   }
   ss << "}";
+  return ss.str();
 }
 string Callable_T::ToString() const {
   std::stringstream ss = {};

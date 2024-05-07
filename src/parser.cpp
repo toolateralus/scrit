@@ -1,4 +1,5 @@
 #include "parser.hpp"
+#include "ast.hpp"
 #include "lexer.hpp"
 #include "value.hpp"
 #include <memory>
@@ -219,7 +220,7 @@ unique_ptr<Expression> Parser::ParsePostfix() {
   auto expr = ParseOperand();
   while (!tokens.empty()) {
     Token next = Peek();
-    if (next.type != TType::LParen && next.type != TType::SubscriptLeft) {
+    if (next.type != TType::LParen && next.type != TType::SubscriptLeft && next.type != TType::Dot) {
       break;
     }
     if (next.type == TType::LParen) {
@@ -230,6 +231,10 @@ unique_ptr<Expression> Parser::ParsePostfix() {
       auto index = ParseExpression();
       Expect(TType::SubscriptRight);
       expr = std::make_unique<Subscript>(std::move(expr), std::move(index));
+    } else if (next.type == TType::Dot) {
+      Eat();      
+      auto right = ParseExpression();
+      expr = std::make_unique<DotExpr>(std::move(expr), std::move(right));
     }
   }
   
@@ -334,7 +339,8 @@ unique_ptr<Parameters> Parser::ParseParameters() {
     }
     if (Peek().type == TType::Comma) {
       Eat();
-    }
+    } 
+    next = Peek();
   }
   Expect(TType::RParen);
   return make_unique<Parameters>(std::move(values));

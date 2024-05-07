@@ -1,4 +1,5 @@
 #include "ast.hpp"
+#include "value.hpp"
 
 Context ASTNode::context = {};
 auto ExecutionResult::None = ExecutionResult(ControlChange::None, nullptr);
@@ -7,19 +8,16 @@ auto ExecutionResult::Continue = ExecutionResult(ControlChange::Continue, nullpt
 
 unique_ptr<ASTNode> If::EvaluateStatement() {
   auto condResult = condition->Evaluate();
-  if (auto b = dynamic_cast<Bool_T *>(condResult.get())) {
-    if (b->Equals(Value_T::True)) {
-      auto result = block->EvaluateStatement();
-      if (dynamic_cast<Return *>(result.get()) ||
-          dynamic_cast<Continue *>(result.get()) ||
-          dynamic_cast<Break *>(result.get())) {
-        return result;
-      }
-    }
-  } else {
-    return elseStmnt->EvaluateStatement();
+  if (condResult->type != ValueType::Bool) {
+    return nullptr;
   }
-  return nullptr;
+  auto b = static_cast<Bool_T *>(condResult.get());
+  
+  if (b->Equals(Value_T::True)) {
+    auto result = block->EvaluateStatement();
+  }
+    
+  return elseStmnt->EvaluateStatement();
 }
 If::If(unique_ptr<Expression> &&condition, unique_ptr<Block> &&block,
        unique_ptr<Else> &&elseStmnt)

@@ -165,10 +165,10 @@ struct ObjectInitializer : Expression {
   shared_ptr<Scope> scope;
   ObjectInitializer(unique_ptr<Block> block) : block(std::move(block)) {}
   Value Evaluate() override {
-    scope = ASTNode::context.PushScope();
+    auto obj = make_shared<Object_T>();
     auto value = block->EvaluateStatement();
-    ASTNode::context.PopScope();
-    return Value_T::Null;
+    obj->scope = block->scope;
+    return obj;
   }
 };
 
@@ -189,7 +189,8 @@ struct Call : Expression, Statement {
   
   Value Evaluate() override {
     auto lvalue = operand->Evaluate();
-    if (auto callable = dynamic_cast<Callable_T *>(lvalue.get())) {
+    if (lvalue->type == ValueType::Callable) {
+      auto callable = static_cast<Callable_T*>(lvalue.get());
       return callable->Call(std::move(args));
     } else if (auto id = dynamic_cast<Identifier* >(operand.get())) {
       if (NativeFunctions::GetRegistry().count(id->name) > 0) {
@@ -245,13 +246,13 @@ struct For : Statement {
   unique_ptr<Statement> increment;
   unique_ptr<Block> block;
   shared_ptr<Scope> scope;
-
+  
   For(unique_ptr<Statement> &&decl, unique_ptr<Expression> &&condition,
       unique_ptr<Statement> &&inc, unique_ptr<Block> &&block,
       shared_ptr<Scope> scope)
       : decl(std::move(decl)), condition(std::move(condition)),
         increment(std::move(inc)), block(std::move(block)), scope(scope) {}
-
+  
   unique_ptr<ASTNode> EvaluateStatement() override {
     context.PushScope(scope);
     if (decl != nullptr)
@@ -260,35 +261,27 @@ struct For : Statement {
     if (condition != nullptr) {
       while (true) {
         auto conditionResult = condition->Evaluate();
-        auto b = dynamic_cast<Bool_T *>(conditionResult.get());
+        
+        if (conditionResult->type != ValueType::Bool) {
+          return nullptr;
+        }
+        
+        auto b = static_cast<Bool_T *>(conditionResult.get());
 
         if (b->Equals(Bool_T::False)) {
           context.PopScope();
           return nullptr;
         }
-
-        auto blockResult = block->EvaluateStatement();
-        increment->Evaluate();
-
-        if (dynamic_cast<Return *>(blockResult.get()) ||
-            dynamic_cast<Continue *>(blockResult.get()) ||
-            dynamic_cast<Break *>(blockResult.get())) {
-          context.PopScope();
-          return blockResult;
-        }
+        
+        block->EvaluateStatement();
+        increment->EvaluateStatement();
       }
     } else {
       while (true) {
         if (increment)
-          increment->Evaluate();
+          increment->EvaluateStatement();
         
-        auto blockResult = block->EvaluateStatement();
-        if (dynamic_cast<Return *>(blockResult.get()) ||
-            dynamic_cast<Continue *>(blockResult.get()) ||
-            dynamic_cast<Break *>(blockResult.get())) {
-          context.PopScope();
-          return blockResult;
-        }
+        block->EvaluateStatement();
       }
     }
     context.PopScope();
@@ -328,21 +321,24 @@ struct DotExpr : Expression {
   unique_ptr<Expression> right;
   Value Evaluate() override {
     auto leftValue = left->Evaluate();
-    auto obj = dynamic_cast<Object_T *>(leftValue.get());
-    if (!obj) {
+    
+    if (leftValue->type != ValueType::Object) {
       throw std::runtime_error("invalid lhs on dot operation");
     }
-    ASTNode::context.PushScope(obj->scope);
+    ASTNode::context.PushScope(static_cast<Object_T*>(leftValue.get())->scope);
     auto result = right->Evaluate();
     ASTNode::context.PopScope();
     return result;
   }
   void Assign(Value value) {
-    auto leftValue = left->Evaluate();
-    auto obj = dynamic_cast<Object_T *>(leftValue.get());
-    if (!obj) {
+    auto lvalue = left->Evaluate();
+    
+    if (lvalue->type != ValueType::Object) {
       throw std::runtime_error("invalid lhs on dot operation");
     }
+    
+    auto obj = static_cast<Object_T *>(lvalue.get());
+    
     if (auto dotExpr = dynamic_cast<DotExpr *>(right.get())) {
       ASTNode::context.PushScope(obj->scope);
       dotExpr->Assign(value);
@@ -379,14 +375,14 @@ struct Subscript : Expression {
   unique_ptr<Expression> left;
   unique_ptr<Expression> index;
   Value Evaluate() {
-
     auto lvalue = left->Evaluate();
-    auto array = dynamic_cast<Array_T *>(lvalue.get());
-    if (!array) {
+    if (lvalue->type != ValueType::Array) {
       throw std::runtime_error("Cannot subscript a non array");
     }
+    auto array = static_cast<Array_T *>(lvalue.get());
     auto idx = index->Evaluate();
     auto number = std::dynamic_pointer_cast<Int_T>(idx);
+    
     if (!number) {
       throw std::runtime_error("Subscript index must be a number.");
     }
@@ -408,11 +404,11 @@ struct SubscriptAssignStmnt : Statement {
     
     auto lvalue = subscript->left->Evaluate();
     auto idx = subscript->index->Evaluate();
-
-    auto array = dynamic_cast<Array_T *>(lvalue.get());
+    
+    auto array = static_cast<Array_T *>(lvalue.get());
     auto number = std::dynamic_pointer_cast<Int_T>(idx);
-
-    if (!array || !number) {
+    
+    if (array->type != ValueType::Array || number->type != ValueType::Int) {
       throw std::runtime_error(
           "cannot subscript a non array or with a non-integer value.");
     }
@@ -447,8 +443,8 @@ struct BinExpr : Expression {
 
   Value Evaluate() override {
     auto left = this->left->Evaluate();
-    auto right = this->left->Evaluate();
-
+    auto right = this->right->Evaluate();
+    
     switch (op) {
     case TType::Add:
       return left->Add(right);
