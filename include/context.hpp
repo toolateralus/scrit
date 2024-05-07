@@ -1,20 +1,22 @@
 #pragma once
 #include <memory>
 #include <vector>
-struct Value_T;
-typedef std::shared_ptr<Value_T> Value;
-
-struct Scope_T;
-typedef std::shared_ptr<Scope_T> Scope;
 
 using std::vector;
 using std::string;
+using std::shared_ptr;
+
+struct Value_T;
+struct Scope_T;
+
+typedef shared_ptr<Value_T> Value;
+typedef shared_ptr<Scope_T> Scope;
 
 struct Context {
   Context();
-  vector<std::shared_ptr<Scope_T>> scopes;
-  std::shared_ptr<Scope_T> PushScope(std::shared_ptr<Scope_T> scope = nullptr);
-  std::shared_ptr<Scope_T> PopScope();
+  vector<Scope> scopes;
+  Scope PushScope(Scope scope = nullptr);
+  Scope PopScope();
   Value Find(const string &name);
   void Insert(const string &name, Value value);
 };

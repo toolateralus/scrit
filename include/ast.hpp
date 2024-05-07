@@ -42,14 +42,15 @@ struct SubscriptAssignStmnt;
 struct UnaryExpr;
 struct BinExpr;
 // typedefs
-typedef unique_ptr<Statement> Statement_up;
-typedef unique_ptr<Expression> Expression_up;
-typedef unique_ptr<Block> Block_up;
-typedef unique_ptr<Arguments> Arguments_up;
-typedef unique_ptr<If> If_up;
-typedef unique_ptr<Else> Else_up;
-typedef unique_ptr<Identifier> Identifier_up;
-typedef unique_ptr<Parameters> Parameters_up;
+typedef unique_ptr<Statement> StatementPtr;
+typedef unique_ptr<Expression> ExpressionPtr;
+typedef unique_ptr<Block> BlockPtr;
+typedef unique_ptr<Arguments> ArgumentsPtr;
+typedef unique_ptr<If> IfPtr;
+typedef unique_ptr<Else> ElsePtr;
+typedef unique_ptr<Identifier> IdentifierPtr;
+typedef unique_ptr<Parameters> ParametersPtr;
+typedef unique_ptr<Operand> OperandPtr;
 
 enum struct ControlChange {
   None,
@@ -81,8 +82,8 @@ struct Statement : Executable {
 
 };
 struct Program : Executable {
-  vector<Statement_up> statements;
-  Program(vector<Statement_up> &&statements);
+  vector<StatementPtr> statements;
+  Program(vector<StatementPtr> &&statements);
   ExecutionResult Execute() override;
 };
 struct Expression {
@@ -100,8 +101,8 @@ struct Identifier : Expression {
   Value Evaluate() override;
 };
 struct Arguments : Expression {
-  Arguments(vector<Expression_up> &&args);
-  vector<Expression_up> values;
+  Arguments(vector<ExpressionPtr> &&args);
+  vector<ExpressionPtr> values;
   Value Evaluate() override;
 };
 struct Parameters : Statement {
@@ -116,110 +117,110 @@ struct Break : Statement {
   ExecutionResult Execute() override;
 };
 struct Return : Statement {
-  Return(Expression_up &&value);
-  Expression_up value;
+  Return(ExpressionPtr &&value);
+  ExpressionPtr value;
   ExecutionResult Execute() override;
 };
 struct Block : Statement {
-  Block(vector<Statement_up> &&statements);
-  vector<Statement_up> statements;
+  Block(vector<StatementPtr> &&statements);
+  vector<StatementPtr> statements;
   Scope scope;
   ExecutionResult Execute() override;
 };
 struct ObjectInitializer : Expression {
-  Block_up block;
+  BlockPtr block;
   Scope scope;
-  ObjectInitializer(Block_up block);
+  ObjectInitializer(BlockPtr block);
   Value Evaluate() override;
 };
 struct Call : Expression, Statement {
-  Expression_up operand;
-  Arguments_up args;
-  Call(Expression_up &&operand, Arguments_up &&args);
-  vector<Value> GetArgsValueList(Arguments_up &args);
+  ExpressionPtr operand;
+  ArgumentsPtr args;
+  Call(ExpressionPtr &&operand, ArgumentsPtr &&args);
+  vector<Value> GetArgsValueList(ArgumentsPtr &args);
   Value Evaluate() override;
   ExecutionResult Execute() override;
 };
 struct If : Statement {
-  static If_up NoElse(Expression_up &&condition, Block_up &&block);
-  static If_up WithElse(Expression_up &&condition, Block_up &&block, Else_up &&elseStmnt);
-  If(Expression_up &&condition, Block_up &&block);
-  If(Expression_up &&condition, Block_up &&block,  Else_up &&elseStmnt);
-  Expression_up condition;
-  Block_up block;
-  Else_up elseStmnt;
+  static IfPtr NoElse(ExpressionPtr &&condition, BlockPtr &&block);
+  static IfPtr WithElse(ExpressionPtr &&condition, BlockPtr &&block, ElsePtr &&elseStmnt);
+  If(ExpressionPtr &&condition, BlockPtr &&block);
+  If(ExpressionPtr &&condition, BlockPtr &&block,  ElsePtr &&elseStmnt);
+  ExpressionPtr condition;
+  BlockPtr block;
+  ElsePtr elseStmnt;
   ExecutionResult Execute() override;
 };
 struct Else : Statement {
-  If_up ifStmnt;
-  Block_up block;
-  static Else_up NoIf(Block_up &&block);
-  static Else_up New(If_up &&ifStmnt);
+  IfPtr ifStmnt;
+  BlockPtr block;
+  static ElsePtr NoIf(BlockPtr &&block);
+  static ElsePtr New(IfPtr &&ifStmnt);
   ExecutionResult Execute() override;
 };
 struct For : Statement {
-  Statement_up decl;
-  Expression_up condition;
-  Statement_up increment;
-  Block_up block;
+  StatementPtr decl;
+  ExpressionPtr condition;
+  StatementPtr increment;
+  BlockPtr block;
   Scope scope;
-  For(Statement_up &&decl, Expression_up &&condition, Statement_up &&inc, Block_up &&block, Scope scope);
+  For(StatementPtr &&decl, ExpressionPtr &&condition, StatementPtr &&inc, BlockPtr &&block, Scope scope);
   ExecutionResult Execute() override;
 };
 struct Assignment : Statement {
-  Identifier_up iden;
-  Expression_up expr;
-  Assignment(Identifier_up &&iden, Expression_up &&expr);
+  IdentifierPtr iden;
+  ExpressionPtr expr;
+  Assignment(IdentifierPtr &&iden, ExpressionPtr &&expr);
   ExecutionResult Execute() override;
 };
 struct FuncDecl : Statement {
-  FuncDecl(Identifier_up &&name, Block_up &&body, Parameters_up &&parameters);
-  Identifier_up name;
-  Block_up body;
-  Parameters_up parameters;
+  FuncDecl(IdentifierPtr &&name, BlockPtr &&body, ParametersPtr &&parameters);
+  IdentifierPtr name;
+  BlockPtr body;
+  ParametersPtr parameters;
   ExecutionResult Execute() override;
 };
 struct DotExpr : Expression {
-  DotExpr(Expression_up &&left, Expression_up &&right);
-  Expression_up left;
-  Expression_up right;
+  DotExpr(ExpressionPtr &&left, ExpressionPtr &&right);
+  ExpressionPtr left;
+  ExpressionPtr right;
   Value Evaluate() override;
   void Assign(Value value);
 };
 struct DotAssignment : Statement {
-  DotAssignment(Expression_up &&dot, Expression_up &&value);
-  Expression_up dot;
-  Expression_up value;
+  DotAssignment(ExpressionPtr &&dot, ExpressionPtr &&value);
+  ExpressionPtr dot;
+  ExpressionPtr value;
   ExecutionResult Execute() override;
 };
 struct DotCallStmnt : Statement {
-  DotCallStmnt(Expression_up &&dot);
-  Expression_up dot;
+  DotCallStmnt(ExpressionPtr &&dot);
+  ExpressionPtr dot;
   ExecutionResult Execute() override;
 };
 struct Subscript : Expression {
-  Subscript(Expression_up &&left, Expression_up &&idx);
-  Expression_up left;
-  Expression_up index;
+  Subscript(ExpressionPtr &&left, ExpressionPtr &&idx);
+  ExpressionPtr left;
+  ExpressionPtr index;
   Value Evaluate();
 };
 struct SubscriptAssignStmnt : Statement {
-  SubscriptAssignStmnt(Expression_up &&subscript, Expression_up &&value);
-  Expression_up subscript;
-  Expression_up value;
+  SubscriptAssignStmnt(ExpressionPtr &&subscript, ExpressionPtr &&value);
+  ExpressionPtr subscript;
+  ExpressionPtr value;
   ExecutionResult Execute() override;
 };
 struct UnaryExpr : Expression {
-  UnaryExpr(Expression_up &&left, TType op);
-  Expression_up left;
+  UnaryExpr(ExpressionPtr &&left, TType op);
+  ExpressionPtr left;
   TType op;
   Value Evaluate() override;
 };
 struct BinExpr : Expression {
-  Expression_up left;
-  Expression_up right;
+  ExpressionPtr left;
+  ExpressionPtr right;
   TType op;
-  BinExpr(Expression_up &&left, Expression_up &&right, TType op);
+  BinExpr(ExpressionPtr &&left, ExpressionPtr &&right, TType op);
   Value Evaluate() override;
 };
 

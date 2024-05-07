@@ -33,7 +33,7 @@ struct Parser {
   unique_ptr<Program> Parse(vector<Token> &&tokens) {
     std::reverse(tokens.begin(), tokens.end());
     this->tokens = std::move(tokens);
-    vector<unique_ptr<Statement>> statements;
+    vector<StatementPtr> statements;
     while (this->tokens.size() > 0) {
       auto statement = ParseStatement();
       statements.push_back(std::move(statement));
@@ -41,32 +41,32 @@ struct Parser {
     auto program = make_unique<Program>(std::move(statements));
     return program;
   }
-  unique_ptr<Statement> ParseLValuePostFix(unique_ptr<Expression> &&expr);
-  unique_ptr<Statement> ParseFor();
-  unique_ptr<Statement> ParseFuncDecl();
-  unique_ptr<If> ParseIf();
-  unique_ptr<Else> ParseElse();
-  unique_ptr<Statement> ParseContinue();
-  unique_ptr<Statement> ParseReturn();
-  unique_ptr<Statement> ParseBreak();
-  unique_ptr<Statement> ParseIdentifierStatement(unique_ptr<Identifier> identifier);
-  unique_ptr<Statement> ParseAssignment(unique_ptr<Identifier> identifier);
-  unique_ptr<Statement> ParseCall(unique_ptr<Identifier> identifier);
-  unique_ptr<Statement> ParseStatement();
-  unique_ptr<Statement> ParseKeyword(Token keyword);
+  StatementPtr ParseLValuePostFix(ExpressionPtr &&expr);
+  StatementPtr ParseFor();
+  StatementPtr ParseFuncDecl();
+  IfPtr ParseIf();
+  ElsePtr ParseElse();
+  StatementPtr ParseContinue();
+  StatementPtr ParseReturn();
+  StatementPtr ParseBreak();
+  StatementPtr ParseIdentifierStatement(IdentifierPtr identifier);
+  StatementPtr ParseAssignment(IdentifierPtr identifier);
+  StatementPtr ParseCall(IdentifierPtr identifier);
+  StatementPtr ParseStatement();
+  StatementPtr ParseKeyword(Token keyword);
   
-  unique_ptr<Expression> ParseExpression();
-  unique_ptr<Expression> ParseLogicalOr();
-  unique_ptr<Expression> ParseLogicalAnd();
-  unique_ptr<Expression> ParseEquality();
-  unique_ptr<Expression> ParseComparison();
-  unique_ptr<Expression> ParseTerm();
-  unique_ptr<Expression> ParseFactor();
-  unique_ptr<Expression> ParsePostfix();
-  unique_ptr<Block> ParseBlock();
-  unique_ptr<Parameters> ParseParameters();
-  unique_ptr<Arguments> ParseArguments();
-  unique_ptr<Expression> ParseUnary();
-  unique_ptr<Expression> ParseOperand();
-  unique_ptr<Operand> ParseArrayInitializer();
+  ExpressionPtr ParseExpression();
+  ExpressionPtr ParseLogicalOr();
+  ExpressionPtr ParseLogicalAnd();
+  ExpressionPtr ParseEquality();
+  ExpressionPtr ParseComparison();
+  ExpressionPtr ParseTerm();
+  ExpressionPtr ParseFactor();
+  ExpressionPtr ParsePostfix();
+  BlockPtr ParseBlock();
+  ParametersPtr ParseParameters();
+  ArgumentsPtr ParseArguments();
+  ExpressionPtr ParseUnary();
+  ExpressionPtr ParseOperand();
+  OperandPtr ParseArrayInitializer();
 };

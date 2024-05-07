@@ -40,6 +40,11 @@ typedef shared_ptr<Float_T> Float;
 typedef shared_ptr<Object_T> Object;
 typedef shared_ptr<Scope_T> Scope;
 
+typedef unique_ptr<Expression> ExpressionPtr;
+typedef unique_ptr<Block> BlockPtr;
+typedef unique_ptr<Arguments> ArgumentsPtr;
+typedef unique_ptr<Parameters> ParametersPtr;
+
 enum class ValueType {
   None,
   Float,
@@ -345,19 +350,19 @@ struct Object_T : Value_T {
 
 
 struct Callable_T : Value_T {
-  Callable_T(unique_ptr<Block> &&block, unique_ptr<Parameters> &&params);
-  unique_ptr<Block> block;
-  unique_ptr<Parameters> params;
-  Value Call(unique_ptr<Arguments> args);
+  Callable_T(BlockPtr &&block, ParametersPtr &&params);
+  BlockPtr block;
+  ParametersPtr params;
+  Value Call(ArgumentsPtr args);
   string ToString() const override;
 };
 
 struct Array_T : Value_T {
   static Array New();
-  static Array New(vector<unique_ptr<Expression>> &&init);
+  static Array New(vector<ExpressionPtr> &&init);
   Array_T();
-  Array_T(vector<unique_ptr<Expression>> &&init);
-  vector<unique_ptr<Expression>> initializer;
+  Array_T(vector<ExpressionPtr> &&init);
+  vector<ExpressionPtr> initializer;
   vector<Value> values;
   Value At(Int index);
   void Assign(Int index, Value value);

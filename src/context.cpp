@@ -6,14 +6,14 @@ Context::Context() {
       make_shared<Scope_T>(),
   };
 }
-std::shared_ptr<Scope_T> Context::PushScope(std::shared_ptr<Scope_T> scope) {
+Scope Context::PushScope(Scope scope) {
   if (scope == nullptr) {
     scope = std::make_shared<Scope_T>();
   }
   scopes.push_back(scope);
   return scope;
 }
-std::shared_ptr<Scope_T> Context::PopScope() {
+Scope Context::PopScope() {
   if (scopes.empty()) {
     throw std::runtime_error("Cannot pop: Scope stack is empty");
   }

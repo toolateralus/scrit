@@ -43,16 +43,16 @@ ExecutionResult::ExecutionResult(ControlChange controlChange, Value value) {
   this->controlChange = controlChange;
   this->value = value;
 }
-If::If(Expression_up &&condition, Block_up &&block, Else_up &&elseStmnt) {
+If::If(ExpressionPtr &&condition, BlockPtr &&block, ElsePtr &&elseStmnt) {
   this->condition = std::move(condition);
   this->block = std::move(block);
   this->elseStmnt = std::move(elseStmnt);
 }
-If::If(Expression_up &&condition, Block_up &&block) {
+If::If(ExpressionPtr &&condition, BlockPtr &&block) {
   this->condition = std::move(condition);
   this->block = std::move(block);
 }
-Arguments::Arguments(vector<Expression_up> &&args) {
+Arguments::Arguments(vector<ExpressionPtr> &&args) {
   this->values = std::move(args);
 }
 Parameters::Parameters(vector<string> &&names) {
@@ -64,62 +64,62 @@ Identifier::Identifier(string &name) {
 Operand::Operand(Value value) {
   this->value = value;
 }
-Program::Program(vector<Statement_up> &&statements) {
+Program::Program(vector<StatementPtr> &&statements) {
   this->statements = std::move(statements);
 }
-Return::Return(Expression_up &&value) {
+Return::Return(ExpressionPtr &&value) {
   this->value = std::move(value);
 }
-Block::Block(vector<Statement_up> &&statements) {
+Block::Block(vector<StatementPtr> &&statements) {
   this->statements = std::move(statements);
 }
-ObjectInitializer::ObjectInitializer(Block_up block) {
+ObjectInitializer::ObjectInitializer(BlockPtr block) {
   this->block = std::move(block);
 }
-Call::Call(Expression_up &&operand, Arguments_up &&args) {
+Call::Call(ExpressionPtr &&operand, ArgumentsPtr &&args) {
   this->operand = std::move(operand);
   this->args = std::move(args);
 }
-For::For(Statement_up &&decl, Expression_up &&condition, Statement_up &&inc, Block_up &&block, Scope scope) {
+For::For(StatementPtr &&decl, ExpressionPtr &&condition, StatementPtr &&inc, BlockPtr &&block, Scope scope) {
   this->decl = std::move(decl);
   this->condition = std::move(condition);
   this->increment = std::move(inc);
   this->block = std::move(block);
   this->scope = scope;
 }
-Assignment::Assignment(Identifier_up &&iden, Expression_up &&expr) {
+Assignment::Assignment(IdentifierPtr &&iden, ExpressionPtr &&expr) {
   this->iden = std::move(iden);
   this->expr = std::move(expr);
 }
-FuncDecl::FuncDecl(Identifier_up &&name, Block_up &&body, Parameters_up &&parameters) {
+FuncDecl::FuncDecl(IdentifierPtr &&name, BlockPtr &&body, ParametersPtr &&parameters) {
   this->name = std::move(name);
   this->body = std::move(body);
   this->parameters = std::move(parameters);
 }
-DotExpr::DotExpr(Expression_up &&left, Expression_up &&right) {
+DotExpr::DotExpr(ExpressionPtr &&left, ExpressionPtr &&right) {
   this->left = std::move(left);
   this->left = std::move(left);
 }
-DotAssignment::DotAssignment(Expression_up &&dot, Expression_up &&value) {
+DotAssignment::DotAssignment(ExpressionPtr &&dot, ExpressionPtr &&value) {
   this->dot = std::move(dot);
   this->value = std::move(value);
 }
-DotCallStmnt::DotCallStmnt(Expression_up &&dot) {
+DotCallStmnt::DotCallStmnt(ExpressionPtr &&dot) {
   this->dot = std::move(dot);
 }
-Subscript::Subscript(Expression_up &&left, Expression_up &&idx) {
+Subscript::Subscript(ExpressionPtr &&left, ExpressionPtr &&idx) {
   this->left = std::move(left);
   this->index = std::move(idx);
 }
-SubscriptAssignStmnt::SubscriptAssignStmnt(Expression_up &&subscript, Expression_up &&value) {
+SubscriptAssignStmnt::SubscriptAssignStmnt(ExpressionPtr &&subscript, ExpressionPtr &&value) {
   this->subscript = std::move(subscript);
   this->value = std::move(value);
 }
-UnaryExpr::UnaryExpr(Expression_up &&left, TType op) {
+UnaryExpr::UnaryExpr(ExpressionPtr &&left, TType op) {
   this->left = std::move(left);
   this->op = op;
 }
-BinExpr::BinExpr(Expression_up &&left, Expression_up &&right, TType op) {
+BinExpr::BinExpr(ExpressionPtr &&left, ExpressionPtr &&right, TType op) {
   this->left = std::move(left);
   this->right = std::move(right);
   this->op = op;
@@ -169,19 +169,19 @@ ExecutionResult If::Execute() {
   }
   return ExecutionResult::None;
 }
-If_up If::NoElse(Expression_up &&condition, Block_up &&block) {
+IfPtr If::NoElse(ExpressionPtr &&condition, BlockPtr &&block) {
   return make_unique<If>(std::move(condition), std::move(block));
 }
-If_up If::WithElse(Expression_up &&condition, Block_up &&block, Else_up &&elseStmnt) {
+IfPtr If::WithElse(ExpressionPtr &&condition, BlockPtr &&block, ElsePtr &&elseStmnt) {
   return make_unique<If>(std::move(condition), std::move(block),
                          std::move(elseStmnt));
 }
-Else_up Else::New(If_up &&ifStmnt) {
+ElsePtr Else::New(IfPtr &&ifStmnt) {
   auto elseStmnt = make_unique<Else>();
   elseStmnt->ifStmnt = std::move(ifStmnt);
   return elseStmnt;
 }
-Else_up Else::NoIf(Block_up &&block) {
+ElsePtr Else::NoIf(BlockPtr &&block) {
   auto elseStmnt = make_unique<Else>();
   ;
   elseStmnt->block = std::move(block);
@@ -268,7 +268,7 @@ Value ObjectInitializer::Evaluate() {
   obj->scope = block->scope;
   return obj;
 }
-vector<Value> Call::GetArgsValueList(Arguments_up &args) {
+vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
   vector<Value> values = {};
   for (auto &expr : args->values) {
     values.push_back(expr->Evaluate());
