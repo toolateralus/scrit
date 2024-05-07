@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <vector>
 #include "ast.hpp"
+#include <string>
 
 struct Token;
 
@@ -41,6 +42,9 @@ struct Parser {
     auto program = make_unique<Program>(std::move(statements));
     return program;
   }
+
+  StatementPtr ParseImport();
+
   StatementPtr ParseLValuePostFix(ExpressionPtr &&expr);
   StatementPtr ParseFor();
   StatementPtr ParseFuncDecl();

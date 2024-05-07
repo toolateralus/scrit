@@ -66,6 +66,9 @@ enum class TType {
   Break,
   Continue,
   Return,
+  
+  Import,
+  From,
 };
 
 static string TTypeToString(const TType &type) {
@@ -219,6 +222,8 @@ struct Lexer {
     {"true", TType::True},
     {"null", TType::Null},
     {"undefined", TType::Undefined},
+    {"import", TType::Import},
+    {"from", TType::From},
     
   };
   vector<Token> Lex(const string &input) {

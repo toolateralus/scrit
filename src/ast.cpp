@@ -98,7 +98,7 @@ FuncDecl::FuncDecl(IdentifierPtr &&name, BlockPtr &&body, ParametersPtr &&parame
 }
 DotExpr::DotExpr(ExpressionPtr &&left, ExpressionPtr &&right) {
   this->left = std::move(left);
-  this->left = std::move(left);
+  this->right = std::move(right);
 }
 DotAssignment::DotAssignment(ExpressionPtr &&dot, ExpressionPtr &&value) {
   this->dot = std::move(dot);
@@ -545,3 +545,21 @@ Value BinExpr::Evaluate() {
                              TTypeToString(op));
   }
 };
+ExecutionResult Import::Execute() {
+  auto path = moduleRoot + moduleName + ".dll";
+  auto module = LoadScritModule(moduleName, path);
+  
+  if (symbols.empty()) {
+    ASTNode::context.Insert(moduleName, ScritModDefAsObject(module));
+  } else {
+    vector<Value> values = {};
+    for (const auto &name : symbols) {
+      auto value = module->context->Find(name);
+    }
+  }
+  
+  return ExecutionResult::None;
+}
+
+Import::Import(const string &name) : moduleName(name), symbols({}) {};
+Import::Import(const string &name, vector<string> &symbols) : moduleName(name), symbols(symbols){};
