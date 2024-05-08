@@ -4,10 +4,12 @@
 TEST(EqTest, StrEquals) {
   String EMPTY = String_T::New("");
   String NOT_EMPTY = String_T::New("test string");
+  String IDENTICAL = String_T::New("test string");
   
-  ASSERT_EQ(true, EMPTY->Equals(EMPTY));
-  ASSERT_EQ(true, NOT_EMPTY->Equals(NOT_EMPTY));
-  ASSERT_EQ(false, EMPTY->Equals(NOT_EMPTY));
+  ASSERT_TRUE(EMPTY->Equals(EMPTY));
+  ASSERT_TRUE(NOT_EMPTY->Equals(NOT_EMPTY));
+  ASSERT_TRUE(NOT_EMPTY->Equals(IDENTICAL));
+  ASSERT_FALSE(EMPTY->Equals(NOT_EMPTY));
 }
 TEST(EqTest, UndefinedNullEquals) {
   Undefined UNDEFINED = Value_T::Undefined;

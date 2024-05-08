@@ -1,4 +1,5 @@
 #pragma once
+#include <unordered_set>
 #include <memory>
 #include <string>
 #include <typeinfo>
@@ -219,10 +220,13 @@ struct Object_T : Value_T {
   Value GetMember(const string &name);
   void SetMember(const string &name, Value &value);
   virtual string ToString() const override;
+  string ToString(std::unordered_set<const Value_T*> foundValues) const;
   bool Equals(Value value) override;
   ValueType GetType() override {
     return ValueType::Object;
   }
+private:
+  string WriteMembers(std::unordered_set<const Value_T*> foundValues) const;
 };
 struct Callable_T : Value_T {
   ~Callable_T();
