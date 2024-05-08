@@ -22,17 +22,23 @@ func cppBoilerplate(name) {
 }
 
 func createModule(name) {
+  
+  if name == undefined {
+    println("invalid name: was undefined")
+    return 1
+  } else {
+    println("Creating module: " + name)
+  }
+  
   path = cwd() + "/" + name
-  println("working dir: " + path)
+  
+  if path == undefined {
+    println("invalid path: was undefined")
+    return 1
+  }
   
   cppPath = path + "/" + name + ".cpp"
-  
-  println("cpp file path: " + cppPath)
-  
   bashPath = path + "/build.sh"
-  
-  println("bash path: "+ bashPath)
-  
   
   err = dir_create(path)
   if (err != undefined) {
@@ -64,7 +70,7 @@ func() {
   println("Are you sure you want to create a module named :" + args[0])
   println("type [y/n] and press enter")
   input = readln()
-  if (input == "y" && len(args) > 0) {
+  if (input == "y") {
     return createModule(args[0])
   } 
   

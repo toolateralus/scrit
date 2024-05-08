@@ -547,7 +547,7 @@ ExecutionResult Import::Execute() {
   // we do this even when we ignore the object becasue it registers the native
   // callables.
   auto object = ScritModDefAsObject(module);
-  if (!isWildcard) {
+  if (!isWildcard && symbols.empty()) {
     ASTNode::context.Insert(moduleName, object);
   } else {
     vector<Value> values = {};
@@ -555,6 +555,10 @@ ExecutionResult Import::Execute() {
     if (!symbols.empty()) {
       for (const auto &name : symbols) {
         auto value = module->context->Find(name);
+        if (value == Value_T::Undefined) {
+          throw std::runtime_error("invalid import statement. could not find " + name);
+        }
+        
         ASTNode::context.Insert(name, value);
       }
     } else {
