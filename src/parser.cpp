@@ -439,38 +439,43 @@ StatementPtr Parser::ParseFor() {
   StatementPtr decl = nullptr;
   ExpressionPtr condition = nullptr;
   StatementPtr inc = nullptr;
-
+  
+  // for {}
   if (Peek().type == TType::LCurly) {
     return make_unique<For>(nullptr, nullptr, nullptr, ParseBlock(),
                             ASTNode::context.PopScope());
-  }
+  } 
+  // for i=0,i<?,i=i+1 {}
+  else {
+    if (Peek().type == TType::Identifier) {
+      auto idTok = Peek();
+      auto op = ParseOperand();
 
-  if (Peek().type == TType::Identifier) {
-    auto idTok = Peek();
-    auto op = ParseOperand();
-
-    auto iden = dynamic_cast<Identifier *>(op.get());
-
-    if (Peek().type == TType::Assign) {
-      decl = ParseAssignment(make_unique<Identifier>(iden->name));
+      auto iden = dynamic_cast<Identifier *>(op.get());
+      
+      if (Peek().type == TType::Assign) {
+        decl = ParseAssignment(make_unique<Identifier>(iden->name));
+      } else {
+        tokens.push_back(idTok);
+        condition = ParseExpression();
+      }
     } else {
-      tokens.push_back(idTok);
       condition = ParseExpression();
     }
+    
+    if (Peek().type == TType::Comma) {
+      Eat();
+      condition = ParseExpression();
+    }
+    
+    if (Peek().type == TType::Comma) {
+      Eat();
+      inc = ParseStatement();
+    }
+    
+    return make_unique<For>(std::move(decl), std::move(condition), std::move(inc),
+                            ParseBlock(), ASTNode::context.PopScope());
   }
-
-  if (Peek().type == TType::Comma) {
-    Eat();
-    condition = ParseExpression();
-  }
-
-  if (Peek().type == TType::Comma) {
-    Eat();
-    inc = ParseStatement();
-  }
-
-  return make_unique<For>(std::move(decl), std::move(condition), std::move(inc),
-                          ParseBlock(), ASTNode::context.PopScope());
 }
 StatementPtr Parser::ParseContinue() {
   return make_unique<Continue>();
