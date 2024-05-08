@@ -7,9 +7,9 @@
 
 Bool Value_T::True = make_shared<::Bool_T>(true);
 Bool Value_T::False = make_shared<::Bool_T>(false);
-Value Value_T::Null = make_shared<::Null>();
-Value Value_T::InvalidCastException = make_shared<::Null>();
-Value Value_T::Undefined = make_shared<::Undefined>();
+Null Value_T::Null = make_shared<::Null_T>();
+Value Value_T::InvalidCastException = make_shared<::Null_T>();
+Undefined Value_T::Undefined = make_shared<::Undefined_T>();
 Value Object_T::GetMember(const string &name) { return scope->variables[name]; }
 void Object_T::SetMember(const string &name, Value &value) {
   scope->variables[name] = value;
@@ -142,16 +142,17 @@ string NativeCallable_T::ToString() const {
 }
 
 Int_T::Int_T(int value) : Value_T(ValueType::Int) { this->value = value; }
-bool Int_T::Equals(Value_T *value) {
+bool Int_T::Equals(Value value) {
   if (value->type == ValueType::Int) {
-    return static_cast<Int_T *>(value)->value == this->value;
+    return static_cast<Int_T *>(value.get())->value == this->value;
   }
   return false;
 };
 Value Int_T::Add(Value other) {
   if (other->type == ValueType::Int) {
-    return make_shared<Int_T>(this->value +
+    auto i = make_shared<Int_T>(this->value +
                               static_cast<Int_T *>(other.get())->value);
+    return i;
   }
   return Value_T::Null;
 }
@@ -362,10 +363,10 @@ void Bool_T::Set(Value newValue) {
 }
 string Bool_T::ToString() const { return std::to_string(value); }
 Object_T::Object_T() : Value_T(ValueType::Object) {}
-string Undefined::ToString() const { return "undefined"; }
-Undefined::Undefined() : Value_T(ValueType::None) {}
-string Null::ToString() const { return "null"; }
-Null::Null() : Value_T(ValueType::None) {}
+string Undefined_T::ToString() const { return "undefined"; }
+Undefined_T::Undefined_T() : Value_T(ValueType::None) {}
+string Null_T::ToString() const { return "null"; }
+Null_T::Null_T() : Value_T(ValueType::None) {}
 Array Array_T::New(vector<Value> &values) {
   auto array = make_shared<Array_T>();
   array->values = values;

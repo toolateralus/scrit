@@ -22,6 +22,8 @@ struct String_T;
 struct Object_T;
 struct Array_T;
 struct Scope_T;
+struct Undefined_T;
+struct Null_T;
 
 
 // forward declare AST nodes.
@@ -33,6 +35,8 @@ struct Expression;
 
 // ease of use typedef.
 typedef shared_ptr<Value_T> Value;
+typedef shared_ptr<Null_T> Null;
+typedef shared_ptr<Undefined_T> Undefined;
 typedef shared_ptr<Bool_T> Bool;
 typedef shared_ptr<String_T> String;
 typedef shared_ptr<Array_T> Array;
@@ -61,8 +65,8 @@ struct Scope_T {
   std::map<string, Value > variables = {};
 };
 struct Value_T {
-  static Value Null;
-  static Value Undefined;
+  static Null Null;
+  static Undefined Undefined;
   static Value InvalidCastException;
   static Bool False;
   static Bool True;
@@ -73,10 +77,10 @@ struct Value_T {
    return "null"; 
   }
   virtual bool Equals(Value value) { return value == Null; }
-  virtual Value Add(Value other) { return Null; }
-  virtual Value Subtract(Value other) { return Null; }
-  virtual Value Multiply(Value other) { return Null; }
-  virtual Value Divide(Value other) { return Null; }
+  virtual Value Add(Value other) { return std::static_pointer_cast<Value_T>(Undefined); }
+  virtual Value Subtract(Value other) { return std::static_pointer_cast<Value_T>(Undefined); }
+  virtual Value Multiply(Value other) { return std::static_pointer_cast<Value_T>(Undefined); }
+  virtual Value Divide(Value other) { return std::static_pointer_cast<Value_T>(Undefined); }
   virtual Bool Or(Value other) { return False; }
   virtual Bool And(Value other) { return False; }
   virtual Bool Less(Value other) { return False; }
@@ -84,19 +88,19 @@ struct Value_T {
   virtual Bool GreaterEquals(Value other) { return False; }
   virtual Bool LessEquals(Value other) { return False; }
   virtual Bool Not() { return False; }
-  virtual Value Negate() { return Null; }
+  virtual Value Negate() { return std::static_pointer_cast<Value_T>(Undefined); }
   virtual void Set(Value newValue) {}
   bool TypeEquals(Value other) { return typeid(other.get()) == typeid(*this); }
 };
-struct Null : Value_T {
-  Null();
+struct Null_T : Value_T {
+  Null_T();
   string ToString() const override;
   bool Equals(Value value) override {
     return value == Value_T::Null;
   }
 };
-struct Undefined : Value_T{
-  Undefined();
+struct Undefined_T : Value_T{
+  Undefined_T();
   string ToString() const override;
   bool Equals(Value value) override {
     return value == Value_T::Undefined;
@@ -106,7 +110,7 @@ struct Int_T : Value_T {
   int value = 0;
   Int_T(int value);
   ~Int_T() {}
-  virtual bool Equals(Value_T *value);
+  virtual bool Equals(Value value) override;
   virtual Value Add(Value other) override;
   virtual Value Subtract(Value other) override;
   virtual Value Multiply(Value other) override;
