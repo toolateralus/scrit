@@ -514,13 +514,13 @@ StatementPtr Parser::ParseImport() {
     Eat();
     Expect(TType::From);
     auto iden = Expect(TType::Identifier);
-    return make_unique<Import>(iden.value);
+    return make_unique<Import>(iden.value, true);
     
   }
    // plain 'import raylib' statement
   else if (next.type == TType::Identifier) {
     auto iden = Expect(TType::Identifier);
-    return make_unique<Import>(iden.value);
+    return make_unique<Import>(iden.value, false);
   }
   // 'import {iden, iden} from raylib'
   else if (next.type == TType::LCurly) {

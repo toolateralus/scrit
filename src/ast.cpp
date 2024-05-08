@@ -547,18 +547,27 @@ ExecutionResult Import::Execute() {
   // we do this even when we ignore the object becasue it registers the native
   // callables.
   auto object = ScritModDefAsObject(module);
-  if (symbols.empty()) {
+  if (!isWildcard) {
     ASTNode::context.Insert(moduleName, object);
   } else {
     vector<Value> values = {};
-    for (const auto &name : symbols) {
-      auto value = module->context->Find(name);
-      ASTNode::context.Insert(name, value);
+    
+    if (!symbols.empty()) {
+      for (const auto &name : symbols) {
+        auto value = module->context->Find(name);
+        ASTNode::context.Insert(name, value);
+      }
+    } else {
+      for (const auto &[key, var] : object->scope->variables) {
+        ASTNode::context.Insert(key, var);
+      }
     }
   }
   delete module;
   return ExecutionResult::None;
 }
 
-Import::Import(const string &name) : moduleName(name), symbols({}) {};
-Import::Import(const string &name, vector<string> &symbols) : moduleName(name), symbols(symbols){};
+Import::Import(const string &name, const bool isWildcard) : moduleName(name), symbols({}), isWildcard(isWildcard) {
+  
+};
+Import::Import(const string &name, vector<string> &symbols) : moduleName(name), symbols(symbols), isWildcard(false) {};

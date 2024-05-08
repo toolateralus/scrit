@@ -367,7 +367,6 @@ bool NativeCallable_T::Equals(Value value) { return value.get() == this; }
 bool Callable_T::Equals(Value value) { return value.get() == this; }
 bool Object_T::Equals(Value value) { return value.get() == this; }
 bool Undefined_T::Equals(Value value) {
-  std::cout << value << std::endl;
   return value.get() == this || value->GetType() == ValueType::Undefined;
 }
 bool Null_T::Equals(Value value) {
