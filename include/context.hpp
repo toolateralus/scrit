@@ -1,4 +1,5 @@
 #pragma once
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -11,6 +12,11 @@ struct Scope_T;
 
 typedef shared_ptr<Value_T> Value;
 typedef shared_ptr<Scope_T> Scope;
+
+
+struct Scope_T {
+  std::map<string, Value > variables = {};
+};
 
 struct Context {
   Context();

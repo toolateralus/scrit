@@ -40,7 +40,7 @@ struct NativeFunctions {
 void RegisterFunction(const std::string &name, NativeFunctionPtr function);
 
 #define REGISTER_FUNCTION(name) \
-  Value name(std::vector<Value> args); \
+  Value name(std::vector<Value>); \
   namespace { \
     struct name##_Register { \
       name##_Register() { \

@@ -3,7 +3,8 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
-#include <map>
+#include "context.hpp"
+#include "lexer.hpp"
 #include "native.hpp"
 
 using std::string;
@@ -22,6 +23,8 @@ struct String_T;
 struct Object_T;
 struct Array_T;
 struct Scope_T;
+struct Undefined_T;
+struct Null_T;
 
 
 // forward declare AST nodes.
@@ -33,13 +36,14 @@ struct Expression;
 
 // ease of use typedef.
 typedef shared_ptr<Value_T> Value;
+typedef shared_ptr<Null_T> Null;
+typedef shared_ptr<Undefined_T> Undefined;
 typedef shared_ptr<Bool_T> Bool;
 typedef shared_ptr<String_T> String;
 typedef shared_ptr<Array_T> Array;
 typedef shared_ptr<Int_T> Int;
 typedef shared_ptr<Float_T> Float;
 typedef shared_ptr<Object_T> Object;
-typedef shared_ptr<Scope_T> Scope;
 
 typedef unique_ptr<Expression> ExpressionPtr;
 typedef unique_ptr<Block> BlockPtr;
@@ -48,7 +52,9 @@ typedef unique_ptr<Parameters> ParametersPtr;
 typedef Value (*NativeFunctionPtr)(std::vector<Value>);
 
 enum class ValueType {
-  None,
+  Invalid,
+  Null,
+  Undefined,
   Float,
   Int,
   Bool,
@@ -57,56 +63,74 @@ enum class ValueType {
   Array,
   Callable,
 };
-struct Scope_T {
-  std::map<string, Value > variables = {};
+
+
+struct ValueFactory {
+  ValueFactory() = delete;
+  static Bool CreateBool(const bool value = false);
+  static String CreateString(const string value = "");
+  static Int CreateInt(const int value = 0);
+  static Float CreateFloat(const float value = 0.0f);
+  static Object CreateObject(Scope scope = nullptr);
+  static Array CreateArray(vector<Value> values = {});
 };
+
+
 struct Value_T {
-  static Value Null;
-  static Value Undefined;
+  static Null Null;
+  static Undefined Undefined;
   static Value InvalidCastException;
   static Bool False;
   static Bool True;
-  ValueType type = ValueType::None;
-  Value_T(ValueType type) : type(type) {}
+  
+  virtual ValueType GetType() = 0;
   virtual ~Value_T() {}
-  virtual string ToString() const {
-   return "null"; 
-  }
-  virtual bool Equals(Value value) { return value == Null; }
-  virtual Value Add(Value other) { return Null; }
-  virtual Value Subtract(Value other) { return Null; }
-  virtual Value Multiply(Value other) { return Null; }
-  virtual Value Divide(Value other) { return Null; }
-  virtual Bool Or(Value other) { return False; }
-  virtual Bool And(Value other) { return False; }
-  virtual Bool Less(Value other) { return False; }
-  virtual Bool Greater(Value other) { return False; }
-  virtual Bool GreaterEquals(Value other) { return False; }
-  virtual Bool LessEquals(Value other) { return False; }
+  Value_T() {}
+  
+  virtual string ToString() const = 0;
+  virtual bool Equals(Value) = 0;
+  virtual Value Add(Value) { return std::static_pointer_cast<Value_T>(Undefined); }
+  virtual Value Subtract(Value) { return std::static_pointer_cast<Value_T>(Undefined); }
+  virtual Value Multiply(Value) { return std::static_pointer_cast<Value_T>(Undefined); }
+  virtual Value Divide(Value) { return std::static_pointer_cast<Value_T>(Undefined); }
+  virtual Bool Or(Value) { return False; }
+  virtual Bool And(Value) { return False; }
+  virtual Bool Less(Value) { return False; }
+  virtual Bool Greater(Value) { return False; }
+  virtual Bool GreaterEquals(Value) { return False; }
+  virtual Bool LessEquals(Value) { return False; }
   virtual Bool Not() { return False; }
-  virtual Value Negate() { return Null; }
-  virtual void Set(Value newValue) {}
+  virtual Value Negate() { return std::static_pointer_cast<Value_T>(Undefined); }
+  virtual void Set(Value) {}
   bool TypeEquals(Value other) { return typeid(other.get()) == typeid(*this); }
 };
-struct Null : Value_T {
-  Null();
-  string ToString() const override;
-  bool Equals(Value value) override {
-    return value == Value_T::Null;
+struct Null_T : Value_T {
+  ValueType GetType() override {
+    return ValueType::Null;
   }
+  Null_T();
+  string ToString() const override;
+  bool Equals(Value value) override;
 };
-struct Undefined : Value_T{
-  Undefined();
-  string ToString() const override;
-  bool Equals(Value value) override {
-    return value == Value_T::Undefined;
+struct Undefined_T : Value_T{
+  ValueType GetType() override {
+    return ValueType::Undefined;
   }
+  Undefined_T();
+  string ToString() const override;
+  bool Equals(Value value) override;
 };
 struct Int_T : Value_T {
   int value = 0;
   Int_T(int value);
   ~Int_T() {}
-  virtual bool Equals(Value_T *value);
+  Int_T() = delete;
+  
+  static Int New(int value = 0) {
+    return make_shared<Int_T>(value);
+  }
+  
+  virtual bool Equals(Value value) override;
   virtual Value Add(Value other) override;
   virtual Value Subtract(Value other) override;
   virtual Value Multiply(Value other) override;
@@ -120,11 +144,18 @@ struct Int_T : Value_T {
   virtual Bool LessEquals(Value other) override;
   virtual Value Negate() override;
   virtual string ToString() const override;
+  ValueType GetType() override {
+    return ValueType::Int;
+  }
 };
 struct Float_T : Value_T {
   float value = 0.0f;
   Float_T(float value);
+  Float_T() = delete;
   ~Float_T() {}
+  static Float New(float value = 0) {
+    return make_shared<Float_T>(value);
+  }
   virtual bool Equals(Value value) override;
   virtual Value Add(Value other) override;
   virtual Value Subtract(Value other) override;
@@ -139,19 +170,33 @@ struct Float_T : Value_T {
   virtual Bool LessEquals(Value other) override;
   virtual Value Negate() override;
   virtual string ToString() const override;
+  ValueType GetType() override {
+    return ValueType::Float;
+  }
 };
 struct String_T : Value_T {
   string value;
   String_T(const string &value);
+  String_T() = delete;
   ~String_T() {}
+  static String New(string value = "") {
+    return make_shared<String_T>(value);
+  }
   virtual bool Equals(Value value) override;
   virtual Value Add(Value other) override;
   virtual void Set(Value newValue) override;
   string ToString() const override;
+  ValueType GetType() override {
+    return ValueType::String;
+  }
 };
 struct Bool_T : Value_T {
   bool value = false;
   Bool_T(bool value);
+  Bool_T() = delete;
+  static Bool New(bool value = false) {
+    return make_shared<Bool_T>(value);
+  }
   ~Bool_T() {}
   virtual bool Equals(Value value) override;
   virtual Bool Or(Value other) override;
@@ -159,37 +204,62 @@ struct Bool_T : Value_T {
   virtual Bool Not() override;
   virtual void Set(Value newValue) override;
   virtual string ToString() const override;
+  ValueType GetType() override {
+    return ValueType::Bool;
+  }
 };
 struct Object_T : Value_T {
-  Object_T();
+  Object_T(Scope scope);
   Scope scope;
+  static Object New(Scope scope = nullptr) {
+    if (!scope)
+      scope = make_shared<Scope_T>();
+    return make_shared<Object_T>(scope);    
+  }
   Value GetMember(const string &name);
   void SetMember(const string &name, Value &value);
   virtual string ToString() const override;
+  bool Equals(Value value) override;
+  ValueType GetType() override {
+    return ValueType::Object;
+  }
 };
 struct Callable_T : Value_T {
   ~Callable_T();
-  Callable_T();
+  Callable_T(); // for native callables only.
   Callable_T(BlockPtr &&block, ParametersPtr &&params);
   BlockPtr block;
   ParametersPtr params;
   virtual Value Call(ArgumentsPtr &args);
   string ToString() const override;
+  bool Equals(Value value) override;
+  ValueType GetType() override {
+    return ValueType::Callable;
+  }
 };
 struct NativeCallable_T : Callable_T {
+  NativeCallable_T() = delete;
   NativeCallable_T(NativeFunctionPtr ptr);
   NativeFunctionPtr function;
   Value Call(ArgumentsPtr &args) override;
   string ToString() const override;
+  bool Equals(Value value) override;
+  ValueType GetType() override {
+    return ValueType::Callable;
+  }
 };
 struct Array_T : Value_T {
+  vector<ExpressionPtr> initializer;
+  
   static Array New();
   static Array New(vector<ExpressionPtr> &&init);
-  static Array New(vector<Value> &values);
-  Array_T();
+  static Array New(std::vector<Value> &values);
+  Array_T() = delete;
   Array_T(vector<ExpressionPtr> &&init);
-  vector<ExpressionPtr> initializer;
+  Array_T(vector<Value> init);
+  
   vector<Value> values;
+  
   Value At(Int index);
   void Assign(Int index, Value value);
   void Push(Value value);
@@ -197,4 +267,8 @@ struct Array_T : Value_T {
   Value Pop();
   Value Remove(Int index);
   string ToString() const override;
+  bool Equals(Value value) override;
+  ValueType GetType() override {
+    return ValueType::Array;
+  }
 };

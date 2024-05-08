@@ -3,7 +3,7 @@
 #include <iostream>
 
 REGISTER_FUNCTION(println) {
-  for (const auto arg: args) {
+  for (const auto &arg: args) {
     printf("%s\n", arg->ToString().c_str());;
   }
   return Value_T::Undefined;
@@ -12,7 +12,7 @@ REGISTER_FUNCTION(println) {
 REGISTER_FUNCTION(readln) {
   string input;
   std::cin >> input;
-  return make_shared<String_T>(input);
+  return String_T::New(input);
 }
 
 
@@ -20,11 +20,11 @@ REGISTER_FUNCTION(push) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
-  if (args[0]->type != ValueType::Array) {
+  if (args[0]->GetType() != ValueType::Array) {
     return Value_T::Undefined;
   }
   auto array = static_cast<Array_T*>(args[0].get());
-  for (int i = 1; i < args.size(); i++) {
+  for (size_t i = 1; i < args.size(); i++) {
     array->Push(args[i]);
   }
   return Value_T::Undefined;
@@ -34,7 +34,7 @@ REGISTER_FUNCTION(pop) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
-  if (args[0]->type != ValueType::Array) {
+  if (args[0]->GetType() != ValueType::Array) {
     return Value_T::Undefined;
   }
   auto array = static_cast<Array_T*>(args[0].get());
@@ -45,9 +45,9 @@ REGISTER_FUNCTION(len) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
-  if (args[0]->type != ValueType::Array) {
+  if (args[0]->GetType() != ValueType::Array) {
     return Value_T::Undefined;
   }
   auto array = static_cast<Array_T*>(args[0].get());
-  return make_shared<Int_T>(array->values.size());
+  return Int_T::New(array->values.size());
 }

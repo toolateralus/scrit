@@ -3,7 +3,6 @@
 #include "value.hpp"
 #include <cstdlib>
 #include <dlfcn.h>
-#include <memory>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -22,14 +21,13 @@ extern "C" void ScritMod_AddVariable(ScritModDef *mod, const std::string &name, 
 
 Object ScritModDefAsObject(ScritModDef *mod) {
   m_InstantiateCallables(mod);
-  auto object = std::make_shared<Object_T>();
-  object->scope = mod->context->scopes[0];
+  auto object = Object_T::New(mod->context->scopes[0]);
   return object;
 }
 
 void m_InstantiateCallables(ScritModDef *module) {
   auto context = module->context;
-  for (const auto [name, func] : *module->functions) {
+  for (const auto &[name, func] : *module->functions) {
     context->Insert(name, NativeFunctions::MakeCallable(func));
   }
 }

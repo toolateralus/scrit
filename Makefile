@@ -2,7 +2,7 @@
 CXX := clang++
 
 # Compiler flags
-CXXFLAGS := -fPIC -std=c++2b -Iinclude
+CXXFLAGS := -fPIC -std=c++2b -Iinclude -Wall -Wextra
 DEBUGFLAGS := -g
 RELEASEFLAGS := -O3 
 TESTFLAGS := -g

@@ -293,7 +293,7 @@ ExpressionPtr Parser::ParseOperand() {
   }
   case TType::String:
     Eat();
-    return make_unique<Operand>(make_shared<String_T>(std::move(token.value)));
+    return make_unique<Operand>(String_T::New(std::move(token.value)));
   case TType::True:
     Eat();
     return make_unique<Operand>(Value_T::True);
@@ -308,10 +308,10 @@ ExpressionPtr Parser::ParseOperand() {
     return make_unique<Operand>(Value_T::Null);
   case TType::Float:
     Eat();
-    return make_unique<Operand>(make_shared<Float_T>(stof(token.value)));
+    return make_unique<Operand>(Float_T::New(stof(token.value)));
   case TType::Int:
     Eat();
-    return make_unique<Operand>(make_shared<Int_T>(stoi(token.value)));
+    return make_unique<Operand>(Int_T::New(stoi(token.value)));
   case TType::Identifier:
     Eat();
     return make_unique<Identifier>(token.value);
@@ -514,13 +514,13 @@ StatementPtr Parser::ParseImport() {
     Eat();
     Expect(TType::From);
     auto iden = Expect(TType::Identifier);
-    return make_unique<Import>(iden.value);
+    return make_unique<Import>(iden.value, true);
     
   }
    // plain 'import raylib' statement
   else if (next.type == TType::Identifier) {
     auto iden = Expect(TType::Identifier);
-    return make_unique<Import>(iden.value);
+    return make_unique<Import>(iden.value, false);
   }
   // 'import {iden, iden} from raylib'
   else if (next.type == TType::LCurly) {

@@ -209,10 +209,11 @@ struct BinExpr : Expression {
 
 
 struct Import : Statement {
-  Import(const string &name);
+  Import(const string &name, const bool isWildcard);
   Import(const string &name, vector<string> &symbols);
   vector<string> symbols;
   string moduleName;
+  bool isWildcard;
   const string moduleRoot = "/usr/local/scrit/modules/";
   ExecutionResult Execute() override;
 };
