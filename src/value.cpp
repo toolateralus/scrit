@@ -352,7 +352,7 @@ void Bool_T::Set(Value newValue) {
 }
 
 
-string Bool_T::ToString() const { return std::to_string(value); }
+string Bool_T::ToString() const { return value ? "true" : "false"; }
 string Undefined_T::ToString() const { return "undefined"; }
 string Null_T::ToString() const { return "null"; }
 

@@ -80,7 +80,6 @@ static Value fdelete(std::vector<Value> values) {
     return ValueFactory::CreateString("Unable to delete file");
   }
 }
-
 static Value dir_exists(std::vector<Value> values) {
   auto dirname = values[0];
   if (dirname->GetType() != ValueType::String) {
@@ -89,7 +88,6 @@ static Value dir_exists(std::vector<Value> values) {
   auto dname = static_cast<String_T*>(dirname.get());
   return ValueFactory::CreateBool(std::filesystem::exists(dname->value));
 }
-
 static Value dir_create(std::vector<Value> values) {
   auto dirname = values[0];
   if (dirname->GetType() != ValueType::String) {
@@ -103,12 +101,10 @@ static Value dir_create(std::vector<Value> values) {
     return ValueFactory::CreateString("Unable to create directory");
   }
 }
-
 static Value cwd(std::vector<Value> values) {
   std::string currentDir = std::filesystem::current_path().string();
   return ValueFactory::CreateString(currentDir);
 }
-
 static Value dir_getfiles(std::vector<Value> values) {
   auto dirname = values[0];
   if (dirname->GetType() != ValueType::String) {
@@ -136,7 +132,6 @@ static Value dir_delete(std::vector<Value> values) {
     return ValueFactory::CreateString("Unable to delete directory");
   }
 }
-
 static Value time(std::vector<Value> values) {
   auto now = std::chrono::system_clock::now();
   auto time = std::chrono::system_clock::to_time_t(now);
@@ -154,7 +149,6 @@ static Value exit(std::vector<Value> values) {
   std::exit(0);
   return Value_T::Undefined;
 }
-
 extern "C" ScritModDef* InitScritModule_system() {
   ScritModDef *def = CreateModDef();
   *def->description = "system functions. file io, time, etc.";
