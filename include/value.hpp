@@ -65,6 +65,17 @@ enum class ValueType {
 };
 
 
+struct ValueFactory {
+  ValueFactory() = delete;
+  static Bool CreateBool(const bool value = false);
+  static String CreateString(const string value = "");
+  static Int CreateInt(const int value = 0);
+  static Float CreateFloat(const float value = 0.0f);
+  static Object CreateObject(Scope scope = nullptr);
+  static Array CreateArray(vector<Value> values = {});
+};
+
+
 struct Value_T {
   static Null Null;
   static Undefined Undefined;
@@ -114,6 +125,11 @@ struct Int_T : Value_T {
   Int_T(int value);
   ~Int_T() {}
   Int_T() = delete;
+  
+  static Int New(int value = 0) {
+    return Int_T::New(value);
+  }
+  
   virtual bool Equals(Value value) override;
   virtual Value Add(Value other) override;
   virtual Value Subtract(Value other) override;
@@ -137,6 +153,9 @@ struct Float_T : Value_T {
   Float_T(float value);
   Float_T() = delete;
   ~Float_T() {}
+  static Float New(float value = 0) {
+    return Float_T::New(value);
+  }
   virtual bool Equals(Value value) override;
   virtual Value Add(Value other) override;
   virtual Value Subtract(Value other) override;
@@ -160,6 +179,9 @@ struct String_T : Value_T {
   String_T(const string &value);
   String_T() = delete;
   ~String_T() {}
+  static String New(string value = "") {
+    return String_T::New(value);
+  }
   virtual bool Equals(Value value) override;
   virtual Value Add(Value other) override;
   virtual void Set(Value newValue) override;
@@ -172,6 +194,9 @@ struct Bool_T : Value_T {
   bool value = false;
   Bool_T(bool value);
   Bool_T() = delete;
+  static Bool New(bool value = false) {
+    return Bool_T::New(value);
+  }
   ~Bool_T() {}
   virtual bool Equals(Value value) override;
   virtual Bool Or(Value other) override;
@@ -186,6 +211,11 @@ struct Bool_T : Value_T {
 struct Object_T : Value_T {
   Object_T(Scope scope);
   Scope scope;
+  static Object New(Scope scope = nullptr) {
+    if (!scope)
+      scope = make_shared<Scope_T>();
+    return Object_T::New(scope);    
+  }
   Value GetMember(const string &name);
   void SetMember(const string &name, Value &value);
   virtual string ToString() const override;

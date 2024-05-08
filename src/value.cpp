@@ -2,13 +2,12 @@
 #include "ast.hpp"
 #include "context.hpp"
 
-#include <iostream>
 #include <memory>
 #include <sstream>
 
-Bool Value_T::True = make_shared<::Bool_T>(true);
-Bool Value_T::False = make_shared<::Bool_T>(false);
-Null Value_T::Null = make_shared<::Null_T>();
+Bool Value_T::True = Bool_T::New(true);
+Bool Value_T::False = Bool_T::New(false);
+Null Value_T::Null = make_shared<Null_T>();
 Value Value_T::InvalidCastException = make_shared<::Null_T>();
 Undefined Value_T::Undefined = make_shared<::Undefined_T>();
 Value Object_T::GetMember(const string &name) { return scope->variables[name]; }
@@ -110,11 +109,11 @@ string Array_T::ToString() const {
   return ss.str();
 }
 Array Array_T::New(vector<ExpressionPtr> &&init) {
-  return make_shared<Array_T>(std::move(init));
+  return Array_T::New(std::move(init));
 }
 Array Array_T::New() { 
   auto values = vector<Value>();
-  return make_shared<Array_T>(values); }
+  return Array_T::New(values); }
 
 Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
   ASTNode::context.PushScope();
@@ -147,7 +146,7 @@ bool Int_T::Equals(Value value) {
 };
 Value Int_T::Add(Value other) {
   if (other->GetType() == ValueType::Int) {
-    auto i = make_shared<Int_T>(this->value +
+    auto i = Int_T::New(this->value +
                               static_cast<Int_T *>(other.get())->value);
     return i;
   }
@@ -155,21 +154,21 @@ Value Int_T::Add(Value other) {
 }
 Value Int_T::Subtract(Value other) {
   if (other->GetType() == ValueType::Int) {
-    return make_shared<Int_T>(this->value -
+    return Int_T::New(this->value -
                               static_cast<Int_T *>(other.get())->value);
   }
   return Value_T::Null;
 }
 Value Int_T::Multiply(Value other) {
   if (other->GetType() == ValueType::Int) {
-    return make_shared<Int_T>(this->value *
+    return Int_T::New(this->value *
                               static_cast<Int_T *>(other.get())->value);
   }
   return Value_T::Null;
 }
 Value Int_T::Divide(Value other) {
   if (other->GetType() == ValueType::Int) {
-    return make_shared<Int_T>(this->value /
+    return Int_T::New(this->value /
                               static_cast<Int_T *>(other.get())->value);
   }
   return Value_T::Null;
@@ -181,47 +180,47 @@ void Int_T::Set(Value newValue) {
 }
 Bool Int_T::Or(Value other) {
   if (other->GetType() == ValueType::Int) {
-    return make_shared<Bool_T>(this->value ||
+    return Bool_T::New(this->value ||
                                static_cast<Int_T *>(other.get())->value);
   }
   return False;
 }
 Bool Int_T::And(Value other) {
   if (other->GetType() == ValueType::Int) {
-    return make_shared<Bool_T>(this->value &&
+    return Bool_T::New(this->value &&
                                static_cast<Int_T *>(other.get())->value);
   }
   return False;
 }
 Bool Int_T::Less(Value other) {
   if (other->GetType() == ValueType::Int) {
-    return make_shared<Bool_T>(this->value <
+    return Bool_T::New(this->value <
                                static_cast<Int_T *>(other.get())->value);
   }
   return False;
 }
 Bool Int_T::Greater(Value other) {
   if (other->GetType() == ValueType::Int) {
-    return make_shared<Bool_T>(this->value >
+    return Bool_T::New(this->value >
                                static_cast<Int_T *>(other.get())->value);
   }
   return False;
 }
 Bool Int_T::GreaterEquals(Value other) {
   if (other->GetType() == ValueType::Int) {
-    return make_shared<Bool_T>(this->value >=
+    return Bool_T::New(this->value >=
                                static_cast<Int_T *>(other.get())->value);
   }
   return False;
 }
 Bool Int_T::LessEquals(Value other) {
   if (other->GetType() == ValueType::Int) {
-    return make_shared<Bool_T>(this->value <=
+    return Bool_T::New(this->value <=
                                static_cast<Int_T *>(other.get())->value);
   }
   return False;
 }
-Value Int_T::Negate() { return make_shared<Int_T>(-value); }
+Value Int_T::Negate() { return Int_T::New(-value); }
 string Int_T::ToString() const { return std::to_string(value); }
 
 bool Float_T::Equals(Value value) {
@@ -232,28 +231,28 @@ bool Float_T::Equals(Value value) {
 }
 Value Float_T::Add(Value other) {
   if (other->GetType() == ValueType::Float) {
-    return make_shared<Float_T>(this->value +
+    return Float_T::New(this->value +
                                 static_cast<Float_T *>(other.get())->value);
   }
   return Value_T::Null;
 }
 Value Float_T::Subtract(Value other) {
   if (other->GetType() == ValueType::Float) {
-    return make_shared<Float_T>(this->value -
+    return Float_T::New(this->value -
                                 static_cast<Float_T *>(other.get())->value);
   }
   return Value_T::Null;
 }
 Value Float_T::Multiply(Value other) {
   if (other->GetType() == ValueType::Float) {
-    return make_shared<Float_T>(this->value *
+    return Float_T::New(this->value *
                                 static_cast<Float_T *>(other.get())->value);
   }
   return Value_T::Null;
 }
 Value Float_T::Divide(Value other) {
   if (other->GetType() == ValueType::Float) {
-    return make_shared<Float_T>(this->value /
+    return Float_T::New(this->value /
                                 static_cast<Float_T *>(other.get())->value);
   }
   return Value_T::Null;
@@ -265,47 +264,47 @@ void Float_T::Set(Value newValue) {
 }
 Bool Float_T::Or(Value other) {
   if (other->GetType() == ValueType::Float) {
-    return make_shared<Bool_T>(this->value ||
+    return Bool_T::New(this->value ||
                                static_cast<Float_T *>(other.get())->value);
   }
   return False;
 }
 Bool Float_T::And(Value other) {
   if (other->GetType() == ValueType::Float) {
-    return make_shared<Bool_T>(this->value &&
+    return Bool_T::New(this->value &&
                                static_cast<Float_T *>(other.get())->value);
   }
   return False;
 }
 Bool Float_T::Less(Value other) {
   if (other->GetType() == ValueType::Float) {
-    return make_shared<Bool_T>(this->value <
+    return Bool_T::New(this->value <
                                static_cast<Float_T *>(other.get())->value);
   }
   return False;
 }
 Bool Float_T::Greater(Value other) {
   if (other->GetType() == ValueType::Float) {
-    return make_shared<Bool_T>(this->value >
+    return Bool_T::New(this->value >
                                static_cast<Float_T *>(other.get())->value);
   }
   return False;
 }
 Bool Float_T::GreaterEquals(Value other) {
   if (other->GetType() == ValueType::Float) {
-    return make_shared<Bool_T>(this->value >=
+    return Bool_T::New(this->value >=
                                static_cast<Float_T *>(other.get())->value);
   }
   return False;
 }
 Bool Float_T::LessEquals(Value other) {
   if (other->GetType() == ValueType::Float) {
-    return make_shared<Bool_T>(this->value <=
+    return Bool_T::New(this->value <=
                                static_cast<Float_T *>(other.get())->value);
   }
   return False;
 }
-Value Float_T::Negate() { return make_shared<Float_T>(-value); }
+Value Float_T::Negate() { return Float_T::New(-value); }
 string Float_T::ToString() const { return std::to_string(value); }
 
 
@@ -316,7 +315,7 @@ bool String_T::Equals(Value value) {
   return false;
 }
 Value String_T::Add(Value other) {
-  return make_shared<String_T>(value + other->ToString());
+  return String_T::New(value + other->ToString());
 }
 void String_T::Set(Value newValue) {
   if (newValue->GetType() == ValueType::String) {
@@ -333,19 +332,19 @@ bool Bool_T::Equals(Value value) {
 }
 Bool Bool_T::Or(Value other) {
   if (other->GetType() == ValueType::Bool) {
-    return make_shared<Bool_T>(this->value ||
+    return Bool_T::New(this->value ||
                                static_cast<Bool_T *>(other.get())->value);
   }
   return False;
 }
 Bool Bool_T::And(Value other) {
   if (other->GetType() == ValueType::Bool) {
-    return make_shared<Bool_T>(this->value &&
+    return Bool_T::New(this->value &&
                                static_cast<Bool_T *>(other.get())->value);
   }
   return False;
 }
-Bool Bool_T::Not() { return make_shared<Bool_T>(!value); }
+Bool Bool_T::Not() { return Bool_T::New(!value); }
 void Bool_T::Set(Value newValue) {
   if (newValue->GetType() == ValueType::Bool) {
     this->value = static_cast<Bool_T *>(newValue.get())->value;
@@ -359,7 +358,7 @@ string Null_T::ToString() const { return "null"; }
 
 
 Array Array_T::New(vector<Value> &values) {
-  auto array = make_shared<Array_T>(values);
+  auto array = Array_T::New(values);
   return array;
 }
 bool Array_T::Equals(Value value) { return value.get() == this; }
@@ -399,3 +398,15 @@ Array_T::Array_T(vector<Value> init)  {
   this->values = init;
 }
 Object_T::Object_T(Scope scope) { this->scope = scope; }
+Bool ValueFactory::CreateBool(const bool value) { return Bool_T::New(value); }
+String ValueFactory::CreateString(const string value) {
+  return String_T::New(value);
+}
+Int ValueFactory::CreateInt(const int value) { return Int_T::New(value); }
+Float ValueFactory::CreateFloat(const float value) {
+  return Float_T::New(value);
+}
+Object ValueFactory::CreateObject(Scope scope) { return Object_T::New(scope); }
+Array ValueFactory::CreateArray(vector<Value> values) {
+  return Array_T::New(values);
+}

@@ -12,7 +12,7 @@ REGISTER_FUNCTION(println) {
 REGISTER_FUNCTION(readln) {
   string input;
   std::cin >> input;
-  return make_shared<String_T>(input);
+  return String_T::New(input);
 }
 
 
@@ -49,5 +49,5 @@ REGISTER_FUNCTION(len) {
     return Value_T::Undefined;
   }
   auto array = static_cast<Array_T*>(args[0].get());
-  return make_shared<Int_T>(array->values.size());
+  return Int_T::New(array->values.size());
 }

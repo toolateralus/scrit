@@ -13,9 +13,9 @@ auto ExecutionResult::Continue =
     ExecutionResult(ControlChange::Continue, Value_T::Undefined);
 
 static Object MakeException(const string &msg, const string &type) {
-  auto e = make_shared<Object_T>(make_shared<Scope_T>());
-  e->scope->variables["msg"] = make_shared<String_T>(msg);
-  e->scope->variables["type"] = make_shared<String_T>(type);
+  auto e = Object_T::New();
+  e->scope->variables["msg"] = String_T::New(msg);
+  e->scope->variables["type"] = String_T::New(type);
   return e;
 }
 string CC_ToString(ControlChange controlChange) {
@@ -260,7 +260,7 @@ Value ObjectInitializer::Evaluate() {
     throw std::runtime_error(CC_ToString(controlChange) +
                              " not allowed in object initialization.");
   }
-  return make_shared<Object_T>(block->scope);
+  return Object_T::New(block->scope);
 }
 vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
   vector<Value> values = {};
@@ -528,10 +528,10 @@ Value BinExpr::Evaluate() {
   case TType::LessEQ:
     return left->LessEquals(right);
   case TType::Equals:
-    return make_shared<Bool_T>(left->Equals(right));
+    return Bool_T::New(left->Equals(right));
   case TType::NotEquals: {
     auto result = left->Equals(right);
-    return make_shared<Bool_T>(!result);
+    return Bool_T::New(!result);
   }
   case TType::Assign:
     left->Set(right);

@@ -24,10 +24,10 @@ int main(int argc, char **argv) {
 
       // create an 'args' array in language.      
       if (argc > 2) {
-        Array args = std::make_shared<Array_T>(vector<Value>());
+        Array args = Array_T::New();
         for (int i = 2; i < argc; ++i) {
           auto str = string(argv[i]);
-          args->Push(make_shared<String_T>(str));
+          args->Push(String_T::New(str));
         }
         ASTNode::context.Insert("args", args);
       }
