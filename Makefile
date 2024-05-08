@@ -29,8 +29,7 @@ NOMAINDEBUGOBJS := $(filter-out $(OBJDIR)/debug/main.o, $(DEBUGOBJS))
 
 all: debug release
 
-test: test-build
-	@./$(BINDIR)/test/app
+test: debug test-build @./$(BINDIR)/test/app
 	
 debug: $(BINDIR)/debug/app
 

@@ -28,7 +28,7 @@
       "request": "launch",
       "name": "Test",
       "program": "${workspaceFolder}/bin/test/app",
-      "cwd": "${workspaceFolder}"
+      "cwd": "${workspaceFolder}",
     },
   ]
 }

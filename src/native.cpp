@@ -68,7 +68,7 @@ ScritModDef* LoadScritModule(const std::string &name, const std::string &path) {
   }
   ScriptModInitFuncPtr function = (ScriptModInitFuncPtr)func;
 
-  if (!function) {
+  if (!function) { 
     dlclose(handle);
     throw std::runtime_error(
         "Invalid function signature on " + fnName +

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdio>
 #include <ostream>
 #include <sstream>
 #include <stdexcept>
@@ -91,8 +92,15 @@ Token Lexer::LexString() {
   
   pos++; // move past opening "
   col++;
-
-  while (input[pos] != '\"' || (input[pos] == '\"' && input[pos-1] == '\\')) {
+  while (true) {
+    if (pos >= input.length()) {
+      throw std::runtime_error("Unescaped string literal,"
+        " ln:" + std::to_string(startLoc) +
+        " col:" + std::to_string(startCol));
+    }
+    if (!(input[pos] != '\"' || (input[pos] == '\"' && input[pos-1] == '\\'))) {
+      break;
+    }
     if (input[pos] == '\\' && pos+1 < input.size()) {
       switch (input[pos+1]) {
         case '\"':
@@ -210,7 +218,6 @@ Lexer::Lexer() {
       {"true", TType::True},           {"null", TType::Null},
       {"undefined", TType::Undefined}, {"import", TType::Import},
       {"from", TType::From},
-  
   };
 }
 string TTypeToString(const TType &type) {
