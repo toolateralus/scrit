@@ -75,9 +75,9 @@ struct Token {
   string ToString() const;
 };
 struct Lexer {
-  int pos = 0;
-  int loc = 0;
-  int col = 0;
+  size_t pos = 0;
+  size_t loc = 0;
+  size_t col = 0;
   string input;
   std::unordered_map<string, TType> operators;
   std::unordered_map<string, TType> keywords;

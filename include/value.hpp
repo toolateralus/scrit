@@ -88,20 +88,20 @@ struct Value_T {
   Value_T() {}
   
   virtual string ToString() const = 0;
-  virtual bool Equals(Value value) = 0;
-  virtual Value Add(Value other) { return std::static_pointer_cast<Value_T>(Undefined); }
-  virtual Value Subtract(Value other) { return std::static_pointer_cast<Value_T>(Undefined); }
-  virtual Value Multiply(Value other) { return std::static_pointer_cast<Value_T>(Undefined); }
-  virtual Value Divide(Value other) { return std::static_pointer_cast<Value_T>(Undefined); }
-  virtual Bool Or(Value other) { return False; }
-  virtual Bool And(Value other) { return False; }
-  virtual Bool Less(Value other) { return False; }
-  virtual Bool Greater(Value other) { return False; }
-  virtual Bool GreaterEquals(Value other) { return False; }
-  virtual Bool LessEquals(Value other) { return False; }
+  virtual bool Equals(Value) = 0;
+  virtual Value Add(Value) { return std::static_pointer_cast<Value_T>(Undefined); }
+  virtual Value Subtract(Value) { return std::static_pointer_cast<Value_T>(Undefined); }
+  virtual Value Multiply(Value) { return std::static_pointer_cast<Value_T>(Undefined); }
+  virtual Value Divide(Value) { return std::static_pointer_cast<Value_T>(Undefined); }
+  virtual Bool Or(Value) { return False; }
+  virtual Bool And(Value) { return False; }
+  virtual Bool Less(Value) { return False; }
+  virtual Bool Greater(Value) { return False; }
+  virtual Bool GreaterEquals(Value) { return False; }
+  virtual Bool LessEquals(Value) { return False; }
   virtual Bool Not() { return False; }
   virtual Value Negate() { return std::static_pointer_cast<Value_T>(Undefined); }
-  virtual void Set(Value newValue) {}
+  virtual void Set(Value) {}
   bool TypeEquals(Value other) { return typeid(other.get()) == typeid(*this); }
 };
 struct Null_T : Value_T {
@@ -127,7 +127,7 @@ struct Int_T : Value_T {
   Int_T() = delete;
   
   static Int New(int value = 0) {
-    return Int_T::New(value);
+    return make_shared<Int_T>(value);
   }
   
   virtual bool Equals(Value value) override;
@@ -154,7 +154,7 @@ struct Float_T : Value_T {
   Float_T() = delete;
   ~Float_T() {}
   static Float New(float value = 0) {
-    return Float_T::New(value);
+    return make_shared<Float_T>(value);
   }
   virtual bool Equals(Value value) override;
   virtual Value Add(Value other) override;
@@ -180,7 +180,7 @@ struct String_T : Value_T {
   String_T() = delete;
   ~String_T() {}
   static String New(string value = "") {
-    return String_T::New(value);
+    return make_shared<String_T>(value);
   }
   virtual bool Equals(Value value) override;
   virtual Value Add(Value other) override;
@@ -195,7 +195,7 @@ struct Bool_T : Value_T {
   Bool_T(bool value);
   Bool_T() = delete;
   static Bool New(bool value = false) {
-    return Bool_T::New(value);
+    return make_shared<Bool_T>(value);
   }
   ~Bool_T() {}
   virtual bool Equals(Value value) override;
@@ -214,7 +214,7 @@ struct Object_T : Value_T {
   static Object New(Scope scope = nullptr) {
     if (!scope)
       scope = make_shared<Scope_T>();
-    return Object_T::New(scope);    
+    return make_shared<Object_T>(scope);    
   }
   Value GetMember(const string &name);
   void SetMember(const string &name, Value &value);

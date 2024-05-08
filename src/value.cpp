@@ -18,7 +18,7 @@ Value Callable_T::Call(ArgumentsPtr &args) {
   
   auto scope = ASTNode::context.PushScope();
   auto values = Call::GetArgsValueList(args);
-  for (int i = 0; i < params->names.size(); ++i) {
+  for (size_t i = 0; i < params->names.size(); ++i) {
     if (i < values.size()) 
       scope->variables[params->names[i]] = values[i];
   }
@@ -48,7 +48,7 @@ Value Array_T::Remove(Int index) {
   int idx = index->value;
   auto &values = this->values;
 
-  if (idx < 0 || idx >= values.size()) {
+  if (idx < 0 || (size_t)idx >= values.size()) {
     throw std::out_of_range("Index out of range");
   }
 
@@ -60,7 +60,7 @@ Value Array_T::Remove(Int index) {
 void Array_T::Insert(Int index, Value value) {
   int idx = index->value;
   auto &values = this->values;
-  if (idx < 0 || idx > values.size()) {
+  if (idx < 0 || (size_t)idx > values.size()) {
     throw std::out_of_range("Index out of range");
   }
   values.insert(values.begin() + idx, value);
@@ -68,7 +68,7 @@ void Array_T::Insert(Int index, Value value) {
 void Array_T::Assign(Int index, Value value) {
   int idx = index->value;
   auto &values = this->values;
-  if (idx < 0 || idx >= values.size()) {
+  if (idx < 0 || (size_t)idx >= values.size()) {
     throw std::out_of_range("Index out of range");
   }
   values[idx] = value;
@@ -78,7 +78,7 @@ void Array_T::Assign(Int index, Value value) {
 string Object_T::ToString() const {
   std::stringstream ss = {};
   ss << "{";
-  for (const auto [key, var] : scope->variables) {
+  for (const auto &[key, var] : scope->variables) {
     ss << '\"' << key <<  "\" : " << var->ToString() << "\n";
   }
   ss << "}";
@@ -99,7 +99,7 @@ string Callable_T::ToString() const {
 string Array_T::ToString() const {
   std::stringstream ss = {};
   ss << "[";
-  for (const auto value : values) {
+  for (const auto &value : values) {
     ss << value->ToString();
     if (value != values.back()) {
       ss << ", ";
@@ -109,11 +109,11 @@ string Array_T::ToString() const {
   return ss.str();
 }
 Array Array_T::New(vector<ExpressionPtr> &&init) {
-  return Array_T::New(std::move(init));
+  return make_shared<Array_T>(std::move(init));
 }
 Array Array_T::New() { 
   auto values = vector<Value>();
-  return Array_T::New(values); }
+  return make_shared<Array_T>(values); }
 
 Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
   ASTNode::context.PushScope();
@@ -358,7 +358,7 @@ string Null_T::ToString() const { return "null"; }
 
 
 Array Array_T::New(vector<Value> &values) {
-  auto array = Array_T::New(values);
+  auto array = make_shared<Array_T>(values);
   return array;
 }
 bool Array_T::Equals(Value value) { return value.get() == this; }

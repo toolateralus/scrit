@@ -27,7 +27,7 @@ Object ScritModDefAsObject(ScritModDef *mod) {
 
 void m_InstantiateCallables(ScritModDef *module) {
   auto context = module->context;
-  for (const auto [name, func] : *module->functions) {
+  for (const auto &[name, func] : *module->functions) {
     context->Insert(name, NativeFunctions::MakeCallable(func));
   }
 }

@@ -567,7 +567,7 @@ ExecutionResult Import::Execute() {
   return ExecutionResult::None;
 }
 
-Import::Import(const string &name, const bool isWildcard) : moduleName(name), symbols({}), isWildcard(isWildcard) {
+Import::Import(const string &name, const bool isWildcard) : symbols({}), moduleName(name), isWildcard(isWildcard) {
   
 };
-Import::Import(const string &name, vector<string> &symbols) : moduleName(name), symbols(symbols), isWildcard(false) {};
+Import::Import(const string &name, vector<string> &symbols) : symbols(symbols), moduleName(name), isWildcard(false) {};
