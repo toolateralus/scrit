@@ -129,9 +129,7 @@ ExecutionResult If::Execute() {
   if (condResult->type != ValueType::Bool) {
     return ExecutionResult::None;
   }
-  auto b = static_cast<Bool_T *>(condResult.get());
-
-  if (b->Equals(Value_T::True)) {
+  if (condResult->Equals(Value_T::True)) {
     auto result = block->Execute();
     switch (result.controlChange) {
     case ControlChange::None:
@@ -149,7 +147,7 @@ ExecutionResult If::Execute() {
                                " not implemented");
     }
   }
-  if (elseStmnt) {
+  else if (elseStmnt) {
     auto result = elseStmnt->Execute();
     switch (result.controlChange) {
     case ControlChange::None:
@@ -513,7 +511,7 @@ Value UnaryExpr::Evaluate() {
 Value BinExpr::Evaluate() {
   auto left = this->left->Evaluate();
   auto right = this->right->Evaluate();
-
+  
   switch (op) {
   case TType::Add:
     return left->Add(right);
@@ -537,8 +535,13 @@ Value BinExpr::Evaluate() {
     return left->LessEquals(right);
   case TType::Equals:
     return make_shared<Bool_T>(left->Equals(right));
-  case TType::NotEquals: 
-    return make_shared<Bool_T>(!left->Equals(right));
+  case TType::NotEquals: {
+    auto l = dynamic_cast<Undefined_T*>(left.get());
+    auto r = dynamic_cast<Undefined_T*>(right.get());
+    
+    auto result = left->Equals(right);
+    return make_shared<Bool_T>(!result);
+  }
   case TType::Assign:
     left->Set(right);
     return left;

@@ -4,6 +4,7 @@
 #include <typeinfo>
 #include <vector>
 #include <map>
+#include "lexer.hpp"
 #include "native.hpp"
 
 using std::string;
@@ -52,7 +53,9 @@ typedef unique_ptr<Parameters> ParametersPtr;
 typedef Value (*NativeFunctionPtr)(std::vector<Value>);
 
 enum class ValueType {
-  None,
+  Invalid,
+  Null,
+  Undefined,
   Float,
   Int,
   Bool,
@@ -70,13 +73,13 @@ struct Value_T {
   static Value InvalidCastException;
   static Bool False;
   static Bool True;
-  ValueType type = ValueType::None;
+  ValueType type = ValueType::Invalid;
+  
   Value_T(ValueType type) : type(type) {}
   virtual ~Value_T() {}
-  virtual string ToString() const {
-   return "null"; 
-  }
-  virtual bool Equals(Value value) { return value == Null; }
+  Value_T() = delete;
+  virtual string ToString() const = 0;
+  virtual bool Equals(Value value) = 0;
   virtual Value Add(Value other) { return std::static_pointer_cast<Value_T>(Undefined); }
   virtual Value Subtract(Value other) { return std::static_pointer_cast<Value_T>(Undefined); }
   virtual Value Multiply(Value other) { return std::static_pointer_cast<Value_T>(Undefined); }
@@ -95,16 +98,12 @@ struct Value_T {
 struct Null_T : Value_T {
   Null_T();
   string ToString() const override;
-  bool Equals(Value value) override {
-    return value == Value_T::Null;
-  }
+  bool Equals(Value value) override;
 };
 struct Undefined_T : Value_T{
   Undefined_T();
   string ToString() const override;
-  bool Equals(Value value) override {
-    return value == Value_T::Undefined;
-  }
+  bool Equals(Value value) override;
 };
 struct Int_T : Value_T {
   int value = 0;
@@ -170,6 +169,7 @@ struct Object_T : Value_T {
   Value GetMember(const string &name);
   void SetMember(const string &name, Value &value);
   virtual string ToString() const override;
+  bool Equals(Value value) override;
 };
 struct Callable_T : Value_T {
   ~Callable_T();
@@ -179,12 +179,14 @@ struct Callable_T : Value_T {
   ParametersPtr params;
   virtual Value Call(ArgumentsPtr &args);
   string ToString() const override;
+  bool Equals(Value value) override;
 };
 struct NativeCallable_T : Callable_T {
   NativeCallable_T(NativeFunctionPtr ptr);
   NativeFunctionPtr function;
   Value Call(ArgumentsPtr &args) override;
   string ToString() const override;
+  bool Equals(Value value) override;
 };
 struct Array_T : Value_T {
   static Array New();
@@ -201,4 +203,5 @@ struct Array_T : Value_T {
   Value Pop();
   Value Remove(Int index);
   string ToString() const override;
+  bool Equals(Value value) override;
 };

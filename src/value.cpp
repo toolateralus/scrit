@@ -18,7 +18,8 @@ Value Callable_T::Call(ArgumentsPtr &args) {
   auto scope = ASTNode::context.PushScope();
   auto values = Call::GetArgsValueList(args);
   for (int i = 0; i < params->names.size(); ++i) {
-    scope->variables[params->names[i]] = values[i];
+    if (i < values.size()) 
+      scope->variables[params->names[i]] = values[i];
   }
   auto result = block->Execute();
   
@@ -322,11 +323,7 @@ bool String_T::Equals(Value value) {
   return false;
 }
 Value String_T::Add(Value other) {
-  if (other->type == ValueType::String) {
-    return make_shared<String_T>(this->value +
-                                 static_cast<String_T *>(other.get())->value);
-  }
-  return Value_T::Null;
+  return make_shared<String_T>(value + other->ToString());
 }
 void String_T::Set(Value newValue) {
   if (newValue->type == ValueType::String) {
@@ -364,11 +361,21 @@ void Bool_T::Set(Value newValue) {
 string Bool_T::ToString() const { return std::to_string(value); }
 Object_T::Object_T() : Value_T(ValueType::Object) {}
 string Undefined_T::ToString() const { return "undefined"; }
-Undefined_T::Undefined_T() : Value_T(ValueType::None) {}
+Undefined_T::Undefined_T() : Value_T(ValueType::Undefined) {}
 string Null_T::ToString() const { return "null"; }
-Null_T::Null_T() : Value_T(ValueType::None) {}
+Null_T::Null_T() : Value_T(ValueType::Null) {}
 Array Array_T::New(vector<Value> &values) {
   auto array = make_shared<Array_T>();
   array->values = values;
   return array;
+}
+bool Array_T::Equals(Value value) { return value.get() == this; }
+bool NativeCallable_T::Equals(Value value) { return value.get() == this; }
+bool Callable_T::Equals(Value value) { return value.get() == this; }
+bool Object_T::Equals(Value value) { return value.get() == this; }
+bool Undefined_T::Equals(Value value) {
+  return value == Value_T::Undefined || value->type == ValueType::Undefined;
+}
+bool Null_T::Equals(Value value) {
+  return value == Value_T::Null || value->type == ValueType::Null;
 }
