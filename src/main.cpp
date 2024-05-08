@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
         auto tokens = lexer.Lex(code);
         auto ast = parser.Parse(std::move(tokens));
         
-        Array args = std::make_shared<Array_T>();
+        Array args = std::make_shared<Array_T>(vector<Value>());
         
         for (int i = 2; i < argc; ++i) {
           auto str = string(argv[i]);

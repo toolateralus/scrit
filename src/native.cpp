@@ -22,8 +22,7 @@ extern "C" void ScritMod_AddVariable(ScritModDef *mod, const std::string &name, 
 
 Object ScritModDefAsObject(ScritModDef *mod) {
   m_InstantiateCallables(mod);
-  auto object = std::make_shared<Object_T>();
-  object->scope = mod->context->scopes[0];
+  auto object = std::make_shared<Object_T>(mod->context->scopes[0]);
   return object;
 }
 

@@ -20,7 +20,7 @@ REGISTER_FUNCTION(push) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
-  if (args[0]->type != ValueType::Array) {
+  if (args[0]->GetType() != ValueType::Array) {
     return Value_T::Undefined;
   }
   auto array = static_cast<Array_T*>(args[0].get());
@@ -34,7 +34,7 @@ REGISTER_FUNCTION(pop) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
-  if (args[0]->type != ValueType::Array) {
+  if (args[0]->GetType() != ValueType::Array) {
     return Value_T::Undefined;
   }
   auto array = static_cast<Array_T*>(args[0].get());
@@ -45,7 +45,7 @@ REGISTER_FUNCTION(len) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
-  if (args[0]->type != ValueType::Array) {
+  if (args[0]->GetType() != ValueType::Array) {
     return Value_T::Undefined;
   }
   auto array = static_cast<Array_T*>(args[0].get());

@@ -13,8 +13,7 @@ auto ExecutionResult::Continue =
     ExecutionResult(ControlChange::Continue, Value_T::Undefined);
 
 static Object MakeException(const string &msg, const string &type) {
-  auto e = make_shared<Object_T>();
-  e->scope = make_shared<Scope_T>();
+  auto e = make_shared<Object_T>(make_shared<Scope_T>());
   e->scope->variables["msg"] = make_shared<String_T>(msg);
   e->scope->variables["type"] = make_shared<String_T>(type);
   return e;
@@ -126,9 +125,6 @@ BinExpr::BinExpr(ExpressionPtr &&left, ExpressionPtr &&right, TType op) {
 }
 ExecutionResult If::Execute() {
   auto condResult = condition->Evaluate();
-  if (condResult->type != ValueType::Bool) {
-    return ExecutionResult::None;
-  }
   if (condResult->Equals(Value_T::True)) {
     auto result = block->Execute();
     switch (result.controlChange) {
@@ -259,14 +255,12 @@ ExecutionResult Block::Execute() {
   return ExecutionResult::None;
 }
 Value ObjectInitializer::Evaluate() {
-  auto obj = make_shared<Object_T>();
   auto controlChange = block->Execute().controlChange;
   if (controlChange != ControlChange::None) {
     throw std::runtime_error(CC_ToString(controlChange) +
                              " not allowed in object initialization.");
   }
-  obj->scope = block->scope;
-  return obj;
+  return make_shared<Object_T>(block->scope);
 }
 vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
   vector<Value> values = {};
@@ -277,7 +271,7 @@ vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
 }
 Value Call::Evaluate() {
   auto lvalue = operand->Evaluate();
-  if (lvalue->type == ValueType::Callable) {
+  if (lvalue->GetType() == ValueType::Callable) {
     auto callable = static_cast<Callable_T *>(lvalue.get());
     return callable->Call(args);
   }
@@ -318,7 +312,7 @@ ExecutionResult For::Execute() {
     while (true) {
       auto conditionResult = condition->Evaluate();
 
-      if (conditionResult->type != ValueType::Bool) {
+      if (conditionResult->GetType() != ValueType::Bool) {
         return ExecutionResult::None;
       }
 
@@ -428,7 +422,7 @@ ExecutionResult FuncDecl::Execute() {
 Value DotExpr::Evaluate() {
   auto leftValue = left->Evaluate();
 
-  if (leftValue->type != ValueType::Object) {
+  if (leftValue->GetType() != ValueType::Object) {
     throw std::runtime_error("invalid lhs on dot operation");
   }
   ASTNode::context.PushScope(static_cast<Object_T *>(leftValue.get())->scope);
@@ -439,7 +433,7 @@ Value DotExpr::Evaluate() {
 void DotExpr::Assign(Value value) {
   auto lvalue = left->Evaluate();
 
-  if (lvalue->type != ValueType::Object) {
+  if (lvalue->GetType() != ValueType::Object) {
     throw std::runtime_error("invalid lhs on dot operation");
   }
 
@@ -465,7 +459,7 @@ ExecutionResult DotCallStmnt::Execute() {
 }
 Value Subscript::Evaluate() {
   auto lvalue = left->Evaluate();
-  if (lvalue->type != ValueType::Array) {
+  if (lvalue->GetType() != ValueType::Array) {
     throw std::runtime_error("Cannot subscript a non array");
   }
   auto array = static_cast<Array_T *>(lvalue.get());
@@ -490,7 +484,7 @@ ExecutionResult SubscriptAssignStmnt::Execute() {
   auto array = static_cast<Array_T *>(lvalue.get());
   auto number = std::dynamic_pointer_cast<Int_T>(idx);
 
-  if (array->type != ValueType::Array || number->type != ValueType::Int) {
+  if (array->GetType() != ValueType::Array || number->GetType() != ValueType::Int) {
     throw std::runtime_error(
         "cannot subscript a non array or with a non-integer value.");
   }
@@ -536,9 +530,6 @@ Value BinExpr::Evaluate() {
   case TType::Equals:
     return make_shared<Bool_T>(left->Equals(right));
   case TType::NotEquals: {
-    auto l = dynamic_cast<Undefined_T*>(left.get());
-    auto r = dynamic_cast<Undefined_T*>(right.get());
-    
     auto result = left->Equals(right);
     return make_shared<Bool_T>(!result);
   }
