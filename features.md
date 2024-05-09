@@ -10,7 +10,10 @@
   
   `object = {}`
   
-  
+
+## compound assignment
+- += , -= etc for arithmetic
+- ++ and --
   
 ## free functions 
   `func funcName() {}`
@@ -119,12 +122,6 @@ functions like `println`, `readln`, `push` and `pop` are available without impor
 #### try, catch , finally & throw keywords
 - typical try {} catch (e) {} finally {}
 - throw OBJECT/VALUE
-
-
-#### compound assignment
-- += , -= etc for arithmetic
-- ++ and --
-
 
 #### breakpoint debugging & language server
 
