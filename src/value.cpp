@@ -10,7 +10,11 @@ Bool Value_T::False = Bool_T::New(false);
 Null Value_T::Null = make_shared<Null_T>();
 Value Value_T::InvalidCastException = make_shared<::Null_T>();
 Undefined Value_T::Undefined = make_shared<::Undefined_T>();
-Value Object_T::GetMember(const string &name) { return scope->variables[name]; }
+Value Object_T::GetMember(const string &name) { 
+  if (scope->variables.contains(name))
+    return scope->variables[name]; 
+  else return Value_T::Undefined;
+}
 void Object_T::SetMember(const string &name, Value &value) {
   scope->variables[name] = value;
 }
@@ -408,15 +412,61 @@ Array_T::Array_T(vector<Value> init)  {
   this->values = init;
 }
 Object_T::Object_T(Scope scope) { this->scope = scope; }
-Bool ValueFactory::CreateBool(const bool value) { return Bool_T::New(value); }
-String ValueFactory::CreateString(const string value) {
+Bool Ctx::CreateBool(const bool value) { return Bool_T::New(value); }
+String Ctx::CreateString(const string value) {
   return String_T::New(value);
 }
-Int ValueFactory::CreateInt(const int value) { return Int_T::New(value); }
-Float ValueFactory::CreateFloat(const float value) {
+Int Ctx::CreateInt(const int value) { return Int_T::New(value); }
+Float Ctx::CreateFloat(const float value) {
   return Float_T::New(value);
 }
-Object ValueFactory::CreateObject(Scope scope) { return Object_T::New(scope); }
-Array ValueFactory::CreateArray(vector<Value> values) {
+Object Ctx::CreateObject(Scope scope) { return Object_T::New(scope); }
+Array Ctx::CreateArray(vector<Value> values) {
   return Array_T::New(values);
 }
+
+
+bool Ctx::TryGetArray(Value value, Array &result) {
+  if (value->GetType() == ValueType::Array) {
+    result = std::dynamic_pointer_cast<Array_T>(value);
+    return true;
+  }
+  return false;
+}
+bool Ctx::TryGetObject(Value value, Object &result) {
+  if (value->GetType() == ValueType::Object) {
+    result = std::dynamic_pointer_cast<Object_T>(value);
+    return true;
+  }
+  return false;
+}
+bool Ctx::TryGetBool(Value value, bool &result) {
+  if (value->GetType() == ValueType::Bool) {
+    result = static_cast<Bool_T*>(value.get())->value;
+    return true;
+  }
+  return false;
+}
+bool Ctx::TryGetFloat(Value value, float &result) {
+  if (value->GetType() == ValueType::Float) {
+    result = static_cast<Float_T*>(value.get())->value;
+    return true;
+  }
+  return false;
+}
+bool Ctx::TryGetInt(Value value, int &result) {
+  if (value->GetType() == ValueType::Int) {
+    result = static_cast<Int_T*>(value.get())->value;
+    return true;
+  }
+  return false;
+}
+bool Ctx::TryGetString(Value value, string &result) {
+  if (value->GetType() == ValueType::String) {
+    result = static_cast<String_T*>(value.get())->value;
+    return true;
+  }
+  return false;
+}
+bool Ctx::IsUndefined(Value value) { return value->Equals(Value_T::Undefined); }
+bool Ctx::IsNull(Value value) { return value->Equals(Value_T::Null); }

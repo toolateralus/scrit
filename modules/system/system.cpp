@@ -14,7 +14,7 @@ static Value fexists(std::vector<Value> values) {
     return Value_T::Undefined;
   }
   auto fname = static_cast<String_T*>(filename.get());
-  return ValueFactory::CreateBool(std::filesystem::exists(fname->value));
+  return Ctx::CreateBool(std::filesystem::exists(fname->value));
 }
 static Value fcreate(std::vector<Value> values) {
   auto filename = values[0];
@@ -26,7 +26,7 @@ static Value fcreate(std::vector<Value> values) {
   if (file.is_open()) {
     file.close();
   } else {
-    return ValueFactory::CreateString("Unable to open file");
+    return Ctx::CreateString("Unable to open file");
   }
   
   return Value_T::Undefined;
@@ -36,7 +36,7 @@ static Value fwrite(std::vector<Value> values) {
   auto content = values[1];
   
   if (filename->GetType() != ValueType::String || content->GetType() != ValueType::String) {
-    return ValueFactory::CreateString("invalid arguments");
+    return Ctx::CreateString("invalid arguments");
   }
   auto fname = static_cast<String_T*>(filename.get());
   auto fcontent = static_cast<String_T*>(content.get());
@@ -46,7 +46,7 @@ static Value fwrite(std::vector<Value> values) {
     file << fcontent->value;
     file.close();
   } else {
-    return ValueFactory::CreateString("Unable to open file");
+    return Ctx::CreateString("Unable to open file");
   }
   
   return Value_T::Undefined;
@@ -62,9 +62,9 @@ static Value fread(std::vector<Value> values) {
   if (file.is_open()) {
     std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     file.close();
-    return ValueFactory::CreateString(content);
+    return Ctx::CreateString(content);
   } else {
-    return ValueFactory::CreateString("Unable to open file");
+    return Ctx::CreateString("Unable to open file");
   }
 }
 static Value fdelete(std::vector<Value> values) {
@@ -77,7 +77,7 @@ static Value fdelete(std::vector<Value> values) {
   if (std::filesystem::remove(fname->value)) {
     return Value_T::Undefined;
   } else {
-    return ValueFactory::CreateString("Unable to delete file");
+    return Ctx::CreateString("Unable to delete file");
   }
 }
 static Value dir_exists(std::vector<Value> values) {
@@ -86,7 +86,7 @@ static Value dir_exists(std::vector<Value> values) {
     return Value_T::Undefined;
   }
   auto dname = static_cast<String_T*>(dirname.get());
-  return ValueFactory::CreateBool(std::filesystem::exists(dname->value));
+  return Ctx::CreateBool(std::filesystem::exists(dname->value));
 }
 static Value dir_create(std::vector<Value> values) {
   auto dirname = values[0];
@@ -98,12 +98,12 @@ static Value dir_create(std::vector<Value> values) {
   if (std::filesystem::create_directory(dname->value)) {
     return Value_T::Undefined;
   } else {
-    return ValueFactory::CreateString("Unable to create directory");
+    return Ctx::CreateString("Unable to create directory");
   }
 }
 static Value cwd(std::vector<Value> values) {
   std::string currentDir = std::filesystem::current_path().string();
-  return ValueFactory::CreateString(currentDir);
+  return Ctx::CreateString(currentDir);
 }
 static Value dir_getfiles(std::vector<Value> values) {
   auto dirname = values[0];
@@ -114,7 +114,7 @@ static Value dir_getfiles(std::vector<Value> values) {
   std::vector<Value> files;
   for (const auto& entry : std::filesystem::directory_iterator(dname->value)) {
     if (entry.is_regular_file()) {
-      files.push_back(ValueFactory::CreateString(entry.path().filename().string()));
+      files.push_back(Ctx::CreateString(entry.path().filename().string()));
     }
   }
   return Array_T::New(files);
@@ -129,13 +129,13 @@ static Value dir_delete(std::vector<Value> values) {
   if (std::filesystem::remove_all(dname->value)) {
     return Value_T::Undefined;
   } else {
-    return ValueFactory::CreateString("Unable to delete directory");
+    return Ctx::CreateString("Unable to delete directory");
   }
 }
 static Value time(std::vector<Value> values) {
   auto now = std::chrono::system_clock::now();
   auto time = std::chrono::system_clock::to_time_t(now);
-  return ValueFactory::CreateFloat(time);
+  return Ctx::CreateFloat(time);
 }
 static Value syscall(std::vector<Value> values) {
   auto cmd = values[0];
@@ -143,7 +143,7 @@ static Value syscall(std::vector<Value> values) {
     return Value_T::Undefined;
   }
   auto command = static_cast<String_T*>(cmd.get());
-  return ValueFactory::CreateInt(system(command->value.c_str())); 
+  return Ctx::CreateInt(system(command->value.c_str())); 
 }
 static Value exit(std::vector<Value> values) {
   std::exit(0);

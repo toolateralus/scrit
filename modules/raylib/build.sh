@@ -1,0 +1,1 @@
+sudo clang++ -g -std=c++2b -shared -fPIC -o /usr/local/scrit/modules/raylib.dll raylib.cpp -lscrit -lraylib
