@@ -87,7 +87,7 @@ TEST(LexerTest, LexKeywordTest) {
     std::vector<Token> tokens = lexer.Lex("func for continue break return if else false true null undefined import from");
     ASSERT_EQ(tokens.size(), 13);
     for (auto &token : tokens) {
-        ASSERT_EQ(token.family, TFamily::Operator);
+        ASSERT_EQ(token.family, TFamily::Keyword);
     }
     ASSERT_EQ(tokens[0].type, TType::Func);
     ASSERT_EQ(tokens[1].type, TType::For);

@@ -53,7 +53,7 @@ vector<Token> Lexer::Lex(const string &input) {
       tokens.push_back(LexString());
     } else if (isdigit(cur)) {
       tokens.push_back(LexNum());
-    } else if (isalpha(cur)) {
+    } else if (isalpha(cur) || cur == '_') {
       tokens.push_back(LexIden());
     } else if (ispunct(cur)) {
       tokens.push_back(LexOp());
