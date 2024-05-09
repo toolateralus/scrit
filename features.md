@@ -110,6 +110,8 @@ functions like `println`, `readln`, `push` and `pop` are available without impor
 
 # Todo: 
 
+## language features.
+
 #### null propagation, coalescing assignment
 - value ?? default, value ??= valueifWasNull and obj?.func() or obj?.Value
 
@@ -125,3 +127,10 @@ functions like `println`, `readln`, `push` and `pop` are available without impor
 
 
 #### breakpoint debugging & language server
+
+
+## interpreter features
+
+#### call stack & better debugging info
+
+
