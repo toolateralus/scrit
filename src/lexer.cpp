@@ -202,13 +202,14 @@ Lexer::Lexer() {
       // punctuation
       {"(", TType::LParen},
       {")", TType::RParen},
-
+      
       {"{", TType::LCurly},
       {"}", TType::RCurly},
 
       {"[", TType::SubscriptLeft},
       {"]", TType::SubscriptRight},
       {",", TType::Comma},
+      {":", TType::Colon},
       {"=", TType::Assign},
   };
   keywords = {

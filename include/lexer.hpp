@@ -54,6 +54,7 @@ enum class TType {
   
   Assign,
   Comma,
+  Colon,
   
   // Keywords.
   Func,
