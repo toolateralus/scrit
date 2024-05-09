@@ -156,6 +156,13 @@ struct Assignment : Statement {
   Assignment(IdentifierPtr &&iden, ExpressionPtr &&expr);
   ExecutionResult Execute() override;
 };
+
+struct CompoundAssignment: Assignment {
+  CompoundAssignment(IdentifierPtr &&iden, ExpressionPtr &&expr, TType op);
+  TType op;
+  ExecutionResult Execute() override;
+};
+
 struct FuncDecl : Statement {
   FuncDecl(IdentifierPtr &&name, BlockPtr &&body, ParametersPtr &&parameters);
   IdentifierPtr name;
