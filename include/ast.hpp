@@ -150,6 +150,15 @@ struct For : Statement {
   For(StatementPtr &&decl, ExpressionPtr &&condition, StatementPtr &&inc, BlockPtr &&block, Scope scope);
   ExecutionResult Execute() override;
 };
+
+struct RangeBasedFor : Statement {
+  RangeBasedFor(IdentifierPtr &&lhs, ExpressionPtr &&rhs, BlockPtr &&block);
+  IdentifierPtr valueName;
+  ExpressionPtr rhs;
+  BlockPtr block;
+  ExecutionResult Execute() override;
+};
+
 struct Assignment : Statement {
   IdentifierPtr iden;
   ExpressionPtr expr;

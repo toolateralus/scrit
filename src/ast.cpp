@@ -580,6 +580,68 @@ ExecutionResult Import::Execute() {
   return ExecutionResult::None;
 }
 
+
+ExecutionResult RangeBasedFor::Execute() {
+  ASTNode::context.PushScope();
+  auto lvalue = this->rhs->Evaluate();
+  auto name = valueName->name;
+  Array array;
+  Object obj;
+  
+  if (!Ctx::TryGetArray(lvalue, array) && !Ctx::TryGetObject(lvalue, obj)) {
+    throw std::runtime_error("invalid range-based for loop: the target container must be an array or object");
+  } 
+  if (array) {
+    for (auto &v: array->values) {
+      ASTNode::context.Insert(name, v);
+      auto result = block->Execute();
+      switch (result.controlChange) {
+      case ControlChange::None:
+        break;
+      case ControlChange::Return:
+        return result;
+      case ControlChange::Continue:
+        continue;
+      case ControlChange::Break:
+        goto breakLoops;
+      case ControlChange::Goto:
+      case ControlChange::ContinueLabel:
+      case ControlChange::BreakLabel:
+      case ControlChange::Exception:
+        throw std::runtime_error("unhandled execution result");
+        break;
+      }
+    }   
+  } else if (obj) {
+    auto kvp = Ctx::CreateObject();
+    for (auto &[key, val] : obj->scope->variables) {
+      kvp->scope->variables["key"] = Ctx::CreateString(key);
+      kvp->scope->variables["value"] = val;
+      ASTNode::context.Insert(name, kvp);
+      auto result = block->Execute();
+      switch (result.controlChange) {
+      case ControlChange::None:
+        break;
+      case ControlChange::Return:
+        return result;
+      case ControlChange::Continue:
+        continue;
+      case ControlChange::Break:
+        goto breakLoops;
+      case ControlChange::Goto:
+      case ControlChange::ContinueLabel:
+      case ControlChange::BreakLabel:
+      case ControlChange::Exception:
+        throw std::runtime_error("unhandled execution result");
+        break;
+      }
+    }   
+  }
+  breakLoops:
+  ASTNode::context.PopScope();
+  return ExecutionResult::None;
+}
+
 Import::Import(const string &name, const bool isWildcard) : symbols({}), moduleName(name), isWildcard(isWildcard) {
   
 };
@@ -622,3 +684,6 @@ Value CompAssignExpr::Evaluate() {
                              " in compound assignment statement");
   }
 }
+RangeBasedFor::RangeBasedFor(IdentifierPtr &&lhs, ExpressionPtr &&rhs,
+                             BlockPtr &&block)
+    : valueName(std::move(lhs)), rhs(std::move(rhs)), block(std::move(block)) {}

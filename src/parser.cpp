@@ -144,10 +144,12 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
     Eat();
     auto value = ParseExpression();
     return make_unique<Assignment>(std::move(identifier), std::move(value));
-  } else if (next.type == TType::AddEq || next.type == TType::SubEq || next.type == TType::DivEq || next.type == TType::MulEq) {
+  } else if (next.type == TType::AddEq || next.type == TType::SubEq ||
+             next.type == TType::DivEq || next.type == TType::MulEq) {
     Eat();
     auto value = ParseExpression();
-    return make_unique<CompoundAssignment>(make_unique<CompAssignExpr>(std::move(identifier), std::move(value), next.type));
+    return make_unique<CompoundAssignment>(make_unique<CompAssignExpr>(
+        std::move(identifier), std::move(value), next.type));
   } else {
     throw std::runtime_error("failed to parse assignment: invalid operator.");
   }
@@ -168,19 +170,21 @@ ExpressionPtr Parser::ParseCompoundAssignment() {
 
   if (!tokens.empty()) {
     auto next = Peek();
-    if (next.type != TType::AddEq && next.type != TType::SubEq && next.type != TType::DivEq && next.type != TType::MulEq) {
+    if (next.type != TType::AddEq && next.type != TType::SubEq &&
+        next.type != TType::DivEq && next.type != TType::MulEq) {
       return left;
     }
     Eat();
     auto expr = ParseExpression();
-    return make_unique<CompAssignExpr>(std::move(left), std::move(expr), next.type);
+    return make_unique<CompAssignExpr>(std::move(left), std::move(expr),
+                                       next.type);
   }
   return left;
 }
 
 ExpressionPtr Parser::ParseLogicalOr() {
   auto left = ParseLogicalAnd();
-  
+
   if (!tokens.empty() && Peek().type == TType::Or) {
     Eat();
     auto right = ParseLogicalAnd();
@@ -317,6 +321,10 @@ ExpressionPtr Parser::ParseOperand() {
     vector<StatementPtr> statements = {};
     while (tokens.size() > 0) {
       auto next = Peek();
+      if (next.type == TType::Comma) {
+        Eat();
+        continue;
+      }
       if (next.type == TType::RCurly) {
         break;
       }
@@ -483,37 +491,40 @@ StatementPtr Parser::ParseFor() {
                             ASTNode::context.PopScope());
   }
   // for i=0,i<?,i=i+1 {}
-  else {
-    if (Peek().type == TType::Identifier) {
-      auto idTok = Peek();
-      auto op = ParseOperand();
+  if (Peek().type == TType::Identifier) {
+    auto idTok = Peek();
+    auto op = ParseOperand();
 
-      auto iden = dynamic_cast<Identifier *>(op.get());
-
-      if (Peek().type == TType::Assign) {
-        decl = ParseAssignment(make_unique<Identifier>(iden->name));
-      } else {
-        tokens.push_back(idTok);
-        condition = ParseExpression();
-      }
-    } else {
-      condition = ParseExpression();
-    }
-
-    if (Peek().type == TType::Comma) {
+    auto iden = dynamic_cast<Identifier *>(op.get());
+    
+    // Range based for loop for iden : array/obj {}
+    if (iden && Peek().type == TType::Colon) {
       Eat();
-      condition = ParseExpression();
+      auto rhs = ParseOperand();
+      return make_unique<RangeBasedFor>(make_unique<Identifier>(iden->name),
+                                        std::move(rhs), ParseBlock());
     }
-
-    if (Peek().type == TType::Comma) {
-      Eat();
+    
+    // for i=0,i<..,i++
+    if (Peek().type == TType::Assign) {
+      decl = ParseAssignment(make_unique<Identifier>(iden->name));
+      Expect(TType::Comma);
+      condition = ParseExpression();
+      Expect(TType::Comma);      
       inc = ParseStatement();
+      return make_unique<For>(std::move(decl), std::move(condition),
+                              std::move(inc), ParseBlock(),
+                              ASTNode::context.PopScope());
+    } else {
+      tokens.push_back(idTok);
     }
-
-    return make_unique<For>(std::move(decl), std::move(condition),
-                            std::move(inc), ParseBlock(),
-                            ASTNode::context.PopScope());
   }
+  
+  // for CONDITION {}
+  condition = ParseExpression();
+  return make_unique<For>(std::move(decl), std::move(condition),
+                          std::move(inc), ParseBlock(),
+                          ASTNode::context.PopScope());
 }
 StatementPtr Parser::ParseContinue() { return make_unique<Continue>(); }
 StatementPtr Parser::ParseReturn() {
