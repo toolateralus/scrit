@@ -5,8 +5,8 @@ then
   for dir in */ ; do
     MODNAME=${dir%/}
     echo "Building module $MODNAME"
-    if [ -f "${MODNAME}/build.sh" ]; then
-      bash "${MODNAME}/build.sh"
+    if [ -f "${dir%/}${MODNAME}/build.sh" ]; then
+      bash "${dir%/}${MODNAME}/build.sh"
     else
       sudo clang++ -std=c++2b -shared -fPIC -o /usr/local/scrit/modules/${MODNAME}.dll ${MODNAME}/${MODNAME}.cpp -lscrit
     fi

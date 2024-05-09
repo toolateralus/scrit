@@ -1,7 +1,5 @@
 
 #include "raylib.h"
-#include <iostream>
-#include <ostream>
 #include <scrit/context.hpp>
 #include <scrit/scritmod.hpp>
 #include <scrit/value.hpp>
@@ -68,7 +66,8 @@ static Value drawRectangle(std::vector<Value> args) {
   if (!Ctx::TryGetInt(args[0], posX) || !Ctx::TryGetInt(args[1], posY) ||
       !Ctx::TryGetInt(args[2], width) || !Ctx::TryGetInt(args[3], height) ||
       !Ctx::TryGetObject(args[4], obj)) {
-    return Ctx::CreateString("Invalid argument types.");
+    auto arr = Ctx::CreateArray(args);
+    return Ctx::CreateString("Invalid argument types." + arr->ToString());
   }
 
   Color color = WHITE;
@@ -98,6 +97,17 @@ static Value clearBackground(std::vector<Value> args) {
   }
   return Value_T::Undefined;
 }
+static Value isKeyDown(std::vector<Value> args) {
+  if (args.empty()) {
+    return Value_T::False;
+  }
+  int key;
+  if (!Ctx::TryGetInt(args[0], key)) {
+    return Value_T::False;
+  }
+  return Ctx::CreateBool(IsKeyDown(key));
+  
+}
 
 extern "C" ScritModDef *InitScritModule_raylib() {
   ScritModDef *def = CreateModDef();
@@ -107,5 +117,7 @@ extern "C" ScritModDef *InitScritModule_raylib() {
   ScritMod_AddFunction(def, "endDrawing", &endDrawing);
   ScritMod_AddFunction(def, "drawRectangle", &drawRectangle);
   ScritMod_AddFunction(def, "windowShouldClose", &windowShouldClose);
+  ScritMod_AddFunction(def, "clearBackground", &clearBackground);
+  ScritMod_AddFunction(def, "isKeyDown", &isKeyDown);
   return def;
 }

@@ -234,6 +234,7 @@ struct Object_T : Value_T {
       scope = make_shared<Scope_T>();
     return make_shared<Object_T>(scope);
   }
+  string WriteMembers(std::unordered_set<const Value_T*> foundObjs) const;
   Value GetMember(const string &name);
   void SetMember(const string &name, Value &value);
   virtual string ToString() const override;

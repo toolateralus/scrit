@@ -6,6 +6,7 @@
 #include <memory>
 #include <scrit/value.hpp>
 #include <string>
+#include <unistd.h>
 #include "scrit/scritmod.hpp"
 
 static Value fexists(std::vector<Value> values) {
@@ -133,10 +134,26 @@ static Value dir_delete(std::vector<Value> values) {
   }
 }
 static Value time(std::vector<Value> values) {
-  auto now = std::chrono::system_clock::now();
-  auto time = std::chrono::system_clock::to_time_t(now);
-  return Ctx::CreateFloat(time);
+  auto now = std::chrono::high_resolution_clock::now();
+  auto duration = now.time_since_epoch();
+  auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+  return Ctx::CreateFloat(milliseconds / 1000.0);
 }
+static Value sleep(std::vector<Value> args) {
+  if (!args.empty()) {
+    float fseconds;
+    int seconds = 1;
+    if (Ctx::TryGetInt(args[0], seconds)) {
+      sleep(seconds);
+    } else if (Ctx::TryGetFloat(args[0], fseconds)) {
+      usleep(fseconds * 1'000'000);
+    } else {
+      sleep(1);
+    }
+  }
+  return Value_T::Undefined;
+}
+
 static Value syscall(std::vector<Value> values) {
   auto cmd = values[0];
   if (cmd->GetType() != ValueType::String) {

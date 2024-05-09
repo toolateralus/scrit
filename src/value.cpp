@@ -1,13 +1,9 @@
 #include "value.hpp"
 #include "ast.hpp"
 #include "context.hpp"
-#include "native.hpp"
 
-#include <algorithm>
 #include <memory>
 #include <sstream>
-#include <unordered_set>
-#include <vector>
 
 Bool Value_T::True = Bool_T::New(true);
 Bool Value_T::False = Bool_T::New(false);
@@ -82,41 +78,15 @@ void Array_T::Assign(Int index, Value value) {
   values[idx] = value;
 }
 
-string Object_T::WriteMembers(std::unordered_set<const Value_T*> foundObjs) const {
+
+string Object_T::ToString() const {
   std::stringstream ss = {};
-  foundObjs.insert(this);
   ss << "{";
-  int i = scope->variables.size();
-  string delimter = ", ";
   for (const auto &[key, var] : scope->variables) {
-    i--;
-    if (i == 0) {
-      delimter = "";
-    }
-    switch (var->GetType()) {
-    case ValueType::Object: {
-      auto obj = static_cast<Object_T*>(var.get());
-      ss << '\"' << key <<  "\" : " << obj->ToString(foundObjs) << delimter;
-      break;
-    }
-    default:
-      ss << '\"' << key <<  "\" : " << var->ToString() << delimter;
-      break;
-    }
+    ss << '\"' << key <<  "\" : " << var->ToString() << "\n";
   }
   ss << "}";
   return ss.str();
-};
-
-string Object_T::ToString() const {
-  std::unordered_set<const Value_T*> foundObjs{};
-  return WriteMembers(foundObjs);
-}
-string Object_T::ToString(std::unordered_set<const Value_T*> foundObjs) const {
-  if (std::find(foundObjs.begin(), foundObjs.end(), this) != foundObjs.end()) {
-    return "[Circular]";
-  }
-  return WriteMembers(foundObjs);
 }
 string Callable_T::ToString() const {
   std::stringstream ss = {};
