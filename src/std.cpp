@@ -111,10 +111,10 @@ REGISTER_FUNCTION(serialize) {
     int indentation = 0;
     int startingIndent;
     string refHandling;
-    if (Ctx::TryGetInt(settingsObj->GetMember("indentationSize"), indentation)) {
+    if (Ctx::TryGetInt(settingsObj->GetMember("indentSize"), indentation)) {
       settings.IndentSize = indentation;
     }
-    if (Ctx::TryGetInt(settingsObj->GetMember("startingIndentLevel"), startingIndent)) {
+    if (Ctx::TryGetInt(settingsObj->GetMember("startingIndent"), startingIndent)) {
       settings.StartingIndentLevel = startingIndent;
       
     }
