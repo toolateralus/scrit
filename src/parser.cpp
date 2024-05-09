@@ -29,8 +29,7 @@ Parser::ParseLValuePostFix(ExpressionPtr &&expr) {
     }
   } else if (auto call = dynamic_cast<Call *>(expr.get())) {
     return make_unique<Call>(std::move(call->operand), std::move(call->args));
-  }
-  
+  } 
   throw std::runtime_error("Failed to parse LValue postfix statement");
 }
 
@@ -43,15 +42,23 @@ StatementPtr Parser::ParseStatement() {
       if (auto id = dynamic_cast<Identifier *>(operand.get())) {
         return ParseIdentifierStatement(make_unique<Identifier>(id->name));
       } else {
+        
+        auto isDot = dynamic_cast<DotExpr*>(operand.get());
+        auto isSubscript= dynamic_cast<Subscript*>(operand.get());
+        
+        if (isDot || isSubscript) {
+          if (!tokens.empty()) {
+            auto next = Peek();
+            if (next.type == TType::AddEq || next.type == TType::DivEq || next.type == TType::SubEq || next.type == TType::MulEq) {
+              Eat();
+              auto expr = ParseExpression();
+              return make_unique<CompoundAssignment>(std::move(operand), std::move(expr), next.type);
+            }
+          }
+        }
+        
         return ParseLValuePostFix(std::move(operand));
       }
-      // } else if (auto nativeCallable = dynamic_cast<NativeCallableExpr
-      // *>(operand.get())) {
-      //   return NativeCallableStatement::FromExpr(std::move(nativeCallable));
-      // } else if (auto compoundAssign = dynamic_cast<CompoundAssignExpr
-      // *>(operand.get())) {
-      //   return make_unique<CompoundAssignStmnt>(std::move(compoundAssign));
-      // }
       throw std::runtime_error("Failed to start identifier statement");
     }
     case TFamily::Keyword: {

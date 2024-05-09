@@ -157,9 +157,10 @@ struct Assignment : Statement {
   ExecutionResult Execute() override;
 };
 
-struct CompoundAssignment: Assignment {
-  CompoundAssignment(IdentifierPtr &&iden, ExpressionPtr &&expr, TType op);
+struct CompoundAssignment: Statement {
+  ExpressionPtr left, right;
   TType op;
+  CompoundAssignment(ExpressionPtr &&left, ExpressionPtr &&expr, TType op);
   ExecutionResult Execute() override;
 };
 
