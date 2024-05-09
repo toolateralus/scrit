@@ -1,6 +1,7 @@
 #include "value.hpp"
 #include "ast.hpp"
 #include "context.hpp"
+#include "serializer.hpp"
 
 #include <memory>
 #include <sstream>
@@ -78,15 +79,8 @@ void Array_T::Assign(Int index, Value value) {
   values[idx] = value;
 }
 
-
 string Object_T::ToString() const {
-  std::stringstream ss = {};
-  ss << "{";
-  for (const auto &[key, var] : scope->variables) {
-    ss << '\"' << key <<  "\" : " << var->ToString() << "\n";
-  }
-  ss << "}";
-  return ss.str();
+  return Writer::ToString(this, {});
 }
 string Callable_T::ToString() const {
   std::stringstream ss = {};
@@ -101,16 +95,7 @@ string Callable_T::ToString() const {
   return ss.str();
 }
 string Array_T::ToString() const {
-  std::stringstream ss = {};
-  ss << "[";
-  for (const auto &value : values) {
-    ss << value->ToString();
-    if (value != values.back()) {
-      ss << ", ";
-    }
-  }
-  ss << "]";
-  return ss.str();
+  return Writer::ToString(this, {});
 }
 Array Array_T::New(vector<ExpressionPtr> &&init) {
   return make_shared<Array_T>(std::move(init));
