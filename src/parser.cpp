@@ -1,23 +1,21 @@
 #include "parser.hpp"
 #include "ast.hpp"
+#include "context.hpp"
 #include "lexer.hpp"
 #include "value.hpp"
-#include "context.hpp"
 #include <algorithm>
 #include <stdexcept>
 
 #include <memory>
 #include <stdexcept>
 
-StatementPtr
-Parser::ParseLValuePostFix(ExpressionPtr &&expr) {
+StatementPtr Parser::ParseLValuePostFix(ExpressionPtr &&expr) {
   if (DotExpr *dot = dynamic_cast<DotExpr *>(expr.get())) {
     if (!tokens.empty() && Peek().type == TType::Assign) {
       Eat();
       auto value = ParseExpression();
       return make_unique<DotAssignment>(std::move(expr), std::move(value));
-    }
-    else if (Call *callable = dynamic_cast<Call *>(dot->right.get())) {
+    } else if (Call *callable = dynamic_cast<Call *>(dot->right.get())) {
       return make_unique<DotCallStmnt>(std::move(expr));
     }
   } else if (Subscript *subscript = dynamic_cast<Subscript *>(expr.get())) {
@@ -30,7 +28,6 @@ Parser::ParseLValuePostFix(ExpressionPtr &&expr) {
   } else if (auto call = dynamic_cast<Call *>(expr.get())) {
     return make_unique<Call>(std::move(call->operand), std::move(call->args));
   }
-  
   throw std::runtime_error("Failed to parse LValue postfix statement");
 }
 
@@ -40,18 +37,23 @@ StatementPtr Parser::ParseStatement() {
     switch (token.family) {
     case TFamily::Identifier: {
       auto operand = ParseExpression();
+
+      if (auto unary = dynamic_cast<UnaryExpr *>(operand.get())) {
+        if (unary->op != TType::Increment && unary->op != TType::Decrement) {
+          throw std::runtime_error("unexpected unary expression statement : " +
+                                   TTypeToString(unary->op));
+        }
+        return make_unique<UnaryStatement>(std::move(operand));
+      }
+
       if (auto id = dynamic_cast<Identifier *>(operand.get())) {
         return ParseIdentifierStatement(make_unique<Identifier>(id->name));
+      } else if (auto cmpAssign =
+                     dynamic_cast<CompAssignExpr *>(operand.get())) {
+        return make_unique<CompoundAssignment>(std::move(operand));
       } else {
         return ParseLValuePostFix(std::move(operand));
       }
-      // } else if (auto nativeCallable = dynamic_cast<NativeCallableExpr
-      // *>(operand.get())) {
-      //   return NativeCallableStatement::FromExpr(std::move(nativeCallable));
-      // } else if (auto compoundAssign = dynamic_cast<CompoundAssignExpr
-      // *>(operand.get())) {
-      //   return make_unique<CompoundAssignStmnt>(std::move(compoundAssign));
-      // }
       throw std::runtime_error("Failed to start identifier statement");
     }
     case TFamily::Keyword: {
@@ -69,7 +71,8 @@ StatementPtr Parser::ParseStatement() {
       return ParseKeyword(token);
     }
     default:
-      throw std::runtime_error("Failed to parse statement");
+      throw std::runtime_error("Failed to parse statement:: token " +
+                               TTypeToString(token.type));
     }
   }
   throw std::runtime_error("Unexpecrted end of input");
@@ -105,8 +108,8 @@ StatementPtr Parser::ParseKeyword(Token token) {
   //   return new NoopStatement();
   // }
   case TType::Import: {
-      return ParseImport();
-    }
+    return ParseImport();
+  }
   case TType::Break: {
     return ParseBreak();
   }
@@ -116,8 +119,7 @@ StatementPtr Parser::ParseKeyword(Token token) {
                              TTypeToString(token.type));
   }
 }
-StatementPtr
-Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
+StatementPtr Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
   auto token = Peek();
   switch (token.type) {
   case TType::AddEq:
@@ -136,9 +138,8 @@ Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
         token.ToString());
   }
 }
-StatementPtr
-Parser::ParseAssignment(IdentifierPtr identifier) {
-  auto next = Peek();
+StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
+  Token next = Peek();
   if (next.type == TType::Assign) {
     Eat();
     auto value = ParseExpression();
@@ -146,12 +147,10 @@ Parser::ParseAssignment(IdentifierPtr identifier) {
   } else if (next.type == TType::AddEq || next.type == TType::SubEq || next.type == TType::DivEq || next.type == TType::MulEq) {
     Eat();
     auto value = ParseExpression();
-    return make_unique<CompoundAssignment>(std::move(identifier), std::move(value), next.type);
-    
+    return make_unique<CompoundAssignment>(make_unique<CompAssignExpr>(std::move(identifier), std::move(value), next.type));
   } else {
     throw std::runtime_error("failed to parse assignment: invalid operator.");
   }
-  
 }
 StatementPtr Parser::ParseCall(IdentifierPtr identifier) {
   auto args = ParseArguments();
@@ -161,12 +160,27 @@ ExpressionPtr Parser::ParseExpression() {
   if (tokens.empty()) {
     throw std::runtime_error("Unexpected end of input");
   }
-  return ParseLogicalOr();
+  return ParseCompoundAssignment();
+}
+
+ExpressionPtr Parser::ParseCompoundAssignment() {
+  auto left = ParseLogicalOr();
+
+  if (!tokens.empty()) {
+    auto next = Peek();
+    if (next.type != TType::AddEq && next.type != TType::SubEq && next.type != TType::DivEq && next.type != TType::MulEq) {
+      return left;
+    }
+    Eat();
+    auto expr = ParseExpression();
+    return make_unique<CompAssignExpr>(std::move(left), std::move(expr), next.type);
+  }
+  return left;
 }
 
 ExpressionPtr Parser::ParseLogicalOr() {
   auto left = ParseLogicalAnd();
-
+  
   if (!tokens.empty() && Peek().type == TType::Or) {
     Eat();
     auto right = ParseLogicalAnd();
@@ -251,6 +265,12 @@ ExpressionPtr Parser::ParsePostfix() {
   auto expr = ParseOperand();
   while (!tokens.empty()) {
     Token next = Peek();
+
+    if (next.type == TType::Increment || next.type == TType::Decrement) {
+      Eat();
+      return make_unique<UnaryExpr>(std::move(expr), next.type);
+    }
+
     if (next.type != TType::LParen && next.type != TType::SubscriptLeft &&
         next.type != TType::Dot) {
       break;
@@ -274,7 +294,8 @@ ExpressionPtr Parser::ParsePostfix() {
 }
 ExpressionPtr Parser::ParseOperand() {
   auto token = Peek();
-  if (token.type == TType::Sub || token.type == TType::Not) {
+  if (token.type == TType::Sub || token.type == TType::Not ||
+      token.type == TType::Increment || token.type == TType::Decrement) {
     Eat();
     auto operand = ParseOperand();
     return make_unique<UnaryExpr>(std::move(operand), token.type);
@@ -340,7 +361,6 @@ ExpressionPtr Parser::ParseOperand() {
     throw std::runtime_error("Unexpected token: " + TTypeToString(token.type));
   }
 }
-
 
 OperandPtr Parser::ParseArrayInitializer() {
   Eat();
@@ -456,12 +476,12 @@ StatementPtr Parser::ParseFor() {
   StatementPtr decl = nullptr;
   ExpressionPtr condition = nullptr;
   StatementPtr inc = nullptr;
-  
+
   // for {}
   if (Peek().type == TType::LCurly) {
     return make_unique<For>(nullptr, nullptr, nullptr, ParseBlock(),
                             ASTNode::context.PopScope());
-  } 
+  }
   // for i=0,i<?,i=i+1 {}
   else {
     if (Peek().type == TType::Identifier) {
@@ -469,7 +489,7 @@ StatementPtr Parser::ParseFor() {
       auto op = ParseOperand();
 
       auto iden = dynamic_cast<Identifier *>(op.get());
-      
+
       if (Peek().type == TType::Assign) {
         decl = ParseAssignment(make_unique<Identifier>(iden->name));
       } else {
@@ -479,24 +499,23 @@ StatementPtr Parser::ParseFor() {
     } else {
       condition = ParseExpression();
     }
-    
+
     if (Peek().type == TType::Comma) {
       Eat();
       condition = ParseExpression();
     }
-    
+
     if (Peek().type == TType::Comma) {
       Eat();
       inc = ParseStatement();
     }
-    
-    return make_unique<For>(std::move(decl), std::move(condition), std::move(inc),
-                            ParseBlock(), ASTNode::context.PopScope());
+
+    return make_unique<For>(std::move(decl), std::move(condition),
+                            std::move(inc), ParseBlock(),
+                            ASTNode::context.PopScope());
   }
 }
-StatementPtr Parser::ParseContinue() {
-  return make_unique<Continue>();
-}
+StatementPtr Parser::ParseContinue() { return make_unique<Continue>(); }
 StatementPtr Parser::ParseReturn() {
   return make_unique<Return>(ParseExpression());
 }
@@ -529,17 +548,16 @@ unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
 }
 StatementPtr Parser::ParseImport() {
   auto next = Peek();
-  
-  
+
   // import all * widlcard
   if (next.type == TType::Mul) {
     Eat();
     Expect(TType::From);
     auto iden = Expect(TType::Identifier);
     return make_unique<Import>(iden.value, true);
-    
+
   }
-   // plain 'import raylib' statement
+  // plain 'import raylib' statement
   else if (next.type == TType::Identifier) {
     auto iden = Expect(TType::Identifier);
     return make_unique<Import>(iden.value, false);
@@ -550,31 +568,28 @@ StatementPtr Parser::ParseImport() {
     vector<string> names = {};
     while (!tokens.empty()) {
       auto next = Peek();
-      
+
       if (next.type == TType::Comma) {
         Eat();
         continue;
       }
-      
+
       if (next.type == TType::RCurly) {
         break;
       }
       auto operand = ParseOperand();
-      
-      if (auto iden = dynamic_cast<Identifier*>(operand.get())) {
+
+      if (auto iden = dynamic_cast<Identifier *>(operand.get())) {
         names.push_back(iden->name);
       } else {
         throw std::runtime_error("invalid import statement");
       }
-      
-      
     }
     Expect(TType::RCurly);
     Expect(TType::From);
     auto iden = Expect(TType::Identifier);
-    
+
     return make_unique<Import>(iden.value, names);
-    
   }
   throw std::runtime_error("Failed to parse import statement");
 }

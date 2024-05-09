@@ -15,11 +15,11 @@ struct Parser {
   Token Peek();
   Token Eat();
   Token Expect(const TType ttype);
-
+  
   unique_ptr<Program> Parse(vector<Token> &&tokens);
-
+  
   StatementPtr ParseImport();
-
+  
   StatementPtr ParseLValuePostFix(ExpressionPtr &&expr);
   StatementPtr ParseFor();
   StatementPtr ParseFuncDecl();
@@ -35,6 +35,7 @@ struct Parser {
   StatementPtr ParseKeyword(Token keyword);
   
   ExpressionPtr ParseExpression();
+  ExpressionPtr ParseCompoundAssignment();
   ExpressionPtr ParseLogicalOr();
   ExpressionPtr ParseLogicalAnd();
   ExpressionPtr ParseEquality();

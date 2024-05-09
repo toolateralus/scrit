@@ -494,11 +494,20 @@ ExecutionResult SubscriptAssignStmnt::Execute() {
 }
 Value UnaryExpr::Evaluate() {
   auto lvalue = left->Evaluate();
-
-  if (op == TType::Sub) {
+  switch (op) {
+  case TType::Sub:
     return lvalue->Negate();
-  } else if (op == TType::Not) {
+  case TType::Not:
     return lvalue->Not();
+  case TType::Increment:
+    lvalue->Set(lvalue->Add(Ctx::CreateInt(1)));
+    return lvalue;
+  case TType::Decrement:
+    lvalue->Set(lvalue->Subtract(Ctx::CreateInt(1)));
+    return lvalue;
+  default:
+    throw std::runtime_error("invalid operator in unary expression " +
+                             TTypeToString(op));
   }
   return Value_T::Null;
 }
@@ -576,33 +585,40 @@ Import::Import(const string &name, const bool isWildcard) : symbols({}), moduleN
 };
 Import::Import(const string &name, vector<string> &symbols)
     : symbols(symbols), moduleName(name), isWildcard(false){};
+
 ExecutionResult CompoundAssignment::Execute() {
-  TType binOp;
+  auto _ = expr->Evaluate();
+  return ExecutionResult::None;
+}
+
+UnaryStatement::UnaryStatement(ExpressionPtr &&expr) : expr(std::move(expr)) {}
+
+CompoundAssignment::CompoundAssignment(ExpressionPtr &&cmpAssignExpr)
+    : expr(std::move(cmpAssignExpr)) {}
+    
+
+Value CompAssignExpr::Evaluate() {
+  auto lvalue = left->Evaluate();
+  auto rvalue = right->Evaluate();
   switch (op) {
   case TType::AddEq:
-    binOp = TType::Add;
+    lvalue->Set(lvalue->Add(rvalue));
+    return lvalue;
     break;
   case TType::DivEq:
-    binOp = TType::Div;
+    lvalue->Set(lvalue->Divide(rvalue));
+    return lvalue;
     break;
   case TType::SubEq:
-    binOp = TType::Sub;
+    lvalue->Set(lvalue->Subtract(rvalue));
+    return lvalue;
     break;
   case TType::MulEq:
-    binOp = TType::Mul;
+    lvalue->Set(lvalue->Multiply(rvalue));
+    return lvalue;
     break;
   default:
     throw std::runtime_error("invalid operator : " + TTypeToString(op) +
                              " in compound assignment statement");
   }
-  auto name = iden->name;
-  auto binexpr = make_unique<BinExpr>(std::move(iden), std::move(expr), binOp);
-  auto value = binexpr->Evaluate();
-  
-  ASTNode::context.Insert(name, value);
-  
-  return ExecutionResult::None;
 }
-CompoundAssignment::CompoundAssignment(IdentifierPtr &&iden,
-                                       ExpressionPtr &&expr, TType op)
-    : Assignment(std::move(iden), std::move(expr)), op(op) {}

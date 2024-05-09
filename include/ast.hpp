@@ -157,9 +157,16 @@ struct Assignment : Statement {
   ExecutionResult Execute() override;
 };
 
-struct CompoundAssignment: Assignment {
-  CompoundAssignment(IdentifierPtr &&iden, ExpressionPtr &&expr, TType op);
+struct CompAssignExpr : Expression {
+  ExpressionPtr left, right;
   TType op;
+  CompAssignExpr(ExpressionPtr &&left, ExpressionPtr &&right, TType op) : left(std::move(left)), right(std::move(right)), op(op) {}
+  Value Evaluate() override;
+};
+
+struct CompoundAssignment: Statement {
+  ExpressionPtr expr;
+  CompoundAssignment(ExpressionPtr &&expr);
   ExecutionResult Execute() override;
 };
 
@@ -206,6 +213,17 @@ struct UnaryExpr : Expression {
   TType op;
   Value Evaluate() override;
 };
+
+// this is basically only for decrement / increment right now
+struct UnaryStatement : Statement {
+  ExpressionPtr expr;
+  UnaryStatement(ExpressionPtr &&expr);
+  ExecutionResult Execute() override {
+    expr->Evaluate();
+    return ExecutionResult::None;
+  }
+};
+
 struct BinExpr : Expression {
   ExpressionPtr left;
   ExpressionPtr right;
