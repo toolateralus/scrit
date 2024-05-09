@@ -2,6 +2,7 @@
 #include "native.hpp"
 #include "value.hpp"
 #include <stdexcept>
+#include <string>
 #include "context.hpp"
 
 Context ASTNode::context = {};
@@ -202,6 +203,9 @@ Value Operand::Evaluate() {
   return value;
 }
 Value Identifier::Evaluate() {
+  if (name == "this") {
+    return Ctx::CreateObject(ASTNode::context.scopes.back());
+  }
   auto value = ASTNode::context.Find(name);
   if (value != nullptr) {
     return value;
@@ -450,17 +454,7 @@ ExecutionResult DotCallStmnt::Execute() {
 }
 Value Subscript::Evaluate() {
   auto lvalue = left->Evaluate();
-  if (lvalue->GetType() != ValueType::Array) {
-    throw std::runtime_error("Cannot subscript a non array");
-  }
-  auto array = static_cast<Array_T *>(lvalue.get());
-  auto idx = index->Evaluate();
-  auto number = std::dynamic_pointer_cast<Int_T>(idx);
-
-  if (!number) {
-    throw std::runtime_error("Subscript index must be a number.");
-  }
-  return array->At(number);
+  return lvalue->Subscript(index->Evaluate());
 }
 ExecutionResult SubscriptAssignStmnt::Execute() {
   auto subscript = dynamic_cast<Subscript *>(this->subscript.get());
@@ -578,9 +572,14 @@ ExecutionResult RangeBasedFor::Execute() {
   auto name = valueName->name;
   Array array;
   Object obj;
+  string string;
+  bool isString = false;
+  if (Ctx::TryGetString(lvalue, string)) {
+    isString = true;
+  }
   
-  if (!Ctx::TryGetArray(lvalue, array) && !Ctx::TryGetObject(lvalue, obj)) {
-    throw std::runtime_error("invalid range-based for loop: the target container must be an array or object");
+  if (!isString && !Ctx::TryGetArray(lvalue, array) && !Ctx::TryGetObject(lvalue, obj)) {
+    throw std::runtime_error("invalid range-based for loop: the target container must be an array, object or string.");
   } 
   if (array) {
     for (auto &v: array->values) {
@@ -609,6 +608,27 @@ ExecutionResult RangeBasedFor::Execute() {
       kvp->scope->variables["key"] = Ctx::CreateString(key);
       kvp->scope->variables["value"] = val;
       ASTNode::context.Insert(name, kvp);
+      auto result = block->Execute();
+      switch (result.controlChange) {
+      case ControlChange::None:
+        break;
+      case ControlChange::Return:
+        return result;
+      case ControlChange::Continue:
+        continue;
+      case ControlChange::Break:
+        goto breakLoops;
+      case ControlChange::Goto:
+      case ControlChange::ContinueLabel:
+      case ControlChange::BreakLabel:
+      case ControlChange::Exception:
+        throw std::runtime_error("unhandled execution result");
+        break;
+      }
+    }   
+  } else if (isString) {
+     for (auto c : string) {
+      ASTNode::context.Insert(name, Ctx::CreateString(std::string() + c));
       auto result = block->Execute();
       switch (result.controlChange) {
       case ControlChange::None:

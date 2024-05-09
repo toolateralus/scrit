@@ -28,11 +28,12 @@ player = {
   y = 0
   h = 100
   w = 100
-  speed = 0.01
+  speed = 0.1
   color = WHITE
   func move() {
+    println(y)
     if isKeyDown(KEY_W) {
-      y = y + speed
+      y += speed
     }
     if isKeyDown(KEY_S) {
       y = y - speed
@@ -77,6 +78,6 @@ func() {
     
     endDrawing()
     
-    sleep(0.1666)
+    sleep(16.6666)
   }
 }()

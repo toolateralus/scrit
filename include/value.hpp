@@ -99,6 +99,9 @@ struct Value_T {
   virtual Value Negate() {
     return std::static_pointer_cast<Value_T>(Undefined);
   }
+
+  virtual Value Subscript(Value key);
+
   virtual void Set(Value) {}
   bool TypeEquals(Value other) { return typeid(other.get()) == typeid(*this); }
 };
@@ -211,6 +214,7 @@ struct String_T : Value_T {
   virtual void Set(Value newValue) override;
   string ToString() const override;
   ValueType GetType() const override { return ValueType::String; }
+  Value Subscript(Value key) override;
 };
 struct Bool_T : Value_T {
   bool value = false;
@@ -283,4 +287,12 @@ struct Array_T : Value_T {
   string ToString() const override;
   bool Equals(Value value) override;
   ValueType GetType() const override { return ValueType::Array; }
+  
+  Value Subscript(Value key) override {
+    int index;
+    if (!Ctx::TryGetInt(key, index) || index > values.size()) {
+      return Undefined;
+    }
+    return values[index];
+  }
 };

@@ -1,6 +1,8 @@
 #include "native.hpp"
+#include "parser.hpp"
 #include "value.hpp"
 #include <unordered_set>
+#include <vector>
 
 enum struct ReferenceHandling {
   Remove,

@@ -57,7 +57,7 @@ static Value sqrt(std::vector<Value> args) {
   int ires;
   if (!args.empty()) {
     if (Ctx::TryGetFloat(args[0], fres)) {
-      return Ctx::CreateInt(sqrt(fres));
+      return Ctx::CreateFloat(sqrt(fres));
     }
     if (Ctx::TryGetInt(args[0], ires)) {
       return Ctx::CreateFloat(sqrt(ires));
@@ -71,6 +71,9 @@ extern "C" ScritModDef *InitScritModule_math() {
   ScritModDef *def = CreateModDef();
   *def->description = "basic math module.";
   ScritMod_AddFunction(def, "toInt", &toInt);
+  ScritMod_AddFunction(def, "floor", &floor);
+  ScritMod_AddFunction(def, "round", &round);
+  ScritMod_AddFunction(def, "sqrt", &sqrt);
   ScritMod_AddFunction(def, "toFloat", &toFloat);
   return def;
 }
