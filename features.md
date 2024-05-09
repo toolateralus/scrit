@@ -133,4 +133,9 @@ functions like `println`, `readln`, `push` and `pop` are available without impor
 
 #### call stack & better debugging info
 
+#### stronger typing? 
+
+this might be a significant change to the language but most dynamic languages attempt this with extensions and external tools so might as well just build it in and use heavy implicit typing.
+
+not super likely
 
