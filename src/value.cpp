@@ -2,6 +2,7 @@
 #include "ast.hpp"
 #include "context.hpp"
 #include "native.hpp"
+#include "serializer.hpp"
 
 #include <algorithm>
 #include <memory>
@@ -105,8 +106,7 @@ string Object_T::WriteMembers(std::unordered_set<const Value_T*> foundObjs) cons
 };
 
 string Object_T::ToString() const {
-  std::unordered_set<const Value_T*> foundObjs{};
-  return WriteMembers(foundObjs);
+  return Writer::ToString(this, {});
 }
 string Object_T::ToString(std::unordered_set<const Value_T*> foundObjs) const {
   if (std::find(foundObjs.begin(), foundObjs.end(), this) != foundObjs.end()) {
@@ -127,16 +127,7 @@ string Callable_T::ToString() const {
   return ss.str();
 }
 string Array_T::ToString() const {
-  std::stringstream ss = {};
-  ss << "[";
-  for (const auto &value : values) {
-    ss << value->ToString();
-    if (value != values.back()) {
-      ss << ", ";
-    }
-  }
-  ss << "]";
-  return ss.str();
+  return Writer::ToString(this, {});
 }
 Array Array_T::New(vector<ExpressionPtr> &&init) {
   return make_shared<Array_T>(std::move(init));

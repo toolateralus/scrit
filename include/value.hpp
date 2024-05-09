@@ -84,7 +84,7 @@ struct Value_T {
   static Bool False;
   static Bool True;
   
-  virtual ValueType GetType() = 0;
+  virtual ValueType GetType() const = 0;
   virtual ~Value_T() {}
   Value_T() {}
   
@@ -106,7 +106,7 @@ struct Value_T {
   bool TypeEquals(Value other) { return typeid(other.get()) == typeid(*this); }
 };
 struct Null_T : Value_T {
-  ValueType GetType() override {
+  ValueType GetType() const override {
     return ValueType::Null;
   }
   Null_T();
@@ -114,7 +114,7 @@ struct Null_T : Value_T {
   bool Equals(Value value) override;
 };
 struct Undefined_T : Value_T{
-  ValueType GetType() override {
+  ValueType GetType() const override {
     return ValueType::Undefined;
   }
   Undefined_T();
@@ -145,7 +145,7 @@ struct Int_T : Value_T {
   virtual Bool LessEquals(Value other) override;
   virtual Value Negate() override;
   virtual string ToString() const override;
-  ValueType GetType() override {
+  ValueType GetType() const override {
     return ValueType::Int;
   }
 };
@@ -171,7 +171,7 @@ struct Float_T : Value_T {
   virtual Bool LessEquals(Value other) override;
   virtual Value Negate() override;
   virtual string ToString() const override;
-  ValueType GetType() override {
+  ValueType GetType() const override {
     return ValueType::Float;
   }
 };
@@ -187,7 +187,7 @@ struct String_T : Value_T {
   virtual Value Add(Value other) override;
   virtual void Set(Value newValue) override;
   string ToString() const override;
-  ValueType GetType() override {
+  ValueType GetType() const override {
     return ValueType::String;
   }
 };
@@ -205,7 +205,7 @@ struct Bool_T : Value_T {
   virtual Bool Not() override;
   virtual void Set(Value newValue) override;
   virtual string ToString() const override;
-  ValueType GetType() override {
+  ValueType GetType() const override {
     return ValueType::Bool;
   }
 };
@@ -222,7 +222,7 @@ struct Object_T : Value_T {
   virtual string ToString() const override;
   string ToString(std::unordered_set<const Value_T*> foundValues) const;
   bool Equals(Value value) override;
-  ValueType GetType() override {
+  ValueType GetType() const override {
     return ValueType::Object;
   }
 private:
@@ -237,7 +237,7 @@ struct Callable_T : Value_T {
   virtual Value Call(ArgumentsPtr &args);
   string ToString() const override;
   bool Equals(Value value) override;
-  ValueType GetType() override {
+  ValueType GetType() const override {
     return ValueType::Callable;
   }
 };
@@ -248,7 +248,7 @@ struct NativeCallable_T : Callable_T {
   Value Call(ArgumentsPtr &args) override;
   string ToString() const override;
   bool Equals(Value value) override;
-  ValueType GetType() override {
+  ValueType GetType() const override {
     return ValueType::Callable;
   }
 };
@@ -272,7 +272,7 @@ struct Array_T : Value_T {
   Value Remove(Int index);
   string ToString() const override;
   bool Equals(Value value) override;
-  ValueType GetType() override {
+  ValueType GetType() const override {
     return ValueType::Array;
   }
 };
