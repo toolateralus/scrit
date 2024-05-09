@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cctype>
-#include <cstdio>
 #include <ostream>
 #include <sstream>
 #include <stdexcept>
@@ -161,26 +160,22 @@ Token Lexer::LexOp() {
   stringstream stream = {};
   int startLoc = loc;
   int startCol = col;
-  string value;
-
   std::vector<std::pair<string, TType>> sorted_operators(operators.begin(),
                                                          operators.end());
   std::sort(sorted_operators.begin(), sorted_operators.end(),
             [](const auto &a, const auto &b) {
               return a.first.size() > b.first.size();
             });
-
   for (const auto &op : sorted_operators) {
     if (input.substr(pos, op.first.size()) == op.first) {
-      value = op.first;
-      stream << value;
-      pos += value.length();
-      col += value.length();
-      return Token(startLoc, startCol, value, op.second, TFamily::Operator);
+      stream << op.first;
+      pos += op.first.length();
+      col += op.first.length();
+      return Token(startLoc, startCol, op.first, op.second, TFamily::Operator);
     }
   }
-
-  throw std::runtime_error("failed to parse operator " + value);
+  auto ch = std::string() + input[startLoc];
+  throw std::runtime_error("failed to parse operator " + ch);
 }
 Lexer::Lexer() {
   operators = {
@@ -192,8 +187,14 @@ Lexer::Lexer() {
       {"&&", TType::And},
       {">", TType::Greater},
       {"<", TType::Less},
-      {">=", TType::GreaterEQ},
-      {"<=", TType::LessEQ},
+      {">=", TType::GreaterEq},
+      {"<=", TType::LessEq},
+      {"+=", TType::AddEq},
+      {"-=", TType::SubEq},
+      {"*=", TType::MulEq},
+      {"/=", TType::DivEq},
+      {"++", TType::Increment},
+      {"--", TType::Decrement},
       {"==", TType::Equals},
       {"!=", TType::NotEquals},
       {".", TType::Dot},
@@ -258,10 +259,10 @@ string TTypeToString(const TType &type) {
     return "Greater";
   case TType::Less:
     return "Less";
-  case TType::GreaterEQ:
-    return "GreaterEQ";
-  case TType::LessEQ:
-    return "LessEQ";
+  case TType::GreaterEq:
+    return "GreaterEq";
+  case TType::LessEq:
+    return "LessEq";
   case TType::Equals:
     return "Equals";
   case TType::Assign:

@@ -44,8 +44,8 @@ TEST(LexerTest, LexOpTest) {
     ASSERT_EQ(tokens[5].type, TType::And);
     ASSERT_EQ(tokens[6].type, TType::Greater);
     ASSERT_EQ(tokens[7].type, TType::Less);
-    ASSERT_EQ(tokens[8].type, TType::GreaterEQ);
-    ASSERT_EQ(tokens[9].type, TType::LessEQ);
+    ASSERT_EQ(tokens[8].type, TType::GreaterEq);
+    ASSERT_EQ(tokens[9].type, TType::LessEq);
     ASSERT_EQ(tokens[10].type, TType::Equals);
     ASSERT_EQ(tokens[11].type, TType::NotEquals);
     ASSERT_EQ(tokens[12].type, TType::Dot);

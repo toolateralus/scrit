@@ -120,6 +120,10 @@ StatementPtr
 Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
   auto token = Peek();
   switch (token.type) {
+  case TType::AddEq:
+  case TType::MulEq:
+  case TType::SubEq:
+  case TType::DivEq:
   case TType::Assign: {
     return ParseAssignment(std::move(identifier));
   }
@@ -128,15 +132,26 @@ Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
   }
   default:
     throw std::runtime_error(
-        "failed to parse identifier statement, unexpedted token: " +
+        "failed to parse identifier statement, unexpected token: " +
         token.ToString());
   }
 }
 StatementPtr
 Parser::ParseAssignment(IdentifierPtr identifier) {
-  Expect(TType::Assign);
-  auto value = ParseExpression();
-  return make_unique<Assignment>(std::move(identifier), std::move(value));
+  auto next = Peek();
+  if (next.type == TType::Assign) {
+    Eat();
+    auto value = ParseExpression();
+    return make_unique<Assignment>(std::move(identifier), std::move(value));
+  } else if (next.type == TType::AddEq || next.type == TType::SubEq || next.type == TType::DivEq || next.type == TType::MulEq) {
+    Eat();
+    auto value = ParseExpression();
+    return make_unique<CompoundAssignment>(std::move(identifier), std::move(value), next.type);
+    
+  } else {
+    throw std::runtime_error("failed to parse assignment: invalid operator.");
+  }
+  
 }
 StatementPtr Parser::ParseCall(IdentifierPtr identifier) {
   auto args = ParseArguments();
@@ -193,8 +208,8 @@ ExpressionPtr Parser::ParseComparison() {
   auto left = ParseTerm();
 
   while (!tokens.empty() &&
-         (Peek().type == TType::Less || Peek().type == TType::LessEQ ||
-          Peek().type == TType::Greater || Peek().type == TType::GreaterEQ)) {
+         (Peek().type == TType::Less || Peek().type == TType::LessEq ||
+          Peek().type == TType::Greater || Peek().type == TType::GreaterEq)) {
     auto op = Peek().type;
     Eat();
     auto right = ParseTerm();
@@ -325,6 +340,8 @@ ExpressionPtr Parser::ParseOperand() {
     throw std::runtime_error("Unexpected token: " + TTypeToString(token.type));
   }
 }
+
+
 OperandPtr Parser::ParseArrayInitializer() {
   Eat();
   if (Peek().type == TType::SubscriptRight) {

@@ -1,21 +1,21 @@
 #include "value.hpp"
 #include "ast.hpp"
 #include "context.hpp"
-#include "native.hpp"
 #include "serializer.hpp"
 
-#include <algorithm>
 #include <memory>
 #include <sstream>
-#include <unordered_set>
-#include <vector>
 
 Bool Value_T::True = Bool_T::New(true);
 Bool Value_T::False = Bool_T::New(false);
 Null Value_T::Null = make_shared<Null_T>();
 Value Value_T::InvalidCastException = make_shared<::Null_T>();
 Undefined Value_T::Undefined = make_shared<::Undefined_T>();
-Value Object_T::GetMember(const string &name) { return scope->variables[name]; }
+Value Object_T::GetMember(const string &name) { 
+  if (scope->variables.contains(name))
+    return scope->variables[name]; 
+  else return Value_T::Undefined;
+}
 void Object_T::SetMember(const string &name, Value &value) {
   scope->variables[name] = value;
 }
@@ -79,40 +79,8 @@ void Array_T::Assign(Int index, Value value) {
   values[idx] = value;
 }
 
-string Object_T::WriteMembers(std::unordered_set<const Value_T*> foundObjs) const {
-  std::stringstream ss = {};
-  foundObjs.insert(this);
-  ss << "{";
-  int i = scope->variables.size();
-  string delimter = ", ";
-  for (const auto &[key, var] : scope->variables) {
-    i--;
-    if (i == 0) {
-      delimter = "";
-    }
-    switch (var->GetType()) {
-    case ValueType::Object: {
-      auto obj = static_cast<Object_T*>(var.get());
-      ss << '\"' << key <<  "\" : " << obj->ToString(foundObjs) << delimter;
-      break;
-    }
-    default:
-      ss << '\"' << key <<  "\" : " << var->ToString() << delimter;
-      break;
-    }
-  }
-  ss << "}";
-  return ss.str();
-};
-
 string Object_T::ToString() const {
   return Writer::ToString(this, {});
-}
-string Object_T::ToString(std::unordered_set<const Value_T*> foundObjs) const {
-  if (std::find(foundObjs.begin(), foundObjs.end(), this) != foundObjs.end()) {
-    return "[Circular]";
-  }
-  return WriteMembers(foundObjs);
 }
 string Callable_T::ToString() const {
   std::stringstream ss = {};
@@ -429,15 +397,61 @@ Array_T::Array_T(vector<Value> init)  {
   this->values = init;
 }
 Object_T::Object_T(Scope scope) { this->scope = scope; }
-Bool ValueFactory::CreateBool(const bool value) { return Bool_T::New(value); }
-String ValueFactory::CreateString(const string value) {
+Bool Ctx::CreateBool(const bool value) { return Bool_T::New(value); }
+String Ctx::CreateString(const string value) {
   return String_T::New(value);
 }
-Int ValueFactory::CreateInt(const int value) { return Int_T::New(value); }
-Float ValueFactory::CreateFloat(const float value) {
+Int Ctx::CreateInt(const int value) { return Int_T::New(value); }
+Float Ctx::CreateFloat(const float value) {
   return Float_T::New(value);
 }
-Object ValueFactory::CreateObject(Scope scope) { return Object_T::New(scope); }
-Array ValueFactory::CreateArray(vector<Value> values) {
+Object Ctx::CreateObject(Scope scope) { return Object_T::New(scope); }
+Array Ctx::CreateArray(vector<Value> values) {
   return Array_T::New(values);
 }
+
+
+bool Ctx::TryGetArray(Value value, Array &result) {
+  if (value->GetType() == ValueType::Array) {
+    result = std::dynamic_pointer_cast<Array_T>(value);
+    return true;
+  }
+  return false;
+}
+bool Ctx::TryGetObject(Value value, Object &result) {
+  if (value->GetType() == ValueType::Object) {
+    result = std::dynamic_pointer_cast<Object_T>(value);
+    return true;
+  }
+  return false;
+}
+bool Ctx::TryGetBool(Value value, bool &result) {
+  if (value->GetType() == ValueType::Bool) {
+    result = static_cast<Bool_T*>(value.get())->value;
+    return true;
+  }
+  return false;
+}
+bool Ctx::TryGetFloat(Value value, float &result) {
+  if (value->GetType() == ValueType::Float) {
+    result = static_cast<Float_T*>(value.get())->value;
+    return true;
+  }
+  return false;
+}
+bool Ctx::TryGetInt(Value value, int &result) {
+  if (value->GetType() == ValueType::Int) {
+    result = static_cast<Int_T*>(value.get())->value;
+    return true;
+  }
+  return false;
+}
+bool Ctx::TryGetString(Value value, string &result) {
+  if (value->GetType() == ValueType::String) {
+    result = static_cast<String_T*>(value.get())->value;
+    return true;
+  }
+  return false;
+}
+bool Ctx::IsUndefined(Value value) { return value->Equals(Value_T::Undefined); }
+bool Ctx::IsNull(Value value) { return value->Equals(Value_T::Null); }

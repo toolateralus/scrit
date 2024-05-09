@@ -523,9 +523,9 @@ Value BinExpr::Evaluate() {
     return left->Greater(right);
   case TType::Less:
     return left->Less(right);
-  case TType::GreaterEQ:
+  case TType::GreaterEq:
     return left->GreaterEquals(right);
-  case TType::LessEQ:
+  case TType::LessEq:
     return left->LessEquals(right);
   case TType::Equals:
     return Bool_T::New(left->Equals(right));
@@ -574,4 +574,35 @@ ExecutionResult Import::Execute() {
 Import::Import(const string &name, const bool isWildcard) : symbols({}), moduleName(name), isWildcard(isWildcard) {
   
 };
-Import::Import(const string &name, vector<string> &symbols) : symbols(symbols), moduleName(name), isWildcard(false) {};
+Import::Import(const string &name, vector<string> &symbols)
+    : symbols(symbols), moduleName(name), isWildcard(false){};
+ExecutionResult CompoundAssignment::Execute() {
+  TType binOp;
+  switch (op) {
+  case TType::AddEq:
+    binOp = TType::Add;
+    break;
+  case TType::DivEq:
+    binOp = TType::Div;
+    break;
+  case TType::SubEq:
+    binOp = TType::Sub;
+    break;
+  case TType::MulEq:
+    binOp = TType::Mul;
+    break;
+  default:
+    throw std::runtime_error("invalid operator : " + TTypeToString(op) +
+                             " in compound assignment statement");
+  }
+  auto name = iden->name;
+  auto binexpr = make_unique<BinExpr>(std::move(iden), std::move(expr), binOp);
+  auto value = binexpr->Evaluate();
+  
+  ASTNode::context.Insert(name, value);
+  
+  return ExecutionResult::None;
+}
+CompoundAssignment::CompoundAssignment(IdentifierPtr &&iden,
+                                       ExpressionPtr &&expr, TType op)
+    : Assignment(std::move(iden), std::move(expr)), op(op) {}

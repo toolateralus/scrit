@@ -8,7 +8,7 @@ RELEASEFLAGS := -O3
 TESTFLAGS := -g
 
 # Linker flags
-LDFLAGS := -lraylib
+LDFLAGS := # no flags currently
 TESTLINKERFLAGS := -lgtest -lgtest_main
 
 # Directories
@@ -29,7 +29,8 @@ NOMAINDEBUGOBJS := $(filter-out $(OBJDIR)/debug/main.o, $(DEBUGOBJS))
 
 all: debug release
 
-test: debug test-build @./$(BINDIR)/test/app
+test: test-build
+	@./$(BINDIR)/test/app
 	
 debug: $(BINDIR)/debug/app
 

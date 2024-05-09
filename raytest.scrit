@@ -1,0 +1,82 @@
+import { isKeyDown, clearBackground, windowShouldClose, beginDrawing, initWindow, endDrawing, drawRectangle } from raylib
+
+import {sleep, time} from system
+
+import  math
+
+WHITE = {
+  r=255
+  g=255
+  b=255
+  a=255
+}
+
+BLACK = {
+  r=0
+  g=0
+  b=0
+  a=0
+}
+
+KEY_W = 87
+KEY_A = 65
+KEY_S = 83
+KEY_D = 68
+
+player = {
+  x = 0
+  y = 0
+  h = 100
+  w = 100
+  speed = 0.01
+  color = WHITE
+  func move() {
+    if isKeyDown(KEY_W) {
+      y = y + speed
+    }
+    if isKeyDown(KEY_S) {
+      y = y - speed
+    }
+    if isKeyDown(KEY_A) {
+      x = x + speed
+    }
+    if isKeyDown(KEY_D) {
+      x = x - speed
+    }
+    
+    x = math.toInt(x)
+    y = math.toInt(y)
+  }
+  
+  func draw() {
+    if (x != undefined && y != undefined) {
+      err = drawRectangle(x,y,h,w,color)
+      return err
+    }
+  }
+  
+}
+
+func() {
+  initWindow(800, 600, "Raytest")
+  for {
+    if windowShouldClose() {
+      break
+    }
+    
+    player.move()
+    
+    beginDrawing()
+    clearBackground(BLACK)
+    
+    err = player.draw()
+    if err != undefined && err != null {
+      println("error: " + err)
+      break
+    }
+    
+    endDrawing()
+    
+    sleep(0.1666)
+  }
+}()

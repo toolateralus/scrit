@@ -38,11 +38,20 @@ enum class TType {
   And,
   Greater,
   Less,
-  GreaterEQ,
-  LessEQ,
+  GreaterEq,
+  LessEq,
   Equals,
   NotEquals,
-
+  
+  //
+  AddEq,
+  SubEq,
+  MulEq,
+  DivEq,
+  
+  Increment,
+  Decrement,
+  
   Assign,
   Comma,
   
