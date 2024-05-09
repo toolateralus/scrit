@@ -1,5 +1,6 @@
 #include "native.hpp"
 #include "value.hpp"
+#include "serializer.hpp"
 #include <iostream>
 
 REGISTER_FUNCTION(println) {
@@ -98,3 +99,41 @@ REGISTER_FUNCTION(tostr) {
   return Ctx::CreateString(args[0]->ToString());
 }
 
+REGISTER_FUNCTION(serialize) {
+  if (args.empty()) {
+    return Value_T::Undefined;
+  }
+  
+  auto val = args[0];
+  WriterSettings settings = {};
+  Object settingsObj;
+  if (args.size() > 1 && Ctx::TryGetObject(args[1], settingsObj)) {
+    int indentation = 0;
+    int startingIndent;
+    string refHandling;
+    if (Ctx::TryGetInt(settingsObj->GetMember("indentationSize"), indentation)) {
+      settings.IndentSize = indentation;
+    }
+    if (Ctx::TryGetInt(settingsObj->GetMember("startingIndentLevel"), startingIndent)) {
+      settings.StartingIndentLevel = startingIndent;
+      
+    }
+    if (Ctx::TryGetString(settingsObj->GetMember("referenceHandling"), refHandling)) {
+      ReferenceHandling handling = ReferenceHandling::Mark;
+      if (refHandling == "mark") {
+        handling = ReferenceHandling::Mark;
+      } else if (refHandling == "remove") {
+        handling = ReferenceHandling::Remove;
+      } else if (refHandling == "preserve") {
+        handling = ReferenceHandling::Preserve;
+      } 
+      settings.ReferenceHandling = handling;
+    }
+  }
+  Writer writer = {
+    .settings = settings
+  };
+  writer.BuildMap(val.get());
+  writer.Write(val.get());
+  return Ctx::CreateString(writer.stream.str());
+}
