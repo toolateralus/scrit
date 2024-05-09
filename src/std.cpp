@@ -15,7 +15,6 @@ REGISTER_FUNCTION(readln) {
   return String_T::New(input);
 }
 
-
 REGISTER_FUNCTION(push) {
   if (args.empty()) {
     return Value_T::Undefined;

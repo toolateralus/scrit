@@ -321,6 +321,10 @@ ExpressionPtr Parser::ParseOperand() {
     vector<StatementPtr> statements = {};
     while (tokens.size() > 0) {
       auto next = Peek();
+      if (next.type == TType::Comma) {
+        Eat();
+        continue;
+      }
       if (next.type == TType::RCurly) {
         break;
       }

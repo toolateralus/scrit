@@ -613,8 +613,11 @@ ExecutionResult RangeBasedFor::Execute() {
       }
     }   
   } else if (obj) {
+    auto kvp = Ctx::CreateObject();
     for (auto &[key, val] : obj->scope->variables) {
-      ASTNode::context.Insert(name, val);
+      kvp->scope->variables["key"] = Ctx::CreateString(key);
+      kvp->scope->variables["value"] = val;
+      ASTNode::context.Insert(name, kvp);
       auto result = block->Execute();
       switch (result.controlChange) {
       case ControlChange::None:
