@@ -51,3 +51,51 @@ REGISTER_FUNCTION(len) {
   auto array = static_cast<Array_T*>(args[0].get());
   return Int_T::New(array->values.size());
 }
+
+REGISTER_FUNCTION(typeof) {
+  if (args.empty()) {
+    return Value_T::Undefined;
+  }
+  string typeName;
+  switch(args[0]->GetType()) {
+  case ValueType::Invalid:
+    typeName = "invalid";
+    break;
+  case ValueType::Null:
+    typeName = "null";
+    break;
+  case ValueType::Undefined:
+    typeName = "undefined";
+    break;
+  case ValueType::Float:
+    typeName = "float";
+    break;
+  case ValueType::Int:
+    typeName = "int";
+    break;
+  case ValueType::Bool:
+    typeName = "bool";
+    break;
+  case ValueType::String:
+    typeName = "string";
+    break;
+  case ValueType::Object:
+    typeName = "object";
+    break;
+  case ValueType::Array:
+    typeName = "array";
+    break;
+  case ValueType::Callable:
+    typeName = "callable";
+    break;
+  }
+  return Ctx::CreateString(typeName);
+}
+
+REGISTER_FUNCTION(tostr) {
+  if (args.empty()) {
+    return Value_T::Undefined;
+  }
+  return Ctx::CreateString(args[0]->ToString());
+}
+
