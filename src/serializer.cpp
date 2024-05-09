@@ -110,10 +110,12 @@ void Writer::Write(const Value_T *val) {
           case ReferenceHandling::Remove:
             break;
           case ReferenceHandling::Mark:
+            stream << indent;
             stream << "ref:" << foundObjs.size();
             stream << element_delimter;
             break;
           case ReferenceHandling::Preserve:
+            stream << indent;
             stream << "ref:" << references[value];
             stream << element_delimter;
             break;
