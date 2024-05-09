@@ -22,7 +22,6 @@ struct Parser {
   
   StatementPtr ParseLValuePostFix(ExpressionPtr &&expr);
   StatementPtr ParseFor();
-  StatementPtr ParseFuncDecl();
   IfPtr ParseIf();
   ElsePtr ParseElse();
   StatementPtr ParseContinue();

@@ -90,11 +90,7 @@ Assignment::Assignment(IdentifierPtr &&iden, ExpressionPtr &&expr) {
   this->iden = std::move(iden);
   this->expr = std::move(expr);
 }
-FuncDecl::FuncDecl(IdentifierPtr &&name, BlockPtr &&body, ParametersPtr &&parameters) {
-  this->name = std::move(name);
-  this->body = std::move(body);
-  this->parameters = std::move(parameters);
-}
+
 DotExpr::DotExpr(ExpressionPtr &&left, ExpressionPtr &&right) {
   this->left = std::move(left);
   this->right = std::move(right);
@@ -413,12 +409,7 @@ ExecutionResult Assignment::Execute() {
   context.Insert(iden->name, expr->Evaluate());
   return ExecutionResult::None;
 }
-ExecutionResult FuncDecl::Execute() {
-  auto callable =
-      make_shared<Callable_T>(std::move(body), std::move(parameters));
-  context.Insert(name->name, callable);
-  return ExecutionResult::None;
-}
+
 Value DotExpr::Evaluate() {
   auto leftValue = left->Evaluate();
 

@@ -81,7 +81,11 @@ StatementPtr Parser::ParseKeyword(Token token) {
 
   switch (token.type) {
   case TType::Func: {
-    return ParseFuncDecl();
+    auto name = Expect(TType::Identifier);
+    auto parameters = ParseParameters();
+    auto block = ParseBlock();
+    ASTNode::context.Insert(name.value, make_shared<Callable_T>(std::move(block), std::move(parameters)));
+    return make_unique<Noop>();
   }
   case TType::If: {
     return ParseIf();
@@ -446,15 +450,7 @@ BlockPtr Parser::ParseBlock() {
   return make_unique<Block>(std::move(statements));
 }
 
-StatementPtr Parser::ParseFuncDecl() {
-  auto name = Expect(TType::Identifier);
-  auto parameters = ParseParameters();
-  auto body = ParseBlock();
-  auto id = make_unique<Identifier>(name.value);
-  auto func = make_unique<FuncDecl>(std::move(id), std::move(body),
-                                    std::move(parameters));
-  return func;
-}
+
 ElsePtr Parser::ParseElse() {
   Eat();
   if (Peek().type == TType::If) {

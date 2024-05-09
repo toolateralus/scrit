@@ -1,5 +1,6 @@
 #pragma once
 #include "lexer.hpp"
+#include <gtest/gtest.h>
 #include <memory>
 
 
@@ -178,13 +179,10 @@ struct CompoundAssignment: Statement {
   CompoundAssignment(ExpressionPtr &&expr);
   ExecutionResult Execute() override;
 };
-
-struct FuncDecl : Statement {
-  FuncDecl(IdentifierPtr &&name, BlockPtr &&body, ParametersPtr &&parameters);
-  IdentifierPtr name;
-  BlockPtr body;
-  ParametersPtr parameters;
-  ExecutionResult Execute() override;
+struct Noop : Statement {
+  ExecutionResult Execute() override {
+    return ExecutionResult::None;
+  }
 };
 struct DotExpr : Expression {
   DotExpr(ExpressionPtr &&left, ExpressionPtr &&right);
