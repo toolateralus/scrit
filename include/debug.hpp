@@ -29,6 +29,6 @@ struct Debug {
   static void m_printScope();
   static void m_stepOver(ASTNode *&owner, ASTNode *&node);
   static void m_stepOut();
-  static void m_stepIn(ASTNode *&owner, ASTNode *&node);
+  static void m_stepIn(ASTNode *&owner, ASTNode *&node, const int &index);
   static void WaitForBreakpoint(ASTNode *owner, ASTNode *node, const int &statementIndex);
 };

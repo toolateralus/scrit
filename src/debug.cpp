@@ -60,7 +60,7 @@ void Debug::m_stepOver(ASTNode *&owner, ASTNode *&node) {
     throw std::runtime_error("Invalid WaitForBreakpoint caller.");
   }
 }
-void Debug::m_stepIn(ASTNode *&owner, ASTNode *&node) {
+void Debug::m_stepIn(ASTNode *&owner, ASTNode *&node, const int &index) {
   Block *blockPtr;
   
   // reset step in info, in case this fails, step out can know.
@@ -104,7 +104,7 @@ void Debug::m_stepIn(ASTNode *&owner, ASTNode *&node) {
       int i = 0;
       for (const auto &statement : *statements) {
         if (node == statement.get()) {
-          lastSteppedIntoStatementIndex = i;
+          lastSteppedIntoStatementIndex = i + 1;
           break;
         } else {
           i++;
@@ -163,8 +163,10 @@ void Debug::WaitForBreakpoint(ASTNode *owner, ASTNode *node, const int &statemen
   
   requestedStep = StepKind::None;
   
-  lastSteppedIntoNode = owner;
-  lastSteppedIntoStatementIndex = statementIndex;
+  if (!lastSteppedIntoNode) {
+    lastSteppedIntoNode = owner;
+    lastSteppedIntoStatementIndex = statementIndex + 1;
+  }
   
   bool match = false;
   int breakpoint;
@@ -200,7 +202,7 @@ void Debug::WaitForBreakpoint(ASTNode *owner, ASTNode *node, const int &statemen
           break;
         }
         else if (line == "in") {
-          m_stepIn(owner, node);
+          m_stepIn(owner, node, statementIndex);
           break;
         }
         else if (line == "out") {
@@ -227,7 +229,7 @@ void Debug::WaitForBreakpoint(ASTNode *owner, ASTNode *node, const int &statemen
   case StepKind::Over:
   m_stepOver(owner, node);
   case StepKind::In:
-  m_stepIn(owner, node);
+  m_stepIn(owner, node, statementIndex);
   case StepKind::None:
   case StepKind::Out:
     break;
