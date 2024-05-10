@@ -16,6 +16,7 @@ Token::Token(const int &loc, const int &col, const string &value,
   this->value = std::move(value);
   this->type = type;
   this->family = family;
+  this->info =  {loc,col};
 }
 string Token::ToString() const {
   stringstream stream = {};
@@ -221,6 +222,9 @@ Lexer::Lexer() {
       {"undefined", TType::Undefined}, {"import", TType::Import},
       {"from", TType::From},
   };
+  
+  loc = -2;
+  
 }
 string TTypeToString(const TType &type) {
   switch (type) {

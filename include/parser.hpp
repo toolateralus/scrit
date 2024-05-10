@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include "ast.hpp"
+#include "lexer.hpp"
 
 struct Token;
 
@@ -15,7 +16,7 @@ struct Parser {
   Token Peek();
   Token Eat();
   Token Expect(const TType ttype);
-  int loc = 0, col = 0;
+  SourceInfo info;
   unique_ptr<Program> Parse(vector<Token> &&tokens);
   StatementPtr ParseImport();
   StatementPtr ParseLValuePostFix(ExpressionPtr &expr);

@@ -5,6 +5,9 @@
 #include <string>
 #include "debug.hpp"
 #include "context.hpp"
+#include "parser.hpp"
+
+auto programSourceInfo = SourceInfo{0,0};
 
 Context ASTNode::context = {};
 auto ExecutionResult::None =
@@ -30,79 +33,79 @@ ExecutionResult::ExecutionResult(ControlChange controlChange, Value value) {
   this->controlChange = controlChange;
   this->value = value;
 }
-If::If(const int &loc, const int &col, ExpressionPtr &&condition, BlockPtr &&block, ElsePtr &&elseStmnt): Statement(loc,col) {
+If::If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block, ElsePtr &&elseStmnt): Statement(info) {
   this->condition = std::move(condition);
   this->block = std::move(block);
   this->elseStmnt = std::move(elseStmnt);
 }
-If::If(const int &loc, const int &col, ExpressionPtr &&condition, BlockPtr &&block) : Statement(loc,col) {
+If::If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block) : Statement(info) {
   this->condition = std::move(condition);
   this->block = std::move(block);
 }
-Arguments::Arguments(const int &loc, const int &col, vector<ExpressionPtr> &&args) : Expression(loc,col) {
+Arguments::Arguments(SourceInfo &info, vector<ExpressionPtr> &&args) : Expression(info) {
   this->values = std::move(args);
 }
-Parameters::Parameters(const int &loc, const int &col, vector<string> &&names) : Statement(loc,col) {
+Parameters::Parameters(SourceInfo &info, vector<string> &&names) : Statement(info) {
   this->names = std::move(names);
 }
-Identifier::Identifier(const int &loc, const int &col, string &name) : Expression(loc, col) {
+Identifier::Identifier(SourceInfo &info, string &name) : Expression(info) {
   this->name = name;
 }
-Operand::Operand(const int &loc, const int &col, Value value) : Expression(loc, col) {
+Operand::Operand(SourceInfo &info, Value value) : Expression(info) {
   this->value = value;
 }
-Program::Program(vector<StatementPtr> &&statements) : Executable(0,0) {
+Program::Program(vector<StatementPtr> &&statements) : Executable(programSourceInfo) {
   this->statements = std::move(statements);
 }
-Return::Return(const int &loc, const int &col, ExpressionPtr &&value) : Statement(loc,col) {
+Return::Return(SourceInfo &info, ExpressionPtr &&value) : Statement(info) {
   this->value = std::move(value);
 }
-Block::Block(const int &loc, const int &col, vector<StatementPtr> &&statements) : Statement(loc,col) {
+Block::Block(SourceInfo &info, vector<StatementPtr> &&statements) : Statement(info) {
   this->statements = std::move(statements);
 }
-ObjectInitializer::ObjectInitializer(const int &loc, const int &col, BlockPtr block) : Expression(loc, col) {
+ObjectInitializer::ObjectInitializer(SourceInfo &info, BlockPtr block) : Expression(info) {
   this->block = std::move(block);
 }
-Call::Call(const int &loc, const int &col, ExpressionPtr &&operand, ArgumentsPtr &&args) : Expression(loc,col), Statement(loc,col) {
+Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args) : Expression(info), Statement(info) {
   this->operand = std::move(operand);
   this->args = std::move(args);
 }
-For::For(const int &loc, const int &col, StatementPtr &&decl, ExpressionPtr &&condition, StatementPtr &&inc, BlockPtr &&block, Scope scope) : Statement(loc,col) {
+For::For(SourceInfo &info, StatementPtr &&decl, ExpressionPtr &&condition, StatementPtr &&inc, BlockPtr &&block, Scope scope) : Statement(info) {
   this->decl = std::move(decl);
   this->condition = std::move(condition);
   this->increment = std::move(inc);
   this->block = std::move(block);
   this->scope = scope;
 }
-Assignment::Assignment(const int &loc, const int &col, IdentifierPtr &&iden, ExpressionPtr &&expr) : Statement(loc,col) {
+Assignment::Assignment(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&expr) : Statement(info) {
   this->iden = std::move(iden);
   this->expr = std::move(expr);
 }
 
-DotExpr::DotExpr(const int &loc, const int &col, ExpressionPtr &&left, ExpressionPtr &&right) : Expression(loc,col) {
+DotExpr::DotExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right) : Expression(info) {
   this->left = std::move(left);
   this->right = std::move(right);
 }
-DotAssignment::DotAssignment(const int &loc, const int &col, ExpressionPtr &&dot, ExpressionPtr &&value): Statement(loc,col)  {
+DotAssignment::DotAssignment(SourceInfo &info, ExpressionPtr &&dot, ExpressionPtr &&value): Statement(info)  {
   this->dot = std::move(dot);
   this->value = std::move(value);
 }
-DotCallStmnt::DotCallStmnt(const int &loc, const int &col, ExpressionPtr &&dot) : Statement(loc,col) {
+DotCallStmnt::DotCallStmnt(SourceInfo &info, ExpressionPtr &&dot) : Statement(info) {
   this->dot = std::move(dot);
 }
-Subscript::Subscript(const int &loc, const int &col, ExpressionPtr &&left, ExpressionPtr &&idx) : Expression(loc,col)  {
+Subscript::Subscript(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&idx) : Expression(info)  {
   this->left = std::move(left);
   this->index = std::move(idx);
 }
-SubscriptAssignStmnt::SubscriptAssignStmnt(const int &loc, const int &col, ExpressionPtr &&subscript, ExpressionPtr &&value) : Statement(loc,col)  {
+SubscriptAssignStmnt::SubscriptAssignStmnt(SourceInfo &info, ExpressionPtr &&subscript, ExpressionPtr &&value) : Statement(info)  {
   this->subscript = std::move(subscript);
   this->value = std::move(value);
 }
-UnaryExpr::UnaryExpr(const int &loc, const int &col, ExpressionPtr &&left, TType op) : Expression(loc,col)  {
+UnaryExpr::UnaryExpr(SourceInfo &info, ExpressionPtr &&left, TType op) : Expression(info)  {
   this->left = std::move(left);
   this->op = op;
 }
-BinExpr::BinExpr(const int &loc, const int &col, ExpressionPtr &&left, ExpressionPtr &&right, TType op) : Expression(loc,col)  {
+BinExpr::BinExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right, TType op) : Expression(info)  {
   this->left = std::move(left);
   this->right = std::move(right);
   this->op = op;
@@ -133,41 +136,41 @@ ExecutionResult If::Execute() {
   }
   return ExecutionResult::None;
 }
-IfPtr If::NoElse(const int &loc, const int &col, ExpressionPtr &&condition, BlockPtr &&block) {
-  return make_unique<If>(loc,col, std::move(condition), std::move(block));
+IfPtr If::NoElse(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block) {
+  return make_unique<If>(info, std::move(condition), std::move(block));
 }
-IfPtr If::WithElse(const int &loc, const int &col, ExpressionPtr &&condition, BlockPtr &&block, ElsePtr &&elseStmnt) {
-  return make_unique<If>(loc,col, std::move(condition), std::move(block),
+IfPtr If::WithElse(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block, ElsePtr &&elseStmnt) {
+  return make_unique<If>(info, std::move(condition), std::move(block),
                          std::move(elseStmnt));
 }
-ElsePtr Else::New(const int &loc, const int &col, IfPtr &&ifStmnt) {
-  auto elseStmnt = make_unique<Else>(loc,col);
+ElsePtr Else::New(SourceInfo &info, IfPtr &&ifStmnt) {
+  auto elseStmnt = make_unique<Else>(info);
   elseStmnt->ifStmnt = std::move(ifStmnt);
   return elseStmnt;
 }
-ElsePtr Else::NoIf(const int &loc, const int &col, BlockPtr &&block) {
-  auto elseStmnt = make_unique<Else>(loc,col);
+ElsePtr Else::NoIf(SourceInfo &info, BlockPtr &&block) {
+  auto elseStmnt = make_unique<Else>(info);
   ;
   elseStmnt->block = std::move(block);
   return elseStmnt;
 }
-Import::Import(const int &loc, const int &col, const string &name, const bool isWildcard) : Statement(loc,col), symbols({}), moduleName(name), isWildcard(isWildcard) {
+Import::Import(SourceInfo &info, const string &name, const bool isWildcard) : Statement(info), symbols({}), moduleName(name), isWildcard(isWildcard) {
   
 };
-Import::Import(const int &loc, const int &col, const string &name, vector<string> &symbols)
-    : Statement(loc,col), symbols(symbols), moduleName(name), isWildcard(false){};
+Import::Import(SourceInfo &info, const string &name, vector<string> &symbols)
+    : Statement(info), symbols(symbols), moduleName(name), isWildcard(false){};
 
-UnaryStatement::UnaryStatement(const int &loc, const int &col, ExpressionPtr &&expr) : Statement(loc,col), expr(std::move(expr)) {}
+UnaryStatement::UnaryStatement(SourceInfo &info, ExpressionPtr &&expr) : Statement(info), expr(std::move(expr)) {}
 
-CompoundAssignment::CompoundAssignment(const int &loc, const int &col, ExpressionPtr &&cmpAssignExpr)
-    : Statement(loc,col),  expr(std::move(cmpAssignExpr)) {}
-RangeBasedFor::RangeBasedFor(const int &loc, const int &col, IdentifierPtr &&lhs, ExpressionPtr &&rhs,
+CompoundAssignment::CompoundAssignment(SourceInfo &info, ExpressionPtr &&cmpAssignExpr)
+    : Statement(info),  expr(std::move(cmpAssignExpr)) {}
+RangeBasedFor::RangeBasedFor(SourceInfo &info, IdentifierPtr &&lhs, ExpressionPtr &&rhs,
                              BlockPtr &&block)
-    : Statement(loc,col), valueName(std::move(lhs)), rhs(std::move(rhs)), block(std::move(block)) {}
-CompAssignExpr::CompAssignExpr(const int &loc, const int &col,
+    : Statement(info), valueName(std::move(lhs)), rhs(std::move(rhs)), block(std::move(block)) {}
+CompAssignExpr::CompAssignExpr(SourceInfo &info,
                                ExpressionPtr &&left, ExpressionPtr &&right,
                                TType op)
-    : Expression(loc, col), left(std::move(left)), right(std::move(right)),
+    : Expression(info), left(std::move(left)), right(std::move(right)),
       op(op) {}
     
 ExecutionResult Program::Execute() {

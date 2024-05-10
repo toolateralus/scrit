@@ -8,11 +8,12 @@ auto Debug::currentBreakpoint = -1;
 auto Debug::stepRequested = false;
 
 void Debug::WaitForBreakpoint(ASTNode *node) {
-  if (currentBreakpoint == -1 || node->loc != currentBreakpoint) {
+  if (currentBreakpoint == -1 || node->srcInfo.loc != currentBreakpoint) {
     return;
   }
   std::cout << "breakpoint hit : line:" << currentBreakpoint << "\n" << std::flush;
-  while (!stepRequested && currentBreakpoint == node->loc) {
+  std::cout << "node: " << typeid(*node).name() << "\n";
+  while (!stepRequested && currentBreakpoint == node->srcInfo.loc) {
     usleep(100'000);
 
     fd_set set;
