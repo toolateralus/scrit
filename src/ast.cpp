@@ -3,6 +3,7 @@
 #include "value.hpp"
 #include <stdexcept>
 #include <string>
+#include "debug.hpp"
 #include "context.hpp"
 
 Context ASTNode::context = {};
@@ -12,11 +13,6 @@ auto ExecutionResult::Break =
     ExecutionResult(ControlChange::Break, Value_T::Undefined);
 auto ExecutionResult::Continue =
     ExecutionResult(ControlChange::Continue, Value_T::Undefined);
-
-auto 
-Debug::currentBreakpoint = -1;
-auto Debug::stepRequested = false;
-
 
 string CC_ToString(ControlChange controlChange) {
   switch (controlChange) {

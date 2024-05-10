@@ -78,7 +78,7 @@ struct Token {
   Token(const int &loc, const int &col, const string &value, const TType type,
         const TFamily family);
   string value;
-  int loc = 0, col = 0;
+  int loc = 1, col = 0;
   TType type;
   TFamily family;
 

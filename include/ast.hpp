@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 #include <memory>
 
-
 struct Context;
 struct Value_T;
 struct Scope_T;
@@ -12,9 +11,6 @@ typedef std::shared_ptr<Scope_T> Scope;
 
 using std::make_unique;
 using std::unique_ptr;
-
-
-
 
 // forawrd declarations
 struct Statement;
@@ -56,44 +52,12 @@ struct ExecutionResult {
 };
 struct ASTNode {
   int loc, col;
-  ASTNode(const int &loc, const int &col) : loc(loc), col(col) {
-    
-  }
-  
+  ASTNode(const int &loc, const int &col) : loc(loc), col(col) {}
+
   static Context context;
   virtual ~ASTNode() {}
 };
 
-struct Debug {
-  Debug() = delete;
-  static int currentBreakpoint;
-  static bool stepRequested;
-  static void InsertBreakpoint(int loc) {
-    currentBreakpoint = loc;
-    stepRequested = false;
-  }
-  static void Continue() {
-    currentBreakpoint = -1;
-    stepRequested = false;
-  }
-  
-  static void Step() {
-    stepRequested = true;
-  }
-  
-  static void WaitForBreakpoint(ASTNode * node) {
-    if (currentBreakpoint == -1 || node->loc != currentBreakpoint) {
-      return;
-    }
-    while (!stepRequested && currentBreakpoint == node->loc) {
-      usleep(100'000);
-    }
-    if (stepRequested) {
-      stepRequested = false;
-      currentBreakpoint++;
-    }
-  }
-};
 
 struct Executable : ASTNode {
   virtual ~Executable() {}
@@ -134,21 +98,21 @@ struct Parameters : Statement {
   ExecutionResult Execute() override;
 };
 struct Continue : Statement {
-  Continue(const int &loc, const int &col) : Statement(loc,col){}
+  Continue(const int &loc, const int &col) : Statement(loc, col) {}
   ExecutionResult Execute() override;
 };
 struct Break : Statement {
-  Break(const int &loc, const int &col) : Statement(loc,col){}
+  Break(const int &loc, const int &col) : Statement(loc, col) {}
   ExecutionResult Execute() override;
 };
 struct Return : Statement {
-  
+
   Return(const int &loc, const int &col, ExpressionPtr &&value);
   ExpressionPtr value;
   ExecutionResult Execute() override;
 };
 struct Block : Statement {
-  Block(const int &loc, const int &col,vector<StatementPtr> &&statements);
+  Block(const int &loc, const int &col, vector<StatementPtr> &&statements);
   vector<StatementPtr> statements;
   Scope scope;
   ExecutionResult Execute() override;
@@ -162,16 +126,22 @@ struct ObjectInitializer : Expression {
 struct Call : Expression, Statement {
   ExpressionPtr operand;
   ArgumentsPtr args;
-  Call(const int &loc, const int &col, ExpressionPtr &&operand, ArgumentsPtr &&args);
+  Call(const int &loc, const int &col, ExpressionPtr &&operand,
+       ArgumentsPtr &&args);
   static vector<Value> GetArgsValueList(ArgumentsPtr &args);
   Value Evaluate() override;
   ExecutionResult Execute() override;
 };
 struct If : Statement {
-  static IfPtr NoElse(const int &loc, const int &col, ExpressionPtr &&condition, BlockPtr &&block);
-  static IfPtr WithElse(const int &loc, const int &col, ExpressionPtr &&condition, BlockPtr &&block, ElsePtr &&elseStmnt);
-  If(const int &loc, const int &col, ExpressionPtr &&condition, BlockPtr &&block);
-  If(const int &loc, const int &col, ExpressionPtr &&condition, BlockPtr &&block,  ElsePtr &&elseStmnt);
+  static IfPtr NoElse(const int &loc, const int &col, ExpressionPtr &&condition,
+                      BlockPtr &&block);
+  static IfPtr WithElse(const int &loc, const int &col,
+                        ExpressionPtr &&condition, BlockPtr &&block,
+                        ElsePtr &&elseStmnt);
+  If(const int &loc, const int &col, ExpressionPtr &&condition,
+     BlockPtr &&block);
+  If(const int &loc, const int &col, ExpressionPtr &&condition,
+     BlockPtr &&block, ElsePtr &&elseStmnt);
   ExpressionPtr condition;
   BlockPtr block;
   ElsePtr elseStmnt;
@@ -180,7 +150,7 @@ struct If : Statement {
 struct Else : Statement {
   IfPtr ifStmnt;
   BlockPtr block;
-  Else(const int &loc, const int& col) : Statement(loc,col) {}
+  Else(const int &loc, const int &col) : Statement(loc, col) {}
   static ElsePtr NoIf(const int &loc, const int &col, BlockPtr &&block);
   static ElsePtr New(const int &loc, const int &col, IfPtr &&ifStmnt);
   ExecutionResult Execute() override;
@@ -191,12 +161,15 @@ struct For : Statement {
   StatementPtr increment;
   BlockPtr block;
   Scope scope;
-  For(const int &loc, const int &col, StatementPtr &&decl, ExpressionPtr &&condition, StatementPtr &&inc, BlockPtr &&block, Scope scope);
+  For(const int &loc, const int &col, StatementPtr &&decl,
+      ExpressionPtr &&condition, StatementPtr &&inc, BlockPtr &&block,
+      Scope scope);
   ExecutionResult Execute() override;
 };
 
 struct RangeBasedFor : Statement {
-  RangeBasedFor(const int &loc, const int &col, IdentifierPtr &&lhs, ExpressionPtr &&rhs, BlockPtr &&block);
+  RangeBasedFor(const int &loc, const int &col, IdentifierPtr &&lhs,
+                ExpressionPtr &&rhs, BlockPtr &&block);
   IdentifierPtr valueName;
   ExpressionPtr rhs;
   BlockPtr block;
@@ -206,7 +179,8 @@ struct RangeBasedFor : Statement {
 struct Assignment : Statement {
   IdentifierPtr iden;
   ExpressionPtr expr;
-  Assignment(const int &loc, const int &col, IdentifierPtr &&iden, ExpressionPtr &&expr);
+  Assignment(const int &loc, const int &col, IdentifierPtr &&iden,
+             ExpressionPtr &&expr);
   ExecutionResult Execute() override;
 };
 
@@ -218,26 +192,26 @@ struct CompAssignExpr : Expression {
   Value Evaluate() override;
 };
 
-struct CompoundAssignment: Statement {
+struct CompoundAssignment : Statement {
   ExpressionPtr expr;
   CompoundAssignment(const int &loc, const int &col, ExpressionPtr &&expr);
   ExecutionResult Execute() override;
 };
 struct Noop : Statement {
-  Noop(const int &loc, const int &col) : Statement(loc,col) {}
-  ExecutionResult Execute() override {
-    return ExecutionResult::None;
-  }
+  Noop(const int &loc, const int &col) : Statement(loc, col) {}
+  ExecutionResult Execute() override { return ExecutionResult::None; }
 };
 struct DotExpr : Expression {
-  DotExpr(const int &loc, const int &col, ExpressionPtr &&left, ExpressionPtr &&right);
+  DotExpr(const int &loc, const int &col, ExpressionPtr &&left,
+          ExpressionPtr &&right);
   ExpressionPtr left;
   ExpressionPtr right;
   Value Evaluate() override;
   void Assign(Value value);
 };
 struct DotAssignment : Statement {
-  DotAssignment(const int &loc, const int &col, ExpressionPtr &&dot, ExpressionPtr &&value);
+  DotAssignment(const int &loc, const int &col, ExpressionPtr &&dot,
+                ExpressionPtr &&value);
   ExpressionPtr dot;
   ExpressionPtr value;
   ExecutionResult Execute() override;
@@ -248,13 +222,15 @@ struct DotCallStmnt : Statement {
   ExecutionResult Execute() override;
 };
 struct Subscript : Expression {
-  Subscript(const int &loc, const int &col, ExpressionPtr &&left, ExpressionPtr &&idx);
+  Subscript(const int &loc, const int &col, ExpressionPtr &&left,
+            ExpressionPtr &&idx);
   ExpressionPtr left;
   ExpressionPtr index;
   Value Evaluate();
 };
 struct SubscriptAssignStmnt : Statement {
-  SubscriptAssignStmnt(const int &loc, const int &col, ExpressionPtr &&subscript, ExpressionPtr &&value);
+  SubscriptAssignStmnt(const int &loc, const int &col,
+                       ExpressionPtr &&subscript, ExpressionPtr &&value);
   ExpressionPtr subscript;
   ExpressionPtr value;
   ExecutionResult Execute() override;
@@ -280,14 +256,16 @@ struct BinExpr : Expression {
   ExpressionPtr left;
   ExpressionPtr right;
   TType op;
-  BinExpr(const int &loc, const int &col, ExpressionPtr &&left, ExpressionPtr &&right, TType op);
+  BinExpr(const int &loc, const int &col, ExpressionPtr &&left,
+          ExpressionPtr &&right, TType op);
   Value Evaluate() override;
 };
 
-
 struct Import : Statement {
-  Import(const int &loc, const int &col, const string &name, const bool isWildcard);
-  Import(const int &loc, const int &col, const string &name, vector<string> &symbols);
+  Import(const int &loc, const int &col, const string &name,
+         const bool isWildcard);
+  Import(const int &loc, const int &col, const string &name,
+         vector<string> &symbols);
   vector<string> symbols;
   string moduleName;
   bool isWildcard;
