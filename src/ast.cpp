@@ -174,8 +174,9 @@ CompAssignExpr::CompAssignExpr(SourceInfo &info,
       op(op) {}
     
 ExecutionResult Program::Execute() {
+  int index = 0;
   for (auto &statement : statements) {
-    Debug::WaitForBreakpoint(this, statement.get());
+    Debug::WaitForBreakpoint(this, statement.get(), index);
     try {
       auto result = statement->Execute();
       switch (result.controlChange) {
@@ -188,6 +189,7 @@ ExecutionResult Program::Execute() {
     catch (std::runtime_error err) {
       std::cout << err.what() << std::endl;
     }
+    index++;
   }
   return ExecutionResult::None;
 }
@@ -224,8 +226,9 @@ ExecutionResult Return::Execute() {
 }
 ExecutionResult Block::Execute() {
   scope = ASTNode::context.PushScope();
+  int index = 0;
   for (auto &statement : statements) {
-    Debug::WaitForBreakpoint(this, statement.get());
+    Debug::WaitForBreakpoint(this, statement.get(), index);
     try {
       auto result = statement->Execute();
       switch (result.controlChange) {
@@ -240,6 +243,7 @@ ExecutionResult Block::Execute() {
     } catch (std::runtime_error err) {
       std::cout << err.what() << std::endl;
     }
+    index++;
   }
   ASTNode::context.PopScope();
   return ExecutionResult::None;
