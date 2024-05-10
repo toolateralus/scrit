@@ -13,12 +13,7 @@ auto ExecutionResult::Break =
 auto ExecutionResult::Continue =
     ExecutionResult(ControlChange::Continue, Value_T::Undefined);
 
-static Object MakeException(const string &msg, const string &type) {
-  auto e = Object_T::New();
-  e->scope->variables["msg"] = String_T::New(msg);
-  e->scope->variables["type"] = String_T::New(type);
-  return e;
-}
+
 string CC_ToString(ControlChange controlChange) {
   switch (controlChange) {
   case ControlChange::None:
@@ -29,14 +24,6 @@ string CC_ToString(ControlChange controlChange) {
     return "Continue";
   case ControlChange::Break:
     return "Break";
-  case ControlChange::Goto:
-    return "Goto";
-  case ControlChange::ContinueLabel:
-    return "ContinueLabel";
-  case ControlChange::BreakLabel:
-    return "BreakLabel";
-  case ControlChange::Exception:
-    return "Exception";
   }
 }
 ExecutionResult::ExecutionResult(ControlChange controlChange, Value value) {
@@ -128,16 +115,9 @@ ExecutionResult If::Execute() {
     case ControlChange::None:
       break;
     case ControlChange::Return:
-    case ControlChange::Exception:
     case ControlChange::Continue:
     case ControlChange::Break:
       return result;
-    case ControlChange::Goto:
-    case ControlChange::ContinueLabel:
-    case ControlChange::BreakLabel:
-      // TODO: Check for label Here
-      throw std::runtime_error(CC_ToString(result.controlChange) +
-                               " not implemented");
     }
   }
   else if (elseStmnt) {
@@ -146,16 +126,9 @@ ExecutionResult If::Execute() {
     case ControlChange::None:
       break;
     case ControlChange::Return:
-    case ControlChange::Exception:
     case ControlChange::Continue:
     case ControlChange::Break:
       return result;
-    case ControlChange::Goto:
-    case ControlChange::ContinueLabel:
-    case ControlChange::BreakLabel:
-      // TODO: Check for label Here
-      throw std::runtime_error(CC_ToString(result.controlChange) +
-                               " not implemented");
     }
   }
   return ExecutionResult::None;
@@ -182,15 +155,6 @@ ExecutionResult Program::Execute() {
   for (auto &statement : statements) {
     auto result = statement->Execute();
     switch (result.controlChange) {
-    case ControlChange::Exception:
-      throw std::runtime_error("Uncaught Exception: " +
-                               result.value->ToString());
-    case ControlChange::Goto:
-    case ControlChange::ContinueLabel:
-    case ControlChange::BreakLabel:
-      // TODO: Check for label Here
-      throw std::runtime_error(CC_ToString(result.controlChange) +
-                               " not implemented");
     case ControlChange::None:
       continue;
     default:
@@ -235,16 +199,9 @@ ExecutionResult Block::Execute() {
   for (auto &statement : statements) {
     auto result = statement->Execute();
     switch (result.controlChange) {
-    case ControlChange::Goto:
-    case ControlChange::ContinueLabel:
-    case ControlChange::BreakLabel:
-      // TODO: Check for label Here
-      throw std::runtime_error(CC_ToString(result.controlChange) +
-                               " not implemented");
     case ControlChange::Continue:
     case ControlChange::Break:
     case ControlChange::Return:
-    case ControlChange::Exception:
       ASTNode::context.PopScope();
       return result;
     case ControlChange::None:
@@ -297,13 +254,7 @@ ExecutionResult For::Execute() {
       break;
     case ControlChange::Continue:
     case ControlChange::Break:
-    case ControlChange::Goto:
-    case ControlChange::ContinueLabel:
-    case ControlChange::BreakLabel:
-      throw std::runtime_error(CC_ToString(result.controlChange) +
-                               " not allowed in for initialization.");
     case ControlChange::Return:
-    case ControlChange::Exception:
       return result;
     }
   }
@@ -329,18 +280,9 @@ ExecutionResult For::Execute() {
       case ControlChange::Continue:
         break;
       case ControlChange::Return:
-      case ControlChange::Exception:
-        context.PopScope();
-        return result;
       case ControlChange::Break:
         context.PopScope();
         return ExecutionResult::None;
-      case ControlChange::Goto:
-      case ControlChange::ContinueLabel:
-      case ControlChange::BreakLabel:
-        // TODO: Check for label Here
-        throw std::runtime_error(CC_ToString(result.controlChange) +
-                                 " not implemented");
       }
       result = increment->Execute();
       switch (result.controlChange) {
@@ -351,15 +293,6 @@ ExecutionResult For::Execute() {
       case ControlChange::Break:
         throw std::runtime_error(CC_ToString(result.controlChange) +
                                  " not allowed in for initialization.");
-      case ControlChange::Exception:
-        context.PopScope();
-        return result;
-      case ControlChange::Goto:
-      case ControlChange::ContinueLabel:
-      case ControlChange::BreakLabel:
-        // TODO: Check for label Here
-        throw std::runtime_error(CC_ToString(result.controlChange) +
-                                 " not implemented");
       }
     }
   } else {
@@ -374,15 +307,6 @@ ExecutionResult For::Execute() {
         case ControlChange::Break:
           throw std::runtime_error(CC_ToString(result.controlChange) +
                                    " not allowed in for initialization.");
-        case ControlChange::Exception:
-          context.PopScope();
-          return result;
-        case ControlChange::Goto:
-        case ControlChange::ContinueLabel:
-        case ControlChange::BreakLabel:
-          // TODO: Check for label Here
-          throw std::runtime_error(CC_ToString(result.controlChange) +
-                                   " not implemented");
         }
       }
       auto result = block->Execute();
@@ -391,18 +315,9 @@ ExecutionResult For::Execute() {
       case ControlChange::Continue:
         break;
       case ControlChange::Return:
-      case ControlChange::Exception:
-        context.PopScope();
-        return result;
       case ControlChange::Break:
         context.PopScope();
         return ExecutionResult::None;
-      case ControlChange::Goto:
-      case ControlChange::ContinueLabel:
-      case ControlChange::BreakLabel:
-        // TODO: Check for label Here
-        throw std::runtime_error(CC_ToString(result.controlChange) +
-                                 " not implemented");
       }
     }
   }
@@ -583,11 +498,6 @@ ExecutionResult RangeBasedFor::Execute() {
         continue;
       case ControlChange::Break:
         goto breakLoops;
-      case ControlChange::Goto:
-      case ControlChange::ContinueLabel:
-      case ControlChange::BreakLabel:
-      case ControlChange::Exception:
-        throw std::runtime_error("unhandled execution result");
         break;
       }
     }   
@@ -607,12 +517,6 @@ ExecutionResult RangeBasedFor::Execute() {
         continue;
       case ControlChange::Break:
         goto breakLoops;
-      case ControlChange::Goto:
-      case ControlChange::ContinueLabel:
-      case ControlChange::BreakLabel:
-      case ControlChange::Exception:
-        throw std::runtime_error("unhandled execution result");
-        break;
       }
     }   
   } else if (isString) {
@@ -628,12 +532,6 @@ ExecutionResult RangeBasedFor::Execute() {
         continue;
       case ControlChange::Break:
         goto breakLoops;
-      case ControlChange::Goto:
-      case ControlChange::ContinueLabel:
-      case ControlChange::BreakLabel:
-      case ControlChange::Exception:
-        throw std::runtime_error("unhandled execution result");
-        break;
       }
     }   
   }

@@ -41,10 +41,6 @@ enum struct ControlChange {
   Return,
   Continue,
   Break,
-  Goto,
-  ContinueLabel,
-  BreakLabel,
-  Exception
 };
 struct ExecutionResult {
   ExecutionResult(ControlChange controlChange, Value value);
