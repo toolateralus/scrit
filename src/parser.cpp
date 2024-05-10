@@ -98,6 +98,7 @@ StatementPtr Parser::ParseStatement() {
       // for func(..) {...}() anonymous func declaration & invocation
       // statements.
       if (token.type == TType::Func && Peek().type == TType::LParen) {
+        auto info = this->info;
         auto parameters = ParseParameters();
         auto body = ParseBlock();
         auto arguments = ParseArguments();
@@ -117,6 +118,7 @@ StatementPtr Parser::ParseStatement() {
 StatementPtr Parser::ParseKeyword(Token token) {
   switch (token.type) {
   case TType::Func: {
+    auto info = this->info;
     auto name = Expect(TType::Identifier);
     auto parameters = ParseParameters();
     auto block = ParseBlock();
@@ -345,6 +347,7 @@ ExpressionPtr Parser::ParseOperand() {
     return ParseArrayInitializer();
   }
   case TType::Func: {
+    auto info = this->info;
     Eat();
     auto params = ParseParameters();
     auto body = ParseBlock();
@@ -480,6 +483,7 @@ BlockPtr Parser::ParseBlock() {
   return make_unique<Block>(info,  std::move(statements));
 }
 ElsePtr Parser::ParseElse() {
+  auto info = this->info;
   Eat();
   if (Peek().type == TType::If) {
     Eat();
@@ -490,6 +494,7 @@ ElsePtr Parser::ParseElse() {
   }
 }
 IfPtr Parser::ParseIf() {
+  auto info = this->info;
   auto condition = ParseExpression();
   auto block = ParseBlock();
   if (!tokens.empty() && Peek().type == TType::Else) {
@@ -500,6 +505,8 @@ IfPtr Parser::ParseIf() {
   return If::NoElse(info,  std::move(condition), std::move(block));
 }
 StatementPtr Parser::ParseFor() {
+  auto info = this->info;
+  
   auto scope = ASTNode::context.PushScope();
   if (!tokens.empty() && Peek().type == TType::LParen) {
     Eat();
@@ -522,6 +529,7 @@ StatementPtr Parser::ParseFor() {
 
     // Range based for loop for iden : array/obj {}
     if (iden && Peek().type == TType::Colon) {
+      
       Eat();
       auto rhs = ParseOperand();
       return make_unique<RangeBasedFor>(info,  make_unique<Identifier>(info,  iden->name),
