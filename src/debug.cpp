@@ -15,8 +15,9 @@ int Debug::stepOutIndex = -1;
 void Debug::WaitForBreakpoint(ASTNode *owner, ASTNode *node,
                               const int &statementIndex) {
   static const string breakpointKey = "breakpoint:";
-
-  m_getInfo(owner, node);
+  
+  if (lastNode == nullptr)
+    m_getInfo(owner, node);
   
   requestedStep = StepKind::None;
 
@@ -198,7 +199,9 @@ void Debug::m_getInfo(ASTNode *&owner, ASTNode *&node) {
 }
 void Debug::m_stepIn(ASTNode *&owner, ASTNode *&node, const int &index) {
   Block *blockPtr;
-
+  
+  m_getInfo(owner, node);
+  
   int loc = -1;
   // actually search which type of node that contains a block is being stepped
   // into and set a breakpoint on the first statement of that block;
