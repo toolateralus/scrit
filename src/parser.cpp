@@ -205,10 +205,8 @@ ExpressionPtr Parser::ParseExpression() {
   if (tokens.empty()) {
     throw std::runtime_error("Unexpected end of input");
   }
-  this->info = Peek().info;
   return ParseCompoundAssignment();
 }
-
 ExpressionPtr Parser::ParseCompoundAssignment() {
   auto left = ParseLogicalOr();
 
@@ -225,7 +223,6 @@ ExpressionPtr Parser::ParseCompoundAssignment() {
   }
   return left;
 }
-
 ExpressionPtr Parser::ParseLogicalOr() {
   auto left = ParseLogicalAnd();
 
@@ -238,7 +235,6 @@ ExpressionPtr Parser::ParseLogicalOr() {
 
   return left;
 }
-
 ExpressionPtr Parser::ParseLogicalAnd() {
   auto left = ParseEquality();
 
@@ -251,7 +247,6 @@ ExpressionPtr Parser::ParseLogicalAnd() {
 
   return left;
 }
-
 ExpressionPtr Parser::ParseEquality() {
   auto left = ParseComparison();
 
@@ -265,7 +260,6 @@ ExpressionPtr Parser::ParseEquality() {
 
   return left;
 }
-
 ExpressionPtr Parser::ParseComparison() {
   auto left = ParseTerm();
 
@@ -280,7 +274,6 @@ ExpressionPtr Parser::ParseComparison() {
 
   return left;
 }
-
 ExpressionPtr Parser::ParseTerm() {
   auto left = ParseFactor();
 
@@ -294,7 +287,6 @@ ExpressionPtr Parser::ParseTerm() {
 
   return left;
 }
-
 ExpressionPtr Parser::ParseFactor() {
   auto left = ParsePostfix();
 
@@ -308,7 +300,6 @@ ExpressionPtr Parser::ParseFactor() {
 
   return left;
 }
-
 ExpressionPtr Parser::ParsePostfix() {
   auto expr = ParseOperand();
   while (!tokens.empty()) {
@@ -413,7 +404,6 @@ ExpressionPtr Parser::ParseOperand() {
     throw std::runtime_error("Unexpected token: " + TTypeToString(token.type));
   }
 }
-
 OperandPtr Parser::ParseArrayInitializer() {
   Eat();
   if (Peek().type == TType::SubscriptRight) {
@@ -489,7 +479,6 @@ BlockPtr Parser::ParseBlock() {
   Expect(TType::RCurly);
   return make_unique<Block>(info,  std::move(statements));
 }
-
 ElsePtr Parser::ParseElse() {
   Eat();
   if (Peek().type == TType::If) {
@@ -510,7 +499,6 @@ IfPtr Parser::ParseIf() {
   }
   return If::NoElse(info,  std::move(condition), std::move(block));
 }
-
 StatementPtr Parser::ParseFor() {
   auto scope = ASTNode::context.PushScope();
   if (!tokens.empty() && Peek().type == TType::LParen) {

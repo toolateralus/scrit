@@ -101,6 +101,8 @@ Token Lexer::LexString() {
     if (!(input[pos] != '\"' || (input[pos] == '\"' && input[pos-1] == '\\'))) {
       break;
     }
+    
+    
     if (input[pos] == '\\' && pos+1 < input.size()) {
       switch (input[pos+1]) {
         case '\"':
@@ -222,10 +224,7 @@ Lexer::Lexer() {
       {"undefined", TType::Undefined}, {"import", TType::Import},
       {"from", TType::From},
   };
-  
-  // For some reason when we lex we're always off by 2.
-  loc = -1;
-  
+  loc = 1;
 }
 string TTypeToString(const TType &type) {
   switch (type) {
