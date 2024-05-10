@@ -16,7 +16,7 @@ struct Debug {
   static StepKind requestedStep;
   
   static ASTNode *lastNode;
-  static int lastStatementIndex;
+  static int stepOutIndex;
   
   static void InsertBreakpoint(int loc);
   static void RemoveBreakpoint(int loc);
