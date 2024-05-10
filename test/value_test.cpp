@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "native.hpp"
 #include "value.hpp"
+#include "context.hpp"
 
 TEST(EqTest, StrEquals) {
   String EMPTY = String_T::New("");

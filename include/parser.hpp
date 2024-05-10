@@ -15,11 +15,9 @@ struct Parser {
   Token Peek();
   Token Eat();
   Token Expect(const TType ttype);
-  
+  int loc = 0, col = 0;
   unique_ptr<Program> Parse(vector<Token> &&tokens);
-  
   StatementPtr ParseImport();
-  
   StatementPtr ParseLValuePostFix(ExpressionPtr &expr);
   StatementPtr ParseFor();
   IfPtr ParseIf();

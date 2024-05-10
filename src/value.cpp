@@ -35,7 +35,6 @@ Value Callable_T::Call(ArgumentsPtr &args) {
   case ControlChange::None:
     return Value_T::Null;
   case ControlChange::Return:
-  case ControlChange::Exception:
     return result.value;
   default:
     throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));

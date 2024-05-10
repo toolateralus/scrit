@@ -13,6 +13,10 @@ auto ExecutionResult::Break =
 auto ExecutionResult::Continue =
     ExecutionResult(ControlChange::Continue, Value_T::Undefined);
 
+auto 
+Debug::currentBreakpoint = -1;
+auto Debug::stepRequested = false;
+
 
 string CC_ToString(ControlChange controlChange) {
   switch (controlChange) {
@@ -30,79 +34,79 @@ ExecutionResult::ExecutionResult(ControlChange controlChange, Value value) {
   this->controlChange = controlChange;
   this->value = value;
 }
-If::If(ExpressionPtr &&condition, BlockPtr &&block, ElsePtr &&elseStmnt) {
+If::If(const int &loc, const int &col, ExpressionPtr &&condition, BlockPtr &&block, ElsePtr &&elseStmnt): Statement(loc,col) {
   this->condition = std::move(condition);
   this->block = std::move(block);
   this->elseStmnt = std::move(elseStmnt);
 }
-If::If(ExpressionPtr &&condition, BlockPtr &&block) {
+If::If(const int &loc, const int &col, ExpressionPtr &&condition, BlockPtr &&block) : Statement(loc,col) {
   this->condition = std::move(condition);
   this->block = std::move(block);
 }
-Arguments::Arguments(vector<ExpressionPtr> &&args) {
+Arguments::Arguments(const int &loc, const int &col, vector<ExpressionPtr> &&args) : Expression(loc,col) {
   this->values = std::move(args);
 }
-Parameters::Parameters(vector<string> &&names) {
+Parameters::Parameters(const int &loc, const int &col, vector<string> &&names) : Statement(loc,col) {
   this->names = std::move(names);
 }
-Identifier::Identifier(string &name) {
+Identifier::Identifier(const int &loc, const int &col, string &name) : Expression(loc, col) {
   this->name = name;
 }
-Operand::Operand(Value value) {
+Operand::Operand(const int &loc, const int &col, Value value) : Expression(loc, col) {
   this->value = value;
 }
-Program::Program(vector<StatementPtr> &&statements) {
+Program::Program(vector<StatementPtr> &&statements) : Executable(0,0) {
   this->statements = std::move(statements);
 }
-Return::Return(ExpressionPtr &&value) {
+Return::Return(const int &loc, const int &col, ExpressionPtr &&value) : Statement(loc,col) {
   this->value = std::move(value);
 }
-Block::Block(vector<StatementPtr> &&statements) {
+Block::Block(const int &loc, const int &col, vector<StatementPtr> &&statements) : Statement(loc,col) {
   this->statements = std::move(statements);
 }
-ObjectInitializer::ObjectInitializer(BlockPtr block) {
+ObjectInitializer::ObjectInitializer(const int &loc, const int &col, BlockPtr block) : Expression(loc, col) {
   this->block = std::move(block);
 }
-Call::Call(ExpressionPtr &&operand, ArgumentsPtr &&args) {
+Call::Call(const int &loc, const int &col, ExpressionPtr &&operand, ArgumentsPtr &&args) : Expression(loc,col), Statement(loc,col) {
   this->operand = std::move(operand);
   this->args = std::move(args);
 }
-For::For(StatementPtr &&decl, ExpressionPtr &&condition, StatementPtr &&inc, BlockPtr &&block, Scope scope) {
+For::For(const int &loc, const int &col, StatementPtr &&decl, ExpressionPtr &&condition, StatementPtr &&inc, BlockPtr &&block, Scope scope) : Statement(loc,col) {
   this->decl = std::move(decl);
   this->condition = std::move(condition);
   this->increment = std::move(inc);
   this->block = std::move(block);
   this->scope = scope;
 }
-Assignment::Assignment(IdentifierPtr &&iden, ExpressionPtr &&expr) {
+Assignment::Assignment(const int &loc, const int &col, IdentifierPtr &&iden, ExpressionPtr &&expr) : Statement(loc,col) {
   this->iden = std::move(iden);
   this->expr = std::move(expr);
 }
 
-DotExpr::DotExpr(ExpressionPtr &&left, ExpressionPtr &&right) {
+DotExpr::DotExpr(const int &loc, const int &col, ExpressionPtr &&left, ExpressionPtr &&right) : Expression(loc,col) {
   this->left = std::move(left);
   this->right = std::move(right);
 }
-DotAssignment::DotAssignment(ExpressionPtr &&dot, ExpressionPtr &&value) {
+DotAssignment::DotAssignment(const int &loc, const int &col, ExpressionPtr &&dot, ExpressionPtr &&value): Statement(loc,col)  {
   this->dot = std::move(dot);
   this->value = std::move(value);
 }
-DotCallStmnt::DotCallStmnt(ExpressionPtr &&dot) {
+DotCallStmnt::DotCallStmnt(const int &loc, const int &col, ExpressionPtr &&dot) : Statement(loc,col) {
   this->dot = std::move(dot);
 }
-Subscript::Subscript(ExpressionPtr &&left, ExpressionPtr &&idx) {
+Subscript::Subscript(const int &loc, const int &col, ExpressionPtr &&left, ExpressionPtr &&idx) : Expression(loc,col)  {
   this->left = std::move(left);
   this->index = std::move(idx);
 }
-SubscriptAssignStmnt::SubscriptAssignStmnt(ExpressionPtr &&subscript, ExpressionPtr &&value) {
+SubscriptAssignStmnt::SubscriptAssignStmnt(const int &loc, const int &col, ExpressionPtr &&subscript, ExpressionPtr &&value) : Statement(loc,col)  {
   this->subscript = std::move(subscript);
   this->value = std::move(value);
 }
-UnaryExpr::UnaryExpr(ExpressionPtr &&left, TType op) {
+UnaryExpr::UnaryExpr(const int &loc, const int &col, ExpressionPtr &&left, TType op) : Expression(loc,col)  {
   this->left = std::move(left);
   this->op = op;
 }
-BinExpr::BinExpr(ExpressionPtr &&left, ExpressionPtr &&right, TType op) {
+BinExpr::BinExpr(const int &loc, const int &col, ExpressionPtr &&left, ExpressionPtr &&right, TType op) : Expression(loc,col)  {
   this->left = std::move(left);
   this->right = std::move(right);
   this->op = op;
@@ -133,32 +137,57 @@ ExecutionResult If::Execute() {
   }
   return ExecutionResult::None;
 }
-IfPtr If::NoElse(ExpressionPtr &&condition, BlockPtr &&block) {
-  return make_unique<If>(std::move(condition), std::move(block));
+IfPtr If::NoElse(const int &loc, const int &col, ExpressionPtr &&condition, BlockPtr &&block) {
+  return make_unique<If>(loc,col, std::move(condition), std::move(block));
 }
-IfPtr If::WithElse(ExpressionPtr &&condition, BlockPtr &&block, ElsePtr &&elseStmnt) {
-  return make_unique<If>(std::move(condition), std::move(block),
+IfPtr If::WithElse(const int &loc, const int &col, ExpressionPtr &&condition, BlockPtr &&block, ElsePtr &&elseStmnt) {
+  return make_unique<If>(loc,col, std::move(condition), std::move(block),
                          std::move(elseStmnt));
 }
-ElsePtr Else::New(IfPtr &&ifStmnt) {
-  auto elseStmnt = make_unique<Else>();
+ElsePtr Else::New(const int &loc, const int &col, IfPtr &&ifStmnt) {
+  auto elseStmnt = make_unique<Else>(loc,col);
   elseStmnt->ifStmnt = std::move(ifStmnt);
   return elseStmnt;
 }
-ElsePtr Else::NoIf(BlockPtr &&block) {
-  auto elseStmnt = make_unique<Else>();
+ElsePtr Else::NoIf(const int &loc, const int &col, BlockPtr &&block) {
+  auto elseStmnt = make_unique<Else>(loc,col);
   ;
   elseStmnt->block = std::move(block);
   return elseStmnt;
 }
+Import::Import(const int &loc, const int &col, const string &name, const bool isWildcard) : Statement(loc,col), symbols({}), moduleName(name), isWildcard(isWildcard) {
+  
+};
+Import::Import(const int &loc, const int &col, const string &name, vector<string> &symbols)
+    : Statement(loc,col), symbols(symbols), moduleName(name), isWildcard(false){};
+
+UnaryStatement::UnaryStatement(const int &loc, const int &col, ExpressionPtr &&expr) : Statement(loc,col), expr(std::move(expr)) {}
+
+CompoundAssignment::CompoundAssignment(const int &loc, const int &col, ExpressionPtr &&cmpAssignExpr)
+    : Statement(loc,col),  expr(std::move(cmpAssignExpr)) {}
+RangeBasedFor::RangeBasedFor(const int &loc, const int &col, IdentifierPtr &&lhs, ExpressionPtr &&rhs,
+                             BlockPtr &&block)
+    : Statement(loc,col), valueName(std::move(lhs)), rhs(std::move(rhs)), block(std::move(block)) {}
+CompAssignExpr::CompAssignExpr(const int &loc, const int &col,
+                               ExpressionPtr &&left, ExpressionPtr &&right,
+                               TType op)
+    : Expression(loc, col), left(std::move(left)), right(std::move(right)),
+      op(op) {}
+    
 ExecutionResult Program::Execute() {
   for (auto &statement : statements) {
-    auto result = statement->Execute();
-    switch (result.controlChange) {
-    case ControlChange::None:
-      continue;
-    default:
-      throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
+    Debug::WaitForBreakpoint(statement.get());
+    try {
+      auto result = statement->Execute();
+      switch (result.controlChange) {
+      case ControlChange::None:
+        continue;
+      default:
+        throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
+      }
+    }
+    catch (std::runtime_error err) {
+      std::cout << err.what() << std::endl;
     }
   }
   return ExecutionResult::None;
@@ -197,15 +226,20 @@ ExecutionResult Return::Execute() {
 ExecutionResult Block::Execute() {
   scope = ASTNode::context.PushScope();
   for (auto &statement : statements) {
-    auto result = statement->Execute();
-    switch (result.controlChange) {
-    case ControlChange::Continue:
-    case ControlChange::Break:
-    case ControlChange::Return:
-      ASTNode::context.PopScope();
-      return result;
-    case ControlChange::None:
-      continue;
+    Debug::WaitForBreakpoint(statement.get());
+    try {
+      auto result = statement->Execute();
+      switch (result.controlChange) {
+      case ControlChange::Continue:
+      case ControlChange::Break:
+      case ControlChange::Return:
+        ASTNode::context.PopScope();
+        return result;
+      case ControlChange::None:
+        continue;
+      }
+    } catch (std::runtime_error err) {
+      std::cout << err.what() << std::endl;
     }
   }
   ASTNode::context.PopScope();
@@ -540,22 +574,11 @@ ExecutionResult RangeBasedFor::Execute() {
   return ExecutionResult::None;
 }
 
-Import::Import(const string &name, const bool isWildcard) : symbols({}), moduleName(name), isWildcard(isWildcard) {
-  
-};
-Import::Import(const string &name, vector<string> &symbols)
-    : symbols(symbols), moduleName(name), isWildcard(false){};
-
 ExecutionResult CompoundAssignment::Execute() {
   auto _ = expr->Evaluate();
   return ExecutionResult::None;
 }
 
-UnaryStatement::UnaryStatement(ExpressionPtr &&expr) : expr(std::move(expr)) {}
-
-CompoundAssignment::CompoundAssignment(ExpressionPtr &&cmpAssignExpr)
-    : expr(std::move(cmpAssignExpr)) {}
-    
 
 Value CompAssignExpr::Evaluate() {
   auto lvalue = left->Evaluate();
@@ -582,6 +605,3 @@ Value CompAssignExpr::Evaluate() {
                              " in compound assignment statement");
   }
 }
-RangeBasedFor::RangeBasedFor(IdentifierPtr &&lhs, ExpressionPtr &&rhs,
-                             BlockPtr &&block)
-    : valueName(std::move(lhs)), rhs(std::move(rhs)), block(std::move(block)) {}
