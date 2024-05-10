@@ -1,6 +1,7 @@
 #include "native.hpp"
 #include "serializer.hpp"
 #include "value.hpp"
+#include "context.hpp"
 
 void Writer::BuildMap(const Value_T * value) {
   foundObjs.clear();

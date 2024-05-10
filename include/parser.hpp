@@ -20,7 +20,7 @@ struct Parser {
   
   StatementPtr ParseImport();
   
-  StatementPtr ParseLValuePostFix(ExpressionPtr &&expr);
+  StatementPtr ParseLValuePostFix(ExpressionPtr &expr);
   StatementPtr ParseFor();
   IfPtr ParseIf();
   ElsePtr ParseElse();

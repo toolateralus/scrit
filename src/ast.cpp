@@ -415,21 +415,21 @@ ExecutionResult Assignment::Execute() {
 }
 
 Value DotExpr::Evaluate() {
-  auto leftValue = left->Evaluate();
+  auto lvalue = left->Evaluate();
 
-  if (leftValue->GetType() != ValueType::Object) {
-    throw std::runtime_error("invalid lhs on dot operation");
+  if (lvalue->GetType() != ValueType::Object) {
+    throw std::runtime_error("invalid lhs on dot operation : " + TypeToString(lvalue->GetType()));
   }
-  ASTNode::context.PushScope(static_cast<Object_T *>(leftValue.get())->scope);
+  ASTNode::context.PushScope(static_cast<Object_T *>(lvalue.get())->scope);
   auto result = right->Evaluate();
   ASTNode::context.PopScope();
   return result;
 }
 void DotExpr::Assign(Value value) {
   auto lvalue = left->Evaluate();
-
+  
   if (lvalue->GetType() != ValueType::Object) {
-    throw std::runtime_error("invalid lhs on dot operation");
+    throw std::runtime_error("invalid lhs on dot operation : " + TypeToString(lvalue->GetType()));
   }
 
   auto obj = static_cast<Object_T *>(lvalue.get());
@@ -458,23 +458,12 @@ Value Subscript::Evaluate() {
 }
 ExecutionResult SubscriptAssignStmnt::Execute() {
   auto subscript = dynamic_cast<Subscript *>(this->subscript.get());
-
   if (!subscript) {
     throw std::runtime_error("invalid subscript");
   }
-
   auto lvalue = subscript->left->Evaluate();
   auto idx = subscript->index->Evaluate();
-
-  auto array = static_cast<Array_T *>(lvalue.get());
-  auto number = std::dynamic_pointer_cast<Int_T>(idx);
-
-  if (array->GetType() != ValueType::Array || number->GetType() != ValueType::Int) {
-    throw std::runtime_error(
-        "cannot subscript a non array or with a non-integer value.");
-  }
-
-  array->Assign(number, value->Evaluate());
+  lvalue->SubscriptAssign(idx, value->Evaluate());
   return ExecutionResult::None;
 }
 Value UnaryExpr::Evaluate() {

@@ -568,3 +568,56 @@ Value String_T::Subscript(Value key) {
   }
   return Ctx::CreateString(std::string() + this->value[index]);
 }
+
+Value Value_T::SubscriptAssign(Value key, Value value) {
+  return Undefined;
+}
+Value String_T::SubscriptAssign(Value key, Value value) {
+  int idx;
+  string string;
+  if (Ctx::TryGetInt(key, idx) && Ctx::TryGetString(value, string)) {
+    if (string.length() == 0) {
+      this->value[idx] = string[0];
+    } else {
+      this->value.insert(idx, string);
+    }
+  }
+  return Undefined;
+}
+Value Object_T::Subscript(Value key) {
+  string strKey;
+  if (Ctx::TryGetString(key, strKey)) {
+    return GetMember(strKey);
+  }
+
+  return Undefined;
+}
+
+Value Object_T::SubscriptAssign(Value key, Value value) {
+  string strKey;
+  int idx;
+  if (Ctx::TryGetString(key, strKey)) {
+    scope->variables[strKey] = value;
+  } else if (Ctx::TryGetInt(key, idx)) {
+    auto it = scope->variables.begin();
+    std::advance(it, idx);
+    if (it != scope->variables.end()) {
+      it->second = value;
+    }
+  }
+  return Undefined;
+}
+Value Array_T::Subscript(Value key) {
+  int index;
+  if (!Ctx::TryGetInt(key, index) || index > values.size()) {
+    return Undefined;
+  }
+  return values[index];
+}
+Value Array_T::SubscriptAssign(Value key, Value value) {
+  int idx;
+  if (Ctx::TryGetInt(key, idx)) {
+    values[idx] = value;
+  }
+  return Undefined;
+}

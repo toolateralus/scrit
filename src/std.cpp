@@ -2,6 +2,7 @@
 #include "value.hpp"
 #include "serializer.hpp"
 #include <iostream>
+#include "context.hpp"
 
 REGISTER_FUNCTION(println) {
   for (const auto &arg: args) {

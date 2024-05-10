@@ -31,27 +31,29 @@ player = {
   speed = 0.1
   color = WHITE
   func move() {
-    println(y)
+    vel = {
+      x = 0,
+      y = 0
+    }
     if isKeyDown(KEY_W) {
-      y += speed
+      vel.y += this.speed
     }
     if isKeyDown(KEY_S) {
-      y = y - speed
+      vel.y -= this.speed
     }
     if isKeyDown(KEY_A) {
-      x = x + speed
+      vel.x += this.speed
     }
     if isKeyDown(KEY_D) {
-      x = x - speed
+      vel.x -= this.speed
     }
     
-    x = math.toInt(x)
-    y = math.toInt(y)
   }
   
   func draw() {
+    println(x,y)
     if (x != undefined && y != undefined) {
-      err = drawRectangle(x,y,h,w,color)
+      err = drawRectangle(math.floor(x),math.floor(y),h,w,color)
       return err
     }
   }
