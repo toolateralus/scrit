@@ -10,6 +10,21 @@ using std::stringstream;
 using std::vector;
 
 struct SourceInfo {
+  
+  
+  static vector<SourceInfo*> &getInfos() {
+    static vector<SourceInfo*> all_info;
+    return all_info;
+  }
+  
+  SourceInfo(const int loc, const int col) : SourceInfo() {
+    this->loc = loc;
+    this->col = col;
+  }
+  
+  SourceInfo() {
+    getInfos().push_back(this);
+  }
   int loc, col;
 };
 

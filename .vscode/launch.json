@@ -10,7 +10,7 @@
       "request": "launch",
       "name": "Debug",
       "program": "${workspaceFolder}/bin/debug/app",
-      "args": ["test.scrit", "breakpoint:9"],
+      "args": ["test.scrit", "breakpoint:1"],
       "cwd": "${workspaceFolder}"
     },
     {

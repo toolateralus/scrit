@@ -9,5 +9,5 @@ struct Debug {
   static void RemoveBreakpoint(int loc);
   static void Continue();
   static void Step() { stepRequested = true; }
-  static void WaitForBreakpoint(ASTNode *node);
+  static void WaitForBreakpoint(ASTNode *owner, ASTNode *node);
 };

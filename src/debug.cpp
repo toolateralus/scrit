@@ -8,8 +8,9 @@
 std::vector<int> Debug::breakpoints = {};
 auto Debug::stepRequested = false;
 
-void Debug::WaitForBreakpoint(ASTNode *node) {
 
+void Debug::WaitForBreakpoint(ASTNode *owner, ASTNode *node) {
+  
   bool match = false;
   int breakpoint;
   for (const auto &loc : breakpoints) {
@@ -38,7 +39,7 @@ void Debug::WaitForBreakpoint(ASTNode *node) {
       std::string line;
       if (std::getline(std::cin, line)) {
         if (line == "next") {
-          InsertBreakpoint(breakpoint + 1);
+          stepRequested = true;
           break;
         }
         
@@ -72,7 +73,33 @@ void Debug::WaitForBreakpoint(ASTNode *node) {
   }
   if (stepRequested) {
     stepRequested = false;
-    breakpoints.push_back(breakpoint++);
+    
+    if (auto program = dynamic_cast<Program *>(owner)) {
+      bool hitSelf = false;
+      for (const auto &statement : program->statements) {
+        if (statement.get() == node) {
+          hitSelf = true;
+          continue;
+        }
+        if (hitSelf) {
+          InsertBreakpoint(statement->srcInfo.loc);
+          break;
+        }
+      }
+    } else if (auto block = dynamic_cast<Block *>(owner)) {
+      bool hitSelf = false;
+      for (const auto &statement : block->statements) {
+        if (statement.get() == node) {
+          hitSelf = true;
+          continue;
+        }
+        if (hitSelf) {
+          InsertBreakpoint(statement->srcInfo.loc);
+          break;
+        }
+      }
+    }
+    
   }
 }
 void Debug::RemoveBreakpoint(int loc) {
