@@ -1,19 +1,31 @@
 #include "debug.hpp"
 #include "ast.hpp"
-#include <sys/select.h>
 #include "context.hpp"
 #include "value.hpp"
+#include <algorithm>
+#include <sys/select.h>
 
-auto Debug::currentBreakpoint = -1;
+std::vector<int> Debug::breakpoints = {};
 auto Debug::stepRequested = false;
 
 void Debug::WaitForBreakpoint(ASTNode *node) {
-  if (currentBreakpoint == -1 || node->srcInfo.loc != currentBreakpoint) {
+
+  bool match = false;
+  int breakpoint;
+  for (const auto &loc : breakpoints) {
+    if (loc == node->srcInfo.loc) {
+      match = true;
+      breakpoint = loc;
+    }
+  }
+
+  if (!match) {
     return;
   }
-  std::cout << "breakpoint hit : line:" << currentBreakpoint << "\n" << std::flush;
+
+  std::cout << "breakpoint hit : line:" << breakpoint << "\n" << std::flush;
   std::cout << "node: " << typeid(*node).name() << "\n";
-  while (!stepRequested && currentBreakpoint == node->srcInfo.loc) {
+  while (!stepRequested && breakpoint == node->srcInfo.loc) {
     usleep(100'000);
 
     fd_set set;
@@ -26,11 +38,23 @@ void Debug::WaitForBreakpoint(ASTNode *node) {
       std::string line;
       if (std::getline(std::cin, line)) {
         if (line == "next") {
-          stepRequested = true;
+          InsertBreakpoint(breakpoint + 1);
           break;
-        } 
+        }
+        
+        static const string breakpointKey = "breakpoint:";
+        if (line.length() > breakpointKey.length() &&
+            line.substr(0, breakpointKey.length()) == breakpointKey) {
+          string num = "";
+          for (int i = breakpointKey.length(); i < line.length(); ++i) {
+            num += line[i];
+          }
+          int index = std::stoi(num);
+          Debug::InsertBreakpoint(index);
+          continue;
+        }
+        
         if (line == "continue") {
-          currentBreakpoint = -1;
           return;
         }
         if (line == "inspect") {
@@ -38,7 +62,7 @@ void Debug::WaitForBreakpoint(ASTNode *node) {
           if (scope->variables.size() == 0) {
             std::cout << "scope empty." << '\n';
           }
-          for (const auto &[key,var] : scope->variables) {
+          for (const auto &[key, var] : scope->variables) {
             std::cout << key << " :" << var->ToString() << "\n";
           }
           std::cout << std::flush;
@@ -48,15 +72,16 @@ void Debug::WaitForBreakpoint(ASTNode *node) {
   }
   if (stepRequested) {
     stepRequested = false;
-    currentBreakpoint++;
+    breakpoints.push_back(breakpoint++);
   }
 }
-
-  void Debug::Continue() {
-    currentBreakpoint = -1;
-    stepRequested = false;
-  }
-  void Debug::InsertBreakpoint(int loc) {
-    currentBreakpoint = loc;
-    stepRequested = false;
-  }
+void Debug::RemoveBreakpoint(int loc) {
+  auto removed =
+      std::remove(breakpoints.begin(), breakpoints.end(), loc);
+  breakpoints.erase(removed, breakpoints.end());
+}
+void Debug::Continue() { stepRequested = false; }
+void Debug::InsertBreakpoint(int loc) {
+  breakpoints.push_back(loc);
+  stepRequested = false;
+}

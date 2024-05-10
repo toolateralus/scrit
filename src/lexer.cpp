@@ -223,7 +223,8 @@ Lexer::Lexer() {
       {"from", TType::From},
   };
   
-  loc = -2;
+  // For some reason when we lex we're always off by 2.
+  loc = -1;
   
 }
 string TTypeToString(const TType &type) {

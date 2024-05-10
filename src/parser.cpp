@@ -205,6 +205,7 @@ ExpressionPtr Parser::ParseExpression() {
   if (tokens.empty()) {
     throw std::runtime_error("Unexpected end of input");
   }
+  this->info = Peek().info;
   return ParseCompoundAssignment();
 }
 
@@ -309,7 +310,6 @@ ExpressionPtr Parser::ParseFactor() {
 }
 
 ExpressionPtr Parser::ParsePostfix() {
-  auto info = this->info;
   auto expr = ParseOperand();
   while (!tokens.empty()) {
     Token next = Peek();
@@ -341,7 +341,6 @@ ExpressionPtr Parser::ParsePostfix() {
   return expr;
 }
 ExpressionPtr Parser::ParseOperand() {
-  auto info = this->info;
   auto token = Peek();
   if (token.type == TType::Sub || token.type == TType::Not ||
       token.type == TType::Increment || token.type == TType::Decrement) {
