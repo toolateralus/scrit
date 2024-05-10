@@ -83,6 +83,7 @@ void Debug::WaitForBreakpoint(ASTNode *owner, ASTNode *node,
     m_stepOut();
     break;
   case StepKind::None:
+    lastNode = nullptr;
     break;
   }
 }
