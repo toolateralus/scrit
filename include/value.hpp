@@ -1,5 +1,4 @@
 #pragma once
-#include "context.hpp"
 #include "lexer.hpp"
 #include "native.hpp"
 #include <unordered_set>
@@ -22,7 +21,6 @@ struct Float_T;
 struct String_T;
 struct Object_T;
 struct Array_T;
-struct Scope_T;
 struct Undefined_T;
 struct Null_T;
 
@@ -44,6 +42,9 @@ typedef shared_ptr<Int_T> Int;
 typedef shared_ptr<Float_T> Float;
 typedef shared_ptr<Object_T> Object;
 
+struct Scope_T;
+typedef shared_ptr<Scope_T> Scope;
+
 typedef unique_ptr<Expression> ExpressionPtr;
 typedef unique_ptr<Block> BlockPtr;
 typedef unique_ptr<Arguments> ArgumentsPtr;
@@ -62,6 +63,32 @@ enum class ValueType {
   Array,
   Callable,
 };
+
+static string TypeToString(ValueType type) {
+  switch (type) {
+    case ValueType::Invalid:
+      return "invalid";
+    case ValueType::Null:
+      return "null";
+    case ValueType::Undefined:
+      return "undefined";
+    case ValueType::Float:
+      return "float";
+    case ValueType::Int:
+      return "int";
+    case ValueType::Bool:
+      return "bool";
+    case ValueType::String:
+      return "string";
+    case ValueType::Object:
+      return "object";
+    case ValueType::Array:
+      return "array";
+    case ValueType::Callable:
+      return "callable";
+  }
+  return "";
+}
 
 
 struct Value_T {
@@ -99,6 +126,8 @@ struct Value_T {
   virtual Value Negate() {
     return std::static_pointer_cast<Value_T>(Undefined);
   }
+  virtual Value Subscript(Value key);
+  virtual Value SubscriptAssign(Value key, Value value);
   virtual void Set(Value) {}
   bool TypeEquals(Value other) { return typeid(other.get()) == typeid(*this); }
 };
@@ -109,7 +138,7 @@ struct Ctx {
   static String CreateString(const string value = "");
   static Int CreateInt(const int value = 0);
   static Float CreateFloat(const float value = 0.0f);
-  static Object CreateObject(Scope scope = nullptr);
+  static Object CreateObject(shared_ptr<Scope_T> scope = nullptr);
   static Array CreateArray(vector<Value> values = {});
 
   static bool TryGetString(Value str, string &result);
@@ -159,7 +188,7 @@ struct Int_T : Value_T {
   Int_T(int value);
   ~Int_T() {}
   Int_T() = delete;
-
+  
   static Int New(int value = 0) { return make_shared<Int_T>(value); }
 
   virtual bool Equals(Value value) override;
@@ -211,6 +240,8 @@ struct String_T : Value_T {
   virtual void Set(Value newValue) override;
   string ToString() const override;
   ValueType GetType() const override { return ValueType::String; }
+  Value Subscript(Value key) override;
+  Value SubscriptAssign(Value key, Value value) override;
 };
 struct Bool_T : Value_T {
   bool value = false;
@@ -241,6 +272,8 @@ struct Object_T : Value_T {
   string ToString(std::unordered_set<const Value_T*> foundValues) const;
   bool Equals(Value value) override;
   ValueType GetType() const override { return ValueType::Object; }
+  Value Subscript(Value key) override;
+  Value SubscriptAssign(Value key, Value value) override;
 };
 struct Callable_T : Value_T {
   ~Callable_T();
@@ -264,16 +297,16 @@ struct NativeCallable_T : Callable_T {
 };
 struct Array_T : Value_T {
   vector<ExpressionPtr> initializer;
-
+  
   static Array New();
   static Array New(vector<ExpressionPtr> &&init);
   static Array New(std::vector<Value> &values);
   Array_T() = delete;
   Array_T(vector<ExpressionPtr> &&init);
   Array_T(vector<Value> init);
-
+  
   vector<Value> values;
-
+  
   Value At(Int index);
   void Assign(Int index, Value value);
   void Push(Value value);
@@ -283,4 +316,7 @@ struct Array_T : Value_T {
   string ToString() const override;
   bool Equals(Value value) override;
   ValueType GetType() const override { return ValueType::Array; }
+
+  Value Subscript(Value key) override;
+  Value SubscriptAssign(Value key, Value value) override;
 };

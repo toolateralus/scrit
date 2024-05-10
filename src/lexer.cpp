@@ -16,6 +16,7 @@ Token::Token(const int &loc, const int &col, const string &value,
   this->value = std::move(value);
   this->type = type;
   this->family = family;
+  this->info = {loc, col};
 }
 string Token::ToString() const {
   stringstream stream = {};
@@ -88,31 +89,34 @@ Token Lexer::LexString() {
   stringstream stream = {};
   int startLoc = loc;
   int startCol = col;
-  
+
   pos++; // move past opening "
   col++;
   while (true) {
     if (pos >= input.length()) {
       throw std::runtime_error("Unescaped string literal,"
-        " ln:" + std::to_string(startLoc) +
-        " col:" + std::to_string(startCol));
+                               " ln:" +
+                               std::to_string(startLoc) +
+                               " col:" + std::to_string(startCol));
     }
-    if (!(input[pos] != '\"' || (input[pos] == '\"' && input[pos-1] == '\\'))) {
+    if (!(input[pos] != '\"' ||
+          (input[pos] == '\"' && input[pos - 1] == '\\'))) {
       break;
     }
-    if (input[pos] == '\\' && pos+1 < input.size()) {
-      switch (input[pos+1]) {
-        case '\"':
-          stream << '\"';
-          pos++;
-          break;
-        case 'n':
-          stream << '\n';
-          pos++;
-          break;
-        default:
-          stream << '\\';
-          break;
+
+    if (input[pos] == '\\' && pos + 1 < input.size()) {
+      switch (input[pos + 1]) {
+      case '\"':
+        stream << '\"';
+        pos++;
+        break;
+      case 'n':
+        stream << '\n';
+        pos++;
+        break;
+      default:
+        stream << '\\';
+        break;
       }
     } else {
       stream << input[pos];
@@ -202,7 +206,7 @@ Lexer::Lexer() {
       // punctuation
       {"(", TType::LParen},
       {")", TType::RParen},
-      
+
       {"{", TType::LCurly},
       {"}", TType::RCurly},
 
@@ -221,6 +225,7 @@ Lexer::Lexer() {
       {"undefined", TType::Undefined}, {"import", TType::Import},
       {"from", TType::From},
   };
+  loc = 1;
 }
 string TTypeToString(const TType &type) {
   switch (type) {

@@ -9,6 +9,25 @@ using std::string;
 using std::stringstream;
 using std::vector;
 
+struct SourceInfo {
+  
+  
+  static vector<SourceInfo*> &getInfos() {
+    static vector<SourceInfo*> all_info;
+    return all_info;
+  }
+  
+  SourceInfo(const int loc, const int col) : SourceInfo() {
+    this->loc = loc;
+    this->col = col;
+  }
+  
+  SourceInfo() {
+    getInfos().push_back(this);
+  }
+  int loc, col;
+};
+
 enum class TFamily {
   Operator,
   Literal,
@@ -74,14 +93,16 @@ enum class TType {
   Import,
   From
 };
+struct SourceInfo;
 struct Token {
   Token(const int &loc, const int &col, const string &value, const TType type,
         const TFamily family);
+  SourceInfo info;
   string value;
   int loc = 0, col = 0;
   TType type;
   TFamily family;
-
+  
   string ToString() const;
 };
 struct Lexer {

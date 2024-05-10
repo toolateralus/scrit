@@ -9,31 +9,68 @@
 #include <memory>
 #include <stdexcept>
 
-StatementPtr Parser::ParseLValuePostFix(ExpressionPtr &&expr) {
+StatementPtr Parser::ParseLValuePostFix(ExpressionPtr &expr) {
   if (DotExpr *dot = dynamic_cast<DotExpr *>(expr.get())) {
+    DotExpr *dotRight = dynamic_cast<DotExpr *>(dot->right.get());
+    
+    if (dotRight) {
+      while (auto rDot = dynamic_cast<DotExpr*>(dotRight->right.get())) {
+        dotRight = rDot; 
+      }
+    } else {
+      dotRight = dot;
+    }
+    
+    
     if (!tokens.empty() && Peek().type == TType::Assign) {
       Eat();
       auto value = ParseExpression();
-      return make_unique<DotAssignment>(std::move(expr), std::move(value));
-    } else if (Call *callable = dynamic_cast<Call *>(dot->right.get())) {
-      return make_unique<DotCallStmnt>(std::move(expr));
+      return make_unique<DotAssignment>(info,  std::move(expr), std::move(value));
+    } 
+   
+    if (!tokens.empty() && Peek().type == TType::Assign) {
+      Eat();
+      auto value = ParseExpression();
+      return make_unique<DotAssignment>(info,  std::move(expr), std::move(value));
+    } 
+    
+    if (Call *callable = dynamic_cast<Call *>(dotRight->right.get())) {
+      return make_unique<DotCallStmnt>(info,  std::move(expr));
+    } 
+    
+    if (auto compAssign = dynamic_cast<CompAssignExpr *>(dotRight->right.get())) {
+      return make_unique<CompoundAssignment>(info,  std::move(expr));
     }
-  } else if (Subscript *subscript = dynamic_cast<Subscript *>(expr.get())) {
+    
+    
+  } 
+  if (Subscript *subscript = dynamic_cast<Subscript *>(expr.get())) {
     if (Peek().type == TType::Assign) {
       Eat();
       auto value = ParseExpression();
-      return make_unique<SubscriptAssignStmnt>(std::move(expr),
+      return make_unique<SubscriptAssignStmnt>(info,  std::move(expr),
                                                std::move(value));
     }
-  } else if (auto call = dynamic_cast<Call *>(expr.get())) {
-    return make_unique<Call>(std::move(call->operand), std::move(call->args));
+  } 
+  if (auto call = dynamic_cast<Call *>(expr.get())) {
+    return make_unique<Call>(info,  std::move(call->operand), std::move(call->args));
+  } 
+  if (auto compAssign = dynamic_cast<CompAssignExpr *>(expr.get())) {
+    return make_unique<CompoundAssignment>(info,  std::move(expr));
   }
-  throw std::runtime_error("Failed to parse LValue postfix statement");
+  
+  auto &raw = *expr.get();
+  auto name = string(typeid(raw).name());
+  throw std::runtime_error("Failed to parse LValue postfix statement:: " +
+                           name);
 }
 
 StatementPtr Parser::ParseStatement() {
   while (tokens.size() > 0) {
     auto token = Peek();
+    
+    info = token.info;
+    
     switch (token.family) {
     case TFamily::Identifier: {
       auto operand = ParseExpression();
@@ -43,16 +80,16 @@ StatementPtr Parser::ParseStatement() {
           throw std::runtime_error("unexpected unary expression statement : " +
                                    TTypeToString(unary->op));
         }
-        return make_unique<UnaryStatement>(std::move(operand));
+        return make_unique<UnaryStatement>(info,  std::move(operand));
       }
-
+      
       if (auto id = dynamic_cast<Identifier *>(operand.get())) {
-        return ParseIdentifierStatement(make_unique<Identifier>(id->name));
+        return ParseIdentifierStatement(make_unique<Identifier>(info,  id->name));
       } else if (auto cmpAssign =
                      dynamic_cast<CompAssignExpr *>(operand.get())) {
-        return make_unique<CompoundAssignment>(std::move(operand));
+        return make_unique<CompoundAssignment>(info,  std::move(operand));
       } else {
-        return ParseLValuePostFix(std::move(operand));
+        return ParseLValuePostFix(operand);
       }
       throw std::runtime_error("Failed to start identifier statement");
     }
@@ -61,12 +98,13 @@ StatementPtr Parser::ParseStatement() {
       // for func(..) {...}() anonymous func declaration & invocation
       // statements.
       if (token.type == TType::Func && Peek().type == TType::LParen) {
+        auto info = this->info;
         auto parameters = ParseParameters();
         auto body = ParseBlock();
         auto arguments = ParseArguments();
-        auto op = make_unique<Operand>(
+        auto op = make_unique<Operand>(info,  
             make_shared<Callable_T>(std::move(body), std::move(parameters)));
-        return make_unique<Call>(std::move(op), std::move(arguments));
+        return make_unique<Call>(info,  std::move(op), std::move(arguments));
       }
       return ParseKeyword(token);
     }
@@ -78,10 +116,16 @@ StatementPtr Parser::ParseStatement() {
   throw std::runtime_error("Unexpecrted end of input");
 }
 StatementPtr Parser::ParseKeyword(Token token) {
-
   switch (token.type) {
   case TType::Func: {
-    return ParseFuncDecl();
+    auto info = this->info;
+    auto name = Expect(TType::Identifier);
+    auto parameters = ParseParameters();
+    auto block = ParseBlock();
+    ASTNode::context.Insert(
+        name.value,
+        make_shared<Callable_T>(std::move(block), std::move(parameters)));
+    return make_unique<Noop>(info);
   }
   case TType::If: {
     return ParseIf();
@@ -143,20 +187,21 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
   if (next.type == TType::Assign) {
     Eat();
     auto value = ParseExpression();
-    return make_unique<Assignment>(std::move(identifier), std::move(value));
+    return make_unique<Assignment>(info,  std::move(identifier), std::move(value));
   } else if (next.type == TType::AddEq || next.type == TType::SubEq ||
              next.type == TType::DivEq || next.type == TType::MulEq) {
     Eat();
     auto value = ParseExpression();
-    return make_unique<CompoundAssignment>(make_unique<CompAssignExpr>(
+    return make_unique<CompoundAssignment>(info,  make_unique<CompAssignExpr>(info, 
         std::move(identifier), std::move(value), next.type));
   } else {
     throw std::runtime_error("failed to parse assignment: invalid operator.");
   }
 }
 StatementPtr Parser::ParseCall(IdentifierPtr identifier) {
+  auto info = this->info;
   auto args = ParseArguments();
-  return make_unique<Call>(std::move(identifier), std::move(args));
+  return make_unique<Call>(info,  std::move(identifier), std::move(args));
 }
 ExpressionPtr Parser::ParseExpression() {
   if (tokens.empty()) {
@@ -164,7 +209,6 @@ ExpressionPtr Parser::ParseExpression() {
   }
   return ParseCompoundAssignment();
 }
-
 ExpressionPtr Parser::ParseCompoundAssignment() {
   auto left = ParseLogicalOr();
 
@@ -176,38 +220,35 @@ ExpressionPtr Parser::ParseCompoundAssignment() {
     }
     Eat();
     auto expr = ParseExpression();
-    return make_unique<CompAssignExpr>(std::move(left), std::move(expr),
+    return make_unique<CompAssignExpr>(info,  std::move(left), std::move(expr),
                                        next.type);
   }
   return left;
 }
-
 ExpressionPtr Parser::ParseLogicalOr() {
   auto left = ParseLogicalAnd();
 
   if (!tokens.empty() && Peek().type == TType::Or) {
     Eat();
     auto right = ParseLogicalAnd();
-    return std::make_unique<BinExpr>(std::move(left), std::move(right),
+    return std::make_unique<BinExpr>(info,  std::move(left), std::move(right),
                                      TType::Or);
   }
 
   return left;
 }
-
 ExpressionPtr Parser::ParseLogicalAnd() {
   auto left = ParseEquality();
 
   if (!tokens.empty() && Peek().type == TType::And) {
     Eat();
     auto right = ParseEquality();
-    return std::make_unique<BinExpr>(std::move(left), std::move(right),
+    return std::make_unique<BinExpr>(info,  std::move(left), std::move(right),
                                      TType::And);
   }
 
   return left;
 }
-
 ExpressionPtr Parser::ParseEquality() {
   auto left = ParseComparison();
 
@@ -216,12 +257,11 @@ ExpressionPtr Parser::ParseEquality() {
     auto op = Peek().type;
     Eat();
     auto right = ParseComparison();
-    left = std::make_unique<BinExpr>(std::move(left), std::move(right), op);
+    left = std::make_unique<BinExpr>(info,  std::move(left), std::move(right), op);
   }
 
   return left;
 }
-
 ExpressionPtr Parser::ParseComparison() {
   auto left = ParseTerm();
 
@@ -231,12 +271,11 @@ ExpressionPtr Parser::ParseComparison() {
     auto op = Peek().type;
     Eat();
     auto right = ParseTerm();
-    left = std::make_unique<BinExpr>(std::move(left), std::move(right), op);
+    left = std::make_unique<BinExpr>(info,  std::move(left), std::move(right), op);
   }
 
   return left;
 }
-
 ExpressionPtr Parser::ParseTerm() {
   auto left = ParseFactor();
 
@@ -245,12 +284,11 @@ ExpressionPtr Parser::ParseTerm() {
     auto op = Peek().type;
     Eat();
     auto right = ParseFactor();
-    left = std::make_unique<BinExpr>(std::move(left), std::move(right), op);
+    left = std::make_unique<BinExpr>(info,  std::move(left), std::move(right), op);
   }
 
   return left;
 }
-
 ExpressionPtr Parser::ParseFactor() {
   auto left = ParsePostfix();
 
@@ -259,12 +297,11 @@ ExpressionPtr Parser::ParseFactor() {
     auto op = Peek().type;
     Eat();
     auto right = ParsePostfix();
-    left = std::make_unique<BinExpr>(std::move(left), std::move(right), op);
+    left = std::make_unique<BinExpr>(info,  std::move(left), std::move(right), op);
   }
 
   return left;
 }
-
 ExpressionPtr Parser::ParsePostfix() {
   auto expr = ParseOperand();
   while (!tokens.empty()) {
@@ -272,7 +309,7 @@ ExpressionPtr Parser::ParsePostfix() {
 
     if (next.type == TType::Increment || next.type == TType::Decrement) {
       Eat();
-      return make_unique<UnaryExpr>(std::move(expr), next.type);
+      return make_unique<UnaryExpr>(info,  std::move(expr), next.type);
     }
 
     if (next.type != TType::LParen && next.type != TType::SubscriptLeft &&
@@ -281,16 +318,16 @@ ExpressionPtr Parser::ParsePostfix() {
     }
     if (next.type == TType::LParen) {
       auto args = ParseArguments();
-      expr = std::make_unique<Call>(std::move(expr), std::move(args));
+      expr = std::make_unique<Call>(info,  std::move(expr), std::move(args));
     } else if (next.type == TType::SubscriptLeft) {
       Eat();
       auto index = ParseExpression();
       Expect(TType::SubscriptRight);
-      expr = std::make_unique<Subscript>(std::move(expr), std::move(index));
+      expr = std::make_unique<Subscript>(info,  std::move(expr), std::move(index));
     } else if (next.type == TType::Dot) {
       Eat();
       auto right = ParseExpression();
-      expr = std::make_unique<DotExpr>(std::move(expr), std::move(right));
+      expr = std::make_unique<DotExpr>(info,  std::move(expr), std::move(right));
     }
   }
 
@@ -302,7 +339,7 @@ ExpressionPtr Parser::ParseOperand() {
       token.type == TType::Increment || token.type == TType::Decrement) {
     Eat();
     auto operand = ParseOperand();
-    return make_unique<UnaryExpr>(std::move(operand), token.type);
+    return make_unique<UnaryExpr>(info,  std::move(operand), token.type);
   }
 
   switch (token.type) {
@@ -310,11 +347,12 @@ ExpressionPtr Parser::ParseOperand() {
     return ParseArrayInitializer();
   }
   case TType::Func: {
+    auto info = this->info;
     Eat();
     auto params = ParseParameters();
     auto body = ParseBlock();
     auto callable = make_shared<Callable_T>(std::move(body), std::move(params));
-    return make_unique<Operand>(callable);
+    return make_unique<Operand>(info,  callable);
   }
   case TType::LCurly: {
     Eat();
@@ -332,33 +370,33 @@ ExpressionPtr Parser::ParseOperand() {
       statements.push_back(std::move(statement));
     }
     Expect(TType::RCurly);
-    auto block = make_unique<Block>(std::move(statements));
-    return make_unique<ObjectInitializer>(std::move(block));
+    auto block = make_unique<Block>(info,  std::move(statements));
+    return make_unique<ObjectInitializer>(info,  std::move(block));
   }
   case TType::String:
     Eat();
-    return make_unique<Operand>(String_T::New(std::move(token.value)));
+    return make_unique<Operand>(info,  String_T::New(std::move(token.value)));
   case TType::True:
     Eat();
-    return make_unique<Operand>(Value_T::True);
+    return make_unique<Operand>(info,  Value_T::True);
   case TType::False:
     Eat();
-    return make_unique<Operand>(Value_T::False);
+    return make_unique<Operand>(info,  Value_T::False);
   case TType::Undefined:
     Eat();
-    return make_unique<Operand>(Value_T::Undefined);
+    return make_unique<Operand>(info,  Value_T::Undefined);
   case TType::Null:
     Eat();
-    return make_unique<Operand>(Value_T::Null);
+    return make_unique<Operand>(info,  Value_T::Null);
   case TType::Float:
     Eat();
-    return make_unique<Operand>(Float_T::New(stof(token.value)));
+    return make_unique<Operand>(info,  Float_T::New(stof(token.value)));
   case TType::Int:
     Eat();
-    return make_unique<Operand>(Int_T::New(stoi(token.value)));
+    return make_unique<Operand>(info,  Int_T::New(stoi(token.value)));
   case TType::Identifier:
     Eat();
-    return make_unique<Identifier>(token.value);
+    return make_unique<Identifier>(info,  token.value);
   case TType::LParen: {
     Eat();
     auto expr = ParseExpression();
@@ -369,13 +407,12 @@ ExpressionPtr Parser::ParseOperand() {
     throw std::runtime_error("Unexpected token: " + TTypeToString(token.type));
   }
 }
-
 OperandPtr Parser::ParseArrayInitializer() {
   Eat();
   if (Peek().type == TType::SubscriptRight) {
     Eat();
     auto array = Array_T::New();
-    return make_unique<Operand>(array);
+    return make_unique<Operand>(info,  array);
   } else {
     vector<ExpressionPtr> values = {};
     while (Peek().type != TType::SubscriptRight) {
@@ -387,7 +424,7 @@ OperandPtr Parser::ParseArrayInitializer() {
     }
     Expect(TType::SubscriptRight);
     auto array = Array_T::New(std::move(values));
-    return make_unique<Operand>(array);
+    return make_unique<Operand>(info,  array);
   }
 }
 ParametersPtr Parser::ParseParameters() {
@@ -405,7 +442,7 @@ ParametersPtr Parser::ParseParameters() {
     next = Peek();
   }
   Expect(TType::RParen);
-  return make_unique<Parameters>(std::move(values));
+  return make_unique<Parameters>(info,  std::move(values));
 }
 ArgumentsPtr Parser::ParseArguments() {
   Expect(TType::LParen);
@@ -422,16 +459,16 @@ ArgumentsPtr Parser::ParseArguments() {
     }
   }
   Expect(TType::RParen);
-  return make_unique<Arguments>(std::move(values));
+  return make_unique<Arguments>(info,  std::move(values));
 }
 BlockPtr Parser::ParseBlock() {
+  auto info = this->info;
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};
   auto next = Peek();
-
   if (next.type == TType::RCurly) {
     Eat();
-    return make_unique<Block>(std::move(statements));
+    return make_unique<Block>(info,  std::move(statements));
   }
 
   while (tokens.size() > 0) {
@@ -443,40 +480,33 @@ BlockPtr Parser::ParseBlock() {
     }
   }
   Expect(TType::RCurly);
-  return make_unique<Block>(std::move(statements));
-}
-
-StatementPtr Parser::ParseFuncDecl() {
-  auto name = Expect(TType::Identifier);
-  auto parameters = ParseParameters();
-  auto body = ParseBlock();
-  auto id = make_unique<Identifier>(name.value);
-  auto func = make_unique<FuncDecl>(std::move(id), std::move(body),
-                                    std::move(parameters));
-  return func;
+  return make_unique<Block>(info,  std::move(statements));
 }
 ElsePtr Parser::ParseElse() {
+  auto info = this->info;
   Eat();
   if (Peek().type == TType::If) {
     Eat();
     auto ifstmnt = ParseIf();
-    return Else::New(std::move(ifstmnt));
+    return Else::New(info,  std::move(ifstmnt));
   } else {
-    return Else::NoIf(ParseBlock());
+    return Else::NoIf(info,  ParseBlock());
   }
 }
 IfPtr Parser::ParseIf() {
+  auto info = this->info;
   auto condition = ParseExpression();
   auto block = ParseBlock();
   if (!tokens.empty() && Peek().type == TType::Else) {
     auto elseStmnt = ParseElse();
-    return If::WithElse(std::move(condition), std::move(block),
+    return If::WithElse(info,  std::move(condition), std::move(block),
                         std::move(elseStmnt));
   }
-  return If::NoElse(std::move(condition), std::move(block));
+  return If::NoElse(info,  std::move(condition), std::move(block));
 }
-
 StatementPtr Parser::ParseFor() {
+  auto info = this->info;
+  
   auto scope = ASTNode::context.PushScope();
   if (!tokens.empty() && Peek().type == TType::LParen) {
     Eat();
@@ -487,7 +517,7 @@ StatementPtr Parser::ParseFor() {
 
   // for {}
   if (Peek().type == TType::LCurly) {
-    return make_unique<For>(nullptr, nullptr, nullptr, ParseBlock(),
+    return make_unique<For>(info,  nullptr, nullptr, nullptr, ParseBlock(),
                             ASTNode::context.PopScope());
   }
   // for i=0,i<?,i=i+1 {}
@@ -496,41 +526,41 @@ StatementPtr Parser::ParseFor() {
     auto op = ParseOperand();
 
     auto iden = dynamic_cast<Identifier *>(op.get());
-    
+
     // Range based for loop for iden : array/obj {}
     if (iden && Peek().type == TType::Colon) {
+      
       Eat();
       auto rhs = ParseOperand();
-      return make_unique<RangeBasedFor>(make_unique<Identifier>(iden->name),
+      return make_unique<RangeBasedFor>(info,  make_unique<Identifier>(info,  iden->name),
                                         std::move(rhs), ParseBlock());
     }
-    
+
     // for i=0,i<..,i++
     if (Peek().type == TType::Assign) {
-      decl = ParseAssignment(make_unique<Identifier>(iden->name));
+      decl = ParseAssignment(make_unique<Identifier>(info ,iden->name));
       Expect(TType::Comma);
       condition = ParseExpression();
-      Expect(TType::Comma);      
+      Expect(TType::Comma);
       inc = ParseStatement();
-      return make_unique<For>(std::move(decl), std::move(condition),
+      return make_unique<For>(info,  std::move(decl), std::move(condition),
                               std::move(inc), ParseBlock(),
                               ASTNode::context.PopScope());
     } else {
       tokens.push_back(idTok);
     }
   }
-  
+
   // for CONDITION {}
   condition = ParseExpression();
-  return make_unique<For>(std::move(decl), std::move(condition),
-                          std::move(inc), ParseBlock(),
-                          ASTNode::context.PopScope());
+  return make_unique<For>(info,  std::move(decl), std::move(condition), std::move(inc),
+                          ParseBlock(), ASTNode::context.PopScope());
 }
-StatementPtr Parser::ParseContinue() { return make_unique<Continue>(); }
+StatementPtr Parser::ParseContinue() { return make_unique<Continue>(info); }
 StatementPtr Parser::ParseReturn() {
-  return make_unique<Return>(ParseExpression());
+  return make_unique<Return>(info,  ParseExpression());
 }
-StatementPtr Parser::ParseBreak() { return make_unique<Break>(); }
+StatementPtr Parser::ParseBreak() { return make_unique<Break>(info); }
 Token Parser::Peek() { return tokens.back(); }
 Token Parser::Eat() {
   auto tkn = tokens.back();
@@ -565,13 +595,13 @@ StatementPtr Parser::ParseImport() {
     Eat();
     Expect(TType::From);
     auto iden = Expect(TType::Identifier);
-    return make_unique<Import>(iden.value, true);
+    return make_unique<Import>(info,  iden.value, true);
 
   }
   // plain 'import raylib' statement
   else if (next.type == TType::Identifier) {
     auto iden = Expect(TType::Identifier);
-    return make_unique<Import>(iden.value, false);
+    return make_unique<Import>(info,  iden.value, false);
   }
   // 'import {iden, iden} from raylib'
   else if (next.type == TType::LCurly) {
@@ -600,7 +630,7 @@ StatementPtr Parser::ParseImport() {
     Expect(TType::From);
     auto iden = Expect(TType::Identifier);
 
-    return make_unique<Import>(iden.value, names);
+    return make_unique<Import>(info,  iden.value, names);
   }
   throw std::runtime_error("Failed to parse import statement");
 }

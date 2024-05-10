@@ -1,10 +1,35 @@
 #include "context.hpp"
+#include "debug.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "value.hpp"
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <string>
+
+void InsertCmdLineArgs(int argc, char **argv) {
+  // create an 'args' array in language.
+  Array args = Array_T::New();
+  if (argc > 2) {
+    for (int i = 2; i < argc; ++i) {
+      auto str = string(argv[i]);
+      static const string breakpointKey = "breakpoint:";
+      if (str.length() > breakpointKey.length() &&
+          str.substr(0, breakpointKey.length()) == breakpointKey) {
+        string num = "";
+        for (int i = breakpointKey.length(); i < str.length(); ++i) {
+          num += str[i];
+        }
+        int index = std::stoi(num);
+        Debug::InsertBreakpoint(index);
+      } else {
+        args->Push(String_T::New(str));
+      }
+    }
+  }
+  ASTNode::context.Insert("args", args);
+}
 
 int main(int argc, char **argv) {
   Lexer lexer = {};
@@ -22,15 +47,7 @@ int main(int argc, char **argv) {
       auto tokens = lexer.Lex(code);
       auto ast = parser.Parse(std::move(tokens));
 
-      // create an 'args' array in language.      
-      if (argc > 2) {
-        Array args = Array_T::New();
-        for (int i = 2; i < argc; ++i) {
-          auto str = string(argv[i]);
-          args->Push(String_T::New(str));
-        }
-        ASTNode::context.Insert("args", args);
-      }
+      InsertCmdLineArgs(argc, argv);
 
       if (ast) {
         ast->Execute();

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "native.hpp"
 #include "value.hpp"
+#include "context.hpp"
 
 TEST(EqTest, StrEquals) {
   String EMPTY = String_T::New("");
@@ -69,4 +70,91 @@ TEST(EqTest, ArrayEquals) {
   Array ARR2 = Array_T::New();
   ASSERT_FALSE(ARR1->Equals(ARR2));
   ASSERT_TRUE(ARR1->Equals(ARR1));
+}
+TEST(AddTest, StrAdd) {
+  String str = Ctx::CreateString("2");
+  String str1 = Ctx::CreateString("1");
+  auto result = static_cast<String_T*>(str->Add(str1).get())->value;
+  ASSERT_EQ("21", result);
+}
+TEST(AddTest, IntAdd) {
+  Int i0 = Ctx::CreateInt(10); 
+  Int i1 = Ctx::CreateInt(10);
+  auto result = static_cast<Int_T*>(i0->Add(i1).get())->value;
+  ASSERT_EQ(20, result);
+}
+TEST(AddTest, FloatAdd) {
+  Float i0 = Ctx::CreateFloat(10.5f); 
+  Float i1 = Ctx::CreateFloat(10.0f);
+  auto result = static_cast<Float_T*>(i0->Add(i1).get())->value;
+  ASSERT_EQ(20.5f, result);
+}
+TEST(SubTest, IntSub) {
+  Int i0 = Ctx::CreateInt(10); 
+  Int i1 = Ctx::CreateInt(10);
+  auto result = static_cast<Int_T*>(i0->Subtract(i1).get())->value;
+  ASSERT_EQ(0, result);
+}
+TEST(SubTest, FloatSub) {
+  Float i0 = Ctx::CreateFloat(10.5f); 
+  Float i1 = Ctx::CreateFloat(10.0f);
+  auto result = static_cast<Float_T*>(i0->Subtract(i1).get())->value;
+  ASSERT_EQ(0.5f, result);
+}
+TEST(MulTest, IntMul) {
+  Int i0 = Ctx::CreateInt(10); 
+  Int i1 = Ctx::CreateInt(10);
+  auto result = static_cast<Int_T*>(i0->Multiply(i1).get())->value;
+  ASSERT_EQ(100, result);
+}
+TEST(MulTest, FloatMul) {
+  Float i0 = Ctx::CreateFloat(10.5f); 
+  Float i1 = Ctx::CreateFloat(10.0f);
+  auto result = static_cast<Float_T*>(i0->Multiply(i1).get())->value;
+  ASSERT_EQ(105.0f, result);
+}
+TEST(DivTest, IntDiv) {
+  Int i0 = Ctx::CreateInt(10); 
+  Int i1 = Ctx::CreateInt(2);
+  auto result = static_cast<Int_T*>(i0->Divide(i1).get())->value;
+  ASSERT_EQ(5, result);
+}
+TEST(DivTest, FloatDiv) {
+  Float i0 = Ctx::CreateFloat(10.5f); 
+  Float i1 = Ctx::CreateFloat(2.0f);
+  auto result = static_cast<Float_T*>(i0->Divide(i1).get())->value;
+  ASSERT_EQ(5.25f, result);
+}
+TEST(AndTest, BoolAnd) {
+  Bool b0 = Value_T::True;
+  Bool b1 = Value_T::True;
+  auto result = static_cast<Bool_T*>(b0->And(b1).get())->value;
+  ASSERT_TRUE(b0->And(b1));
+}
+TEST(AndTest, IntAnd) {
+  Int i0 = Ctx::CreateInt(10); 
+  Int i1 = Ctx::CreateInt(5);
+  auto result = static_cast<Bool_T*>(i0->And(i1).get())->value;
+  ASSERT_TRUE(result);
+}
+TEST(AndTest, FloatAnd) {
+  Float f0 = Ctx::CreateFloat(10.5f); 
+  Float f1 = Ctx::CreateFloat(5.0f);
+  auto result = static_cast<Bool_T*>(f0->And(f1).get())->value;
+  ASSERT_TRUE(result);
+}
+TEST(OrTest, IntOr) {
+  Int i0 = Ctx::CreateInt(10); 
+  Int i1 = Ctx::CreateInt(0);
+  ASSERT_TRUE(static_cast<Bool_T*>(i0->Or(i1).get())->value);
+}
+TEST(OrTest, FloatOr) {
+  Float f0 = Ctx::CreateFloat(10.5f); 
+  Float f1 = Ctx::CreateFloat(0.0f);
+  ASSERT_TRUE(static_cast<Bool_T*>(f0->Or(f1).get())->value);
+}
+TEST(OrTest, BoolOr) {
+  Bool b0 = Value_T::True;
+  Bool b1 = Value_T::False;
+  ASSERT_TRUE(static_cast<Bool_T*>(b0->Or(b1).get())->value);
 }

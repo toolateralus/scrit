@@ -1,8 +1,12 @@
 #pragma once
 #include "lexer.hpp"
+#include <gtest/gtest.h>
 #include <memory>
 
+using std::vector;
+using std::string;
 
+enum struct TType;
 struct Context;
 struct Value_T;
 struct Scope_T;
@@ -40,11 +44,8 @@ enum struct ControlChange {
   Return,
   Continue,
   Break,
-  Goto,
-  ContinueLabel,
-  BreakLabel,
-  Exception
 };
+
 struct ExecutionResult {
   ExecutionResult(ControlChange controlChange, Value value);
   static ExecutionResult None;
@@ -53,59 +54,73 @@ struct ExecutionResult {
   ControlChange controlChange;
   Value value;
 };
+
+
+
+
 struct ASTNode {
+  SourceInfo srcInfo;
+  ASTNode(SourceInfo &info) : srcInfo(info) {}
+
   static Context context;
   virtual ~ASTNode() {}
 };
+
+
 struct Executable : ASTNode {
   virtual ~Executable() {}
   virtual ExecutionResult Execute() = 0;
+  Executable(SourceInfo &info) : ASTNode(info) {}
 };
 struct Statement : Executable {
-
+  Statement(SourceInfo &info) : Executable(info) {}
 };
 struct Program : Executable {
   vector<StatementPtr> statements;
   Program(vector<StatementPtr> &&statements);
   ExecutionResult Execute() override;
 };
-struct Expression {
+struct Expression : ASTNode {
+  Expression(SourceInfo &info) : ASTNode(info) {}
   virtual ~Expression() {}
   virtual Value Evaluate() = 0;
 };
 struct Operand : Expression {
-  Operand(Value value);
+  Operand(SourceInfo &info, Value value);
   Value value;
   Value Evaluate() override;
 };
 struct Identifier : Expression {
-  Identifier(string &name);
+  Identifier(SourceInfo &info, string &name);
   string name;
   Value Evaluate() override;
 };
 struct Arguments : Expression {
-  Arguments(vector<ExpressionPtr> &&args);
+  Arguments(SourceInfo &info, vector<ExpressionPtr> &&args);
   vector<ExpressionPtr> values;
   Value Evaluate() override;
 };
 struct Parameters : Statement {
   vector<string> names;
-  Parameters(vector<string> &&names);
+  Parameters(SourceInfo &info, vector<string> &&names);
   ExecutionResult Execute() override;
 };
 struct Continue : Statement {
+  Continue(SourceInfo &info) : Statement(info) {}
   ExecutionResult Execute() override;
 };
 struct Break : Statement {
+  Break(SourceInfo &info) : Statement(info) {}
   ExecutionResult Execute() override;
 };
 struct Return : Statement {
-  Return(ExpressionPtr &&value);
+
+  Return(SourceInfo &info, ExpressionPtr &&value);
   ExpressionPtr value;
   ExecutionResult Execute() override;
 };
 struct Block : Statement {
-  Block(vector<StatementPtr> &&statements);
+  Block(SourceInfo &info, vector<StatementPtr> &&statements);
   vector<StatementPtr> statements;
   Scope scope;
   ExecutionResult Execute() override;
@@ -113,22 +128,28 @@ struct Block : Statement {
 struct ObjectInitializer : Expression {
   BlockPtr block;
   Scope scope;
-  ObjectInitializer(BlockPtr block);
+  ObjectInitializer(SourceInfo &info, BlockPtr block);
   Value Evaluate() override;
 };
 struct Call : Expression, Statement {
   ExpressionPtr operand;
   ArgumentsPtr args;
-  Call(ExpressionPtr &&operand, ArgumentsPtr &&args);
+  Call(SourceInfo &info, ExpressionPtr &&operand,
+       ArgumentsPtr &&args);
   static vector<Value> GetArgsValueList(ArgumentsPtr &args);
   Value Evaluate() override;
   ExecutionResult Execute() override;
 };
 struct If : Statement {
-  static IfPtr NoElse(ExpressionPtr &&condition, BlockPtr &&block);
-  static IfPtr WithElse(ExpressionPtr &&condition, BlockPtr &&block, ElsePtr &&elseStmnt);
-  If(ExpressionPtr &&condition, BlockPtr &&block);
-  If(ExpressionPtr &&condition, BlockPtr &&block,  ElsePtr &&elseStmnt);
+  static IfPtr NoElse(SourceInfo &info, ExpressionPtr &&condition,
+                      BlockPtr &&block);
+  static IfPtr WithElse(SourceInfo &info,
+                        ExpressionPtr &&condition, BlockPtr &&block,
+                        ElsePtr &&elseStmnt);
+  If(SourceInfo &info, ExpressionPtr &&condition,
+     BlockPtr &&block);
+  If(SourceInfo &info, ExpressionPtr &&condition,
+     BlockPtr &&block, ElsePtr &&elseStmnt);
   ExpressionPtr condition;
   BlockPtr block;
   ElsePtr elseStmnt;
@@ -137,8 +158,9 @@ struct If : Statement {
 struct Else : Statement {
   IfPtr ifStmnt;
   BlockPtr block;
-  static ElsePtr NoIf(BlockPtr &&block);
-  static ElsePtr New(IfPtr &&ifStmnt);
+  Else(SourceInfo &info) : Statement(info) {}
+  static ElsePtr NoIf(SourceInfo &info, BlockPtr &&block);
+  static ElsePtr New(SourceInfo &info, IfPtr &&ifStmnt);
   ExecutionResult Execute() override;
 };
 struct For : Statement {
@@ -147,12 +169,15 @@ struct For : Statement {
   StatementPtr increment;
   BlockPtr block;
   Scope scope;
-  For(StatementPtr &&decl, ExpressionPtr &&condition, StatementPtr &&inc, BlockPtr &&block, Scope scope);
+  For(SourceInfo &info, StatementPtr &&decl,
+      ExpressionPtr &&condition, StatementPtr &&inc, BlockPtr &&block,
+      Scope scope);
   ExecutionResult Execute() override;
 };
 
 struct RangeBasedFor : Statement {
-  RangeBasedFor(IdentifierPtr &&lhs, ExpressionPtr &&rhs, BlockPtr &&block);
+  RangeBasedFor(SourceInfo &info, IdentifierPtr &&lhs,
+                ExpressionPtr &&rhs, BlockPtr &&block);
   IdentifierPtr valueName;
   ExpressionPtr rhs;
   BlockPtr block;
@@ -162,62 +187,64 @@ struct RangeBasedFor : Statement {
 struct Assignment : Statement {
   IdentifierPtr iden;
   ExpressionPtr expr;
-  Assignment(IdentifierPtr &&iden, ExpressionPtr &&expr);
+  Assignment(SourceInfo &info, IdentifierPtr &&iden,
+             ExpressionPtr &&expr);
   ExecutionResult Execute() override;
 };
 
 struct CompAssignExpr : Expression {
   ExpressionPtr left, right;
   TType op;
-  CompAssignExpr(ExpressionPtr &&left, ExpressionPtr &&right, TType op) : left(std::move(left)), right(std::move(right)), op(op) {}
+  CompAssignExpr(SourceInfo &info, ExpressionPtr &&left,
+                 ExpressionPtr &&right, TType op);
   Value Evaluate() override;
 };
 
-struct CompoundAssignment: Statement {
+struct CompoundAssignment : Statement {
   ExpressionPtr expr;
-  CompoundAssignment(ExpressionPtr &&expr);
+  CompoundAssignment(SourceInfo &info, ExpressionPtr &&expr);
   ExecutionResult Execute() override;
 };
-
-struct FuncDecl : Statement {
-  FuncDecl(IdentifierPtr &&name, BlockPtr &&body, ParametersPtr &&parameters);
-  IdentifierPtr name;
-  BlockPtr body;
-  ParametersPtr parameters;
-  ExecutionResult Execute() override;
+struct Noop : Statement {
+  Noop(SourceInfo &info) : Statement(info) {}
+  ExecutionResult Execute() override { return ExecutionResult::None; }
 };
 struct DotExpr : Expression {
-  DotExpr(ExpressionPtr &&left, ExpressionPtr &&right);
+  DotExpr(SourceInfo &info, ExpressionPtr &&left,
+          ExpressionPtr &&right);
   ExpressionPtr left;
   ExpressionPtr right;
   Value Evaluate() override;
   void Assign(Value value);
 };
 struct DotAssignment : Statement {
-  DotAssignment(ExpressionPtr &&dot, ExpressionPtr &&value);
+  DotAssignment(SourceInfo &info, ExpressionPtr &&dot,
+                ExpressionPtr &&value);
   ExpressionPtr dot;
   ExpressionPtr value;
   ExecutionResult Execute() override;
 };
 struct DotCallStmnt : Statement {
-  DotCallStmnt(ExpressionPtr &&dot);
+  DotCallStmnt(SourceInfo &info, ExpressionPtr &&dot);
   ExpressionPtr dot;
   ExecutionResult Execute() override;
 };
 struct Subscript : Expression {
-  Subscript(ExpressionPtr &&left, ExpressionPtr &&idx);
+  Subscript(SourceInfo &info, ExpressionPtr &&left,
+            ExpressionPtr &&idx);
   ExpressionPtr left;
   ExpressionPtr index;
   Value Evaluate();
 };
 struct SubscriptAssignStmnt : Statement {
-  SubscriptAssignStmnt(ExpressionPtr &&subscript, ExpressionPtr &&value);
+  SubscriptAssignStmnt(SourceInfo &info,
+                       ExpressionPtr &&subscript, ExpressionPtr &&value);
   ExpressionPtr subscript;
   ExpressionPtr value;
   ExecutionResult Execute() override;
 };
 struct UnaryExpr : Expression {
-  UnaryExpr(ExpressionPtr &&left, TType op);
+  UnaryExpr(SourceInfo &info, ExpressionPtr &&left, TType op);
   ExpressionPtr left;
   TType op;
   Value Evaluate() override;
@@ -226,7 +253,7 @@ struct UnaryExpr : Expression {
 // this is basically only for decrement / increment right now
 struct UnaryStatement : Statement {
   ExpressionPtr expr;
-  UnaryStatement(ExpressionPtr &&expr);
+  UnaryStatement(SourceInfo &info, ExpressionPtr &&expr);
   ExecutionResult Execute() override {
     expr->Evaluate();
     return ExecutionResult::None;
@@ -237,14 +264,16 @@ struct BinExpr : Expression {
   ExpressionPtr left;
   ExpressionPtr right;
   TType op;
-  BinExpr(ExpressionPtr &&left, ExpressionPtr &&right, TType op);
+  BinExpr(SourceInfo &info, ExpressionPtr &&left,
+          ExpressionPtr &&right, TType op);
   Value Evaluate() override;
 };
 
-
 struct Import : Statement {
-  Import(const string &name, const bool isWildcard);
-  Import(const string &name, vector<string> &symbols);
+  Import(SourceInfo &info, const string &name,
+         const bool isWildcard);
+  Import(SourceInfo &info, const string &name,
+         vector<string> &symbols);
   vector<string> symbols;
   string moduleName;
   bool isWildcard;
