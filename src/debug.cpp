@@ -9,8 +9,8 @@
 
 std::vector<int> Debug::breakpoints = {};
 auto Debug::requestedStep = StepKind::None;
-ASTNode *Debug::lastSteppedIntoNode = nullptr;
-int Debug::lastSteppedIntoStatementIndex = -1;
+ASTNode *Debug::lastNode = nullptr;
+int Debug::lastStatementIndex = -1;
 
 void Debug::m_setBreakpoint(std::string &line, const string &breakpointKey) {
   string num = "";
@@ -31,49 +31,103 @@ void Debug::m_printScope() {
   std::cout << std::flush;
 }
 
-void Debug::m_stepOver(ASTNode *&owner, ASTNode *&node) {
-  if (auto program = dynamic_cast<Program *>(owner)) {
-    bool hitSelf = false;
-    for (const auto &statement : program->statements) {
-      if (statement.get() == node) {
-        hitSelf = true;
-        continue;
-      }
-      if (hitSelf) {
-        InsertBreakpoint(statement->srcInfo.loc);
-        break;
+void Debug::WaitForBreakpoint(ASTNode *owner, ASTNode *node, const int &statementIndex) {
+  static const string breakpointKey = "breakpoint:";
+  
+  requestedStep = StepKind::None;
+  
+  if (!lastNode) {
+    lastNode = owner;
+    lastStatementIndex = statementIndex + 1;
+  }
+  
+  bool match = false;
+  int breakpoint;
+  for (const auto &loc : breakpoints) {
+    if (loc == node->srcInfo.loc) {
+      match = true;
+      breakpoint = loc;
+    }
+  }
+  
+  if (!match) {
+    return;
+  }
+  
+  std::cout << "breakpoint hit : line:" << breakpoint << "\n" << std::flush;
+  std::cout << "node: " << typeid(*node).name() << "\n";
+  
+  while (requestedStep == StepKind::None && breakpoint == node->srcInfo.loc) {
+    usleep(100'000);
+    
+    fd_set set;
+    struct timeval timeout;
+    FD_ZERO(&set);
+    FD_SET(0, &set);
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 100'000;
+    if (select(1, &set, NULL, NULL, &timeout) > 0) {
+      std::string line;
+      if (std::getline(std::cin, line)) {
+        if (line == "over") {
+          StepOver();
+          break;
+        }
+        else if (line == "in") {
+          StepIn();
+          break;
+        }
+        else if (line == "out") {
+          StepOut();
+          break;
+        } 
+        else if (line.length() > breakpointKey.length() &&
+            line.substr(0, breakpointKey.length()) == breakpointKey) {
+          m_setBreakpoint(line, breakpointKey);
+          continue;
+        }
+        else if (line == "continue") {
+          Continue();
+          break;
+        }
+        else if (line == "inspect") {
+          m_printScope();
+        }
       }
     }
-  } else if (auto block = dynamic_cast<Block *>(owner)) {
-    bool hitSelf = false;
-    for (const auto &statement : block->statements) {
-      if (statement.get() == node) {
-        hitSelf = true;
-        continue;
-      }
-      if (hitSelf) {
-        InsertBreakpoint(statement->srcInfo.loc);
-        break;
-      }
-    }
-  } else {
-    throw std::runtime_error("Invalid WaitForBreakpoint caller.");
+  }
+  
+  switch(requestedStep) {
+  case StepKind::Over:
+  m_stepOver(owner, node);
+  case StepKind::In:
+  m_stepIn(owner, node, statementIndex);
+  case StepKind::Out:
+  m_stepOut();
+  case StepKind::None:
+    break;
   }
 }
-void Debug::m_stepIn(ASTNode *&owner, ASTNode *&node, const int &index) {
-  Block *blockPtr;
+void Debug::RemoveBreakpoint(int loc) {
+  auto removed =
+      std::remove(breakpoints.begin(), breakpoints.end(), loc);
+  breakpoints.erase(removed, breakpoints.end());
+}
+
+void Debug::InsertBreakpoint(int loc) {
+  breakpoints.push_back(loc);
+  requestedStep = StepKind::None;
+}
+
+void Debug::m_stepOut() {
+  if (!lastNode || lastStatementIndex == -1) {
+    return;
+  }
+  auto *node = lastNode;
+  vector<StatementPtr> *statements = nullptr;
   
-  // reset step in info, in case this fails, step out can know.
-  lastSteppedIntoStatementIndex = -1;
-  lastSteppedIntoNode = nullptr;
-  
-  
-  // gather info about the block we are stepping into,
-  // like the index of the statement and the owner of the statement,
-  // so we can easily return control if and when the user steps out.
+  // search for the statements of the block from the node that was last stepped into
   {
-    lastSteppedIntoNode = owner;
-    vector<StatementPtr> *statements;
     if (auto fnCall = dynamic_cast<Call *>(node)) {
       auto callable =
           static_cast<Callable_T *>(fnCall->operand->Evaluate().get());
@@ -99,12 +153,56 @@ void Debug::m_stepIn(ASTNode *&owner, ASTNode *&node, const int &index) {
     } else if (auto program = dynamic_cast<Program *>(node)) {
       statements = &program->statements;
     }
+  }
+  
+  if (statements != nullptr && lastStatementIndex < statements->size()) {
+    auto &statement = (*statements)[lastStatementIndex];
+    InsertBreakpoint(statement->srcInfo.loc);
+  }
+}
+void Debug::m_stepIn(ASTNode *&owner, ASTNode *&node, const int &index) {
+  Block *blockPtr;
+  
+  
+  
+  
+  // gather info about the block we are stepping into,
+  // like the index of the statement and the owner of the statement,
+  // so we can easily return control if and when the user steps out.
+  {
+    lastNode = owner;
+    vector<StatementPtr> *statements;
+    if (auto fnCall = dynamic_cast<Call *>(owner)) {
+      auto callable =
+          static_cast<Callable_T *>(fnCall->operand->Evaluate().get());
+      if (auto native =
+              dynamic_cast<NativeCallable_T *>(fnCall->operand->Evaluate().get());
+          native != nullptr) {
+        StepOver();
+        return;
+      }
+      statements = &callable->block.get()->statements;
+    } else if (auto ifStmnt = dynamic_cast<If *>(owner)) {
+      statements = &ifStmnt->block.get()->statements;
+    } else if (auto elseStmnt = dynamic_cast<Else *>(owner)) {
+      statements = &elseStmnt->block.get()->statements;
+    } else if (auto forStmnt = dynamic_cast<For *>(owner)) {
+      statements = &forStmnt->block.get()->statements;
+    } else if (auto rangeFor = dynamic_cast<RangeBasedFor *>(owner)) {
+      statements = &rangeFor->block.get()->statements;
+    } else if (auto objInit = dynamic_cast<ObjectInitializer *>(owner)) {
+      statements = &objInit->block.get()->statements;
+    } else if (auto block = dynamic_cast<Block *>(owner)) {
+      statements = &block->statements;
+    } else if (auto program = dynamic_cast<Program *>(owner)) {
+      statements = &program->statements;
+    }
     
     if (statements) {
       int i = 0;
       for (const auto &statement : *statements) {
         if (node == statement.get()) {
-          lastSteppedIntoStatementIndex = i + 1;
+          lastStatementIndex = i + 1;
           break;
         } else {
           i++;
@@ -158,132 +256,32 @@ void Debug::m_stepIn(ASTNode *&owner, ASTNode *&node, const int &index) {
     InsertBreakpoint(loc);
   }
 }
-void Debug::WaitForBreakpoint(ASTNode *owner, ASTNode *node, const int &statementIndex) {
-  static const string breakpointKey = "breakpoint:";
-  
-  requestedStep = StepKind::None;
-  
-  if (!lastSteppedIntoNode) {
-    lastSteppedIntoNode = owner;
-    lastSteppedIntoStatementIndex = statementIndex + 1;
-  }
-  
-  bool match = false;
-  int breakpoint;
-  for (const auto &loc : breakpoints) {
-    if (loc == node->srcInfo.loc) {
-      match = true;
-      breakpoint = loc;
-    }
-  }
-  
-  if (!match) {
-    return;
-  }
-  
-  std::cout << "breakpoint hit : line:" << breakpoint << "\n" << std::flush;
-  std::cout << "node: " << typeid(*node).name() << "\n";
-  
-  while (requestedStep == StepKind::None && breakpoint == node->srcInfo.loc) {
-    usleep(100'000);
-    
-    fd_set set;
-    struct timeval timeout;
-    FD_ZERO(&set);
-    FD_SET(0, &set);
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 100'000;
-    if (select(1, &set, NULL, NULL, &timeout) > 0) {
-      std::string line;
-      if (std::getline(std::cin, line)) {
-        
-        if (line == "over") {
-          m_stepOver(owner, node);
-          break;
-        }
-        else if (line == "in") {
-          m_stepIn(owner, node, statementIndex);
-          break;
-        }
-        else if (line == "out") {
-          m_stepOut();
-          break;
-        } 
-        else if (line.length() > breakpointKey.length() &&
-            line.substr(0, breakpointKey.length()) == breakpointKey) {
-          m_setBreakpoint(line, breakpointKey);
-          continue;
-        }
-        else if (line == "continue") {
-          Continue();
-          break;
-        }
-        else if (line == "inspect") {
-          m_printScope();
-        }
+void Debug::m_stepOver(ASTNode *&owner, ASTNode *&node) {
+  if (auto program = dynamic_cast<Program *>(owner)) {
+    bool hitSelf = false;
+    for (const auto &statement : program->statements) {
+      if (statement.get() == node) {
+        hitSelf = true;
+        continue;
+      }
+      if (hitSelf) {
+        InsertBreakpoint(statement->srcInfo.loc);
+        break;
       }
     }
-  }
-  
-  switch(requestedStep) {
-  case StepKind::Over:
-  m_stepOver(owner, node);
-  case StepKind::In:
-  m_stepIn(owner, node, statementIndex);
-  case StepKind::None:
-  case StepKind::Out:
-    break;
-  }
-}
-void Debug::RemoveBreakpoint(int loc) {
-  auto removed =
-      std::remove(breakpoints.begin(), breakpoints.end(), loc);
-  breakpoints.erase(removed, breakpoints.end());
-}
-void Debug::Continue() { requestedStep = StepKind::None; }
-
-void Debug::InsertBreakpoint(int loc) {
-  breakpoints.push_back(loc);
-  requestedStep = StepKind::None;
-}
-void Debug::m_stepOut() {
-  if (!lastSteppedIntoNode || lastSteppedIntoStatementIndex == -1) {
-    return;
-  }
-  auto *node = lastSteppedIntoNode;
-  vector<StatementPtr> *statements = nullptr;
-  
-  // search for the statements of the block from the node that was last stepped into
-  {
-    if (auto fnCall = dynamic_cast<Call *>(node)) {
-      auto callable =
-          static_cast<Callable_T *>(fnCall->operand->Evaluate().get());
-      if (auto native =
-              dynamic_cast<NativeCallable_T *>(fnCall->operand->Evaluate().get());
-          native != nullptr) {
-        StepOver();
-        return;
+  } else if (auto block = dynamic_cast<Block *>(owner)) {
+    bool hitSelf = false;
+    for (const auto &statement : block->statements) {
+      if (statement.get() == node) {
+        hitSelf = true;
+        continue;
       }
-      statements = &callable->block.get()->statements;
-    } else if (auto ifStmnt = dynamic_cast<If *>(node)) {
-      statements = &ifStmnt->block.get()->statements;
-    } else if (auto elseStmnt = dynamic_cast<Else *>(node)) {
-      statements = &elseStmnt->block.get()->statements;
-    } else if (auto forStmnt = dynamic_cast<For *>(node)) {
-      statements = &forStmnt->block.get()->statements;
-    } else if (auto rangeFor = dynamic_cast<RangeBasedFor *>(node)) {
-      statements = &rangeFor->block.get()->statements;
-    } else if (auto objInit = dynamic_cast<ObjectInitializer *>(node)) {
-      statements = &objInit->block.get()->statements;
-    } else if (auto block = dynamic_cast<Block *>(node)) {
-      statements = &block->statements;
-    } else if (auto program = dynamic_cast<Program *>(node)) {
-      statements = &program->statements;
+      if (hitSelf) {
+        InsertBreakpoint(statement->srcInfo.loc);
+        break;
+      }
     }
-  }
-  
-  if (statements != nullptr && lastSteppedIntoStatementIndex < statements->size()) {
-    auto &statement = (*statements)[lastSteppedIntoStatementIndex];
-    InsertBreakpoint(statement->srcInfo.loc);
+  } else {
+    throw std::runtime_error("Invalid WaitForBreakpoint caller.");
   }
 }
