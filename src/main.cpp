@@ -22,7 +22,7 @@ void InsertCmdLineArgs(int argc, char **argv) {
           num += str[i];
         }
         int index = std::stoi(num);
-        Debug::InsertBreakpoint(index);
+        Debug::InsertBreakpoint(index, false);
       } else {
         args->Push(String_T::New(str));
       }

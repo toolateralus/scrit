@@ -10,16 +10,21 @@ enum struct StepKind {
   Out,
 };
 
+struct Breakpoint {
+  int loc = -1;
+  bool isTemporary = false;
+};
+
 struct Debug {
   Debug() = delete;
-  static std::vector<int> breakpoints;
+  static std::vector<Breakpoint> breakpoints;
   static StepKind requestedStep;
   
   static ASTNode *lastNode;
   static int stepOutIndex;
   
-  static void InsertBreakpoint(int loc);
-  static void RemoveBreakpoint(int loc);
+  static void InsertBreakpoint(const int &loc, const bool isTemporary);
+  static void RemoveBreakpoint(const int &loc, const bool isTemporary);
   
   static void WaitForBreakpoint(ASTNode *owner, ASTNode *node, const int &statementIndex);
   

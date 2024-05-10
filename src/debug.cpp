@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <sys/select.h>
 
-std::vector<int> Debug::breakpoints = {};
+std::vector<Breakpoint> Debug::breakpoints = {};
 auto Debug::requestedStep = StepKind::None;
 ASTNode *Debug::lastNode = nullptr;
 int Debug::stepOutIndex = -1;
@@ -20,24 +20,24 @@ void Debug::WaitForBreakpoint(ASTNode *owner, ASTNode *node,
     m_getInfo(owner, node);
   
   requestedStep = StepKind::None;
-
+  
   bool match = false;
-  int breakpoint;
-  for (const auto &loc : breakpoints) {
-    if (loc == node->srcInfo.loc) {
+  Breakpoint breakpoint;
+  for (const auto &br : breakpoints) {
+    if (br.loc == node->srcInfo.loc) {
       match = true;
-      breakpoint = loc;
+      breakpoint = br;
     }
   }
-
+  
   if (!match) {
     return;
   }
-
-  std::cout << "breakpoint hit : line:" << breakpoint << "\n" << std::flush;
+  
+  std::cout << "breakpoint hit : line:" << breakpoint.loc << "\n" << std::flush;
   std::cout << "node: " << typeid(*node).name() << "\n";
-
-  while (requestedStep == StepKind::None && breakpoint == node->srcInfo.loc) {
+  
+  while (requestedStep == StepKind::None && breakpoint.loc == node->srcInfo.loc) {
     usleep(100'000);
 
     fd_set set;
@@ -71,7 +71,7 @@ void Debug::WaitForBreakpoint(ASTNode *owner, ASTNode *node,
       }
     }
   }
-
+  
   switch (requestedStep) {
   case StepKind::Over:
     m_stepOver(owner, node);
@@ -86,13 +86,15 @@ void Debug::WaitForBreakpoint(ASTNode *owner, ASTNode *node,
     break;
   }
 }
-void Debug::RemoveBreakpoint(int loc) {
-  auto removed = std::remove(breakpoints.begin(), breakpoints.end(), loc);
-  breakpoints.erase(removed, breakpoints.end());
+void Debug::RemoveBreakpoint(const int &loc, const bool isTemporary) {
+  breakpoints.erase(std::remove_if(breakpoints.begin(), breakpoints.end(),
+                                   [loc, isTemporary](Breakpoint breakpoint) {
+                                     return breakpoint.loc == loc && breakpoint.isTemporary;
+                                   }),
+                    breakpoints.end());
 }
-void Debug::InsertBreakpoint(int loc) {
-  breakpoints.push_back(loc);
-  requestedStep = StepKind::None;
+void Debug::InsertBreakpoint(const int &loc, const bool isTemporary = false) {
+  breakpoints.push_back({loc, isTemporary});
 }
 
 void Debug::m_setBreakpoint(std::string &line, const string &breakpointKey) {
@@ -101,7 +103,7 @@ void Debug::m_setBreakpoint(std::string &line, const string &breakpointKey) {
     num += line[i];
   }
   int index = std::stoi(num);
-  Debug::InsertBreakpoint(index);
+  Debug::InsertBreakpoint(index, false);
 }
 void Debug::m_printScope() {
   auto scope = ASTNode::context.scopes.back();
@@ -152,7 +154,7 @@ void Debug::m_stepOut() {
 
   if (statements != nullptr && stepOutIndex < statements->size()) {
     auto &statement = (*statements)[stepOutIndex];
-    InsertBreakpoint(statement->srcInfo.loc);
+    InsertBreakpoint(statement->srcInfo.loc, true);
   }
 }
 void Debug::m_getInfo(ASTNode *&owner, ASTNode *&node) {
@@ -243,7 +245,7 @@ void Debug::m_stepIn(ASTNode *&owner, ASTNode *&node, const int &index) {
   }
 
   if (loc != -1) {
-    InsertBreakpoint(loc);
+    InsertBreakpoint(loc, true);
   }
 }
 void Debug::m_stepOver(ASTNode *&owner, ASTNode *&node) {
@@ -255,7 +257,7 @@ void Debug::m_stepOver(ASTNode *&owner, ASTNode *&node) {
         continue;
       }
       if (hitSelf) {
-        InsertBreakpoint(statement->srcInfo.loc);
+        InsertBreakpoint(statement->srcInfo.loc, true);
         break;
       }
     }
@@ -267,7 +269,7 @@ void Debug::m_stepOver(ASTNode *&owner, ASTNode *&node) {
         continue;
       }
       if (hitSelf) {
-        InsertBreakpoint(statement->srcInfo.loc);
+        InsertBreakpoint(statement->srcInfo.loc, true);
         break;
       }
     }
