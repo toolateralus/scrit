@@ -1,5 +1,9 @@
 #pragma once
-#include "helpers.hpp"
+
+#include <map>
+#include <raylib.h>
+#include <string>
+#include "scrit/scritmod.hpp"
 
 static std::map<std::string, int> GetKeysMap() {
   std::map<std::string, int> keysMap;
@@ -115,6 +119,7 @@ static std::map<std::string, int> GetKeysMap() {
   keysMap["VOLUME_DOWN"] = 25;
   return keysMap;
 }
+
 static Value isKeyDown(std::vector<Value> args) {
   if (args.empty()) {
     return Value_T::False;

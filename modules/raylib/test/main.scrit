@@ -1,0 +1,28 @@
+import * from raylib
+
+
+
+initWindow(800,600, "game")
+  
+dogTexture = loadTexture("big_sale.png")
+
+for {
+  if windowShouldClose() {
+    break
+  }
+  beginDrawing()
+  
+  
+  drawText(0,0,24, "My Text", colors.WHITE)
+  
+  
+  drawTriangle()
+  
+  err = drawTexture(0, 0, dogTexture.id)  
+  if err != undefined {
+    println(err)
+    break
+  }
+  
+  endDrawing()
+}

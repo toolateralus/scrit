@@ -7,14 +7,14 @@
 #include <scrit/scritmod.hpp>
 #include <scrit/value.hpp>
 
-static Object CreateVector3(Vector3 &v) {
+static Object CreateVector3(const Vector3 &v) {
   Object obj = Ctx::CreateObject();
   obj->scope->variables["x"] = Ctx::CreateFloat(v.x);
   obj->scope->variables["y"] = Ctx::CreateFloat(v.y);
   obj->scope->variables["z"] = Ctx::CreateFloat(v.z);
   return obj;
 }
-static Object CreateQuaternion(Quaternion &quat) {
+static Object CreateQuaternion(const Quaternion &quat) {
   Object obj = Ctx::CreateObject();
   obj->scope->variables["x"] = Ctx::CreateFloat(quat.x);
   obj->scope->variables["y"] = Ctx::CreateFloat(quat.y);
@@ -22,14 +22,14 @@ static Object CreateQuaternion(Quaternion &quat) {
   obj->scope->variables["w"] = Ctx::CreateFloat(quat.w);
   return obj;
 }
-static Object CreateTransform(Transform &transform) {
+static Object CreateTransform(const Transform &transform) {
   Object obj = Ctx::CreateObject();
   obj->scope->variables["position"] = CreateVector3(transform.translation);
   obj->scope->variables["rotation"] = CreateQuaternion(transform.rotation);
   obj->scope->variables["scale"] = CreateVector3(transform.scale);
   return obj;
 }
-static Object CreateMatrix(Matrix &transform) {
+static Object CreateMatrix(const Matrix &transform) {
   Object obj = Ctx::CreateObject();
   
   // Extract translation
@@ -60,6 +60,45 @@ static Object CreateMatrix(Matrix &transform) {
   obj->scope->variables["rotation"] = CreateQuaternion(rotation);
 
   return obj;
+}
+
+static Object CreateColor(const Color &color) {
+  Object obj = Ctx::CreateObject();
+  obj->scope->variables["r"] = Ctx::CreateInt(color.r);
+  obj->scope->variables["g"] = Ctx::CreateInt(color.g);
+  obj->scope->variables["b"] = Ctx::CreateInt(color.b);
+  obj->scope->variables["a"] = Ctx::CreateInt(color.a);
+  return obj;
+}
+
+static Object CreateTexture(const Texture2D &texture) {
+  Object obj = Ctx::CreateObject();
+  obj->scope->variables["id"] = Ctx::CreateInt(texture.id);
+  obj->scope->variables["width"] = Ctx::CreateInt(texture.width);
+  obj->scope->variables["height"] = Ctx::CreateInt(texture.height);
+  return obj;
+}
+
+static bool TryGetTexture(Object value, Texture2D& texture) {
+  auto scope = value->scope;
+  auto idVal = scope->variables["id"];
+  auto widthVal = scope->variables["width"];
+  auto heightVal = scope->variables["height"];
+  if (Ctx::IsUndefined(idVal, widthVal, heightVal) ||
+      Ctx::IsNull(idVal, widthVal, heightVal)) {
+    return false;
+  }
+
+  int id, width, height;
+  if (!Ctx::TryGetInt(idVal, id) || !Ctx::TryGetInt(widthVal, width) ||
+      !Ctx::TryGetInt(heightVal, height)) {
+    return false;
+  }
+
+  texture.id = (unsigned int)id;
+  texture.width = width;
+  texture.height = height;
+  return true;
 }
 
 static bool TryGetVector3(Object value, Vector3& vector) {
