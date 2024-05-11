@@ -571,6 +571,8 @@ string TypeToString(ValueType type) {
     return "array";
   case ValueType::Callable:
     return "callable";
+  case ValueType::Any:
+    return "any";
   }
   return "";
 }
