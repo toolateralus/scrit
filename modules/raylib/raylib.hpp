@@ -1,5 +1,7 @@
 #pragma once
 #include "helpers.hpp"
+#include <raylib.h>
+#include <scrit/context.hpp>
 #include <string>
 #include <vector>
 
@@ -156,6 +158,17 @@ static Value unloadShader(std::vector<Value> args) {
   return Value_T::Undefined;
 }
 
+static Value drawFPS(std::vector<Value> args) {
+  if (args.size() < 2) {
+    return Ctx::CreateString("Invalid args");
+  }
+  int x,y;
+  if (!Ctx::TryGetInt(args[0], x) || !Ctx::TryGetInt(args[1], y)) {
+    return Ctx::CreateString("invalid args types");
+  }
+  DrawFPS(x,y);
+  return Value_T::Undefined;
+}
 
 static Value drawText(std::vector<Value> args) {
   if (args.size() < 4) {

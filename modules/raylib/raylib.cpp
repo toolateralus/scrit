@@ -38,7 +38,7 @@ extern "C" ScritModDef *InitScritModule_raylib() {
   ScritMod_AddFunction(def, "getMousePosition", &getMousePosition);
   ScritMod_AddFunction(def, "setMousePosition", &setMousePosition);
   ScritMod_AddFunction(def, "getMouseWheelMove", &getMouseWheelMove);
-  
+  ScritMod_AddFunction(def, "drawFPS", &drawFPS);
   
   // keys enum  
   Object keys = Ctx::CreateObject();
