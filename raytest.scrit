@@ -1,4 +1,4 @@
-import { isKeyDown, clearBackground, windowShouldClose, beginDrawing, initWindow, endDrawing, drawRectangle } from raylib
+import { isKeyDown, clearBackground, windowShouldClose, beginDrawing, initWindow, endDrawing, drawRectangle, keys} from raylib
 
 import {sleep, time} from system
 
@@ -33,7 +33,7 @@ player = {
   color = WHITE
   gravity = 0.01
   func move() {
-    if(isKeyDown(KEY_E)) {
+    if(isKeyDown(keys.E)) {
       color.r += 1
       color.g += 1
       color.b += 1
@@ -47,18 +47,18 @@ player = {
         color.b = 50
       }
     }
-    if isKeyDown(KEY_W) {
+    if isKeyDown(keys.W) {
       y -= speed
     } else {
       y += gravity
     }
-    if isKeyDown(KEY_S) {
+    if isKeyDown(keys.S) {
       y += speed
     }
-    if isKeyDown(KEY_A) {
+    if isKeyDown(keys.A) {
       x -= speed
     }
-    if isKeyDown(KEY_D) {
+    if isKeyDown(keys.D) {
       x += speed
     }
   }
