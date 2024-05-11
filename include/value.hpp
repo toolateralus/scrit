@@ -62,6 +62,7 @@ enum class ValueType {
   Object,
   Array,
   Callable,
+  Any, // only used for signature declarations.
 };
 
 string TypeToString(ValueType type);

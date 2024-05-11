@@ -6,153 +6,104 @@
 extern "C" ScritModDef *InitScritModule_raylib() {
   ScritModDef *def = CreateModDef();
   *def->description = "raylib bindings for scrit scripting lang";
+
+  // NOTE:
+  // this looks atrocious and intimidating, only because we create argument
+  // signatures to help the LSP provide more information about native functions
+  // to make it easier to use. this is optional
+
   
-  
-  // NOTE: 
-  // this looks atrocious and intimidating, only because we create argument signatures
-  // to help the LSP provide more information about native functions to make it easier to use.
-  // this is optional
-  
-  // Another alternative to :
-  // NativeFunction::Create(std::string name, NativeFunctionPtr &ptr) is easier to use.
-  
-  // Is to create factory functions and write your wrappers separately.
-  // for example
-  
-  /*
-    NativeFunction getInitWindow() {
-      return NativeFunction::Create(
-                                "initWindow", "undefined|err", &initWindow,
-                                CreateArgumentSignature(
-                                    {Argument("int", "w"), Argument("int", "h"),
-                                     Argument("string", "title")}))
-    } 
-    Value initWindow(std::vector<Value> args) {
-      ... your implementation
-    }
-  
-  */
-  
+  // use AddFunctionNoInfo("funname", &funcPtr)
+  // if you don't need type annotations in the LSP.
+  // Note that this may make it significantly harder to use your library.
+
   // That would be a lot neater than what ive done here.
-  
   // windowing.
-  AddFunction(def, NativeFunction::Create(
-                                "initWindow", "undefined|err", &initWindow,
-                                CreateArgumentSignature(
-                                    {Argument("int", "w"), Argument("int", "h"),
-                                     Argument("string", "title")})));
-                                     
-  AddFunction(def, NativeFunction::Create("windowShouldClose", "bool",
-                                                   &windowShouldClose));
-  
+  AddFunction(def, "initWindow", &initWindow, ValueType::Undefined,
+              CreateArgumentSignature({Argument(ValueType::Int, "w"),
+                                       Argument(ValueType::Int, "h"),
+                                       Argument(ValueType::String, "title")}));
+
+  AddFunction(def, "windowShouldClose", &windowShouldClose, ValueType::Bool);
+
   // Rendering utils.
+  AddFunction(def, "beginDrawing", &beginDrawing, ValueType::Undefined);
+  AddFunction(def, "endDrawing", &endDrawing, ValueType::Undefined);
   AddFunction(
-      def, NativeFunction::Create("beginDrawing", "undefined", &beginDrawing));
+      def, "loadModel", &loadModel, ValueType::Undefined,
+      CreateArgumentSignature({Argument(ValueType::String, "filename")}));
+  AddFunction(def, "drawModel", &drawModel, ValueType::Undefined,
+              CreateArgumentSignature({Argument(ValueType::Object, "model"),
+                                       Argument(ValueType::Object, "position"),
+                                       Argument(ValueType::Float, "scale"),
+                                       Argument(ValueType::Object, "tint")}));
+  AddFunction(def, "unloadModel", &unloadModel, ValueType::Undefined,
+              CreateArgumentSignature({Argument(ValueType::Object, "model")}));
   AddFunction(
-      def, NativeFunction::Create("endDrawing", "undefined", &endDrawing));
+      def, "loadShader", &loadShader, ValueType::Undefined,
+      CreateArgumentSignature({Argument(ValueType::String, "vsFileName"),
+                               Argument(ValueType::String, "fsFileName")}));
+  AddFunction(def, "unloadShader", &unloadShader, ValueType::Undefined,
+              CreateArgumentSignature({Argument(ValueType::Object, "shader")}));
   AddFunction(
-      def, NativeFunction::Create(
-               "loadModel", "undefined|err", &loadModel,
-               CreateArgumentSignature({Argument("string", "filename")})));
-  AddFunction(
-      def, NativeFunction::Create(
-               "drawModel", "undefined|err", &drawModel,
-               CreateArgumentSignature(
-                   {Argument("Model", "model"), Argument("Vector3", "position"),
-                    Argument("float", "scale"), Argument("Color", "tint")})));
-  AddFunction(
-      def, NativeFunction::Create(
-               "unloadModel", "undefined", &unloadModel,
-               CreateArgumentSignature({Argument("Model", "model")})));
-  AddFunction(
-      def, NativeFunction::Create(
-               "loadShader", "undefined|err", &loadShader,
-               CreateArgumentSignature({Argument("string", "vsFileName"),
-                                        Argument("string", "fsFileName")})));
-  AddFunction(
-      def, NativeFunction::Create(
-               "unloadShader", "undefined", &unloadShader,
-               CreateArgumentSignature({Argument("Shader", "shader")})));
-  AddFunction(
-      def, NativeFunction::Create(
-               "loadTexture", "undefined|err", &loadTexture,
-               CreateArgumentSignature({Argument("string", "fileName")})));
-  AddFunction(
-      def, NativeFunction::Create(
-               "drawTexture", "undefined|err", &drawTexture,
-               CreateArgumentSignature({Argument("Texture2D", "texture"),
-                                        Argument("Vector2", "position"),
-                                        Argument("Color", "tint")})));
+      def, "loadTexture", &loadTexture, ValueType::Undefined,
+      CreateArgumentSignature({Argument(ValueType::String, "fileName")}));
+  AddFunction(def, "drawTexture", &drawTexture, ValueType::Undefined,
+              CreateArgumentSignature({Argument(ValueType::Object, "texture"),
+                                       Argument(ValueType::Object, "position"),
+                                       Argument(ValueType::Object, "tint")}));
 
   // Rendering
-  AddFunction(
-      def, NativeFunction::Create(
-               "clearBackground", "undefined", &clearBackground,
-               CreateArgumentSignature({Argument("Color", "color")})));
-  AddFunction(
-      def, NativeFunction::Create(
-               "drawText", "undefined|err", &drawText,
-               CreateArgumentSignature(
-                   {Argument("string", "text"), Argument("int", "x"),
-                    Argument("int", "y"), Argument("int", "fontSize"),
-                    Argument("Color", "color")})));
-  AddFunction(
-      def, NativeFunction::Create(
-               "drawCircle", "undefined|err", &drawCircle,
-               CreateArgumentSignature(
-                   {Argument("int", "centerX"), Argument("int", "centerY"),
-                    Argument("float", "radius"), Argument("Color", "color")})));
-  AddFunction(
-      def, NativeFunction::Create(
-               "drawLine", "undefined|err", &drawLine,
-               CreateArgumentSignature(
-                   {Argument("int", "startX"), Argument("int", "startY"),
-                    Argument("int", "endX"), Argument("int", "endY"),
-                    Argument("Color", "color")})));
-  AddFunction(
-      def, NativeFunction::Create(
-               "drawTriangle", "undefined|err", &drawTriangle,
-               CreateArgumentSignature(
-                   {Argument("Vector2", "v1"), Argument("Vector2", "v2"),
-                    Argument("Vector2", "v3"), Argument("Color", "color")})));
-  AddFunction(
-      def, NativeFunction::Create(
-               "drawRectangle", "undefined|err", &drawRectangle,
-               CreateArgumentSignature(
-                   {Argument("int", "x"), Argument("int", "y"),
-                    Argument("int", "width"), Argument("int", "height"),
-                    Argument("Color", "color")})));
-  AddFunction(
-      def, NativeFunction::Create(
-               "drawRectangleLines", "undefined|err", &drawRectangleLines,
-               CreateArgumentSignature(
-                   {Argument("int", "x"), Argument("int", "y"),
-                    Argument("int", "width"), Argument("int", "height"),
-                    Argument("Color", "color")})));
+  AddFunction(def, "clearBackground", &clearBackground, ValueType::Undefined,
+              CreateArgumentSignature({Argument(ValueType::Object, "color")}));
+  AddFunction(def, "drawText", &drawText, ValueType::Undefined,
+              CreateArgumentSignature({Argument(ValueType::String, "text"),
+                                       Argument(ValueType::Int, "x"),
+                                       Argument(ValueType::Int, "y"),
+                                       Argument(ValueType::Int, "fontSize"),
+                                       Argument(ValueType::Object, "color")}));
+  AddFunction(def, "drawCircle", &drawCircle, ValueType::Undefined,
+              CreateArgumentSignature({Argument(ValueType::Int, "centerX"),
+                                       Argument(ValueType::Int, "centerY"),
+                                       Argument(ValueType::Float, "radius"),
+                                       Argument(ValueType::Object, "color")}));
+  AddFunction(def, "drawLine", &drawLine, ValueType::Undefined,
+              CreateArgumentSignature({Argument(ValueType::Int, "startX"),
+                                       Argument(ValueType::Int, "startY"),
+                                       Argument(ValueType::Int, "endX"),
+                                       Argument(ValueType::Int, "endY"),
+                                       Argument(ValueType::Object, "color")}));
+  AddFunction(def, "drawTriangle", &drawTriangle, ValueType::Undefined,
+              CreateArgumentSignature({Argument(ValueType::Object, "v1"),
+                                       Argument(ValueType::Object, "v2"),
+                                       Argument(ValueType::Object, "v3"),
+                                       Argument(ValueType::Object, "color")}));
+  AddFunction(def, "drawRectangle", &drawRectangle, ValueType::Undefined,
+              CreateArgumentSignature({Argument(ValueType::Int, "x"),
+                                       Argument(ValueType::Int, "y"),
+                                       Argument(ValueType::Int, "width"),
+                                       Argument(ValueType::Int, "height"),
+                                       Argument(ValueType::Object, "color")}));
+  AddFunction(def, "drawRectangleLines", &drawRectangleLines,
+              ValueType::Undefined,
+              CreateArgumentSignature({Argument(ValueType::Int, "x"),
+                                       Argument(ValueType::Int, "y"),
+                                       Argument(ValueType::Int, "width"),
+                                       Argument(ValueType::Int, "height"),
+                                       Argument(ValueType::Object, "color")}));
 
   // Input
-  AddFunction(def,
-                       NativeFunction::Create(
-                           "isKeyDown", "bool", &isKeyDown,
-                           CreateArgumentSignature({Argument("int", "key")})));
-  AddFunction(
-      def, NativeFunction::Create(
-               "isMouseButtonDown", "bool", &isMouseButtonDown,
-               CreateArgumentSignature({Argument("int", "button")})));
-  AddFunction(
-      def,
-      NativeFunction::Create("getMousePosition", "Vector2", &getMousePosition));
-      
-  AddFunction(
-      def,
-      NativeFunction::Create("setMousePosition", "undefined", &setMousePosition,
-                             CreateArgumentSignature({Argument("int", "x"),
-                                                      Argument("int", "y")})));
-                                                      
-  AddFunction(def, NativeFunction::Create("getMouseWheelMove", "float",
-                                                   &getMouseWheelMove));
-  AddFunction(
-      def, NativeFunction::Create("drawFPS", "undefined", &drawFPS));
+  AddFunction(def, "isKeyDown", &isKeyDown, ValueType::Bool,
+              CreateArgumentSignature({Argument(ValueType::Int, "key")}));
+  AddFunction(def, "isMouseButtonDown", &isMouseButtonDown, ValueType::Bool,
+              CreateArgumentSignature({Argument(ValueType::Int, "button")}));
+  AddFunction(def, "getMousePosition", &getMousePosition, ValueType::Object);
+  AddFunction(def, "setMousePosition", &setMousePosition, ValueType::Undefined,
+              CreateArgumentSignature({Argument(ValueType::Int, "x"),
+                                       Argument(ValueType::Int, "y")}));
+  AddFunction(def, "getMouseWheelMove", &getMouseWheelMove, ValueType::Float);
+  AddFunction(def, "drawFPS", &drawFPS, ValueType::Undefined);
+
   // keys enum
   Object keys = Ctx::CreateObject();
   for (const auto &[key, val] : GetKeysMap()) {

@@ -5,15 +5,22 @@
 #include <dlfcn.h>
 #include <stdexcept>
 #include <unordered_map>
+#include "value.hpp"
 
 std::unordered_map<std::string, NativeCallable>
     NativeFunctions::instantiatedCallables = {};
 
 
-extern "C" void AddFunction(ScritModDef *mod,
-                NativeFunction function) {
-  (*mod->functions).push_back(function);
+extern "C" void AddFunction(ScritModDef *mod, const string &name,
+                const NativeFunctionPtr &ptr, const ValueType retType, std::map<ValueType, string> args) {
+  (*mod->functions).push_back(NativeFunction::Create(name, ptr, retType, args));
 }
+extern "C" void AddFunctionNoInfo(ScritModDef *mod, const string &name,
+                const NativeFunctionPtr &ptr) {
+  (*mod->functions).push_back(NativeFunction::Create(name, ptr));
+}
+
+
 
 extern "C" void AddVariable(ScritModDef *mod, const std::string &name, Value value) {
   mod->context->Insert(name, value);
@@ -91,6 +98,21 @@ NativeFunctions::GetRegistry() {
 bool NativeFunctions::Exists(const std::string &name) {
   return GetRegistry().contains(name);
 }
-void RegisterFunction(const std::string &name, const NativeFunctionPtr &function, const std::string &returnType, const std::map<string, string> &arguments) {
-  NativeFunctions::GetRegistry()[name] = NativeFunction::Create(name, returnType, function, arguments);
+void RegisterFunction(const std::string &name, const NativeFunctionPtr &function, const ValueType returnType, const std::map<ValueType, string> &arguments) {
+  NativeFunctions::GetRegistry()[name] = NativeFunction::Create(name, function, returnType, arguments);
+}
+
+NativeFunction NativeFunction::Create(const std::string &name,
+                                      const NativeFunctionPtr &func) {
+  return {
+      .func = func,
+      .name = name,
+      .arguments = {},
+      .returnType = ValueType::Undefined,
+  };
+}
+NativeFunction NativeFunction::Create(const std::string &name, const NativeFunctionPtr &func,
+                       const ValueType returnType,
+                       const std::map<ValueType, std::string> &arguments) {
+  return {func, name, arguments, returnType};
 }

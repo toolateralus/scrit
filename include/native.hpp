@@ -10,6 +10,7 @@ struct Value_T;
 struct Object_T;
 struct NativeCallable_T;
 struct Context;
+enum struct ValueType;
 
 typedef std::shared_ptr<NativeCallable_T> NativeCallable;
 typedef std::shared_ptr<Value_T> Value;
@@ -19,26 +20,16 @@ typedef Value (*NativeFunctionPtr)(std::vector<Value>);
 struct NativeFunction {
   NativeFunctionPtr func;
   std::string name;
-  std::map<std::string, std::string> arguments;
-  std::string returnType;
+  std::map<ValueType, std::string> arguments;
+  ValueType returnType;
+
+  static NativeFunction Create(const std::string &name,
+                               const NativeFunctionPtr &func);
   
-  static NativeFunction Create(const std::string &name, const NativeFunctionPtr &func) {
-    return {
-      .func = func,
-      .name = name,
-      .arguments = {},
-      .returnType = "undefined",
-    };
-  }
-  
-  static NativeFunction Create(const std::string &name, const std::string &returnType, const NativeFunctionPtr &func, std::map<std::string,std::string> arguments = {}) {
-    return {
-      func,
-      name,
-      arguments,
-      returnType
-    };
-  }
+  static NativeFunction Create(const std::string &name,
+                               const NativeFunctionPtr &func,
+                               const ValueType returnType,
+                               const std::map<ValueType, std::string> &arguments = {});
 };
 
 extern "C" struct ScritModDef {
@@ -49,7 +40,12 @@ extern "C" struct ScritModDef {
 
 ScritModDef* CreateModDef();
 
-extern "C" void AddFunction(ScritModDef *mod, NativeFunction function);
+extern "C" void AddFunction(ScritModDef *mod, const std::string &name,
+                 const NativeFunctionPtr &ptr, const ValueType retType, std::map<ValueType, std::string> args = {});
+                
+extern "C" void AddFunctionNoInfo(ScritModDef *mod, const std::string &name,
+          const NativeFunctionPtr &ptr);
+          
 extern "C" void AddVariable(ScritModDef *mod, const std::string &name, Value value);
 
 Object ScritModDefAsObject(ScritModDef *mod);
@@ -65,14 +61,14 @@ struct NativeFunctions {
   static NativeCallable MakeCallable(const NativeFunction &fn);
 };
 
-void RegisterFunction(const std::string &name, const NativeFunctionPtr &function, const std::string &returnType, const std::map<std::string, std::string> &arguments);
+void RegisterFunction(const std::string &name, const NativeFunctionPtr &function, const ValueType returnType, const std::map<ValueType, std::string> &arguments);
 
-static std::pair<std::string, std::string> Argument(std::string &&type, std::string &&name) {
+static std::pair<ValueType, std::string> Argument(ValueType &&type, std::string &&name) {
   return std::make_pair(type, name);
 }
 
-static std::map<std::string, std::string> CreateArgumentSignature(std::initializer_list<std::pair<std::string, std::string>> args) {
-  std::map<std::string, std::string> signature;
+static std::map<ValueType, std::string> CreateArgumentSignature(std::initializer_list<std::pair<ValueType, std::string>> args) {
+  std::map<ValueType, std::string> signature;
   for (const auto& arg : args) {
     signature[arg.first] = arg.second;
   }

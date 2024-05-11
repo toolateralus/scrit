@@ -171,53 +171,21 @@ static Value exit(std::vector<Value> values) {
 extern "C" ScritModDef *InitScritModule_system() {
   ScritModDef *def = CreateModDef();
   *def->description = "system functions. file io, time, etc.";
-
-  AddFunction(def,
-              NativeFunction::Create(
-                  "fexists", "string", &fexists,
-                  CreateArgumentSignature({Argument("string", "filename")})));
-  AddFunction(def,
-              NativeFunction::Create(
-                  "fcreate", "string", &fcreate,
-                  CreateArgumentSignature({Argument("string", "filename")})));
-  AddFunction(def,
-              NativeFunction::Create(
-                  "fwrite", "string", &fwrite,
-                  CreateArgumentSignature({Argument("string", "filename"),
-                                           Argument("string", "content")})));
-  AddFunction(def,
-              NativeFunction::Create(
-                  "fread", "string", &fread,
-                  CreateArgumentSignature({Argument("string", "filename")})));
-  AddFunction(def,
-              NativeFunction::Create(
-                  "fdelete", "string", &fdelete,
-                  CreateArgumentSignature({Argument("string", "filename")})));
-  AddFunction(def, NativeFunction::Create("cwd", "string", &cwd,
-                                          CreateArgumentSignature({})));
-  AddFunction(def,
-              NativeFunction::Create(
-                  "dir_exists", "string", &dir_exists,
-                  CreateArgumentSignature({Argument("string", "dirname")})));
-  AddFunction(def,
-              NativeFunction::Create(
-                  "dir_create", "string", &dir_create,
-                  CreateArgumentSignature({Argument("string", "dirname")})));
-  AddFunction(def,
-              NativeFunction::Create(
-                  "dir_delete", "string", &dir_delete,
-                  CreateArgumentSignature({Argument("string", "dirname")})));
-  AddFunction(def,
-              NativeFunction::Create(
-                  "dir_getfiles", "string", &dir_getfiles,
-                  CreateArgumentSignature({Argument("string", "dirname")})));
-  AddFunction(def, NativeFunction::Create("time", "string", &time,
-                                          CreateArgumentSignature({})));
-  AddFunction(def, NativeFunction::Create(
-                       "syscall", "string", &syscall,
-                       CreateArgumentSignature({Argument("string", "cmd")})));
-  AddFunction(def, NativeFunction::Create("exit", "string", &exit,
-                                          CreateArgumentSignature({})));
+  
+  AddFunction(def, "fexists", &fexists, ValueType::String, CreateArgumentSignature({Argument(ValueType::String, "filename")}));
+  AddFunction(def, "fexists", &fexists, ValueType::String, CreateArgumentSignature({Argument(ValueType::String, "filename")}));
+  AddFunction(def, "fcreate", &fcreate, ValueType::String, CreateArgumentSignature({Argument(ValueType::String, "filename")}));
+  AddFunction(def, "fwrite", &fwrite, ValueType::String, CreateArgumentSignature({Argument(ValueType::String, "filename"), Argument(ValueType::String, "content")}));
+  AddFunction(def, "fread", &fread, ValueType::String, CreateArgumentSignature({Argument(ValueType::String, "filename")}));
+  AddFunction(def, "fdelete", &fdelete, ValueType::String, CreateArgumentSignature({Argument(ValueType::String, "filename")}));
+  AddFunction(def, "cwd", &cwd, ValueType::String, CreateArgumentSignature({}));
+  AddFunction(def, "dir_exists", &dir_exists, ValueType::String, CreateArgumentSignature({Argument(ValueType::String, "dirname")}));
+  AddFunction(def, "dir_create", &dir_create, ValueType::String, CreateArgumentSignature({Argument(ValueType::String, "dirname")}));
+  AddFunction(def, "dir_delete", &dir_delete, ValueType::String, CreateArgumentSignature({Argument(ValueType::String, "dirname")}));
+  AddFunction(def, "dir_getfiles", &dir_getfiles, ValueType::String, CreateArgumentSignature({Argument(ValueType::String, "dirname")}));
+  AddFunction(def, "time", &time, ValueType::String, CreateArgumentSignature({}));
+  AddFunction(def, "syscall", &syscall, ValueType::String, CreateArgumentSignature({Argument(ValueType::String, "cmd")}));
+  AddFunction(def, "exit", &exit, ValueType::String, CreateArgumentSignature({}));
 
   return def;
 }
