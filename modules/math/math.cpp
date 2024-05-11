@@ -1,4 +1,5 @@
 
+#include <scrit/native.hpp>
 #include <scrit/scritmod.hpp>
 #include <scrit/value.hpp>
 #include <cmath>
@@ -70,10 +71,10 @@ static Value sqrt(std::vector<Value> args) {
 extern "C" ScritModDef *InitScritModule_math() {
   ScritModDef *def = CreateModDef();
   *def->description = "basic math module.";
-  ScritMod_AddFunction(def, "toInt", &toInt);
-  ScritMod_AddFunction(def, "floor", &floor);
-  ScritMod_AddFunction(def, "round", &round);
-  ScritMod_AddFunction(def, "sqrt", &sqrt);
-  ScritMod_AddFunction(def, "toFloat", &toFloat);
+  AddFunction(def, NativeFunction::Create("toInt", &toInt));
+  AddFunction(def, NativeFunction::Create("floor", &floor));
+  AddFunction(def, NativeFunction::Create("round", &round));
+  AddFunction(def, NativeFunction::Create("sqrt", &sqrt));
+  AddFunction(def, NativeFunction::Create("toFloat", &toFloat));
   return def;
 }

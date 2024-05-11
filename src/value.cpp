@@ -89,8 +89,10 @@ Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
   ASTNode::context.PushScope();
   auto values = Call::GetArgsValueList(args);
   Value result;
-  if (function)
-    result = function(values);
+  
+  if (function.func)
+    result = function.func(values);
+  
   ASTNode::context.PopScope();
   if (result == nullptr) {
     return Undefined;
@@ -98,7 +100,7 @@ Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
     return result;
   }
 }
-NativeCallable_T::NativeCallable_T(NativeFunctionPtr ptr) : function(ptr) {
+NativeCallable_T::NativeCallable_T(const NativeFunction &function) : function(function) {
   
 }
 

@@ -10,12 +10,12 @@ std::unordered_map<std::string, NativeCallable>
     NativeFunctions::instantiatedCallables = {};
 
 
-extern "C" void ScritMod_AddFunction(ScritModDef *mod, const std::string &name,
-                NativeFunctionPtr function) {
-  (*mod->functions)[name]=function;
+extern "C" void AddFunction(ScritModDef *mod,
+                NativeFunction function) {
+  (*mod->functions).push_back(function);
 }
 
-extern "C" void ScritMod_AddVariable(ScritModDef *mod, const std::string &name, Value value) {
+extern "C" void AddVariable(ScritModDef *mod, const std::string &name, Value value) {
   mod->context->Insert(name, value);
 }
 
@@ -27,12 +27,12 @@ Object ScritModDefAsObject(ScritModDef *mod) {
 
 void m_InstantiateCallables(ScritModDef *module) {
   auto context = module->context;
-  for (const auto &[name, func] : *module->functions) {
-    context->Insert(name, NativeFunctions::MakeCallable(func));
+  for (const auto &func : *module->functions) {
+    context->Insert(func.name, NativeFunctions::MakeCallable(func));
   }
 }
 
-NativeCallable NativeFunctions::MakeCallable(const NativeFunctionPtr fn) {
+NativeCallable NativeFunctions::MakeCallable(const NativeFunction &fn) {
   return make_shared<NativeCallable_T>(fn);
 }
 
@@ -80,18 +80,17 @@ ScritModDef* CreateModDef() {
   ScritModDef *mod = (ScritModDef*)malloc(sizeof(ScritModDef));
   mod->context = new Context(); 
   mod->description = new string();
-  mod->functions = new std::unordered_map<string, NativeFunctionPtr>();  
+  mod->functions = new std::vector<NativeFunction>();
   return mod;
 }
-std::unordered_map<std::string, NativeFunctionPtr> &
+std::unordered_map<std::string, NativeFunction> &
 NativeFunctions::GetRegistry() {
-  static std::unordered_map<std::string, NativeFunctionPtr> reg;
+  static std::unordered_map<std::string, NativeFunction> reg;
   return reg;
 }
 bool NativeFunctions::Exists(const std::string &name) {
   return GetRegistry().contains(name);
 }
-void RegisterFunction(const std::string &name,
-                             NativeFunctionPtr function) {
-  NativeFunctions::GetRegistry()[name] = function;
+void RegisterFunction(const std::string &name, const NativeFunctionPtr &function, const std::string &returnType, const std::map<string, string> &arguments) {
+  NativeFunctions::GetRegistry()[name] = NativeFunction::Create(name, returnType, function, arguments);
 }

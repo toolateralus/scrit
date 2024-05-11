@@ -16,7 +16,7 @@ func cppBoilerplate(name) {
     extern \"C\" ScritModDef* InitScritModule_" + name + "() {
       ScritModDef *def = CreateModDef();
       *def->description = \"your description here\";
-      ScritMod_AddFunction(def, \"doSomething\", &doSomething);
+      AddFunction(def, \"doSomething\", &doSomething);
       return def;
     }"
 }

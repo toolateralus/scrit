@@ -7,20 +7,20 @@
 #pragma clang diagnostic ignored "-Wunused-parameter"
 
 
-REGISTER_FUNCTION(println) {
+REGISTER_FUNCTION(println, "undefined", CreateArgumentSignature({Argument("varargs", "any")})) {
   for (const auto &arg: args) {
     printf("%s\n", arg->ToString().c_str());;
   }
   return Value_T::Undefined;
 }
 
-REGISTER_FUNCTION(readln) {
+REGISTER_FUNCTION(readln, "string", CreateArgumentSignature({Argument("none", "none")})) {
   string input;
   std::cin >> input;
   return String_T::New(input);
 }
 
-REGISTER_FUNCTION(push) {
+REGISTER_FUNCTION(push, "undefined", CreateArgumentSignature({Argument("array", "target"), Argument("varargs", "elementsToAdd")})) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
@@ -33,8 +33,7 @@ REGISTER_FUNCTION(push) {
   }
   return Value_T::Undefined;
 }
-
-REGISTER_FUNCTION(pop) {
+REGISTER_FUNCTION(pop, "elementType", CreateArgumentSignature({Argument("array", "target")})) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
@@ -45,7 +44,7 @@ REGISTER_FUNCTION(pop) {
   return array->Pop();
 }
 
-REGISTER_FUNCTION(len) {
+REGISTER_FUNCTION(len, "int", CreateArgumentSignature({Argument("array|string", "target")})) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
@@ -56,7 +55,7 @@ REGISTER_FUNCTION(len) {
   return Int_T::New(array->values.size());
 }
 
-REGISTER_FUNCTION(typeof) {
+REGISTER_FUNCTION(typeof, "string", CreateArgumentSignature({Argument("value", "target")})) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
@@ -64,14 +63,14 @@ REGISTER_FUNCTION(typeof) {
   return Ctx::CreateString(TypeToString(args[0]->GetType()));
 }
 
-REGISTER_FUNCTION(tostr) {
+REGISTER_FUNCTION(tostr, "string", CreateArgumentSignature({Argument("value", "target")})) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
   return Ctx::CreateString(args[0]->ToString());
 }
 
-REGISTER_FUNCTION(serialize) {
+REGISTER_FUNCTION(serialize, "string", CreateArgumentSignature({Argument("value", "target"), Argument("settings", "object")})) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
