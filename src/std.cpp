@@ -4,6 +4,9 @@
 #include <iostream>
 #include "context.hpp"
 
+#pragma clang diagnostic ignored "-Wunused-parameter"
+
+
 REGISTER_FUNCTION(println) {
   for (const auto &arg: args) {
     printf("%s\n", arg->ToString().c_str());;
@@ -58,39 +61,7 @@ REGISTER_FUNCTION(typeof) {
     return Value_T::Undefined;
   }
   string typeName;
-  switch(args[0]->GetType()) {
-  case ValueType::Invalid:
-    typeName = "invalid";
-    break;
-  case ValueType::Null:
-    typeName = "null";
-    break;
-  case ValueType::Undefined:
-    typeName = "undefined";
-    break;
-  case ValueType::Float:
-    typeName = "float";
-    break;
-  case ValueType::Int:
-    typeName = "int";
-    break;
-  case ValueType::Bool:
-    typeName = "bool";
-    break;
-  case ValueType::String:
-    typeName = "string";
-    break;
-  case ValueType::Object:
-    typeName = "object";
-    break;
-  case ValueType::Array:
-    typeName = "array";
-    break;
-  case ValueType::Callable:
-    typeName = "callable";
-    break;
-  }
-  return Ctx::CreateString(typeName);
+  return Ctx::CreateString(TypeToString(args[0]->GetType()));
 }
 
 REGISTER_FUNCTION(tostr) {

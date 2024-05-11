@@ -12,14 +12,14 @@ void InsertCmdLineArgs(int argc, char **argv) {
   // create an 'args' array in language.
   Array args = Array_T::New();
   if (argc > 2) {
-    for (int i = 2; i < argc; ++i) {
+    for (size_t i = 2; i < (size_t)argc; ++i) {
       auto str = string(argv[i]);
-      static const string breakpointKey = "breakpoint:";
+      static const string breakpointKey = "br:";
       if (str.length() > breakpointKey.length() &&
           str.substr(0, breakpointKey.length()) == breakpointKey) {
         string num = "";
-        for (int i = breakpointKey.length(); i < str.length(); ++i) {
-          num += str[i];
+        for (size_t j = breakpointKey.length(); j < str.length(); ++j) {
+          num += str[j];
         }
         int index = std::stoi(num);
         Debug::InsertBreakpoint(index, false);

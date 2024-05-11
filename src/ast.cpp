@@ -176,7 +176,7 @@ CompAssignExpr::CompAssignExpr(SourceInfo &info,
 ExecutionResult Program::Execute() {
   int index = 0;
   for (auto &statement : statements) {
-    Debug::WaitForBreakpoint(this, statement.get(), index);
+    Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
       auto result = statement->Execute();
       switch (result.controlChange) {
@@ -228,7 +228,7 @@ ExecutionResult Block::Execute() {
   scope = ASTNode::context.PushScope();
   int index = 0;
   for (auto &statement : statements) {
-    Debug::WaitForBreakpoint(this, statement.get(), index);
+    Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
       auto result = statement->Execute();
       switch (result.controlChange) {

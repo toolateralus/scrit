@@ -12,9 +12,8 @@ auto Debug::requestedStep = StepKind::None;
 ASTNode *Debug::lastNode = nullptr;
 int Debug::stepOutIndex = -1;
 
-void Debug::WaitForBreakpoint(ASTNode *owner, ASTNode *node,
-                              const int &statementIndex) {
-  static const string breakpointKey = "breakpoint:";
+void Debug::m_hangUpOnBreakpoint(ASTNode *owner, ASTNode *node) {
+  static const string breakpointKey = "br:";
   
   if (lastNode == nullptr)
     m_getInfo(owner, node);
@@ -49,23 +48,23 @@ void Debug::WaitForBreakpoint(ASTNode *owner, ASTNode *node,
     if (select(1, &set, NULL, NULL, &timeout) > 0) {
       std::string line;
       if (std::getline(std::cin, line)) {
-        if (line == "over") {
+        if (line == "over" || line == "ov") {
           StepOver();
           break;
-        } else if (line == "in") {
+        } else if (line == "in" || line == "i") {
           StepIn();
           break;
-        } else if (line == "out") {
+        } else if (line == "out" || line == "o") {
           StepOut();
           break;
         } else if (line.length() > breakpointKey.length() &&
                    line.substr(0, breakpointKey.length()) == breakpointKey) {
           m_setBreakpoint(line, breakpointKey);
           continue;
-        } else if (line == "continue") {
+        } else if (line == "continue" || line == "c") {
           Continue();
           break;
-        } else if (line == "inspect") {
+        } else if (line == "inspect" || line == "s") {
           m_printScope();
         }
       }
@@ -77,7 +76,7 @@ void Debug::WaitForBreakpoint(ASTNode *owner, ASTNode *node,
     m_stepOver(owner, node);
     break;
   case StepKind::In:
-    m_stepIn(owner, node, statementIndex);
+    m_stepIn(owner, node);
     break;
   case StepKind::Out:
     m_stepOut();
@@ -90,7 +89,7 @@ void Debug::WaitForBreakpoint(ASTNode *owner, ASTNode *node,
 void Debug::RemoveBreakpoint(const int &loc, const bool isTemporary) {
   breakpoints.erase(std::remove_if(breakpoints.begin(), breakpoints.end(),
                                    [loc, isTemporary](Breakpoint breakpoint) {
-                                     return breakpoint.loc == loc && breakpoint.isTemporary;
+                                     return breakpoint.loc == loc && breakpoint.isTemporary == isTemporary;
                                    }),
                     breakpoints.end());
 }
@@ -100,7 +99,7 @@ void Debug::InsertBreakpoint(const int &loc, const bool isTemporary = false) {
 
 void Debug::m_setBreakpoint(std::string &line, const string &breakpointKey) {
   string num = "";
-  for (int i = breakpointKey.length(); i < line.length(); ++i) {
+  for (size_t i = breakpointKey.length(); i < line.length(); ++i) {
     num += line[i];
   }
   int index = std::stoi(num);
@@ -153,20 +152,21 @@ void Debug::m_stepOut() {
     }
   }
 
-  if (statements != nullptr && stepOutIndex < statements->size()) {
+  if (statements != nullptr && (size_t)stepOutIndex < statements->size()) {
     auto &statement = (*statements)[stepOutIndex];
     InsertBreakpoint(statement->srcInfo.loc, true);
   }
 }
 void Debug::m_getInfo(ASTNode *&owner, ASTNode *&node) {
   lastNode = owner;
-  vector<StatementPtr> *statements;
+  vector<StatementPtr> *statements = nullptr;
   if (auto fnCall = dynamic_cast<Call *>(owner)) {
     auto callable =
         static_cast<Callable_T *>(fnCall->operand->Evaluate().get());
     if (auto native =
             dynamic_cast<NativeCallable_T *>(fnCall->operand->Evaluate().get());
         native != nullptr) {
+          return;
     } else {
       statements = &callable->block.get()->statements;
     }
@@ -184,8 +184,8 @@ void Debug::m_getInfo(ASTNode *&owner, ASTNode *&node) {
     statements = &block->statements;
   } else if (auto program = dynamic_cast<Program *>(owner)) {
     statements = &program->statements;
-  }
-
+  } 
+  
   if (statements) {
     int i = 0;
     for (const auto &statement : *statements) {
@@ -200,7 +200,7 @@ void Debug::m_getInfo(ASTNode *&owner, ASTNode *&node) {
     lastNode = nullptr;
   }
 }
-void Debug::m_stepIn(ASTNode *&owner, ASTNode *&node, const int &index) {
+void Debug::m_stepIn(ASTNode *&owner, ASTNode *&node) {
   Block *blockPtr;
   
   m_getInfo(owner, node);
@@ -229,6 +229,8 @@ void Debug::m_stepIn(ASTNode *&owner, ASTNode *&node, const int &index) {
       blockPtr = rangeFor->block.get();
     } else if (auto objInit = dynamic_cast<ObjectInitializer *>(node)) {
       blockPtr = objInit->block.get();
+    } else {
+      throw std::runtime_error("invalid step in");
     }
 
     if (!blockPtr) {

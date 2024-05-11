@@ -78,24 +78,6 @@ void Array_T::Assign(Int index, Value value) {
   values[idx] = value;
 }
 
-string Object_T::ToString() const {
-  return Writer::ToString(this, {});
-}
-string Callable_T::ToString() const {
-  std::stringstream ss = {};
-  ss << "callable(";
-  for (const auto &name : params->names) {
-    ss << name;
-    if (name != params->names.back()) {
-      ss << ", ";
-    }
-  }
-  ss << ")";
-  return ss.str();
-}
-string Array_T::ToString() const {
-  return Writer::ToString(this, {});
-}
 Array Array_T::New(vector<ExpressionPtr> &&init) {
   return make_shared<Array_T>(std::move(init));
 }
@@ -119,19 +101,8 @@ Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
 NativeCallable_T::NativeCallable_T(NativeFunctionPtr ptr) : function(ptr) {
   
 }
-Callable_T::~Callable_T() {}
-string NativeCallable_T::ToString() const {
-  stringstream ss = {};
-  ss << "native_callable()";
-  return ss.str();
-}
 
-bool Int_T::Equals(Value value) {
-  if (value->GetType() == ValueType::Int) {
-    return static_cast<Int_T *>(value.get())->value == this->value;
-  }
-  return false;
-};
+
 Value Int_T::Add(Value other) {
   if (other->GetType() == ValueType::Int) {
     auto i = Int_T::New(this->value +
@@ -184,6 +155,9 @@ Value Int_T::Divide(Value other) {
 void Int_T::Set(Value newValue) {
   if (newValue->GetType() == ValueType::Int) {
     this->value = static_cast<Int_T *>(newValue.get())->value;
+  }
+  if (newValue->GetType() == ValueType::Float) {
+    this->value = static_cast<Float_T*>(newValue.get())->value;
   }
 }
 Bool Int_T::Or(Value other) {
@@ -259,18 +233,7 @@ Bool Int_T::LessEquals(Value other) {
   return False;
 }
 Value Int_T::Negate() { return Int_T::New(-value); }
-string Int_T::ToString() const { return std::to_string(value); }
 
-bool Float_T::Equals(Value value) {
-  if (value->GetType() == ValueType::Float) {
-    return static_cast<Float_T *>(value.get())->value == this->value;
-  }
-  if (value->GetType() == ValueType::Float) {
-    auto i = this->value == static_cast<Float_T *>(value.get())->value;
-    return i;
-  }
-  return false;
-}
 
 Value Float_T::Add(Value other) {
   if (other->GetType() == ValueType::Float) {
@@ -323,6 +286,9 @@ Value Float_T::Divide(Value other) {
 void Float_T::Set(Value newValue) {
   if (newValue->GetType() == ValueType::Float) {
     this->value = static_cast<Float_T *>(newValue.get())->value;
+  }
+  if (newValue->GetType() == ValueType::Int) {
+    this->value = static_cast<Int_T*>(newValue.get())->value;
   }
 }
 Bool Float_T::Or(Value other) {
@@ -398,15 +364,8 @@ Bool Float_T::LessEquals(Value other) {
   return False;
 }
 Value Float_T::Negate() { return Float_T::New(-value); }
-string Float_T::ToString() const { return std::to_string(value); }
 
 
-bool String_T::Equals(Value value) {
-  if (value->GetType() == ValueType::String) {
-    return static_cast<String_T *>(value.get())->value == this->value;
-  }
-  return false;
-}
 Value String_T::Add(Value other) {
   return String_T::New(value + other->ToString());
 }
@@ -415,14 +374,7 @@ void String_T::Set(Value newValue) {
     this->value = static_cast<String_T *>(newValue.get())->value;
   }
 }
-string String_T::ToString() const { return value; }
 
-bool Bool_T::Equals(Value value) {
-  if (value->GetType() == ValueType::Bool) {
-    return static_cast<Bool_T *>(value.get())->value == this->value;
-  }
-  return false;
-}
 Bool Bool_T::Or(Value other) {
   if (other->GetType() == ValueType::Bool) {
     return Bool_T::New(this->value ||
@@ -442,8 +394,39 @@ void Bool_T::Set(Value newValue) {
   if (newValue->GetType() == ValueType::Bool) {
     this->value = static_cast<Bool_T *>(newValue.get())->value;
   }
+  if (newValue->GetType() == ValueType::Int) {
+    this->value = (bool)static_cast<Int_T *>(newValue.get());
+  }
 }
 
+string Object_T::ToString() const {
+  return Writer::ToString(this, {});
+}
+string Callable_T::ToString() const {
+  std::stringstream ss = {};
+  ss << "callable(";
+  for (const auto &name : params->names) {
+    ss << name;
+    if (name != params->names.back()) {
+      ss << ", ";
+    }
+  }
+  ss << ")";
+  return ss.str();
+}
+string Array_T::ToString() const {
+  return Writer::ToString(this, {});
+}
+string NativeCallable_T::ToString() const {
+  stringstream ss = {};
+  ss << "native_callable()";
+  return ss.str();
+}
+
+string Float_T::ToString() const { return std::to_string(value); }
+string Int_T::ToString() const { return std::to_string(value); }
+
+string String_T::ToString() const { return value; }
 
 string Bool_T::ToString() const { 
   static string TRUE = "true";
@@ -459,10 +442,37 @@ string Null_T::ToString() const {
   return null; 
 }
 
-
+bool Int_T::Equals(Value value) {
+  if (value->GetType() == ValueType::Int) {
+    return static_cast<Int_T *>(value.get())->value == this->value;
+  }
+  return false;
+};
+bool String_T::Equals(Value value) {
+  if (value->GetType() == ValueType::String) {
+    return static_cast<String_T *>(value.get())->value == this->value;
+  }
+  return false;
+}
 Array Array_T::New(vector<Value> &values) {
   auto array = make_shared<Array_T>(values);
   return array;
+}
+bool Float_T::Equals(Value value) {
+  if (value->GetType() == ValueType::Float) {
+    return static_cast<Float_T *>(value.get())->value == this->value;
+  }
+  if (value->GetType() == ValueType::Float) {
+    auto i = this->value == static_cast<Float_T *>(value.get())->value;
+    return i;
+  }
+  return false;
+}
+bool Bool_T::Equals(Value value) {
+  if (value->GetType() == ValueType::Bool) {
+    return static_cast<Bool_T *>(value.get())->value == this->value;
+  }
+  return false;
 }
 bool Array_T::Equals(Value value) { return value.get() == this; }
 bool NativeCallable_T::Equals(Value value) { return value.get() == this; }
@@ -474,6 +484,96 @@ bool Undefined_T::Equals(Value value) {
 bool Null_T::Equals(Value value) {
   return value == Value_T::Null || value->GetType() == ValueType::Null;
 }
+
+Value Value_T::Subscript(Value) { return Undefined; }
+Value String_T::Subscript(Value key) {
+  int index;
+  if (!Ctx::TryGetInt(key, index) || (size_t)index > value.length()) {
+    return Undefined;
+  }
+  return Ctx::CreateString(std::string() + this->value[index]);
+}
+
+Value Value_T::SubscriptAssign(Value, Value) {
+  return Undefined;
+}
+Value String_T::SubscriptAssign(Value key, Value value) {
+  int idx;
+  string string;
+  if (Ctx::TryGetInt(key, idx) && Ctx::TryGetString(value, string)) {
+    if (string.length() == 0) {
+      this->value[idx] = string[0];
+    } else {
+      this->value.insert(idx, string);
+    }
+  }
+  return Undefined;
+}
+Value Object_T::Subscript(Value key) {
+  string strKey;
+  if (Ctx::TryGetString(key, strKey)) {
+    return GetMember(strKey);
+  }
+
+  return Undefined;
+}
+
+Value Object_T::SubscriptAssign(Value key, Value value) {
+  string strKey;
+  int idx;
+  if (Ctx::TryGetString(key, strKey)) {
+    scope->variables[strKey] = value;
+  } else if (Ctx::TryGetInt(key, idx)) {
+    auto it = scope->variables.begin();
+    std::advance(it, idx);
+    if (it != scope->variables.end()) {
+      it->second = value;
+    }
+  }
+  return Undefined;
+}
+Value Array_T::Subscript(Value key) {
+  int index;
+  if (!Ctx::TryGetInt(key, index) || (size_t)index > values.size()) {
+    return Undefined;
+  }
+  return values[index];
+}
+Value Array_T::SubscriptAssign(Value key, Value value) {
+  int idx;
+  if (Ctx::TryGetInt(key, idx)) {
+    values[idx] = value;
+  }
+  return Undefined;
+}
+
+string TypeToString(ValueType type) {
+  switch (type) {
+  case ValueType::Invalid:
+    return "invalid";
+  case ValueType::Null:
+    return "null";
+  case ValueType::Undefined:
+    return "undefined";
+  case ValueType::Float:
+    return "float";
+  case ValueType::Int:
+    return "int";
+  case ValueType::Bool:
+    return "bool";
+  case ValueType::String:
+    return "string";
+  case ValueType::Object:
+    return "object";
+  case ValueType::Array:
+    return "array";
+  case ValueType::Callable:
+    return "callable";
+  }
+  return "";
+}
+
+
 Float_T::Float_T(float value) {
   this->value = value;
 }
@@ -489,18 +589,18 @@ Callable_T::Callable_T(BlockPtr&& block, ParametersPtr &&params) :  block(std::m
 String_T::String_T(const string &value) {
   this->value = value;
 }
-
 Callable_T::Callable_T() {}
 Int_T::Int_T(int value){ this->value = value; }
-
 Null_T::Null_T() {}
 Undefined_T::Undefined_T()  {}
 Bool_T::Bool_T(bool value) { this->value = value; }
-
 Array_T::Array_T(vector<Value> init)  {
   this->values = init;
 }
 Object_T::Object_T(Scope scope) { this->scope = scope; }
+Callable_T::~Callable_T() {}
+
+
 Bool Ctx::CreateBool(const bool value) { return Bool_T::New(value); }
 String Ctx::CreateString(const string value) {
   return String_T::New(value);
@@ -513,7 +613,6 @@ Object Ctx::CreateObject(Scope scope) { return Object_T::New(scope); }
 Array Ctx::CreateArray(vector<Value> values) {
   return Array_T::New(values);
 }
-
 
 bool Ctx::TryGetArray(Value value, Array &result) {
   if (value->GetType() == ValueType::Array) {
@@ -559,64 +658,3 @@ bool Ctx::TryGetString(Value value, string &result) {
 }
 bool Ctx::IsUndefined(Value value) { return value->Equals(Value_T::Undefined); }
 bool Ctx::IsNull(Value value) { return value->Equals(Value_T::Null); }
-Value Value_T::Subscript(Value key) { return Undefined; }
-Value String_T::Subscript(Value key) {
-  int index;
-  if (!Ctx::TryGetInt(key, index) || index > value.length()) {
-    return Undefined;
-  }
-  return Ctx::CreateString(std::string() + this->value[index]);
-}
-
-Value Value_T::SubscriptAssign(Value key, Value value) {
-  return Undefined;
-}
-Value String_T::SubscriptAssign(Value key, Value value) {
-  int idx;
-  string string;
-  if (Ctx::TryGetInt(key, idx) && Ctx::TryGetString(value, string)) {
-    if (string.length() == 0) {
-      this->value[idx] = string[0];
-    } else {
-      this->value.insert(idx, string);
-    }
-  }
-  return Undefined;
-}
-Value Object_T::Subscript(Value key) {
-  string strKey;
-  if (Ctx::TryGetString(key, strKey)) {
-    return GetMember(strKey);
-  }
-
-  return Undefined;
-}
-
-Value Object_T::SubscriptAssign(Value key, Value value) {
-  string strKey;
-  int idx;
-  if (Ctx::TryGetString(key, strKey)) {
-    scope->variables[strKey] = value;
-  } else if (Ctx::TryGetInt(key, idx)) {
-    auto it = scope->variables.begin();
-    std::advance(it, idx);
-    if (it != scope->variables.end()) {
-      it->second = value;
-    }
-  }
-  return Undefined;
-}
-Value Array_T::Subscript(Value key) {
-  int index;
-  if (!Ctx::TryGetInt(key, index) || index > values.size()) {
-    return Undefined;
-  }
-  return values[index];
-}
-Value Array_T::SubscriptAssign(Value key, Value value) {
-  int idx;
-  if (Ctx::TryGetInt(key, idx)) {
-    values[idx] = value;
-  }
-  return Undefined;
-}
