@@ -16,7 +16,43 @@
 - ++ and --
   
 ## free functions 
-  `func funcName() {}`
+
+parameterless
+  
+`func funcName() {}`
+  
+  
+parameterized function
+```
+func funcName(param, param1) {
+  println(param, param1)
+}
+```
+
+
+default values; 
+```
+func funcName(param = {}, param1 = [], param2 = SomeConstructorFunction()) {
+  println(param, param1, param2)
+} 
+
+// then if we call
+
+funcName()
+// it will print the default values, otherwise if we called
+
+funcName(0,1,2) 
+// it would print 0, 1 and 2 because we provided those arguments.
+
+
+funcName(undefined, undefined, 2)
+// would still print 
+// undefined, undefined, 2
+// because values were provided.
+
+```
+
+  
 ## anonymous function
 ```
 // this executes in place.
