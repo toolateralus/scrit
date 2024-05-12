@@ -23,10 +23,19 @@ Value Callable_T::Call(ArgumentsPtr &args) {
   
   auto scope = ASTNode::context.PushScope();
   auto values = Call::GetArgsValueList(args);
-  for (size_t i = 0; i < params->names.size(); ++i) {
-    if (i < values.size()) 
-      scope->variables[params->names[i]] = values[i];
+  
+  int i = 0;
+  for (const auto& [key, value] : params->map) {
+    if (i < values.size()) {
+      scope->variables[key] = values[i];
+    } else if (value != nullptr) {
+      scope->variables[key] = value;
+    } else {
+      break;
+    }
+    i++;
   }
+  
   auto result = block->Execute();
   
   ASTNode::context.PopScope();
@@ -407,11 +416,13 @@ string Object_T::ToString() const {
 string Callable_T::ToString() const {
   std::stringstream ss = {};
   ss << "callable(";
-  for (const auto &name : params->names) {
+  int i = 0;
+  for (const auto &[name,value] : params->map) {
     ss << name;
-    if (name != params->names.back()) {
+    if (i != params->map.size()) {
       ss << ", ";
     }
+    i++;
   }
   ss << ")";
   return ss.str();

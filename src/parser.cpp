@@ -442,19 +442,25 @@ OperandPtr Parser::ParseArrayInitializer() {
 ParametersPtr Parser::ParseParameters() {
   Expect(TType::LParen);
   auto next = Peek();
-  vector<string> values = {};
+  std::map<string, Value> params = {};
   while (tokens.size() > 0 && next.type != TType::RParen) {
     auto value = ParseOperand();
     if (auto iden = dynamic_cast<Identifier *>(value.get())) {
-      values.push_back(std::move(iden->name));
+      params[iden->name] = nullptr;
+      if (Peek().type == TType::Assign) {
+        Eat();
+        auto value = ParseExpression();
+        params[iden->name] = value->Evaluate();
+      }
     }
+  
     if (Peek().type == TType::Comma) {
       Eat();
     }
     next = Peek();
   }
   Expect(TType::RParen);
-  return make_unique<Parameters>(info,  std::move(values));
+  return make_unique<Parameters>(info,  std::move(params));
 }
 ArgumentsPtr Parser::ParseArguments() {
   Expect(TType::LParen);

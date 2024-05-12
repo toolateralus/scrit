@@ -101,8 +101,8 @@ struct Arguments : Expression {
   Value Evaluate() override;
 };
 struct Parameters : Statement {
-  vector<string> names;
-  Parameters(SourceInfo &info, vector<string> &&names);
+  std::map<string, Value> map;
+  Parameters(SourceInfo &info, std::map<string, Value> &&params);
   ExecutionResult Execute() override;
 };
 struct Continue : Statement {

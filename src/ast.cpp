@@ -45,8 +45,8 @@ If::If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block) : Statemen
 Arguments::Arguments(SourceInfo &info, vector<ExpressionPtr> &&args) : Expression(info) {
   this->values = std::move(args);
 }
-Parameters::Parameters(SourceInfo &info, vector<string> &&names) : Statement(info) {
-  this->names = std::move(names);
+Parameters::Parameters(SourceInfo &info,std::map<string, Value> &&params) : Statement(info) {
+  this->map = std::move(params);
 }
 Identifier::Identifier(SourceInfo &info, string &name) : Expression(info) {
   this->name = name;
