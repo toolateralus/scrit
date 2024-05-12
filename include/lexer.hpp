@@ -93,7 +93,8 @@ enum class TType {
   Continue,
   Return,
   Import,
-  From
+  From,
+  Use,
 };
 struct SourceInfo;
 struct Token {

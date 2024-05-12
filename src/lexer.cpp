@@ -226,7 +226,7 @@ Lexer::Lexer() {
       {"else", TType::Else},           {"false", TType::False},
       {"true", TType::True},           {"null", TType::Null},
       {"undefined", TType::Undefined}, {"import", TType::Import},
-      {"from", TType::From},
+      {"from", TType::From}, {"use", TType::Use},
   };
   loc = 1;
 }
@@ -290,6 +290,8 @@ string TTypeToString(const TType &type) {
     return "Continue";
   case TType::Return:
     return "Return";
+  case TType::Use:
+    return "Use";
   case TType::AddEq:
     return "AddEq";
   case TType::SubEq:
@@ -359,3 +361,4 @@ bool IsCompoundAssignmentOperator(const TType &type) {
   return type == TType::AddEq || type == TType::SubEq || type == TType::MulEq ||
          type == TType::DivEq || type == TType::NullCoalescingEq;
 }
+
