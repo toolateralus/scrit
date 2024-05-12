@@ -75,6 +75,61 @@ o = {
   }
 }
 ```
+
+## Null coalescing
+
+if you want to assign an object that may be null or undefined only when it is null or undefined you may use `??=`
+
+```
+myObject = { someThing = 20 }
+
+myObject ??= { somethingElse = 10}
+
+println(myObject) 
+
+// this will print
+// { someThing = 20 }
+// because myObject was not null or undefined when ??= was used
+
+
+myObject = undefined
+
+
+myObject ??=  {
+  
+}
+
+println(myObject)
+
+// this will print
+// {}
+// because myObject was null or undefined (undefined in this case)
+// when ??= was used.
+
+```
+
+for within expressions, you may use the same logic, but with `??`
+
+```
+
+myValue = undefined ?? 10
+
+println(myValue)
+
+// this will print 10 because the lhs was undefined
+
+
+myValue = 10
+
+myOtherValue = myValue ?? 200
+
+println(myValue)
+
+// this will print 10 because the lhs was not null or undefined when ?? was used.
+
+```
+
+
 ## imports & modules
 
 ### import a module as an object
