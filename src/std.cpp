@@ -24,6 +24,18 @@ REGISTER_FUNCTION(push, ValueType::Undefined, CreateArgumentSignature({Argument(
   if (args.empty()) {
     return Value_T::Undefined;
   }
+  
+  string value;
+  if (Ctx::TryGetString(args[0], value)) {
+    for (size_t i = 1; i < args.size(); i++) {
+      string arg;
+      if (Ctx::TryGetString(args[i], arg)) {
+        value += arg;
+      }
+    }
+    return Ctx::CreateString(value);
+  }
+  
   if (args[0]->GetType() != ValueType::Array) {
     return Value_T::Undefined;
   }

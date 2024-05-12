@@ -585,24 +585,58 @@ ExecutionResult CompoundAssignment::Execute() {
 
 Value CompAssignExpr::Evaluate() {
   auto lvalue = left->Evaluate();
+  
+  auto iden = dynamic_cast<Identifier *>(left.get());
+  
   auto rvalue = right->Evaluate();
   switch (op) {
-  case TType::AddEq:
-    lvalue->Set(lvalue->Add(rvalue));
+  case TType::AddEq: {
+    auto result = lvalue->Add(rvalue);
+    if (iden) {
+      context.Insert(iden->name, result);
+    } else {
+      lvalue->Set(result);
+    }
     return lvalue;
-    break;
-  case TType::DivEq:
-    lvalue->Set(lvalue->Divide(rvalue));
+  } 
+  case TType::DivEq: {
+    auto result = lvalue->Divide(rvalue);
+    if (iden) {
+      context.Insert(iden->name, result);      
+    } else {
+      lvalue->Set(result);
+    }
     return lvalue;
-    break;
-  case TType::SubEq:
-    lvalue->Set(lvalue->Subtract(rvalue));
+  }
+  case TType::SubEq: {
+    auto result = lvalue->Subtract(rvalue);
+    if (iden) {
+      context.Insert(iden->name, result);      
+    } else {
+      lvalue->Set(result);
+    }
     return lvalue;
-    break;
-  case TType::MulEq:
-    lvalue->Set(lvalue->Multiply(rvalue));
+  }
+  case TType::MulEq: {
+    auto result = lvalue->Multiply(rvalue);
+    if (iden) {
+      context.Insert(iden->name, result);      
+    } else {
+      lvalue->Set(result);
+    }
     return lvalue;
-    break;
+  }
+  case TType::NullCoalescingEq: {
+    if (lvalue->GetType() == ValueType::Undefined || lvalue->GetType() == ValueType::Null) {
+      auto result = rvalue;
+      if (iden) {
+        context.Insert(iden->name, rvalue);
+      } else {
+        lvalue->Set(rvalue);
+      }
+    }
+    return lvalue;
+  }
   default:
     throw std::runtime_error("invalid operator : " + TTypeToString(op) +
                              " in compound assignment statement");

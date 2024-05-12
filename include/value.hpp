@@ -77,7 +77,7 @@ struct Value_T {
   virtual ValueType GetType() const = 0;
   virtual ~Value_T() {}
   Value_T() {}
-
+  
   virtual string ToString() const = 0;
   virtual bool Equals(Value) = 0;
   virtual Value Add(Value) {
@@ -104,7 +104,7 @@ struct Value_T {
   }
   virtual Value Subscript(Value key);
   virtual Value SubscriptAssign(Value key, Value value);
-  virtual void Set(Value) {}
+  virtual void Set(Value value) {*this = *value; }
   bool TypeEquals(Value other) { return typeid(other.get()) == typeid(*this); }
 };
 

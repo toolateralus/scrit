@@ -170,6 +170,7 @@ StatementPtr Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
   case TType::MulEq:
   case TType::SubEq:
   case TType::DivEq:
+  case TType::NullCoalescingEq:
   case TType::Assign: {
     return ParseAssignment(std::move(identifier));
   }
@@ -188,8 +189,7 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
     Eat();
     auto value = ParseExpression();
     return make_unique<Assignment>(info,  std::move(identifier), std::move(value));
-  } else if (next.type == TType::AddEq || next.type == TType::SubEq ||
-             next.type == TType::DivEq || next.type == TType::MulEq) {
+  } else if (IsCompoundAssignmentOperator(next.type)) {
     Eat();
     auto value = ParseExpression();
     return make_unique<CompoundAssignment>(info,  make_unique<CompAssignExpr>(info, 
@@ -211,11 +211,10 @@ ExpressionPtr Parser::ParseExpression() {
 }
 ExpressionPtr Parser::ParseCompoundAssignment() {
   auto left = ParseLogicalOr();
-
+  
   if (!tokens.empty()) {
     auto next = Peek();
-    if (next.type != TType::AddEq && next.type != TType::SubEq &&
-        next.type != TType::DivEq && next.type != TType::MulEq) {
+    if (!IsCompoundAssignmentOperator(next.type)) {
       return left;
     }
     Eat();
@@ -589,14 +588,14 @@ unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
 }
 StatementPtr Parser::ParseImport() {
   auto next = Peek();
-
+  
   // import all * widlcard
   if (next.type == TType::Mul) {
     Eat();
     Expect(TType::From);
     auto iden = Expect(TType::Identifier);
     return make_unique<Import>(info,  iden.value, true);
-
+  
   }
   // plain 'import raylib' statement
   else if (next.type == TType::Identifier) {
@@ -629,7 +628,7 @@ StatementPtr Parser::ParseImport() {
     Expect(TType::RCurly);
     Expect(TType::From);
     auto iden = Expect(TType::Identifier);
-
+    
     return make_unique<Import>(info,  iden.value, names);
   }
   throw std::runtime_error("Failed to parse import statement");

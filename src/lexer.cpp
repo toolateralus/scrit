@@ -209,12 +209,15 @@ Lexer::Lexer() {
 
       {"{", TType::LCurly},
       {"}", TType::RCurly},
-
+      
       {"[", TType::SubscriptLeft},
       {"]", TType::SubscriptRight},
       {",", TType::Comma},
       {":", TType::Colon},
       {"=", TType::Assign},
+      {"??", TType::NullCoalescing},
+      // these are escpaed because theyre trigraphs
+      {"\?\?=", TType::NullCoalescingEq}
   };
   keywords = {
       {"func", TType::Func},           {"for", TType::For},
@@ -287,6 +290,46 @@ string TTypeToString(const TType &type) {
     return "Continue";
   case TType::Return:
     return "Return";
+  case TType::AddEq:
+    return "AddEq";
+  case TType::SubEq:
+    return "SubEq";
+  case TType::MulEq:
+    return "MulEq";
+  case TType::DivEq:
+    return "DivEq";
+  case TType::Increment:
+    return "Increment";
+  case TType::Decrement:
+    return "Decrement";
+  case TType::NotEquals:
+    return "NotEquals";
+  case TType::Dot:
+    return "Dot";
+  case TType::SubscriptLeft:
+    return "SubscriptLeft";
+  case TType::SubscriptRight:
+    return "SubscriptRight";
+  case TType::Comma:
+    return "Comma";
+  case TType::Colon:
+    return "Colon";
+  case TType::NullCoalescing:
+    return "NullCoalescing";
+  case TType::NullCoalescingEq:
+    return "NullCoalescingEq";
+  case TType::False:
+    return "False";
+  case TType::True:
+    return "True";
+  case TType::Null:
+    return "Null";
+  case TType::Undefined:
+    return "Undefined";
+  case TType::Import:
+    return "Import";
+  case TType::From:
+    return "From";
   default:
     return "Unknown";
   }
@@ -311,4 +354,8 @@ string TokensToString(const vector<Token> &tokens) {
     stream << token.ToString();
   }
   return stream.str();
+}
+bool IsCompoundAssignmentOperator(const TType &type) {
+  return type == TType::AddEq || type == TType::SubEq || type == TType::MulEq ||
+         type == TType::DivEq || type == TType::NullCoalescingEq;
 }

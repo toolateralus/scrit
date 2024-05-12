@@ -67,6 +67,8 @@ enum class TType {
   SubEq,
   MulEq,
   DivEq,
+  NullCoalescing,
+  NullCoalescingEq,
   
   Increment,
   Decrement,
@@ -122,3 +124,4 @@ struct Lexer {
 string TokensToString(const vector<Token> &tokens);
 string TTypeToString(const TType &type);
 string TFamilyToString(const TFamily &family);
+bool IsCompoundAssignmentOperator(const TType &type);

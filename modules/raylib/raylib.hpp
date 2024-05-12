@@ -89,7 +89,7 @@ static Value loadModel(std::vector<Value> args) {
   return Ctx::CreateInt(loadedModels.size() - 1);
 }
 static Value drawModel(std::vector<Value> args) {
-  if (args.size() < 3) {
+  if (args.size() < 4) {
     return Ctx::CreateString("Invalid arguments");
   }
   int modelId;
@@ -102,8 +102,8 @@ static Value drawModel(std::vector<Value> args) {
   float posX, posY, posZ, scale;
   Object colorObj;
   Object positionObj;
-  if (!Ctx::TryGetObject(args[0], positionObj) || !Ctx::TryGetFloat(args[1], scale) ||
-      !Ctx::TryGetObject(args[2], colorObj)) {
+  if (!Ctx::TryGetObject(args[1], positionObj) || !Ctx::TryGetFloat(args[2], scale) ||
+      !Ctx::TryGetObject(args[3], colorObj)) {
     return Ctx::CreateString("Invalid argument types.");
   }
   Vector3 position;
