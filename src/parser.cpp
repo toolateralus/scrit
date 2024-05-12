@@ -535,15 +535,12 @@ StatementPtr Parser::ParseFor() {
   // for i=0,i<?,i=i+1 {}
   if (Peek().type == TType::Identifier) {
     auto idTok = Peek();
-    auto op = ParseOperand();
-
+    auto op = ParseExpression();
     auto iden = dynamic_cast<Identifier *>(op.get());
-
     // Range based for loop for iden : array/obj {}
     if (iden && Peek().type == TType::Colon) {
-      
       Eat();
-      auto rhs = ParseOperand();
+      auto rhs = ParseExpression();
       return make_unique<RangeBasedFor>(info,  make_unique<Identifier>(info,  iden->name),
                                         std::move(rhs), ParseBlock());
     }
