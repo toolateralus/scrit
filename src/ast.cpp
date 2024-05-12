@@ -9,6 +9,8 @@
 
 auto programSourceInfo = SourceInfo{0,0};
 
+std::vector<string> Import::importedModules = {};
+
 Context ASTNode::context = {};
 auto ExecutionResult::None =
     ExecutionResult(ControlChange::None, Value_T::Undefined);
@@ -483,6 +485,14 @@ Value BinExpr::Evaluate() {
   }
 };
 ExecutionResult Import::Execute() {
+  for (const auto &mod : importedModules) {
+    if (moduleName == mod) {
+      return ExecutionResult::None;
+    }
+  }
+  
+  importedModules.push_back(moduleName);
+  
   auto path = moduleRoot + moduleName + ".dll";
   auto module = LoadScritModule(moduleName, path);
   // we do this even when we ignore the object becasue it registers the native

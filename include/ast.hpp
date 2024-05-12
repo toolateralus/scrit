@@ -270,6 +270,7 @@ struct BinExpr : Expression {
 };
 
 struct Import : Statement {
+  static vector<string> importedModules;
   Import(SourceInfo &info, const string &name,
          const bool isWildcard);
   Import(SourceInfo &info, const string &name,
