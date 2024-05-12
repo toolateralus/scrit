@@ -226,7 +226,20 @@ ExpressionPtr Parser::ParseCompoundAssignment() {
 }
 ExpressionPtr Parser::ParseLogicalOr() {
   auto left = ParseLogicalAnd();
-
+  
+  bool wasNullCoalescing = false;
+  
+  while (!tokens.empty() && Peek().type == TType::NullCoalescing) {
+    wasNullCoalescing =true;
+    Eat();
+    auto right = ParseLogicalAnd();
+    left = make_unique<BinExpr>(info, std::move(left), std::move(right), TType::NullCoalescing);
+  }
+  
+  if (wasNullCoalescing) {
+    return left;
+  }
+  
   if (!tokens.empty() && Peek().type == TType::Or) {
     Eat();
     auto right = ParseLogicalAnd();

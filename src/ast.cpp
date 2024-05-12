@@ -442,6 +442,12 @@ Value BinExpr::Evaluate() {
   auto right = this->right->Evaluate();
   
   switch (op) {
+  case TType::NullCoalescing: {
+    if (left->GetType() == ValueType::Null || left->GetType() == ValueType::Undefined) {
+      return right;
+    } 
+    return left;
+  };
   case TType::Add:
     return left->Add(right);
   case TType::Sub:
