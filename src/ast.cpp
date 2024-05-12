@@ -7,8 +7,12 @@
 #include "context.hpp"
 #include "parser.hpp"
 
+
 auto programSourceInfo = SourceInfo{0,0};
 
+// Todo: add a scope that this was imported in so when we
+// leave that scope we dlclose() the opened module.
+// right now it just leaves it open till the end of the program.
 std::vector<string> Import::importedModules = {};
 
 Context ASTNode::context = {};

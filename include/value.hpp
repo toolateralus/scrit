@@ -1,10 +1,10 @@
 #pragma once
 #include "lexer.hpp"
 #include "native.hpp"
-#include <unordered_set>
 #include <memory>
 #include <string>
 #include <typeinfo>
+#include <unordered_set>
 #include <vector>
 
 using std::make_shared;
@@ -12,6 +12,22 @@ using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
 using std::vector;
+
+// forward declare AST nodes.
+struct Identifier;
+struct Block;
+struct Parameters;
+struct Arguments;
+struct Expression;
+struct Scope_T;
+typedef shared_ptr<Scope_T> Scope;
+typedef unique_ptr<Expression> ExpressionPtr;
+typedef unique_ptr<Block> BlockPtr;
+typedef unique_ptr<Arguments> ArgumentsPtr;
+typedef unique_ptr<Parameters> ParametersPtr;
+typedef Value (*NativeFunctionPtr)(std::vector<Value>);
+
+namespace Values {
 
 // forward declare value types
 struct Value_T;
@@ -24,12 +40,7 @@ struct Array_T;
 struct Undefined_T;
 struct Null_T;
 
-// forward declare AST nodes.
-struct Identifier;
-struct Block;
-struct Parameters;
-struct Arguments;
-struct Expression;
+
 
 // ease of use typedef.
 typedef shared_ptr<Value_T> Value;
@@ -42,14 +53,7 @@ typedef shared_ptr<Int_T> Int;
 typedef shared_ptr<Float_T> Float;
 typedef shared_ptr<Object_T> Object;
 
-struct Scope_T;
-typedef shared_ptr<Scope_T> Scope;
 
-typedef unique_ptr<Expression> ExpressionPtr;
-typedef unique_ptr<Block> BlockPtr;
-typedef unique_ptr<Arguments> ArgumentsPtr;
-typedef unique_ptr<Parameters> ParametersPtr;
-typedef Value (*NativeFunctionPtr)(std::vector<Value>);
 
 enum class ValueType {
   Invalid,
@@ -77,7 +81,7 @@ struct Value_T {
   virtual ValueType GetType() const = 0;
   virtual ~Value_T() {}
   Value_T() {}
-  
+
   virtual string ToString() const = 0;
   virtual bool Equals(Value) = 0;
   virtual Value Add(Value) {
@@ -104,47 +108,10 @@ struct Value_T {
   }
   virtual Value Subscript(Value key);
   virtual Value SubscriptAssign(Value key, Value value);
-  virtual void Set(Value value) {*this = *value; }
+  virtual void Set(Value value) { *this = *value; }
   bool TypeEquals(Value other) { return typeid(other.get()) == typeid(*this); }
 };
 
-struct Ctx {
-  Ctx() = delete;
-  static Bool CreateBool(const bool value = false);
-  static String CreateString(const string value = "");
-  static Int CreateInt(const int value = 0);
-  static Float CreateFloat(const float value = 0.0f);
-  static Object CreateObject(shared_ptr<Scope_T> scope = nullptr);
-  static Array CreateArray(vector<Value> values = {});
-
-  static bool TryGetString(Value str, string &result);
-  static bool TryGetInt(Value value, int &result);
-  static bool TryGetFloat(Value value, float &result);
-  static bool TryGetBool(Value value, bool &result);
-  static bool TryGetObject(Value value, Object &result);
-  static bool TryGetArray(Value value, Array &result);
-  template <typename... Args> static bool IsUndefined(Args &&...args) {
-    bool isUndefined = false;
-    (void)std::initializer_list<int>{
-        (isUndefined = isUndefined ||
-                       (std::is_base_of<Value_T, std::decay_t<Args>>::value &&
-                        args->Equals(Value_T::Undefined)),
-         0)...};
-    return isUndefined;
-  }
-
-  template <typename... Args> static bool IsNull(Args &&...args) {
-    bool isNull = false;
-    (void)std::initializer_list<int>{
-        (isNull =
-             isNull || (std::is_base_of<Value_T, std::decay_t<Args>>::value &&
-                        args->Equals(Value_T::Null)),
-         0)...};
-    return isNull;
-  }
-  static bool IsUndefined(Value value);
-  static bool IsNull(Value value);
-};
 
 
 struct Null_T : Value_T {
@@ -164,7 +131,7 @@ struct Int_T : Value_T {
   Int_T(int value);
   ~Int_T() {}
   Int_T() = delete;
-  
+
   static Int New(int value = 0) { return make_shared<Int_T>(value); }
 
   virtual bool Equals(Value value) override;
@@ -241,11 +208,11 @@ struct Object_T : Value_T {
       scope = make_shared<Scope_T>();
     return make_shared<Object_T>(scope);
   }
-  string WriteMembers(std::unordered_set<const Value_T*> foundObjs) const;
+  string WriteMembers(std::unordered_set<const Value_T *> foundObjs) const;
   Value GetMember(const string &name);
   void SetMember(const string &name, Value &value);
   virtual string ToString() const override;
-  string ToString(std::unordered_set<const Value_T*> foundValues) const;
+  string ToString(std::unordered_set<const Value_T *> foundValues) const;
   bool Equals(Value value) override;
   ValueType GetType() const override { return ValueType::Object; }
   Value Subscript(Value key) override;
@@ -266,25 +233,25 @@ struct NativeCallable_T : Callable_T {
   NativeCallable_T() = delete;
   NativeCallable_T(const NativeFunction &ptr);
   NativeFunction function;
-  
+
   Value Call(ArgumentsPtr &args) override;
-  
+
   string ToString() const override;
   bool Equals(Value value) override;
   ValueType GetType() const override { return ValueType::Callable; }
 };
 struct Array_T : Value_T {
   vector<ExpressionPtr> initializer;
-  
+
   static Array New();
   static Array New(vector<ExpressionPtr> &&init);
   static Array New(std::vector<Value> &values);
   Array_T() = delete;
   Array_T(vector<ExpressionPtr> &&init);
   Array_T(vector<Value> init);
-  
+
   vector<Value> values;
-  
+
   Value At(Int index);
   void Assign(Int index, Value value);
   void Push(Value value);
@@ -297,4 +264,43 @@ struct Array_T : Value_T {
 
   Value Subscript(Value key) override;
   Value SubscriptAssign(Value key, Value value) override;
+};
+} // namespace Values
+
+struct Ctx {
+  Ctx() = delete;
+  static Bool CreateBool(const bool value = false);
+  static String CreateString(const string value = "");
+  static Int CreateInt(const int value = 0);
+  static Float CreateFloat(const float value = 0.0f);
+  static Object CreateObject(shared_ptr<Scope_T> scope = nullptr);
+  static Array CreateArray(vector<Value> values = {});
+
+  static bool TryGetString(Value str, string &result);
+  static bool TryGetInt(Value value, int &result);
+  static bool TryGetFloat(Value value, float &result);
+  static bool TryGetBool(Value value, bool &result);
+  static bool TryGetObject(Value value, Object &result);
+  static bool TryGetArray(Value value, Array &result);
+  template <typename... Args> static bool IsUndefined(Args &&...args) {
+    bool isUndefined = false;
+    (void)std::initializer_list<int>{
+        (isUndefined = isUndefined ||
+                       (std::is_base_of<Value_T, std::decay_t<Args>>::value &&
+                        args->Equals(Value_T::Undefined)),
+         0)...};
+    return isUndefined;
+  }
+
+  template <typename... Args> static bool IsNull(Args &&...args) {
+    bool isNull = false;
+    (void)std::initializer_list<int>{
+        (isNull =
+             isNull || (std::is_base_of<Value_T, std::decay_t<Args>>::value &&
+                        args->Equals(Value_T::Null)),
+         0)...};
+    return isNull;
+  }
+  static bool IsUndefined(Value value);
+  static bool IsNull(Value value);
 };

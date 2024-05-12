@@ -1,3 +1,4 @@
+#pragma once
 #include "native.hpp"
 #include "value.hpp"
 #include <unordered_set>

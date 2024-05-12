@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <sys/select.h>
 
+
 std::vector<Breakpoint> Debug::breakpoints = {};
 auto Debug::requestedStep = StepKind::None;
 ASTNode *Debug::lastNode = nullptr;

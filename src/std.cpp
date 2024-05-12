@@ -1,26 +1,26 @@
 #include "native.hpp"
 #include "value.hpp"
-#include "serializer.hpp"
 #include <iostream>
 #include "context.hpp"
+#include "serializer.hpp"
 
 #pragma clang diagnostic ignored "-Wunused-parameter"
 
 
-REGISTER_FUNCTION(println, ValueType::Undefined, CreateArgumentSignature({Argument(ValueType::Any, "any")})) {
+REGISTER_FUNCTION(println, ValueType::Undefined, {}) {
   for (const auto &arg: args) {
     printf("%s\n", arg->ToString().c_str());;
   }
   return Value_T::Undefined;
 }
 
-REGISTER_FUNCTION(readln, ValueType::String, CreateArgumentSignature({})) {
+REGISTER_FUNCTION(readln, ValueType::String, {}) {
   string input;
   std::cin >> input;
   return String_T::New(input);
 }
 
-REGISTER_FUNCTION(push, ValueType::Undefined, CreateArgumentSignature({Argument(ValueType::Array, "target"), Argument(ValueType::Any, "elementsToAdd")})) {
+REGISTER_FUNCTION(push, ValueType::Undefined, Argument(ValueType::Array, "target"), Argument(ValueType::Any, "elementsToAdd")) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
@@ -45,7 +45,7 @@ REGISTER_FUNCTION(push, ValueType::Undefined, CreateArgumentSignature({Argument(
   }
   return Value_T::Undefined;
 }
-REGISTER_FUNCTION(pop, ValueType::Any, CreateArgumentSignature({Argument(ValueType::Array, "target")})) {
+REGISTER_FUNCTION(pop, ValueType::Any, {Argument(ValueType::Array, "target")}) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
@@ -56,7 +56,7 @@ REGISTER_FUNCTION(pop, ValueType::Any, CreateArgumentSignature({Argument(ValueTy
   return array->Pop();
 }
 
-REGISTER_FUNCTION(len, ValueType::Int, CreateArgumentSignature({Argument(ValueType::Array, "target")})) {
+REGISTER_FUNCTION(len, ValueType::Int, {Argument(ValueType::Array, "target")}) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
@@ -67,7 +67,7 @@ REGISTER_FUNCTION(len, ValueType::Int, CreateArgumentSignature({Argument(ValueTy
   return Int_T::New(array->values.size());
 }
 
-REGISTER_FUNCTION(typeof, ValueType::String, CreateArgumentSignature({Argument(ValueType::Any, "target")})) {
+REGISTER_FUNCTION(typeof, ValueType::String, {Argument(ValueType::Any, "target")}) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
@@ -75,14 +75,14 @@ REGISTER_FUNCTION(typeof, ValueType::String, CreateArgumentSignature({Argument(V
   return Ctx::CreateString(TypeToString(args[0]->GetType()));
 }
 
-REGISTER_FUNCTION(tostr, ValueType::String, CreateArgumentSignature({Argument(ValueType::Any, "target")})) {
+REGISTER_FUNCTION(tostr, ValueType::String, {Argument(ValueType::Any, "target")}) {
   if (args.empty()) {
     return Value_T::Undefined;
   }
   return Ctx::CreateString(args[0]->ToString());
 }
 
-REGISTER_FUNCTION(serialize, ValueType::String, CreateArgumentSignature({Argument(ValueType::Any, "target"), Argument(ValueType::Object, "settings")})) {
+REGISTER_FUNCTION(serialize, ValueType::String, Argument(ValueType::Any, "target"), Argument(ValueType::Object, "settings")) {
   if (args.empty()) {
     return Value_T::Undefined;
   }

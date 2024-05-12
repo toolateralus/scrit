@@ -6,11 +6,15 @@
 using std::vector;
 using std::string;
 
+
 enum struct TType;
 struct Context;
-struct Value_T;
+
+namespace Values {
+  struct Value_T;
+}
 struct Scope_T;
-typedef std::shared_ptr<Value_T> Value;
+typedef std::shared_ptr<Values::Value_T> Value;
 typedef std::shared_ptr<Scope_T> Scope;
 
 using std::make_unique;

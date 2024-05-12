@@ -3,6 +3,8 @@
 #include "value.hpp"
 #include "context.hpp"
 
+using namespace Values;
+
 TEST(EqTest, StrEquals) {
   String EMPTY = String_T::New("");
   String NOT_EMPTY = String_T::New("test string");

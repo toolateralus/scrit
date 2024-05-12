@@ -560,32 +560,34 @@ Value Array_T::SubscriptAssign(Value key, Value value) {
   return Undefined;
 }
 
-string TypeToString(ValueType type) {
-  switch (type) {
-  case ValueType::Invalid:
-    return "invalid";
-  case ValueType::Null:
-    return "null";
-  case ValueType::Undefined:
-    return "undefined";
-  case ValueType::Float:
-    return "float";
-  case ValueType::Int:
-    return "int";
-  case ValueType::Bool:
-    return "bool";
-  case ValueType::String:
-    return "string";
-  case ValueType::Object:
-    return "object";
-  case ValueType::Array:
-    return "array";
-  case ValueType::Callable:
-    return "callable";
-  case ValueType::Any:
-    return "any";
+namespace Values {
+  string TypeToString(ValueType type) {
+    switch (type) {
+    case ValueType::Invalid:
+      return "invalid";
+    case ValueType::Null:
+      return "null";
+    case ValueType::Undefined:
+      return "undefined";
+    case ValueType::Float:
+      return "float";
+    case ValueType::Int:
+      return "int";
+    case ValueType::Bool:
+      return "bool";
+    case ValueType::String:
+      return "string";
+    case ValueType::Object:
+      return "object";
+    case ValueType::Array:
+      return "array";
+    case ValueType::Callable:
+      return "callable";
+    case ValueType::Any:
+      return "any";
+    }
+    return "";
   }
-  return "";
 }
 
 

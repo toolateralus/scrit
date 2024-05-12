@@ -1,27 +1,35 @@
 #pragma once
-#include <map>
+#include <initializer_list>
 #include <memory>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 #include <string>
 
-struct Value_T;
-struct Object_T;
-struct NativeCallable_T;
+namespace Values {
+  struct Value_T;
+  struct Object_T;
+  struct NativeCallable_T;
+  enum struct ValueType;
+  typedef std::shared_ptr<NativeCallable_T> NativeCallable;
+  typedef std::shared_ptr<Value_T> Value;
+  typedef std::shared_ptr<Object_T> Object;
+}
 struct Context;
-enum struct ValueType;
+using namespace Values;
 
-typedef std::shared_ptr<NativeCallable_T> NativeCallable;
-typedef std::shared_ptr<Value_T> Value;
-typedef std::shared_ptr<Object_T> Object;
+
+
 typedef Value (*NativeFunctionPtr)(std::vector<Value>);
 
 struct NativeFunction {
   NativeFunctionPtr func;
   std::string name;
-  std::map<ValueType, std::string> arguments;
+
+  std::vector<std::pair<ValueType, std::string>> arguments = {};
   ValueType returnType;
+  
+  std::string GetInfo();
 
   static NativeFunction Create(const std::string &name,
                                const NativeFunctionPtr &func);
@@ -29,7 +37,7 @@ struct NativeFunction {
   static NativeFunction Create(const std::string &name,
                                const NativeFunctionPtr &func,
                                const ValueType returnType,
-                               const std::map<ValueType, std::string> &arguments = {});
+                               const std::vector<std::pair<ValueType, std::string>> &arguments = {});
 };
 
 extern "C" struct ScritModDef {
@@ -41,7 +49,7 @@ extern "C" struct ScritModDef {
 ScritModDef* CreateModDef();
 
 extern "C" void AddFunction(ScritModDef *mod, const std::string &name,
-                 const NativeFunctionPtr &ptr, const ValueType retType, std::map<ValueType, std::string> args = {});
+                const NativeFunctionPtr &ptr, const ValueType retType, std::vector<std::pair<ValueType, std::string>> args = {});
                 
 extern "C" void AddFunctionNoInfo(ScritModDef *mod, const std::string &name,
           const NativeFunctionPtr &ptr);
@@ -61,29 +69,23 @@ struct NativeFunctions {
   static NativeCallable MakeCallable(const NativeFunction &fn);
 };
 
-void RegisterFunction(const std::string &name, const NativeFunctionPtr &function, const ValueType returnType, const std::map<ValueType, std::string> &arguments);
+void RegisterFunction(const std::string &name, const NativeFunctionPtr &function, const ValueType returnType, const std::initializer_list<std::pair<ValueType, std::string>> &arguments);
 
 static std::pair<ValueType, std::string> Argument(ValueType &&type, std::string &&name) {
   return std::make_pair(type, name);
 }
 
-static std::map<ValueType, std::string> CreateArgumentSignature(std::initializer_list<std::pair<ValueType, std::string>> args) {
-  std::map<ValueType, std::string> signature;
-  for (const auto& arg : args) {
-    signature[arg.first] = arg.second;
-  }
-  return signature;
-}
-
-#define REGISTER_FUNCTION(name, returnType, arguments) \
-  Value name(std::vector<Value>); \
+#define REGISTER_FUNCTION(name, returnType, ...) \
+  Value name(std::vector<Value> args); \
   namespace { \
     struct name##_Register { \
       name##_Register() { \
-        RegisterFunction(#name, name, returnType, arguments); \
+        RegisterFunction(#name, name, returnType, {__VA_ARGS__}); \
       } \
     } name##_register; \
   } \
   Value name(std::vector<Value> args)
+  
+  
 
 ScritModDef* LoadScritModule(const std::string &name, const std::string &path);
