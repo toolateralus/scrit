@@ -2,7 +2,6 @@
 #include "context.hpp"
 #include "lexer.hpp"
 #include "value.hpp"
-#include <cassert>
 #include <gtest/gtest.h>
 
 #include <memory>
@@ -33,25 +32,25 @@ unique_ptr<Call> GetPrintlnCall() {
       make_unique<Call>(info, std::move(printlnId), std::move(args));
   return call;
 }
-unique_ptr<Assignment> GetStrAssign(string value) {
-  return make_unique<Assignment>(info, GetIdentifier("myvalue"),
+unique_ptr<Assignment> GetStrAssign(string id, string value) {
+  return make_unique<Assignment>(info, GetIdentifier(id),
                                  GetString(value));
 }
-unique_ptr<Block> GetBlock(string stringValueSetInBlock) {
+unique_ptr<Block> GetBlock(string id, string stringValueSetInBlock) {
   vector<StatementPtr> statements = {};
   statements.push_back(GetPrintlnCall());
-  statements.push_back(GetStrAssign(stringValueSetInBlock));
+  statements.push_back(GetStrAssign(id, stringValueSetInBlock));
   return make_unique<Block>(info, std::move(statements));
 }
-ElsePtr GetElse(string stringValueSetInBlock) {
-  ElsePtr elseptr = Else::NoIf(info, GetBlock(stringValueSetInBlock));
+ElsePtr GetElse(string id, string stringValueSetInBlock) {
+  ElsePtr elseptr = Else::NoIf(info, GetBlock(id, stringValueSetInBlock));
   return elseptr;
 }
-IfPtr GetIfTrue(string stringValueSetInBlock) {
-  return If::NoElse(info, GetTrueExpr(), GetBlock(stringValueSetInBlock));
+IfPtr GetIfTrue(string id, string stringValueSetInBlock) {
+  return If::NoElse(info, GetTrueExpr(), GetBlock(id, stringValueSetInBlock));
 }
-IfPtr GetIfFalse(string stringValueSetInBlock) {
-  return If::NoElse(info, GetFalseExpr(), GetBlock(stringValueSetInBlock));
+IfPtr GetIfFalse(string id, string stringValueSetInBlock) {
+  return If::NoElse(info, GetFalseExpr(), GetBlock(id, stringValueSetInBlock));
 }
 unique_ptr<For> GetFor(StatementPtr &&decl, ExpressionPtr &&condition, StatementPtr &&increment, BlockPtr &&block) {
   return make_unique<For>(info, std::move(decl), std::move(condition), std::move(increment), std::move(block), make_shared<Scope_T>());
@@ -66,6 +65,26 @@ StatementPtr GetIntAssign(string iden, int value) {
   auto zero = Int_T::New(value);
   return make_unique<Assignment>(info, std::move(id), std::make_unique<Operand>(info, zero));
 }
+StatementPtr GetFloatAssign(string iden, float value) {
+  auto id = GetIdentifier(iden);
+  auto zero = Float_T::New(value);
+  return make_unique<Assignment>(info, std::move(id), std::make_unique<Operand>(info, zero));
+}
+StatementPtr GetBoolAssign(string iden, bool value) {
+  auto id = GetIdentifier(iden);
+  auto zero = Bool_T::New(value);
+  return make_unique<Assignment>(info, std::move(id), std::make_unique<Operand>(info, zero));
+}
+StatementPtr GetArrayAssign(string iden, vector<Value> values = {}) {
+  auto id = GetIdentifier(iden);
+  auto zero = Array_T::New(values);
+  return make_unique<Assignment>(info, std::move(id), std::make_unique<Operand>(info, zero));
+}
+StatementPtr GetObjectAssign(string iden, BlockPtr &&block) {
+  auto id = GetIdentifier(iden);
+  auto init = make_unique<ObjectInitializer>(info, std::move(block));
+  return make_unique<Assignment>(info, std::move(id), std::move(init));
+}
 ExpressionPtr GetLessThanExpr(string iden, int rvalue) {
   return make_unique<BinExpr>(info, GetIdentifier(iden), std::make_unique<Operand>(info, Int_T::New(rvalue)), TType::Less);
 }
@@ -75,10 +94,70 @@ StatementPtr GetIncrement(string i) {
 
 TEST(ASSIGN, ASSIGN_STR) {
   ASTNode::context.Reset();
-  GetStrAssign("myDefaultValue")->Execute();
+  GetStrAssign("myvalue", "myDefaultValue")->Execute();
   ASSERT_TRUE(ASTNode::context.Find("myvalue")->Equals(
       String_T::New("myDefaultValue")));
 }
+TEST(ASSIGN, ASSIGN_INT) {
+  ASTNode::context.Reset();
+  GetIntAssign("myvalue", 100)->Execute();
+  ASSERT_TRUE(ASTNode::context.Find("myvalue")->Equals(
+      Int_T::New(100)));
+}
+TEST(ASSIGN, ASSIGN_FLOAT) {
+  ASTNode::context.Reset();
+  GetFloatAssign("myvalue", 100.0f)->Execute();
+  ASSERT_TRUE(ASTNode::context.Find("myvalue")->Equals(
+      Float_T::New(100.0f)));
+}
+TEST(ASSIGN, ASSIGN_ARRAY) {
+  ASTNode::context.Reset();
+  auto result = GetArrayAssign("myArray", {Int_T::New(0), Int_T::New(1)})->Execute();
+  ASSERT_EQ(result.controlChange, ControlChange::None);
+  auto array = ASTNode::context.Find("myArray");
+  ASSERT_NE(array, nullptr);
+  auto arr = static_cast<Array_T*>(array.get());
+  ASSERT_NE(arr, nullptr);
+  
+  auto element0 = arr->At(Int_T::New(0));
+  ASSERT_TRUE(element0->Equals(Int_T::New(0)));
+  auto element1 = arr->At(Int_T::New(1));
+  ASSERT_TRUE(element1->Equals(Int_T::New(1)));
+}
+TEST(ASSIGN, ASSIGN_ARRAY_ELEMENT) {
+  ASTNode::context.Reset();
+  auto result = GetArrayAssign("myArray", {Int_T::New(0), Int_T::New(1)})->Execute();
+  ASSERT_EQ(result.controlChange, ControlChange::None);
+  auto array = ASTNode::context.Find("myArray");
+  ASSERT_NE(array, nullptr);
+  auto arr = static_cast<Array_T*>(array.get());
+  ASSERT_NE(arr, nullptr);
+  
+  auto element0 = arr->At(Int_T::New(0));
+  ASSERT_TRUE(element0->Equals(Int_T::New(0)));
+  auto element1 = arr->At(Int_T::New(1));
+  ASSERT_TRUE(element1->Equals(Int_T::New(1)));
+  
+  arr->Assign(Int_T::New(0), Int_T::New(20));
+  element0 = arr->At(Int_T::New(0));
+  ASSERT_TRUE(element0->Equals(Int_T::New(20)));
+}
+TEST(ASSIGN, ASSIGN_OBJECT) {
+  ASTNode::context.Reset();
+  auto result = GetObjectAssign("myObject", GetBlock("myInnerValue", "SomeValue"))->Execute();
+  
+  ASSERT_EQ(result.controlChange, ControlChange::None);
+  
+  auto object = static_cast<Object_T*>(ASTNode::context.Find("myObject").get());
+  ASSERT_NE(object, nullptr);
+  
+  auto member = object->GetMember("myInnerValue");
+  ASSERT_NE(member, nullptr);
+  auto string = static_cast<String_T*>(member.get());
+  ASSERT_NE(string, nullptr);
+  ASSERT_TRUE(string->Equals(String_T::New("SomeValue")));
+}
+
 TEST(CONTROL_FLOW, TEST_FOR_NO_CONDITION_INSTANT_BREAK) {
   auto result = GetFor(nullptr, nullptr, nullptr, GetBlockBreak())->Execute();
   ASSERT_TRUE(result.controlChange == ControlChange::None);
@@ -92,15 +171,12 @@ TEST(CONTROL_FLOW, TEST_FOR_I_LESS_THAN_10) {
   ASSERT_TRUE(result.controlChange == ControlChange::None);
   ASSERT_TRUE(ASTNode::context.Find("i") == nullptr);
 }
-
-
 TEST(CONTROL_FLOW, TEST_IF_NO_ELSE) {
   ASTNode::context.Reset();
-  GetStrAssign("myDefaultValue")->Execute();
-
+  GetStrAssign("myvalue", "myDefaultValue")->Execute();
   string value = "VALUE_SET_IN_BLOCK";
-  auto ifStmnt = GetIfTrue(value);
-
+  auto ifStmnt = GetIfTrue("myvalue", value);
+  
   ExecutionResult result = ifStmnt->Execute();
   // assert that the assignment that was in the GetBlock overrides the
   // assignment of myDefaultValue took place.
@@ -110,17 +186,17 @@ TEST(CONTROL_FLOW, TEST_IF_NO_ELSE) {
 }
 TEST(CONTROL_FLOW, TEST_IF_WITH_ELSE) {
   ASTNode::context.Reset();
-  GetStrAssign("myDefaultValue")->Execute();
+  GetStrAssign("myvalue", "myDefaultValue")->Execute();
   auto if_with_else =
-      If::WithElse(info, GetFalseExpr(), GetBlock("VALUE_SET_IN_IF_BLOCK"),
-                   GetElse("VALUE_SET_IN_ELSE_BLOCK"));
+      If::WithElse(info, GetFalseExpr(), GetBlock("myvalue", "VALUE_SET_IN_IF_BLOCK"),
+                   GetElse("myvalue", "VALUE_SET_IN_ELSE_BLOCK"));
   if_with_else->Execute();
   ASSERT_TRUE(ASTNode::context.Find("myvalue")->Equals(
       String_T::New("VALUE_SET_IN_ELSE_BLOCK")));
 }
 TEST(CONTROL_FLOW, TEST_IF_FALSE_ELSE_IF_TRUE_ELSE) {
   ASTNode::context.Reset();
-  GetStrAssign("myDefaultValue")->Execute();
+  GetStrAssign("myvalue", "myDefaultValue")->Execute();
   
   
   /*
@@ -137,11 +213,11 @@ TEST(CONTROL_FLOW, TEST_IF_FALSE_ELSE_IF_TRUE_ELSE) {
   */
   
   auto if_with_else_if = If::WithElse(
-      info, GetFalseExpr(), GetBlock("VALUE_SET_IN_IF"),
+      info, GetFalseExpr(), GetBlock("myvalue", "VALUE_SET_IN_IF"),
       Else::New(
           info,
-          If::WithElse(info, GetTrueExpr(), GetBlock("VALUE_SET_IN_ELSE_IF"),
-                       Else::NoIf(info, GetBlock("VALUE_SET_IN_FINAL_ELSE")))));
+          If::WithElse(info, GetTrueExpr(), GetBlock("myvalue", "VALUE_SET_IN_ELSE_IF"),
+                       Else::NoIf(info, GetBlock("myvalue", "VALUE_SET_IN_FINAL_ELSE")))));
                        
   if_with_else_if->Execute();                       
                        
@@ -149,7 +225,7 @@ TEST(CONTROL_FLOW, TEST_IF_FALSE_ELSE_IF_TRUE_ELSE) {
 }
 TEST(CONTROL_FLOW, TEST_IF_FALSE_ELSE_IF_FALSE_ELSE) {
   ASTNode::context.Reset();
-  GetStrAssign("myDefaultValue")->Execute();
+  GetStrAssign("myvalue", "myDefaultValue")->Execute();
   
   
   /*
@@ -166,11 +242,11 @@ TEST(CONTROL_FLOW, TEST_IF_FALSE_ELSE_IF_FALSE_ELSE) {
   */
   
   auto if_with_else_if = If::WithElse(
-      info, GetFalseExpr(), GetBlock("VALUE_SET_IN_IF"),
+      info, GetFalseExpr(), GetBlock("myvalue", "VALUE_SET_IN_IF"),
       Else::New(
           info,
-          If::WithElse(info, GetFalseExpr(), GetBlock("VALUE_SET_IN_ELSE_IF"),
-                       Else::NoIf(info, GetBlock("VALUE_SET_IN_FINAL_ELSE")))));
+          If::WithElse(info, GetFalseExpr(), GetBlock("myvalue", "VALUE_SET_IN_ELSE_IF"),
+                       Else::NoIf(info, GetBlock("myvalue", "VALUE_SET_IN_FINAL_ELSE")))));
                        
   if_with_else_if->Execute();                       
                        
