@@ -5,7 +5,7 @@ The name is not a play on words with Script, its just a name.
 
 This is linux only right now.
 
-More documentation (local links, see docs/ folder in the source.)
+More documentation
 
 [Platform](docs/note.md)
 
