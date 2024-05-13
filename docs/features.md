@@ -1,6 +1,10 @@
 
 # Currently available features
 
+Please, if you'd like to contribute to this documentation making it more robust, feel free to make pull requests with any amount of change.
+Thanks.
+
+
 ## declarations
   `i = 0`
    
@@ -10,6 +14,87 @@
   
   `object = {}`
   
+
+## arrays
+
+
+### Pushing values 
+```ts
+
+array = []
+
+// invalid, out of range.
+array[0] = 10
+
+// expand array (since its empty)
+push(array, 10)
+
+```
+
+### Popping values
+```ts
+
+array = [0,1,2]
+
+
+x = pop(array)
+
+// x == 2
+
+```
+
+### Indexing & Subscript
+```ts
+
+array = [1]
+
+array[0] = 10
+
+println(array[0])
+
+array = [func(arg) { println(arg)}]
+
+array[0]("Hello")
+
+// prints hello
+```
+
+
+### objects
+
+regular object.
+```ts
+
+object = {
+  member = 10
+  func method() {
+    // both of these are valid.
+    // methods are executed from the object's context.
+    println(this.member)
+    println(member)
+  }
+}
+
+object.member = 200
+
+object.method()
+
+```
+
+map-style (kvps with [] access)
+```ts
+map = {}
+
+value = 10
+
+map["myKey"] = value
+
+println(map["myKey"])
+
+// prints 10
+```
+
+
 
 ## compound assignment
 - += , -= etc for arithmetic
@@ -66,6 +151,7 @@ f = func() {
   
 }
 ```
+
 ## if else 
   ```
   if i == 0 {
@@ -166,8 +252,9 @@ println(myValue)
 ```
 
 
-## imports & modules
+## Modules
 
+For defining modules, see the [modules.md](modules.md) file.
 ### import a module as an object
 the module will be available as an object represented by the module name
 such as `math`
@@ -202,6 +289,8 @@ println(sqrt(10 * 2) + floor(0.5))
 
 Note: `math`, `system`, and `raylib` are the three current builtin modules.
 functions like `println`, `readln`, `push` and `pop` are available without import (among a few others.)
+
+
 
 # Todo: 
 

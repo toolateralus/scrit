@@ -1,4 +1,7 @@
 
+Please, if you'd like to contribute to this documentation making it more robust, feel free to make pull requests with any amount of change.
+Thanks.
+
 
 ### defining a module in C++
 
