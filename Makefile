@@ -30,23 +30,23 @@ NOMAINDEBUGOBJS := $(filter-out $(OBJDIR)/debug/main.o, $(DEBUGOBJS))
 all: debug release
 
 test: test-build
-	@./$(BINDIR)/test/app
+	@./$(BINDIR)/test/scrit
 	
-debug: $(BINDIR)/debug/app
+debug: $(BINDIR)/debug/scrit
 
-release: $(BINDIR)/release/app
+release: $(BINDIR)/release/scrit
 
-test-build: $(BINDIR)/test/app
+test-build: $(BINDIR)/test/scrit
 
-$(BINDIR)/debug/app: $(DEBUGOBJS)
+$(BINDIR)/debug/scrit: $(DEBUGOBJS)
 	@mkdir -p $(BINDIR)/debug
 	$(CXX) $(DEBUGFLAGS) $^ -o $@ $(LDFLAGS)
 
-$(BINDIR)/release/app: $(RELEASEOBJS)
+$(BINDIR)/release/scrit: $(RELEASEOBJS)
 	@mkdir -p $(BINDIR)/release
 	$(CXX) $(RELEASEFLAGS) $^ -o $@ $(LDFLAGS)
 
-$(BINDIR)/test/app: $(NOMAINDEBUGOBJS) $(TESTOBJS)
+$(BINDIR)/test/scrit: $(NOMAINDEBUGOBJS) $(TESTOBJS)
 	@mkdir -p $(BINDIR)/test
 	$(CXX) $(TESTFLAGS) $^ -o $@ $(LDFLAGS) $(TESTLINKERFLAGS)
 
@@ -62,11 +62,11 @@ $(OBJDIR)/test/%.o: $(TESTDIR)/%.cpp
 	@mkdir -p $(OBJDIR)/test
 	$(CXX) $(CXXFLAGS) $(TESTFLAGS) -c $< -o $@
 
-run_debug: $(BINDIR)/debug/app
-	@./$(BINDIR)/debug/app $(filter-out $@,$(MAKECMDGOALS))
+run_debug: $(BINDIR)/debug/scrit
+	@./$(BINDIR)/debug/scrit $(filter-out $@,$(MAKECMDGOALS))
 
-run_release: $(BINDIR)/release/app
-	@./$(BINDIR)/release/app $(filter-out $@,$(MAKECMDGOALS))
+run_release: $(BINDIR)/release/scrit
+	@./$(BINDIR)/release/scrit $(filter-out $@,$(MAKECMDGOALS))
 
 run:
 	$(MAKE) run_debug $(filter-out $@,$(MAKECMDGOALS))

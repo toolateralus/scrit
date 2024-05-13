@@ -1,4 +1,4 @@
-import {sleep, time} from system
+import * from system
 import * from raylib
 import  math
 
@@ -10,6 +10,7 @@ player = {
   speed = 0.1
   color = colors.WHITE
   gravity = 0.01
+  
   func move() {
     if(isKeyDown(keys.E)) {
       color.r += 1
@@ -61,10 +62,14 @@ func() {
     
     player.move()
     
+    drawFPS(0,0)
+    drawText(24,24,16, tostr({x = player.x, y = player.y}), colors.WHITE)
+    
     beginDrawing()
     clearBackground(colors.BLACK)
     
     err = player.draw()
+    
     if err != undefined && err != null {
       println("error: " + err)
       break
@@ -72,6 +77,8 @@ func() {
     
     endDrawing()
     
-    sleep(16.66666)
+    sleep(16.6)
+    
+    println(time())
   }
 }()

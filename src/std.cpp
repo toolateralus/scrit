@@ -1,6 +1,8 @@
 #include "native.hpp"
 #include "value.hpp"
 #include <iostream>
+#include <termios.h>
+#include <unistd.h>
 #include "context.hpp"
 #include "serializer.hpp"
 
@@ -19,6 +21,31 @@ REGISTER_FUNCTION(readln, ValueType::String, {}) {
   std::cin >> input;
   return String_T::New(input);
 }
+
+
+
+REGISTER_FUNCTION(readch, ValueType::String, {}) {
+  // Save the old terminal settings
+  struct termios old_tio, new_tio;
+  tcgetattr(STDIN_FILENO, &old_tio);
+
+  // Set the new settings
+  new_tio = old_tio;
+  new_tio.c_lflag &=(~ICANON & ~ECHO);
+  tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
+
+  // Read a character
+  char ch;
+  read(STDIN_FILENO, &ch, 1);
+
+  // Restore the old terminal settings
+  tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);
+
+  // Convert the character to a string
+  std::string str(1, ch);
+  return String_T::New(str);
+}
+
 
 REGISTER_FUNCTION(push, ValueType::Undefined, Argument(ValueType::Array, "target"), Argument(ValueType::Any, "elementsToAdd")) {
   if (args.empty()) {

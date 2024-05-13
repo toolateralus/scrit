@@ -1,8 +1,9 @@
 import * from raylib
 
+
 func() {
   initWindow(800,600, "game")
-
+  
   for {
     if windowShouldClose() {
       break
@@ -10,7 +11,7 @@ func() {
     clearBackground()
     beginDrawing()
     
-    drawText(250, 250, 24, "My Text", colors.WHITE)
+    drawText(250, 250, 42, tostr({x = 0, y = 0}), colors.WHITE)
     
     drawFPS(0,0)
     endDrawing()

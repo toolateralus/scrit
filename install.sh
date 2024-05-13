@@ -47,3 +47,20 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 echo -e "\e[32mStandard modules installed.\e[0m"
+
+echo -e "\e[33mAdding 'scrit' alias to bashrc...\e[0m"
+if grep -q 'alias scrit=' ~/.bashrc; then
+  # If the alias exists, replace it
+  sed -i "/alias scrit=/c\alias scrit='$(pwd)/bin/scrit'" ~/.bashrc
+  output=$?
+else
+  # If the alias doesn't exist, append it
+  output=$(echo "alias scrit='$(pwd)/bin/release/scrit'" >> ~/.bashrc 2>&1)
+fi
+if [ $? -ne 0 ]; then
+  echo "Error adding 'scrit' alias to bashrc: $output"
+  exit 1
+fi
+
+echo -e "\e[32mAlias 'scrit' added to bashrc.\e[0m"
+echo -e "\e[36mRestart your terminal to use the 'scrit' command.\e[0m"

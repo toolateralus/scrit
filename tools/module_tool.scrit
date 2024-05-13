@@ -1,5 +1,5 @@
 
-import {fwrite, fexists, cwd, exit, dir_create} from system
+import {fwrite, fexists, cwd, exit, dir_create, syscall} from system
 
 func buildScript(name) {
   return "sudo clang++ -std=c++2b -shared -fPIC -o /usr/local/scrit/modules/" + name + ".dll " + name + ".cpp" + " -lscrit"
@@ -57,6 +57,8 @@ func createModule(name) {
     println("fwrite error: " + err)
     return 1
   }
+  
+  syscall("chmod +x " + bashPath)
   
   return 0
   

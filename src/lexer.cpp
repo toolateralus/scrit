@@ -100,23 +100,52 @@ Token Lexer::LexString() {
                                " col:" + std::to_string(startCol));
     }
     if (!(input[pos] != '\"' ||
-          (input[pos] == '\"' && input[pos - 1] == '\\'))) {
+        (input[pos] == '\"' && input[pos - 1] == '\\'))) {
       break;
     }
 
     if (input[pos] == '\\' && pos + 1 < input.size()) {
       switch (input[pos + 1]) {
       case '\"':
-        stream << '\"';
-        pos++;
-        break;
+      stream << '\"';
+      pos++;
+      break;
       case 'n':
-        stream << '\n';
-        pos++;
-        break;
+      stream << '\n';
+      pos++;
+      break;
+      case 't': 
+      stream << "\t";
+      pos++;
+      break;
+      case 'b': {
+      stream << "\b";
+      pos++;
+      break;
+      }
+      case 'r': {
+      stream << "\r";
+      pos++;
+      break;
+      }
+      case 'f': {
+      stream << "\f";
+      pos++;
+      break;
+      }
+      case '\'': {
+      stream << "\'";
+      pos++;
+      break;
+      }
+      case '\\': {
+      stream << "\\";
+      pos++;
+      break;
+      }
       default:
-        stream << '\\';
-        break;
+      stream << '\\';
+      break;
       }
     } else {
       stream << input[pos];

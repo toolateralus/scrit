@@ -23,7 +23,7 @@ parameterless
   
   
 parameterized function
-```
+``` go
 func funcName(param, param1) {
   println(param, param1)
 }
@@ -31,7 +31,7 @@ func funcName(param, param1) {
 
 
 default values; 
-```
+``` go
 func funcName(param = {}, param1 = [], param2 = SomeConstructorFunction()) {
   println(param, param1, param2)
 } 
@@ -54,7 +54,7 @@ funcName(undefined, undefined, 2)
 
   
 ## anonymous function
-```
+``` go
 // this executes in place.
 func() {
   
@@ -77,20 +77,20 @@ f = func() {
   
 ## for loops 
   1. no condition, runs until explicitly broken with 'break' or a return
-  ```
+  ``` go
   for {
   ...  
   }
   ```
   2. expression condition
   runs until the condition == false or is broken with break or return
-  ```
+  ```go
   for true {
     
   }
   ```
   3. normal style with declaration, condition, increment
-  ```
+  ```go
   for i=0, i<10, i=i+1 {
     println(i)
   }
@@ -100,7 +100,7 @@ f = func() {
 ## object literals, 
 
 
-```
+``` go
 o = { 
   field1 = 0 
   field2 = 10
@@ -116,7 +116,7 @@ o = {
 
 if you want to assign an object that may be null or undefined only when it is null or undefined you may use `??=`
 
-```
+``` js
 myObject = { someThing = 20 }
 
 myObject ??= { somethingElse = 10}
@@ -146,7 +146,7 @@ println(myObject)
 
 for within expressions, you may use the same logic, but with `??`
 
-```
+``` js
 
 myValue = undefined ?? 10
 
@@ -171,7 +171,7 @@ println(myValue)
 ### import a module as an object
 the module will be available as an object represented by the module name
 such as `math`
-```
+``` ts
 import math
 
 println(math.sqrt(10))
@@ -182,8 +182,9 @@ println(math.sqrt(10))
 
 All specified symbols from the object will be available as first class members of this object
 
-```
+``` ts
 import {sqrt, floor, toInt} from math
+
 
 
 println(sqrt(10) * floor(0.5) + toInt(1.0))
@@ -193,8 +194,8 @@ println(sqrt(10) * floor(0.5) + toInt(1.0))
 ### import all symbols from a module
 
 All symbols from the object will be available as first class members of this object
-
-```
+ 
+``` ts
 import * from math
 println(sqrt(10 * 2) + floor(0.5))
 ```

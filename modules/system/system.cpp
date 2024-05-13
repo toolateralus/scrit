@@ -8,6 +8,7 @@
 #include <scrit/native.hpp>
 #include <scrit/value.hpp>
 #include <string>
+#include <thread>
 #include <unistd.h>
 #include "scrit/ast.hpp"
 
@@ -138,21 +139,21 @@ static Value dir_delete(std::vector<Value> values) {
 }
 static Value time(std::vector<Value> values) {
   auto now = std::chrono::high_resolution_clock::now();
-  auto duration = now.time_since_epoch();
-  auto milliseconds =
-      std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+  long milliseconds = (double)std::chrono::duration_cast<std::chrono::milliseconds>(
+                         now.time_since_epoch())
+                         .count();
   return Ctx::CreateFloat(milliseconds / 1000.0);
 }
 static Value sleep(std::vector<Value> args) {
   if (!args.empty()) {
-    float fseconds;
+    float milliseconds;
     int seconds = 1;
     if (Ctx::TryGetInt(args[0], seconds)) {
-      sleep(seconds);
-    } else if (Ctx::TryGetFloat(args[0], fseconds)) {
-      usleep(fseconds * 1'000'000);
+      std::this_thread::sleep_for(std::chrono::seconds(seconds));
+    } else if (Ctx::TryGetFloat(args[0], milliseconds)) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(milliseconds)));
     } else {
-      sleep(1);
+      std::this_thread::sleep_for(std::chrono::seconds(1));
     }
   }
   return Value_T::UNDEFINED;
@@ -189,6 +190,7 @@ extern "C" ScritModDef *InitScritModule_system() {
   AddFunction(def, "time", &time, ValueType::String, {});
   AddFunction(def, "syscall", &syscall, ValueType::String, {Argument(ValueType::String, "cmd")});
   AddFunction(def, "exit", &exit, ValueType::String, {});
+  AddFunction(def, "sleep", &sleep, ValueType::Undefined, {{ValueType::Any, "seconds(int)|ms(float)"}});
   
   return def;
 }
