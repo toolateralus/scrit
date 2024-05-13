@@ -10,7 +10,7 @@ func cppBoilerplate(name) {
     #include <scrit/scritmod.hpp>
     
     static Value doSomething(std::vector<Value> values) {
-      return Value_T::Undefined;
+      return Value_T::UNDEFINED;
     }
     
     extern \"C\" ScritModDef* InitScritModule_" + name + "() {

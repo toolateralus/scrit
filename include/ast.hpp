@@ -163,6 +163,7 @@ struct Else : Statement {
   IfPtr ifStmnt;
   BlockPtr block;
   Else(SourceInfo &info) : Statement(info) {}
+  Else(SourceInfo &info, IfPtr &&ifPtr, BlockPtr &&block);
   static ElsePtr NoIf(SourceInfo &info, BlockPtr &&block);
   static ElsePtr New(SourceInfo &info, IfPtr &&ifStmnt);
   ExecutionResult Execute() override;

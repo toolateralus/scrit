@@ -396,10 +396,10 @@ ExpressionPtr Parser::ParseOperand() {
     return make_unique<Operand>(info,  Value_T::False);
   case TType::Undefined:
     Eat();
-    return make_unique<Operand>(info,  Value_T::Undefined);
+    return make_unique<Operand>(info,  Value_T::UNDEFINED);
   case TType::Null:
     Eat();
-    return make_unique<Operand>(info,  Value_T::Null);
+    return make_unique<Operand>(info,  Value_T::VNULL);
   case TType::Float:
     Eat();
     return make_unique<Operand>(info,  Float_T::New(stof(token.value)));

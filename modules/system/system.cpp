@@ -5,14 +5,16 @@
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <scrit/native.hpp>
 #include <scrit/value.hpp>
 #include <string>
 #include <unistd.h>
+#include "scrit/ast.hpp"
 
 static Value fexists(std::vector<Value> values) {
   auto filename = values[0];
   if (filename->GetType()!= ValueType::String) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   auto fname = static_cast<String_T *>(filename.get());
   return Ctx::CreateBool(std::filesystem::exists(fname->value));
@@ -20,7 +22,7 @@ static Value fexists(std::vector<Value> values) {
 static Value fcreate(std::vector<Value> values) {
   auto filename = values[0];
   if (filename->GetType()!= ValueType::String) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   auto fname = static_cast<String_T *>(filename.get());
   std::ofstream file(fname->value);
@@ -30,7 +32,7 @@ static Value fcreate(std::vector<Value> values) {
     return Ctx::CreateString("Unable to open file");
   }
 
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 static Value fwrite(std::vector<Value> values) {
   auto filename = values[0];
@@ -50,12 +52,12 @@ static Value fwrite(std::vector<Value> values) {
     return Ctx::CreateString("Unable to open file");
   }
 
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 static Value fread(std::vector<Value> values) {
   auto filename = values[0];
   if (filename->GetType()!= ValueType::String) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   auto fname = static_cast<String_T *>(filename.get());
 
@@ -72,12 +74,12 @@ static Value fread(std::vector<Value> values) {
 static Value fdelete(std::vector<Value> values) {
   auto filename = values[0];
   if (filename->GetType()!= ValueType::String) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   auto fname = static_cast<String_T *>(filename.get());
 
   if (std::filesystem::remove(fname->value)) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   } else {
     return Ctx::CreateString("Unable to delete file");
   }
@@ -85,7 +87,7 @@ static Value fdelete(std::vector<Value> values) {
 static Value dir_exists(std::vector<Value> values) {
   auto dirname = values[0];
   if (dirname->GetType()!= ValueType::String) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   auto dname = static_cast<String_T *>(dirname.get());
   return Ctx::CreateBool(std::filesystem::exists(dname->value));
@@ -93,12 +95,12 @@ static Value dir_exists(std::vector<Value> values) {
 static Value dir_create(std::vector<Value> values) {
   auto dirname = values[0];
   if (dirname->GetType()!= ValueType::String) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   auto dname = static_cast<String_T *>(dirname.get());
 
   if (std::filesystem::create_directory(dname->value)) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   } else {
     return Ctx::CreateString("Unable to create directory");
   }
@@ -110,7 +112,7 @@ static Value cwd(std::vector<Value> values) {
 static Value dir_getfiles(std::vector<Value> values) {
   auto dirname = values[0];
   if (dirname->GetType()!= ValueType::String) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   auto dname = static_cast<String_T *>(dirname.get());
   std::vector<Value> files;
@@ -124,12 +126,12 @@ static Value dir_getfiles(std::vector<Value> values) {
 static Value dir_delete(std::vector<Value> values) {
   auto dirname = values[0];
   if (dirname->GetType()!= ValueType::String) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   auto dname = static_cast<String_T *>(dirname.get());
 
   if (std::filesystem::remove_all(dname->value)) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   } else {
     return Ctx::CreateString("Unable to delete directory");
   }
@@ -153,21 +155,22 @@ static Value sleep(std::vector<Value> args) {
       sleep(1);
     }
   }
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 
 static Value syscall(std::vector<Value> values) {
   auto cmd = values[0];
   if (cmd->GetType()!= ValueType::String) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   auto command = static_cast<String_T *>(cmd.get());
   return Ctx::CreateInt(system(command->value.c_str()));
 }
 static Value exit(std::vector<Value> values) {
   std::exit(0);
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
+
 extern "C" ScritModDef *InitScritModule_system() {
   ScritModDef *def = CreateModDef();
   *def->description = "system functions. file io, time, etc.";
@@ -186,5 +189,6 @@ extern "C" ScritModDef *InitScritModule_system() {
   AddFunction(def, "time", &time, ValueType::String, {});
   AddFunction(def, "syscall", &syscall, ValueType::String, {Argument(ValueType::String, "cmd")});
   AddFunction(def, "exit", &exit, ValueType::String, {});
+  
   return def;
 }

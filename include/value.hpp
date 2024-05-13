@@ -3,7 +3,6 @@
 #include "native.hpp"
 #include <memory>
 #include <string>
-#include <typeinfo>
 #include <unordered_set>
 #include <vector>
 
@@ -72,8 +71,8 @@ enum class ValueType {
 string TypeToString(ValueType type);
 
 struct Value_T {
-  static Null Null;
-  static Undefined Undefined;
+  static Null VNULL;
+  static Undefined UNDEFINED;
   static Value InvalidCastException;
   static Bool False;
   static Bool True;
@@ -85,16 +84,16 @@ struct Value_T {
   virtual string ToString() const = 0;
   virtual bool Equals(Value) = 0;
   virtual Value Add(Value) {
-    return std::static_pointer_cast<Value_T>(Undefined);
+    return std::static_pointer_cast<Value_T>(UNDEFINED);
   }
   virtual Value Subtract(Value) {
-    return std::static_pointer_cast<Value_T>(Undefined);
+    return std::static_pointer_cast<Value_T>(UNDEFINED);
   }
   virtual Value Multiply(Value) {
-    return std::static_pointer_cast<Value_T>(Undefined);
+    return std::static_pointer_cast<Value_T>(UNDEFINED);
   }
   virtual Value Divide(Value) {
-    return std::static_pointer_cast<Value_T>(Undefined);
+    return std::static_pointer_cast<Value_T>(UNDEFINED);
   }
   virtual Bool Or(Value) { return False; }
   virtual Bool And(Value) { return False; }
@@ -104,12 +103,11 @@ struct Value_T {
   virtual Bool LessEquals(Value) { return False; }
   virtual Bool Not() { return False; }
   virtual Value Negate() {
-    return std::static_pointer_cast<Value_T>(Undefined);
+    return std::static_pointer_cast<Value_T>(UNDEFINED);
   }
   virtual Value Subscript(Value key);
   virtual Value SubscriptAssign(Value key, Value value);
   virtual void Set(Value value) { *this = *value; }
-  bool TypeEquals(Value other) { return typeid(other.get()) == typeid(*this); }
 };
 
 
@@ -287,7 +285,7 @@ struct Ctx {
     (void)std::initializer_list<int>{
         (isUndefined = isUndefined ||
                        (std::is_base_of<Value_T, std::decay_t<Args>>::value &&
-                        args->Equals(Value_T::Undefined)),
+                        args->Equals(Value_T::UNDEFINED)),
          0)...};
     return isUndefined;
   }
@@ -297,7 +295,7 @@ struct Ctx {
     (void)std::initializer_list<int>{
         (isNull =
              isNull || (std::is_base_of<Value_T, std::decay_t<Args>>::value &&
-                        args->Equals(Value_T::Null)),
+                        args->Equals(Value_T::VNULL)),
          0)...};
     return isNull;
   }

@@ -17,11 +17,11 @@ std::vector<string> Import::importedModules = {};
 
 Context ASTNode::context = {};
 auto ExecutionResult::None =
-    ExecutionResult(ControlChange::None, Value_T::Undefined);
+    ExecutionResult(ControlChange::None, Value_T::UNDEFINED);
 auto ExecutionResult::Break =
-    ExecutionResult(ControlChange::Break, Value_T::Undefined);
+    ExecutionResult(ControlChange::Break, Value_T::UNDEFINED);
 auto ExecutionResult::Continue =
-    ExecutionResult(ControlChange::Continue, Value_T::Undefined);
+    ExecutionResult(ControlChange::Continue, Value_T::UNDEFINED);
 
 string CC_ToString(ControlChange controlChange) {
   switch (controlChange) {
@@ -212,11 +212,11 @@ Value Identifier::Evaluate() {
   } else if (NativeFunctions::Exists(name)) {
     return NativeFunctions::GetCallable(name);
   }
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 Value Arguments::Evaluate() {
   // do nothing here.
-  return Value_T::Null;
+  return Value_T::VNULL;
 }
 ExecutionResult Parameters::Execute() {
   return ExecutionResult::None;
@@ -275,7 +275,7 @@ Value Call::Evaluate() {
     auto callable = static_cast<Callable_T *>(lvalue.get());
     return callable->Call(args);
   }
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 ExecutionResult Call::Execute() {
   Evaluate();
@@ -285,6 +285,7 @@ ExecutionResult Else::Execute() {
   if (ifStmnt != nullptr) {
     return ifStmnt->Execute();
   } else {
+    // this should not be valid.
     return block->Execute();
   }
 }
@@ -441,7 +442,7 @@ Value UnaryExpr::Evaluate() {
     throw std::runtime_error("invalid operator in unary expression " +
                              TTypeToString(op));
   }
-  return Value_T::Null;
+  return Value_T::VNULL;
 }
 Value BinExpr::Evaluate() {
   auto left = this->left->Evaluate();
@@ -510,7 +511,7 @@ ExecutionResult Import::Execute() {
     if (!symbols.empty()) {
       for (const auto &name : symbols) {
         auto value = module->context->Find(name);
-        if (value == Value_T::Undefined) {
+        if (value == Value_T::UNDEFINED) {
           throw std::runtime_error("invalid import statement. could not find " + name);
         }
         
@@ -661,4 +662,8 @@ Value CompAssignExpr::Evaluate() {
     throw std::runtime_error("invalid operator : " + TTypeToString(op) +
                              " in compound assignment statement");
   }
+}
+Else::Else(SourceInfo &info, IfPtr &&ifPtr, BlockPtr &&block) : Statement(info) {
+  this->ifStmnt = std::move(ifPtr);
+  this->block = std::move(block);
 }

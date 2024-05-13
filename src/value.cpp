@@ -8,13 +8,13 @@
 
 Bool Value_T::True = Bool_T::New(true);
 Bool Value_T::False = Bool_T::New(false);
-Null Value_T::Null = make_shared<Null_T>();
+Null Value_T::VNULL = make_shared<Null_T>();
 Value Value_T::InvalidCastException = make_shared<::Null_T>();
-Undefined Value_T::Undefined = make_shared<::Undefined_T>();
+Undefined Value_T::UNDEFINED = make_shared<::Undefined_T>();
 Value Object_T::GetMember(const string &name) { 
   if (scope->variables.contains(name))
     return scope->variables[name]; 
-  else return Value_T::Undefined;
+  else return Value_T::UNDEFINED;
 }
 void Object_T::SetMember(const string &name, Value &value) {
   scope->variables[name] = value;
@@ -42,7 +42,7 @@ Value Callable_T::Call(ArgumentsPtr &args) {
   
   switch (result.controlChange) {
   case ControlChange::None:
-    return Value_T::Null;
+    return Value_T::VNULL;
   case ControlChange::Return:
     return result.value;
   default:
@@ -104,7 +104,7 @@ Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
   
   ASTNode::context.PopScope();
   if (result == nullptr) {
-    return Undefined;
+    return UNDEFINED;
   } else {
     return result;
   }
@@ -125,7 +125,7 @@ Value Int_T::Add(Value other) {
                               static_cast<Float_T *>(other.get())->value);
     return i;
   }
-  return Value_T::Null;
+  return Value_T::VNULL;
 }
 Value Int_T::Subtract(Value other) {
   if (other->GetType() == ValueType::Int) {
@@ -137,7 +137,7 @@ Value Int_T::Subtract(Value other) {
                               static_cast<Float_T *>(other.get())->value);
     return i;
   }
-  return Value_T::Null;
+  return Value_T::VNULL;
 }
 Value Int_T::Multiply(Value other) {
   if (other->GetType() == ValueType::Int) {
@@ -149,7 +149,7 @@ Value Int_T::Multiply(Value other) {
                               static_cast<Float_T *>(other.get())->value);
     return i;
   }
-  return Value_T::Null;
+  return Value_T::VNULL;
 }
 Value Int_T::Divide(Value other) {
   if (other->GetType() == ValueType::Int) {
@@ -161,7 +161,7 @@ Value Int_T::Divide(Value other) {
                               static_cast<Float_T *>(other.get())->value);
     return i;
   }
-  return Value_T::Null;
+  return Value_T::VNULL;
 }
 void Int_T::Set(Value newValue) {
   if (newValue->GetType() == ValueType::Int) {
@@ -256,7 +256,7 @@ Value Float_T::Add(Value other) {
                               static_cast<Int_T *>(other.get())->value);
     return i;
   }
-  return Value_T::Null;
+  return Value_T::VNULL;
 }
 Value Float_T::Subtract(Value other) {
   if (other->GetType() == ValueType::Float) {
@@ -268,7 +268,7 @@ Value Float_T::Subtract(Value other) {
                               static_cast<Int_T *>(other.get())->value);
     return i;
   }
-  return Value_T::Null;
+  return Value_T::VNULL;
 }
 Value Float_T::Multiply(Value other) {
   if (other->GetType() == ValueType::Float) {
@@ -280,7 +280,7 @@ Value Float_T::Multiply(Value other) {
                               static_cast<Int_T *>(other.get())->value);
     return i;
   }
-  return Value_T::Null;
+  return Value_T::VNULL;
 }
 Value Float_T::Divide(Value other) {
   if (other->GetType() == ValueType::Float) {
@@ -292,7 +292,7 @@ Value Float_T::Divide(Value other) {
                               static_cast<Int_T *>(other.get())->value);
     return i;
   }
-  return Value_T::Null;
+  return Value_T::VNULL;
 }
 void Float_T::Set(Value newValue) {
   if (newValue->GetType() == ValueType::Float) {
@@ -495,20 +495,20 @@ bool Undefined_T::Equals(Value value) {
   return value.get() == this || value->GetType() == ValueType::Undefined;
 }
 bool Null_T::Equals(Value value) {
-  return value == Value_T::Null || value->GetType() == ValueType::Null;
+  return value == Value_T::VNULL || value->GetType() == ValueType::Null;
 }
 
-Value Value_T::Subscript(Value) { return Undefined; }
+Value Value_T::Subscript(Value) { return UNDEFINED; }
 Value String_T::Subscript(Value key) {
   int index;
   if (!Ctx::TryGetInt(key, index) || (size_t)index > value.length()) {
-    return Undefined;
+    return UNDEFINED;
   }
   return Ctx::CreateString(std::string() + this->value[index]);
 }
 
 Value Value_T::SubscriptAssign(Value, Value) {
-  return Undefined;
+  return UNDEFINED;
 }
 Value String_T::SubscriptAssign(Value key, Value value) {
   int idx;
@@ -520,7 +520,7 @@ Value String_T::SubscriptAssign(Value key, Value value) {
       this->value.insert(idx, string);
     }
   }
-  return Undefined;
+  return UNDEFINED;
 }
 Value Object_T::Subscript(Value key) {
   string strKey;
@@ -528,7 +528,7 @@ Value Object_T::Subscript(Value key) {
     return GetMember(strKey);
   }
 
-  return Undefined;
+  return UNDEFINED;
 }
 
 Value Object_T::SubscriptAssign(Value key, Value value) {
@@ -543,12 +543,12 @@ Value Object_T::SubscriptAssign(Value key, Value value) {
       it->second = value;
     }
   }
-  return Undefined;
+  return UNDEFINED;
 }
 Value Array_T::Subscript(Value key) {
   int index;
   if (!Ctx::TryGetInt(key, index) || (size_t)index > values.size()) {
-    return Undefined;
+    return UNDEFINED;
   }
   return values[index];
 }
@@ -557,7 +557,7 @@ Value Array_T::SubscriptAssign(Value key, Value value) {
   if (Ctx::TryGetInt(key, idx)) {
     values[idx] = value;
   }
-  return Undefined;
+  return UNDEFINED;
 }
 
 namespace Values {
@@ -673,5 +673,5 @@ bool Ctx::TryGetString(Value value, string &result) {
   }
   return false;
 }
-bool Ctx::IsUndefined(Value value) { return value->Equals(Value_T::Undefined); }
-bool Ctx::IsNull(Value value) { return value->Equals(Value_T::Null); }
+bool Ctx::IsUndefined(Value value) { return value->Equals(Value_T::UNDEFINED); }
+bool Ctx::IsNull(Value value) { return value->Equals(Value_T::VNULL); }

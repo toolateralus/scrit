@@ -21,15 +21,15 @@ static Value initWindow(std::vector<Value> args) {
     return Ctx::CreateString("Invalid argument types.");
   }
   InitWindow(width, height, name.c_str());
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 static Value beginDrawing(std::vector<Value> args) {
   BeginDrawing();
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 static Value endDrawing(std::vector<Value> args) {
   EndDrawing();
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 static Value drawRectangle(std::vector<Value> args) {
   int posX, posY, width, height;
@@ -59,7 +59,7 @@ static Value drawRectangle(std::vector<Value> args) {
 
   DrawRectangle(posX, posY, width, height, color);
 
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 static Value windowShouldClose(std::vector<Value> args) {
   return Ctx::CreateBool(WindowShouldClose());
@@ -72,7 +72,7 @@ static Value clearBackground(std::vector<Value> args) {
   } else {
     ClearBackground(BLACK);
   }
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 
 
@@ -115,7 +115,7 @@ static Value drawModel(std::vector<Value> args) {
     return Ctx::CreateString("Invalid color object");
   }
   DrawModel(loadedModels[modelId], position, scale, color);
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 static Value unloadModel(std::vector<Value> args) {
   if (args.empty()) {
@@ -130,7 +130,7 @@ static Value unloadModel(std::vector<Value> args) {
   }
   UnloadModel(loadedModels[modelId]);
   loadedModels.erase(loadedModels.begin() + modelId);
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 
 static Value loadShader(std::vector<Value> args) {
@@ -155,7 +155,7 @@ static Value unloadShader(std::vector<Value> args) {
   Shader shader;
   shader.id = (unsigned int)shaderId;
   UnloadShader(shader);
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 
 static Value drawFPS(std::vector<Value> args) {
@@ -167,7 +167,7 @@ static Value drawFPS(std::vector<Value> args) {
     return Ctx::CreateString("invalid args types");
   }
   DrawFPS(x,y);
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 
 static Value drawText(std::vector<Value> args) {
@@ -187,7 +187,7 @@ static Value drawText(std::vector<Value> args) {
     return Ctx::CreateString("Invalid color object");
   }
   DrawText(text.c_str(), posX, posY, fontSize, color);
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 static Value drawCircle(std::vector<Value> args) {
   if (args.size() < 4) {
@@ -204,7 +204,7 @@ static Value drawCircle(std::vector<Value> args) {
     return Ctx::CreateString("Invalid color object");
   }
   DrawCircle(centerX, centerY, radius, color);
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 static Value drawLine(std::vector<Value> args) {
   if (args.size() < 5) {
@@ -222,7 +222,7 @@ static Value drawLine(std::vector<Value> args) {
     return Ctx::CreateString("Invalid color object");
   }
   DrawLine(startPosX, startPosY, endPosX, endPosY, color);
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 static Value drawTriangle(std::vector<Value> args) {
   if (args.size() < 7) {
@@ -241,7 +241,7 @@ static Value drawTriangle(std::vector<Value> args) {
     return Ctx::CreateString("Invalid color object");
   }
   DrawTriangle(Vector2{posX1, posY1}, Vector2{posX2, posY2}, Vector2{posX3, posY3}, color);
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 static Value drawRectangleLines(std::vector<Value> args) {
   if (args.size() < 5) {
@@ -259,7 +259,7 @@ static Value drawRectangleLines(std::vector<Value> args) {
     return Ctx::CreateString("Invalid color object");
   }
   DrawRectangleLines(posX, posY, width, height, color);
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 
 static Value loadTexture(std::vector<Value> args) {
@@ -294,7 +294,7 @@ static Value drawTexture(std::vector<Value> args) {
   }
   auto tex = loadedTextures[texID];
   DrawTexture(tex, posX, posY, WHITE);
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 
 

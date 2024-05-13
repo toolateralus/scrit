@@ -19,13 +19,13 @@ static Value toInt(std::vector<Value> args) {
       return args[0];
     }
   }
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 static Value toFloat(std::vector<Value> args) {
   int result;
   float fresult;
   if (args.empty()) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   if (Ctx::TryGetInt(args[0], result)) {
     return Ctx::CreateFloat(result);
@@ -33,7 +33,7 @@ static Value toFloat(std::vector<Value> args) {
   if (Ctx::TryGetFloat(args[0], fresult)) {
     return args[0];
   }
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 static Value floor(std::vector<Value> args) {
   return toInt(args);
@@ -50,7 +50,7 @@ static Value round(std::vector<Value> args) {
       return Ctx::CreateFloat(round(ires));
     }
   }
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 static Value sqrt(std::vector<Value> args) {
   float fres;
@@ -64,7 +64,7 @@ static Value sqrt(std::vector<Value> args) {
       return Ctx::CreateFloat(sqrt(ires));
     }
   }
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 
 

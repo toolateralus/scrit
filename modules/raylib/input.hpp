@@ -157,7 +157,7 @@ static Value setMousePosition(std::vector<Value> args) {
     return Ctx::CreateString("Invalid argument types.");
   }
   SetMousePosition((int)x, (int)y);
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 static Value getMouseWheelMove(std::vector<Value> args) {
   return Ctx::CreateInt(GetMouseWheelMove());

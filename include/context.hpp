@@ -28,4 +28,5 @@ struct Scope_T;
     Scope PopScope();
     Value Find(const string &name);
     void Insert(const string &name, Value value);
+    void Reset();
   };

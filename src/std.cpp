@@ -11,7 +11,7 @@ REGISTER_FUNCTION(println, ValueType::Undefined, {}) {
   for (const auto &arg: args) {
     printf("%s\n", arg->ToString().c_str());;
   }
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 
 REGISTER_FUNCTION(readln, ValueType::String, {}) {
@@ -22,7 +22,7 @@ REGISTER_FUNCTION(readln, ValueType::String, {}) {
 
 REGISTER_FUNCTION(push, ValueType::Undefined, Argument(ValueType::Array, "target"), Argument(ValueType::Any, "elementsToAdd")) {
   if (args.empty()) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   
   string value;
@@ -37,20 +37,20 @@ REGISTER_FUNCTION(push, ValueType::Undefined, Argument(ValueType::Array, "target
   }
   
   if (args[0]->GetType() != ValueType::Array) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   auto array = static_cast<Array_T*>(args[0].get());
   for (size_t i = 1; i < args.size(); i++) {
     array->Push(args[i]);
   }
-  return Value_T::Undefined;
+  return Value_T::UNDEFINED;
 }
 REGISTER_FUNCTION(pop, ValueType::Any, {Argument(ValueType::Array, "target")}) {
   if (args.empty()) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   if (args[0]->GetType() != ValueType::Array) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   auto array = static_cast<Array_T*>(args[0].get());
   return array->Pop();
@@ -58,10 +58,10 @@ REGISTER_FUNCTION(pop, ValueType::Any, {Argument(ValueType::Array, "target")}) {
 
 REGISTER_FUNCTION(len, ValueType::Int, {Argument(ValueType::Array, "target")}) {
   if (args.empty()) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   if (args[0]->GetType() != ValueType::Array) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   auto array = static_cast<Array_T*>(args[0].get());
   return Int_T::New(array->values.size());
@@ -69,7 +69,7 @@ REGISTER_FUNCTION(len, ValueType::Int, {Argument(ValueType::Array, "target")}) {
 
 REGISTER_FUNCTION(typeof, ValueType::String, {Argument(ValueType::Any, "target")}) {
   if (args.empty()) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   string typeName;
   return Ctx::CreateString(TypeToString(args[0]->GetType()));
@@ -77,14 +77,14 @@ REGISTER_FUNCTION(typeof, ValueType::String, {Argument(ValueType::Any, "target")
 
 REGISTER_FUNCTION(tostr, ValueType::String, {Argument(ValueType::Any, "target")}) {
   if (args.empty()) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   return Ctx::CreateString(args[0]->ToString());
 }
 
 REGISTER_FUNCTION(serialize, ValueType::String, Argument(ValueType::Any, "target"), Argument(ValueType::Object, "settings")) {
   if (args.empty()) {
-    return Value_T::Undefined;
+    return Value_T::UNDEFINED;
   }
   
   auto val = args[0];

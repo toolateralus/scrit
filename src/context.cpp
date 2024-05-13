@@ -45,3 +45,7 @@ Value Context::Find(const string &name) {
   }
   return nullptr;
 }
+void Context::Reset() {
+  scopes.clear();
+  PushScope();
+}
