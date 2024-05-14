@@ -40,7 +40,7 @@ static Value fwrite(std::vector<Value> values) {
   auto content = values[1];
 
   if (filename->GetType()!= ValueType::String || content->GetType()!= ValueType::String) {
-    return Ctx::CreateString("invalid arguments");
+    return Ctx::CreateString("invalid arguments to fwrite");
   }
   auto fname = static_cast<String_T *>(filename.get());
   auto fcontent = static_cast<String_T *>(content.get());

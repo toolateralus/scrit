@@ -2,6 +2,7 @@
 #include "helpers.hpp"
 #include "input.hpp"
 #include <scrit/native.hpp>
+#include <scrit/value.hpp>
 
 extern "C" ScritModDef *InitScritModule_raylib() {
   ScritModDef *def = CreateModDef();
@@ -24,7 +25,9 @@ extern "C" ScritModDef *InitScritModule_raylib() {
                {ValueType::String, "title"}});
 
   AddFunction(def, "windowShouldClose", &windowShouldClose, ValueType::Bool);
-
+  
+  AddFunction(def, "setModelTexture", &setModelTexture, ValueType::Undefined, {{ValueType::Int, "modelID"}, {ValueType::Int, "textureID"}});
+  
   // Rendering utils.
   AddFunction(def, "beginDrawing", &beginDrawing, ValueType::Undefined);
   AddFunction(def, "endDrawing", &endDrawing, ValueType::Undefined);
@@ -48,7 +51,17 @@ extern "C" ScritModDef *InitScritModule_raylib() {
               {{ValueType::Object, "texture"},
                {ValueType::Object, "position"},
                {ValueType::Object, "tint"}});
-
+  AddFunction(def, "createCamera3D", &createCamera3D, ValueType::Int);
+  AddFunction(def, "destroyCamera3D", &destroyCamera3D, ValueType::Undefined,
+              {{ValueType::Int, "cameraID"}});
+              
+  AddFunction(def, "updateCamera3DPro", &updateCamera3DPro, ValueType::Undefined,
+              {{ValueType::Int, "cameraID"}}); // TODO: fix this signature
+              
+  AddFunction(def, "beginMode3D", &beginMode3D, ValueType::Undefined,
+              {{ValueType::Int, "cameraID"}});
+  AddFunction(def, "endMode3D", &endMode3D, ValueType::Undefined);
+              
   // Rendering
   AddFunction(def, "clearBackground", &clearBackground, ValueType::Undefined,
               {{ValueType::Object, "color"}});
@@ -98,7 +111,7 @@ extern "C" ScritModDef *InitScritModule_raylib() {
               {{ValueType::Int, "x"}, {ValueType::Int, "y"}});
   AddFunction(def, "getMouseWheelMove", &getMouseWheelMove, ValueType::Float);
   AddFunction(def, "drawFPS", &drawFPS, ValueType::Undefined);
-
+  
   // keys enum
   Object keys = Ctx::CreateObject();
   for (const auto &[key, val] : GetKeysMap()) {
