@@ -160,32 +160,33 @@ static Value updateCamera3DPro(std::vector<Value> args) {
   }
   
   int id;
-  Object position;
+  Object translation;
   Object rotation;
   float zoom;
-  if (!Ctx::TryGetInt(args[0], id) || !Ctx::TryGetObject(args[1], position) ||
+  if (!Ctx::TryGetInt(args[0], id) || !Ctx::TryGetObject(args[1], translation) ||
       !Ctx::TryGetObject(args[2], rotation) ||
       !Ctx::TryGetFloat(args[3], zoom)) {
     return Ctx::CreateString(
         "Invalid arguments to updateCameraPro: expected int cameraID, object "
         "position , object rotation, float zoom");
   }
-
-  Vector3 pos;
-  Vector3 rot;
-  if (!TryGetVector3(position, pos) || !TryGetVector3(rotation, rot)) {
+  
+  Vector3 translate;
+  Vector3 rotate;
+  if (!TryGetVector3(translation, translate) || !TryGetVector3(rotation, rotate)) {
     return Ctx::CreateString(
         "Invalid position or rotation object in updateCameraPro");
   }
-
+  
   if (id > loaded3dCameras.size()) {
     return Ctx::CreateString(
         "Invalid camera id: exceeded bounds of available cameras");
   }
-
+  
   auto &camera = loaded3dCameras[id];
-  UpdateCameraPro(&camera, pos, rot, zoom);
-
+  
+  UpdateCameraPro(&camera, translate, rotate, zoom);
+  
   return Value_T::UNDEFINED;
 }
 static Value beginMode3D(std::vector<Value> args) {

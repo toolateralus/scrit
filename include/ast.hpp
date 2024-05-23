@@ -132,7 +132,7 @@ struct Block : Statement {
 struct ObjectInitializer : Expression {
   BlockPtr block;
   Scope scope;
-  ObjectInitializer(SourceInfo &info, BlockPtr block);
+  ObjectInitializer(SourceInfo &info, BlockPtr &&block, Scope scope);
   Value Evaluate() override;
 };
 struct Call : Expression, Statement {

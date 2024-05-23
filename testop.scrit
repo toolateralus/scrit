@@ -1,0 +1,86 @@
+
+import math
+import * from raylib
+
+println(colors)
+
+func Scene() {
+  return {
+    nodes = []
+    func addNode(node) {
+      if (typeof(node) == "object") {
+        push(nodes, node)
+      }
+    }
+    func findNode(name) {
+      if (typeof(name) == "string") {
+        for node : nodes {
+          if node.name == name {
+            return node
+          }
+        }
+      }
+    }
+  }
+}
+
+func Node(pos, scale, color, name) {
+  pos ??= {
+    x = 0.0,
+    y = 0.0,
+  }
+        
+  scale ??= {
+    x = 24.0,
+    y = 24.0,
+  }
+  
+  color ??= colors.WHITE
+  
+  name ??= "new Node " + len(scene.nodes) 
+  
+  func draw() {
+    drawRectangle(
+      math.floor(this.pos.x ?? 0),
+      math.floor(this.pos.y ?? 0),
+      math.floor(this.scale.x ?? 1),
+      math.floor(this.scale.y ?? 1),
+      this.color ?? colors.WHITE
+    )
+  }
+  
+  return {
+    this.pos = pos,
+    this.name = name,
+    this.scale = scale,
+    this.color = color,
+    this.draw = draw,
+  }
+}
+
+scene = Scene()
+
+player = Node()
+
+player.name = "Player"
+
+
+
+
+
+// func Object(value) {
+//   return {
+//     this.value = value,
+//     func add_operator(a, b) {
+//       return Object(a.value + b.value)
+//     }
+//   }
+// }
+
+// a = Object(0)
+// b = Object(1)
+// c = Object(2)
+
+// println("A: " + a, "B: " + b, "C: " + c)
+
+// println(a + b + c)

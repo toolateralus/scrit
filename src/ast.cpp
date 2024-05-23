@@ -69,7 +69,8 @@ Return::Return(SourceInfo &info, ExpressionPtr &&value) : Statement(info) {
 Block::Block(SourceInfo &info, vector<StatementPtr> &&statements) : Statement(info) {
   this->statements = std::move(statements);
 }
-ObjectInitializer::ObjectInitializer(SourceInfo &info, BlockPtr block) : Expression(info) {
+ObjectInitializer::ObjectInitializer(SourceInfo &info, BlockPtr &&block, Scope scope) : Expression(info) {
+  this->scope = make_shared<Scope_T>(scope.get());
   this->block = std::move(block);
 }
 Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args) : Expression(info), Statement(info) {
@@ -231,7 +232,12 @@ ExecutionResult Return::Execute() {
   return ExecutionResult(ControlChange::Return, value->Evaluate());
 }
 ExecutionResult Block::Execute() {
-  scope = ASTNode::context.PushScope();
+  if (scope == nullptr)
+    scope = ASTNode::context.PushScope();
+  else {
+    ASTNode::context.PushScope(scope);
+  }
+  
   int index = 0;
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
@@ -255,11 +261,13 @@ ExecutionResult Block::Execute() {
   return ExecutionResult::None;
 }
 Value ObjectInitializer::Evaluate() {
+  block->scope = this->scope;
   auto controlChange = block->Execute().controlChange;
   if (controlChange != ControlChange::None) {
     throw std::runtime_error(CC_ToString(controlChange) +
                              " not allowed in object initialization.");
   }
+ 
   return Object_T::New(block->scope);
 }
 vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
@@ -379,7 +387,10 @@ Value DotExpr::Evaluate() {
   if (lvalue->GetType() != ValueType::Object) {
     throw std::runtime_error("invalid lhs on dot operation : " + TypeToString(lvalue->GetType()));
   }
-  ASTNode::context.PushScope(static_cast<Object_T *>(lvalue.get())->scope);
+  auto object = static_cast<Object_T *>(lvalue.get());
+  
+  auto scope = object->scope;
+  ASTNode::context.PushScope(scope);
   auto result = right->Evaluate();
   ASTNode::context.PopScope();
   return result;

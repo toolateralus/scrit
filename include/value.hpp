@@ -39,8 +39,6 @@ struct Array_T;
 struct Undefined_T;
 struct Null_T;
 
-
-
 // ease of use typedef.
 typedef shared_ptr<Value_T> Value;
 typedef shared_ptr<Null_T> Null;
@@ -51,8 +49,6 @@ typedef shared_ptr<Array_T> Array;
 typedef shared_ptr<Int_T> Int;
 typedef shared_ptr<Float_T> Float;
 typedef shared_ptr<Object_T> Object;
-
-
 
 enum class ValueType {
   Invalid,
@@ -110,8 +106,6 @@ struct Value_T {
   virtual void Set(Value value) { *this = *value; }
 };
 
-
-
 struct Null_T : Value_T {
   ValueType GetType() const override { return ValueType::Null; }
   Null_T();
@@ -133,13 +127,13 @@ struct Int_T : Value_T {
   static Int New(int value = 0) { return make_shared<Int_T>(value); }
 
   virtual bool Equals(Value value) override;
+  virtual void Set(Value newValue) override;
+  virtual Bool Or(Value other) override;
+  virtual Bool And(Value other) override;
   virtual Value Add(Value other) override;
   virtual Value Subtract(Value other) override;
   virtual Value Multiply(Value other) override;
   virtual Value Divide(Value other) override;
-  virtual void Set(Value newValue) override;
-  virtual Bool Or(Value other) override;
-  virtual Bool And(Value other) override;
   virtual Bool Less(Value other) override;
   virtual Bool Greater(Value other) override;
   virtual Bool GreaterEquals(Value other) override;
@@ -198,7 +192,7 @@ struct Bool_T : Value_T {
   virtual string ToString() const override;
   ValueType GetType() const override { return ValueType::Bool; }
 };
-struct Object_T : Value_T {
+struct Object_T : Value_T, std::enable_shared_from_this<Object_T> {
   Object_T(Scope scope);
   Scope scope;
   static Object New(Scope scope = nullptr) {
@@ -215,6 +209,15 @@ struct Object_T : Value_T {
   ValueType GetType() const override { return ValueType::Object; }
   Value Subscript(Value key) override;
   Value SubscriptAssign(Value key, Value value) override;
+  Value CallOpOverload(Value &other, const string &op_key);
+  virtual Value Add(Value other) override;
+  virtual Value Subtract(Value other) override;
+  virtual Value Multiply(Value other) override;
+  virtual Value Divide(Value other) override;
+  virtual Bool Less(Value other) override;
+  virtual Bool Greater(Value other) override;
+  virtual Bool GreaterEquals(Value other) override;
+  virtual Bool LessEquals(Value other) override;
 };
 struct Callable_T : Value_T {
   ~Callable_T();
@@ -223,6 +226,7 @@ struct Callable_T : Value_T {
   BlockPtr block;
   ParametersPtr params;
   virtual Value Call(ArgumentsPtr &args);
+  virtual Value Call(std::vector<Value> &args);
   string ToString() const override;
   bool Equals(Value value) override;
   ValueType GetType() const override { return ValueType::Callable; }
@@ -273,7 +277,22 @@ struct Ctx {
   static Float CreateFloat(const float value = 0.0f);
   static Object CreateObject(shared_ptr<Scope_T> scope = nullptr);
   static Array CreateArray(vector<Value> values = {});
-
+  
+  template<typename T>
+  static Object FromStruct(T instance) {
+    const auto size = sizeof(T);
+    auto *ptr = &instance;
+    for (int i = ptr; i < ptr + size; ++i) {
+      // try cast values to bool, int, std::string, char *, etc recursively to create
+      // a Object 
+    }
+  }
+  
+  static Array FromFloatVector(vector<float> &values);
+  static Array FromStringVector(vector<string> &values);
+  static Array FromBoolVector(vector<bool> &values);
+  static Array FromIntVector(vector<int> &values);
+  
   static bool TryGetString(Value str, string &result);
   static bool TryGetInt(Value value, int &result);
   static bool TryGetFloat(Value value, float &result);
@@ -289,7 +308,6 @@ struct Ctx {
          0)...};
     return isUndefined;
   }
-
   template <typename... Args> static bool IsNull(Args &&...args) {
     bool isNull = false;
     (void)std::initializer_list<int>{

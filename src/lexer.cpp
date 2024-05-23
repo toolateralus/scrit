@@ -31,23 +31,73 @@ vector<Token> Lexer::Lex(const string &input) {
 
   while (pos < input.length()) {
     cur = input[pos];
-    if (cur == '\n') {
-      pos++;
-      loc++;
-      col = 0;
-      continue;
+    
+    
+    // IGNORED CHARACTERS
+    {
+      // ignore newlines.
+      if (cur == '\n') {
+        pos++;
+        loc++;
+        col = 0;
+        continue;
+      }
+      
+      // ignore tab space.
+      if (cur == '\t') {
+        pos++;
+        col++;
+        continue;
+      }
+      
+      // ignore whitespace.
+      if (cur == ' ') {
+        pos++;
+        col++;
+        continue;
+      }
     }
-
-    if (cur == '\t') {
-      pos++;
-      col++;
-      continue;
-    }
-
-    if (cur == ' ') {
-      pos++;
-      col++;
-      continue;
+    
+    // COMMENTS
+    { 
+      // Single line comments.
+      if (input.length() > pos + 1 && cur == '/' && input[pos + 1] == '/') {
+        pos += 2; // move past //
+        // find the next newline.
+        while (input.length() > pos && input[pos] != '\n') {
+          pos++;
+          col++;
+        }
+        // ignore the newline
+        pos++;
+        loc++;
+        continue;
+      }
+      
+      // /*  multi line comments */
+      if (input.length() > pos + 1 && cur == '/' && input[pos + 1] == '*') {
+        // ignore the comment /* thing. 
+        pos += 2;
+        col += 2;
+        while (input.length() > pos + 1) {
+          if (input[pos] == '*' && input[pos + 1] == '/') {
+            // skip the multi-line comment terminator and continue lexing.
+            pos += 2;
+            col += 2;
+            break;
+          } else if (input[pos] == '\n') {
+            // count newlines / reset column for the SourceInfo
+            pos++;
+            col = 0;
+            loc++;
+          } else {
+            // consume & ignore the characters within the comment.
+            pos++;
+            col++;
+          }
+        }
+        continue;
+      }
     }
 
     if (cur == '\"') {
@@ -100,52 +150,52 @@ Token Lexer::LexString() {
                                " col:" + std::to_string(startCol));
     }
     if (!(input[pos] != '\"' ||
-        (input[pos] == '\"' && input[pos - 1] == '\\'))) {
+          (input[pos] == '\"' && input[pos - 1] == '\\'))) {
       break;
     }
 
     if (input[pos] == '\\' && pos + 1 < input.size()) {
       switch (input[pos + 1]) {
       case '\"':
-      stream << '\"';
-      pos++;
-      break;
+        stream << '\"';
+        pos++;
+        break;
       case 'n':
-      stream << '\n';
-      pos++;
-      break;
-      case 't': 
-      stream << "\t";
-      pos++;
-      break;
+        stream << '\n';
+        pos++;
+        break;
+      case 't':
+        stream << "\t";
+        pos++;
+        break;
       case 'b': {
-      stream << "\b";
-      pos++;
-      break;
+        stream << "\b";
+        pos++;
+        break;
       }
       case 'r': {
-      stream << "\r";
-      pos++;
-      break;
+        stream << "\r";
+        pos++;
+        break;
       }
       case 'f': {
-      stream << "\f";
-      pos++;
-      break;
+        stream << "\f";
+        pos++;
+        break;
       }
       case '\'': {
-      stream << "\'";
-      pos++;
-      break;
+        stream << "\'";
+        pos++;
+        break;
       }
       case '\\': {
-      stream << "\\";
-      pos++;
-      break;
+        stream << "\\";
+        pos++;
+        break;
       }
       default:
-      stream << '\\';
-      break;
+        stream << '\\';
+        break;
       }
     } else {
       stream << input[pos];
@@ -211,43 +261,41 @@ Token Lexer::LexOp() {
   throw std::runtime_error("failed to parse operator " + ch);
 }
 Lexer::Lexer() {
-  operators = {
-      {"+", TType::Add},
-      {"-", TType::Sub},
-      {"*", TType::Mul},
-      {"/", TType::Div},
-      {"||", TType::Or},
-      {"&&", TType::And},
-      {">", TType::Greater},
-      {"<", TType::Less},
-      {">=", TType::GreaterEq},
-      {"<=", TType::LessEq},
-      {"+=", TType::AddEq},
-      {"-=", TType::SubEq},
-      {"*=", TType::MulEq},
-      {"/=", TType::DivEq},
-      {"++", TType::Increment},
-      {"--", TType::Decrement},
-      {"==", TType::Equals},
-      {"!=", TType::NotEquals},
-      {".", TType::Dot},
-      {"!", TType::Not},
-      // punctuation
-      {"(", TType::LParen},
-      {")", TType::RParen},
+  operators = {{"+", TType::Add},
+               {"-", TType::Sub},
+               {"*", TType::Mul},
+               {"/", TType::Div},
+               {"||", TType::Or},
+               {"&&", TType::And},
+               {">", TType::Greater},
+               {"<", TType::Less},
+               {">=", TType::GreaterEq},
+               {"<=", TType::LessEq},
+               {"+=", TType::AddEq},
+               {"-=", TType::SubEq},
+               {"*=", TType::MulEq},
+               {"/=", TType::DivEq},
+               {"++", TType::Increment},
+               {"--", TType::Decrement},
+               {"==", TType::Equals},
+               {"!=", TType::NotEquals},
+               {".", TType::Dot},
+               {"!", TType::Not},
+               // punctuation
+               {"(", TType::LParen},
+               {")", TType::RParen},
 
-      {"{", TType::LCurly},
-      {"}", TType::RCurly},
-      
-      {"[", TType::SubscriptLeft},
-      {"]", TType::SubscriptRight},
-      {",", TType::Comma},
-      {":", TType::Colon},
-      {"=", TType::Assign},
-      {"??", TType::NullCoalescing},
-      // these are escpaed because theyre trigraphs
-      {"\?\?=", TType::NullCoalescingEq}
-  };
+               {"{", TType::LCurly},
+               {"}", TType::RCurly},
+
+               {"[", TType::SubscriptLeft},
+               {"]", TType::SubscriptRight},
+               {",", TType::Comma},
+               {":", TType::Colon},
+               {"=", TType::Assign},
+               {"??", TType::NullCoalescing},
+               // these are escpaed because theyre trigraphs
+               {"\?\?=", TType::NullCoalescingEq}};
   keywords = {
       {"func", TType::Func},           {"for", TType::For},
       {"continue", TType::Continue},   {"break", TType::Break},
@@ -255,7 +303,7 @@ Lexer::Lexer() {
       {"else", TType::Else},           {"false", TType::False},
       {"true", TType::True},           {"null", TType::Null},
       {"undefined", TType::Undefined}, {"import", TType::Import},
-      {"from", TType::From}, {"use", TType::Use},
+      {"from", TType::From},           {"use", TType::Use},
   };
   loc = 1;
 }
@@ -390,4 +438,3 @@ bool IsCompoundAssignmentOperator(const TType &type) {
   return type == TType::AddEq || type == TType::SubEq || type == TType::MulEq ||
          type == TType::DivEq || type == TType::NullCoalescingEq;
 }
-

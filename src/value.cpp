@@ -588,9 +588,33 @@ namespace Values {
     }
     return "";
   }
+
+  } // namespace Values
+
+Value Callable_T::Call(std::vector<Value> &values) {
+  auto scope = ASTNode::context.PushScope();
+  int i = 0;
+  for (const auto& [key, value] : params->map) {
+    if (i < values.size()) {
+      scope->variables[key] = values[i];
+    } else if (value != nullptr) {
+      scope->variables[key] = value;
+    } else {
+      break;
+    }
+    i++;
+  }
+  auto result = block->Execute();
+  ASTNode::context.PopScope();
+  switch (result.controlChange) {
+  case ControlChange::None:
+    return Value_T::VNULL;
+  case ControlChange::Return:
+    return result.value;
+  default:
+    throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
+  }
 }
-
-
 Float_T::Float_T(float value) {
   this->value = value;
 }
@@ -675,3 +699,92 @@ bool Ctx::TryGetString(Value value, string &result) {
 }
 bool Ctx::IsUndefined(Value value) { return value->Equals(Value_T::UNDEFINED); }
 bool Ctx::IsNull(Value value) { return value->Equals(Value_T::VNULL); }
+
+Value Object_T::CallOpOverload(Value &arg, const string &op_key) {
+  if (!scope->variables.contains(op_key)) {
+    return Value_T::UNDEFINED;
+  }
+  auto member = scope->variables[op_key];
+  if (member == nullptr || member->GetType() != ValueType::Callable) {
+    return Value_T::UNDEFINED;
+  }
+  auto callable = static_cast<Callable_T *>(member.get());
+  auto args = std::vector<Value>{shared_from_this(), arg};
+  return callable->Call(args);
+}
+Value Object_T::Add(Value other) {
+  static const string op_key = "add_operator";
+  return CallOpOverload(other, op_key);
+}
+Value Object_T::Subtract(Value other) {
+  static const string op_key = "sub_operator";
+  return CallOpOverload(other, op_key);
+}
+Value Object_T::Multiply(Value other) {
+    static const string op_key = "mul_operator";
+  return CallOpOverload(other, op_key);
+}
+Value Object_T::Divide(Value other) {
+    static const string op_key = "div_operator";
+  return CallOpOverload(other, op_key);
+}
+Bool Object_T::Less(Value other) {
+  static const string op_key = "less_operator";
+  auto result = CallOpOverload(other, op_key);
+  if (result->GetType() == ValueType::Bool) {
+    return std::dynamic_pointer_cast<Bool_T>(result);
+  }
+  return False;
+}
+Bool Object_T::Greater(Value other) {
+  static const string op_key = "greater_operator";
+  auto result = CallOpOverload(other, op_key);
+  if (result->GetType() == ValueType::Bool) {
+    return std::dynamic_pointer_cast<Bool_T>(result);
+  }
+  return False;
+}
+Bool Object_T::GreaterEquals(Value other) {
+  static const string op_key = "greater_eq_operator";
+  auto result = CallOpOverload(other, op_key);
+  if (result->GetType() == ValueType::Bool) {
+    return std::dynamic_pointer_cast<Bool_T>(result);
+  }
+  return False;
+}
+Bool Object_T::LessEquals(Value other) {
+  static const string op_key = "less_eq_operator";
+  auto result = CallOpOverload(other, op_key);
+  if (result->GetType() == ValueType::Bool) {
+    return std::dynamic_pointer_cast<Bool_T>(result);
+  }
+  return False;
+}
+Values::Array Ctx::FromFloatVector(vector<float> &values) {
+  Array array = CreateArray();
+  for (const auto &value : values) {
+    array->Push(Ctx::CreateFloat(value));
+  }
+  return array;
+}
+Values::Array Ctx::FromStringVector(vector<string> &values) {
+  Array array = CreateArray();
+  for (const auto &value : values) {
+    array->Push(Ctx::CreateString(value));
+  }
+  return array;
+}
+Values::Array Ctx::FromBoolVector(vector<bool> &values) {
+  Array array = CreateArray();
+  for (const auto &value : values) {
+    array->Push(Ctx::CreateBool(value));
+  }
+  return array;
+}
+Values::Array Ctx::FromIntVector(vector<int> &values) {
+  Array array = CreateArray();
+  for (const auto &value : values) {
+    array->Push(Ctx::CreateInt(value));
+  }
+  return array;
+}

@@ -369,6 +369,7 @@ ExpressionPtr Parser::ParseOperand() {
   case TType::LCurly: {
     Eat();
     vector<StatementPtr> statements = {};
+    auto scope = ASTNode::context.PushScope();
     while (tokens.size() > 0) {
       auto next = Peek();
       if (next.type == TType::Comma) {
@@ -382,8 +383,8 @@ ExpressionPtr Parser::ParseOperand() {
       statements.push_back(std::move(statement));
     }
     Expect(TType::RCurly);
-    auto block = make_unique<Block>(info,  std::move(statements));
-    return make_unique<ObjectInitializer>(info,  std::move(block));
+    ASTNode::context.PopScope();
+    return make_unique<ObjectInitializer>(info,  make_unique<Block>(info,  std::move(statements)), std::move(scope));
   }
   case TType::String:
     Eat();

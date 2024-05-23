@@ -307,13 +307,79 @@ functions like `println`, `readln`, `push` and `pop` are available without impor
 #### breakpoint debugging & language server
 
 
+#### operator overloading for objects
+
+similar to python, if theres a function named `add` or `divide` etc, 
+we invoke that in an object instead of just not doing anything
+
+```
+func Vector2() {
+  return {
+    x = 0.0,
+    y = 0.0,
+    
+    func add(other) {
+      if (typeof(other.x) == "float" && typeof(other.y) == "float") {
+        return {
+          x = other.x + this.x,
+          y = other.y + this.y
+        }
+      }
+    }
+  }
+}
+
+
+```
+
+#### event functions
+
+a C# style event to simply event handlers. 
+
+would simply be a list of functions that get invoked when the () is used on an event type.
+
+``` go
+event myEvent
+
+func subscriber() {
+  println("My event was invoked")
+}
+
+myEvent += subscriber
+
+myEvent()
+
+```
+
+#### coroutines
+
+go style coroutines. this would require some significant changes tothe interpreter to allow multi threading,
+or a special subset of features limited to async. like mutex / locked variable access when coming from a coroutien,
+a special scope maybe?
+``` 
+start func() {
+  // coroutine body
+}()
+```
+
+#### switch statements
+C# style switch statements, can compare any value
+``` C#
+switch ("") {
+  case "":
+  break
+  case "1":
+  ...etc
+}
+
+```
+
+
+
+
+
 ## interpreter features
 
 #### call stack & better debugging info
 
-#### stronger typing? 
-
-this might be a significant change to the language but most dynamic languages attempt this with extensions and external tools so might as well just build it in and use heavy implicit typing.
-
-not super likely
 
