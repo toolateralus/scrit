@@ -1,5 +1,6 @@
 #include "native.hpp"
 #include "value.hpp"
+#include <cctype>
 #include <iostream>
 #include <termios.h>
 #include <unistd.h>
@@ -16,11 +17,59 @@ REGISTER_FUNCTION(println, ValueType::Undefined, {}) {
   return Value_T::UNDEFINED;
 }
 
+REGISTER_FUNCTION(isalnum, ValueType::Bool, {Argument(ValueType::String, "char")}) {
+  auto arg = args[0];
+  string value;
+  if (Ctx::TryGetString(arg, value)) {
+    if (value.empty()) {
+      return Value_T::False;
+    }
+    return Ctx::CreateBool(std::isalnum(value[0]));
+  }
+  return Value_T::UNDEFINED;
+}
+REGISTER_FUNCTION(isdigit, ValueType::Bool, {Argument(ValueType::String, "char")}) {
+  auto arg = args[0];
+  string value;
+  if (Ctx::TryGetString(arg, value)) {
+    if (value.empty()) {
+      return Value_T::False;
+    }
+    return Ctx::CreateBool(std::isdigit(value[0]));
+  }
+  return Value_T::UNDEFINED;
+}
+REGISTER_FUNCTION(ispunct, ValueType::Bool, {Argument(ValueType::String, "char")}) {
+  auto arg = args[0];
+  string value;
+  if (Ctx::TryGetString(arg, value)) {
+    if (value.empty()) {
+      return Value_T::False;
+    }
+    return Ctx::CreateBool(std::ispunct(value[0]));
+  }
+  return Value_T::UNDEFINED;
+}
+REGISTER_FUNCTION(isalpha, ValueType::Bool, {Argument(ValueType::String, "char")}) {
+  auto arg = args[0];
+  string value;
+  if (Ctx::TryGetString(arg, value)) {
+    if (value.empty()) {
+      return Value_T::False;
+    }
+    return Ctx::CreateBool(std::isalpha(value[0]));
+  }
+  return Value_T::UNDEFINED;
+}
+
+
 REGISTER_FUNCTION(readln, ValueType::String, {}) {
   string input;
   std::cin >> input;
   return String_T::New(input);
 }
+
+
 
 
 
@@ -37,7 +86,7 @@ REGISTER_FUNCTION(readch, ValueType::String, {}) {
   // Read a character
   char ch;
   read(STDIN_FILENO, &ch, 1);
-
+  
   // Restore the old terminal settings
   tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);
 
@@ -52,15 +101,14 @@ REGISTER_FUNCTION(push, ValueType::Undefined, Argument(ValueType::Array, "target
     return Value_T::UNDEFINED;
   }
   
-  string value;
-  if (Ctx::TryGetString(args[0], value)) {
+  if (args[0]->GetType() == ValueType::String) {
+    auto arg = static_cast<String_T*>(args[0].get());
     for (size_t i = 1; i < args.size(); i++) {
-      string arg;
-      if (Ctx::TryGetString(args[i], arg)) {
-        value += arg;
+      if (args[i]->GetType() == ValueType::String) {
+        auto str_arg = static_cast<String_T*>(args[i].get());
+        arg->value += str_arg->value;
       }
     }
-    return Ctx::CreateString(value);
   }
   
   if (args[0]->GetType() != ValueType::Array) {
@@ -76,6 +124,14 @@ REGISTER_FUNCTION(pop, ValueType::Any, {Argument(ValueType::Array, "target")}) {
   if (args.empty()) {
     return Value_T::UNDEFINED;
   }
+  
+  if (args[0]->GetType() == ValueType::String) {
+    auto str_value = static_cast<String_T*>(args[0].get());
+    string character = std::string(1, str_value->value.back());
+    str_value->value.pop_back();    
+    return Ctx::CreateString(character);
+  }
+  
   if (args[0]->GetType() != ValueType::Array) {
     return Value_T::UNDEFINED;
   }
@@ -87,11 +143,18 @@ REGISTER_FUNCTION(len, ValueType::Int, {Argument(ValueType::Array, "target")}) {
   if (args.empty()) {
     return Value_T::UNDEFINED;
   }
-  if (args[0]->GetType() != ValueType::Array) {
-    return Value_T::UNDEFINED;
+  
+  string result;
+  if (Ctx::TryGetString(args[0], result)) {
+    return Int_T::New(result.length());
   }
-  auto array = static_cast<Array_T*>(args[0].get());
-  return Int_T::New(array->values.size());
+  
+  Array array;
+  if (Ctx::TryGetArray(args[0], array)) {
+    return Int_T::New(array->values.size());
+  }
+  
+  return Value_T::UNDEFINED;
 }
 
 REGISTER_FUNCTION(typeof, ValueType::String, {Argument(ValueType::Any, "target")}) {

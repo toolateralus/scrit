@@ -204,9 +204,9 @@ Value Operand::Evaluate() {
   return value;
 }
 Value Identifier::Evaluate() {
-  if (name == "this") {
-    return Ctx::CreateObject(ASTNode::context.scopes.back());
-  }
+  // if (name == "this") {
+  //   return Ctx::CreateObject(ASTNode::context.scopes.back());
+  // }
   auto value = ASTNode::context.Find(name);
   if (value != nullptr) {
     return value;
@@ -262,11 +262,16 @@ ExecutionResult Block::Execute() {
 }
 Value ObjectInitializer::Evaluate() {
   block->scope = this->scope;
+  
+  auto _this = Object_T::New();;
+  block->scope->variables["this"] = _this;
   auto controlChange = block->Execute().controlChange;
   if (controlChange != ControlChange::None) {
     throw std::runtime_error(CC_ToString(controlChange) +
                              " not allowed in object initialization.");
   }
+  block->scope->variables.insert(_this->scope->variables.begin(), _this->scope->variables.end());
+  block->scope->variables.erase("this");
  
   return Object_T::New(block->scope);
 }
@@ -383,16 +388,22 @@ ExecutionResult Assignment::Execute() {
 
 Value DotExpr::Evaluate() {
   auto lvalue = left->Evaluate();
-
+  
   if (lvalue->GetType() != ValueType::Object) {
     throw std::runtime_error("invalid lhs on dot operation : " + TypeToString(lvalue->GetType()));
   }
   auto object = static_cast<Object_T *>(lvalue.get());
   
   auto scope = object->scope;
+  
+  scope->variables["this"] = lvalue;
   ASTNode::context.PushScope(scope);
+  
   auto result = right->Evaluate();
   ASTNode::context.PopScope();
+  
+  scope->variables.erase("this");
+  
   return result;
 }
 void DotExpr::Assign(Value value) {

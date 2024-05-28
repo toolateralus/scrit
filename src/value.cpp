@@ -638,7 +638,9 @@ Bool_T::Bool_T(bool value) { this->value = value; }
 Array_T::Array_T(vector<Value> init)  {
   this->values = init;
 }
-Object_T::Object_T(Scope scope) { this->scope = scope; }
+Object_T::Object_T(Scope scope) { 
+  this->scope = scope; 
+}
 Callable_T::~Callable_T() {}
 
 
