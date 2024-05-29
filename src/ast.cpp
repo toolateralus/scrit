@@ -1,14 +1,15 @@
 #include "ast.hpp"
+#include "context.hpp"
+#include "debug.hpp"
 #include "native.hpp"
+#include "parser.hpp"
 #include "value.hpp"
+#include <cstdio>
+#include <iostream>
 #include <stdexcept>
 #include <string>
-#include "debug.hpp"
-#include "context.hpp"
-#include "parser.hpp"
 
-
-auto programSourceInfo = SourceInfo{0,0};
+auto programSourceInfo = SourceInfo{0, 0};
 
 // Todo: add a scope that this was imported in so when we
 // leave that scope we dlclose() the opened module.
@@ -39,19 +40,24 @@ ExecutionResult::ExecutionResult(ControlChange controlChange, Value value) {
   this->controlChange = controlChange;
   this->value = value;
 }
-If::If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block, ElsePtr &&elseStmnt): Statement(info) {
+If::If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block,
+       ElsePtr &&elseStmnt)
+    : Statement(info) {
   this->condition = std::move(condition);
   this->block = std::move(block);
   this->elseStmnt = std::move(elseStmnt);
 }
-If::If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block) : Statement(info) {
+If::If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block)
+    : Statement(info) {
   this->condition = std::move(condition);
   this->block = std::move(block);
 }
-Arguments::Arguments(SourceInfo &info, vector<ExpressionPtr> &&args) : Expression(info) {
+Arguments::Arguments(SourceInfo &info, vector<ExpressionPtr> &&args)
+    : Expression(info) {
   this->values = std::move(args);
 }
-Parameters::Parameters(SourceInfo &info,std::map<string, Value> &&params) : Statement(info) {
+Parameters::Parameters(SourceInfo &info, std::map<string, Value> &&params)
+    : Statement(info) {
   this->map = std::move(params);
 }
 Identifier::Identifier(SourceInfo &info, string &name) : Expression(info) {
@@ -60,59 +66,80 @@ Identifier::Identifier(SourceInfo &info, string &name) : Expression(info) {
 Operand::Operand(SourceInfo &info, Value value) : Expression(info) {
   this->value = value;
 }
-Program::Program(vector<StatementPtr> &&statements) : Executable(programSourceInfo) {
+Program::Program(vector<StatementPtr> &&statements)
+    : Executable(programSourceInfo) {
   this->statements = std::move(statements);
 }
 Return::Return(SourceInfo &info, ExpressionPtr &&value) : Statement(info) {
   this->value = std::move(value);
 }
-Block::Block(SourceInfo &info, vector<StatementPtr> &&statements) : Statement(info) {
+Block::Block(SourceInfo &info, vector<StatementPtr> &&statements)
+    : Statement(info) {
   this->statements = std::move(statements);
 }
-ObjectInitializer::ObjectInitializer(SourceInfo &info, BlockPtr &&block, Scope scope) : Expression(info) {
+ObjectInitializer::ObjectInitializer(SourceInfo &info, BlockPtr &&block,
+                                     Scope scope)
+    : Expression(info) {
   this->scope = make_shared<Scope_T>(scope.get());
   this->block = std::move(block);
 }
-Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args) : Expression(info), Statement(info) {
+Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
+    : Expression(info), Statement(info) {
   this->operand = std::move(operand);
   this->args = std::move(args);
 }
-For::For(SourceInfo &info, StatementPtr &&decl, ExpressionPtr &&condition, StatementPtr &&inc, BlockPtr &&block, Scope scope) : Statement(info) {
+For::For(SourceInfo &info, StatementPtr &&decl, ExpressionPtr &&condition,
+         StatementPtr &&inc, BlockPtr &&block, Scope scope)
+    : Statement(info) {
   this->decl = std::move(decl);
   this->condition = std::move(condition);
   this->increment = std::move(inc);
   this->block = std::move(block);
   this->scope = scope;
 }
-Assignment::Assignment(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&expr) : Statement(info) {
+Assignment::Assignment(SourceInfo &info, IdentifierPtr &&iden,
+                       ExpressionPtr &&expr)
+    : Statement(info) {
   this->iden = std::move(iden);
   this->expr = std::move(expr);
 }
 
-DotExpr::DotExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right) : Expression(info) {
+DotExpr::DotExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right)
+    : Expression(info) {
   this->left = std::move(left);
   this->right = std::move(right);
 }
-DotAssignment::DotAssignment(SourceInfo &info, ExpressionPtr &&dot, ExpressionPtr &&value): Statement(info)  {
+DotAssignment::DotAssignment(SourceInfo &info, ExpressionPtr &&dot,
+                             ExpressionPtr &&value)
+    : Statement(info) {
   this->dot = std::move(dot);
   this->value = std::move(value);
 }
-DotCallStmnt::DotCallStmnt(SourceInfo &info, ExpressionPtr &&dot) : Statement(info) {
+DotCallStmnt::DotCallStmnt(SourceInfo &info, ExpressionPtr &&dot)
+    : Statement(info) {
   this->dot = std::move(dot);
 }
-Subscript::Subscript(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&idx) : Expression(info)  {
+Subscript::Subscript(SourceInfo &info, ExpressionPtr &&left,
+                     ExpressionPtr &&idx)
+    : Expression(info) {
   this->left = std::move(left);
   this->index = std::move(idx);
 }
-SubscriptAssignStmnt::SubscriptAssignStmnt(SourceInfo &info, ExpressionPtr &&subscript, ExpressionPtr &&value) : Statement(info)  {
+SubscriptAssignStmnt::SubscriptAssignStmnt(SourceInfo &info,
+                                           ExpressionPtr &&subscript,
+                                           ExpressionPtr &&value)
+    : Statement(info) {
   this->subscript = std::move(subscript);
   this->value = std::move(value);
 }
-UnaryExpr::UnaryExpr(SourceInfo &info, ExpressionPtr &&left, TType op) : Expression(info)  {
+UnaryExpr::UnaryExpr(SourceInfo &info, ExpressionPtr &&left, TType op)
+    : Expression(info) {
   this->left = std::move(left);
   this->op = op;
 }
-BinExpr::BinExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right, TType op) : Expression(info)  {
+BinExpr::BinExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right,
+                 TType op)
+    : Expression(info) {
   this->left = std::move(left);
   this->right = std::move(right);
   this->op = op;
@@ -129,8 +156,7 @@ ExecutionResult If::Execute() {
     case ControlChange::Break:
       return result;
     }
-  }
-  else if (elseStmnt) {
+  } else if (elseStmnt) {
     auto result = elseStmnt->Execute();
     switch (result.controlChange) {
     case ControlChange::None:
@@ -143,10 +169,12 @@ ExecutionResult If::Execute() {
   }
   return ExecutionResult::None;
 }
-IfPtr If::NoElse(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block) {
+IfPtr If::NoElse(SourceInfo &info, ExpressionPtr &&condition,
+                 BlockPtr &&block) {
   return make_unique<If>(info, std::move(condition), std::move(block));
 }
-IfPtr If::WithElse(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block, ElsePtr &&elseStmnt) {
+IfPtr If::WithElse(SourceInfo &info, ExpressionPtr &&condition,
+                   BlockPtr &&block, ElsePtr &&elseStmnt) {
   return make_unique<If>(info, std::move(condition), std::move(block),
                          std::move(elseStmnt));
 }
@@ -161,25 +189,28 @@ ElsePtr Else::NoIf(SourceInfo &info, BlockPtr &&block) {
   elseStmnt->block = std::move(block);
   return elseStmnt;
 }
-Import::Import(SourceInfo &info, const string &name, const bool isWildcard) : Statement(info), symbols({}), moduleName(name), isWildcard(isWildcard) {
-  
-};
+Import::Import(SourceInfo &info, const string &name, const bool isWildcard)
+    : Statement(info), symbols({}), moduleName(name), isWildcard(isWildcard){
+
+                                                      };
 Import::Import(SourceInfo &info, const string &name, vector<string> &symbols)
     : Statement(info), symbols(symbols), moduleName(name), isWildcard(false){};
 
-UnaryStatement::UnaryStatement(SourceInfo &info, ExpressionPtr &&expr) : Statement(info), expr(std::move(expr)) {}
+UnaryStatement::UnaryStatement(SourceInfo &info, ExpressionPtr &&expr)
+    : Statement(info), expr(std::move(expr)) {}
 
-CompoundAssignment::CompoundAssignment(SourceInfo &info, ExpressionPtr &&cmpAssignExpr)
-    : Statement(info),  expr(std::move(cmpAssignExpr)) {}
-RangeBasedFor::RangeBasedFor(SourceInfo &info, IdentifierPtr &&lhs, ExpressionPtr &&rhs,
-                             BlockPtr &&block)
-    : Statement(info), valueName(std::move(lhs)), rhs(std::move(rhs)), block(std::move(block)) {}
-CompAssignExpr::CompAssignExpr(SourceInfo &info,
-                               ExpressionPtr &&left, ExpressionPtr &&right,
-                               TType op)
-    : Expression(info), left(std::move(left)), right(std::move(right)),
-      op(op) {}
-    
+CompoundAssignment::CompoundAssignment(SourceInfo &info,
+                                       ExpressionPtr &&cmpAssignExpr)
+    : Statement(info), expr(std::move(cmpAssignExpr)) {}
+RangeBasedFor::RangeBasedFor(SourceInfo &info, IdentifierPtr &&lhs,
+                             ExpressionPtr &&rhs, BlockPtr &&block)
+    : Statement(info), valueName(std::move(lhs)), rhs(std::move(rhs)),
+      block(std::move(block)) {}
+CompAssignExpr::CompAssignExpr(SourceInfo &info, ExpressionPtr &&left,
+                               ExpressionPtr &&right, TType op)
+    : Expression(info), left(std::move(left)), right(std::move(right)), op(op) {
+}
+
 ExecutionResult Program::Execute() {
   int index = 0;
   for (auto &statement : statements) {
@@ -190,19 +221,17 @@ ExecutionResult Program::Execute() {
       case ControlChange::None:
         continue;
       default:
-        throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
+        throw std::runtime_error("Uncaught " +
+                                 CC_ToString(result.controlChange));
       }
-    }
-    catch (std::runtime_error err) {
+    } catch (std::runtime_error err) {
       std::cout << err.what() << std::endl;
     }
     index++;
   }
   return ExecutionResult::None;
 }
-Value Operand::Evaluate() {
-  return value;
-}
+Value Operand::Evaluate() { return value; }
 Value Identifier::Evaluate() {
   // if (name == "this") {
   //   return Ctx::CreateObject(ASTNode::context.scopes.back());
@@ -219,15 +248,9 @@ Value Arguments::Evaluate() {
   // do nothing here.
   return Value_T::VNULL;
 }
-ExecutionResult Parameters::Execute() {
-  return ExecutionResult::None;
-}
-ExecutionResult Continue::Execute() {
-  return ExecutionResult::Continue;
-}
-ExecutionResult Break::Execute() {
-  return ExecutionResult::Break;
-}
+ExecutionResult Parameters::Execute() { return ExecutionResult::None; }
+ExecutionResult Continue::Execute() { return ExecutionResult::Continue; }
+ExecutionResult Break::Execute() { return ExecutionResult::Break; }
 ExecutionResult Return::Execute() {
   return ExecutionResult(ControlChange::Return, value->Evaluate());
 }
@@ -237,7 +260,7 @@ ExecutionResult Block::Execute() {
   else {
     ASTNode::context.PushScope(scope);
   }
-  
+
   int index = 0;
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
@@ -248,6 +271,22 @@ ExecutionResult Block::Execute() {
       case ControlChange::Break:
       case ControlChange::Return:
         ASTNode::context.PopScope();
+        switch (result.value->GetType()) {
+        case Values::ValueType::Invalid:
+        case Values::ValueType::Null:
+        case Values::ValueType::Undefined:
+        case Values::ValueType::Object:
+        case Values::ValueType::Array:
+        case Values::ValueType::Callable:
+        case Values::ValueType::Any:
+          return result;
+        case Values::ValueType::Float:
+        case Values::ValueType::Int:
+        case Values::ValueType::Bool:
+        case Values::ValueType::String:
+          result.value = result.value->Clone();
+          return result;
+        }
         return result;
       case ControlChange::None:
         continue;
@@ -262,17 +301,22 @@ ExecutionResult Block::Execute() {
 }
 Value ObjectInitializer::Evaluate() {
   block->scope = this->scope;
-  
-  auto _this = Object_T::New();;
+
+  auto _this = Object_T::New();
+  ;
   block->scope->variables["this"] = _this;
+
   auto controlChange = block->Execute().controlChange;
+
   if (controlChange != ControlChange::None) {
     throw std::runtime_error(CC_ToString(controlChange) +
                              " not allowed in object initialization.");
   }
-  block->scope->variables.insert(_this->scope->variables.begin(), _this->scope->variables.end());
+
+  block->scope->variables.insert(_this->scope->variables.begin(),
+                                 _this->scope->variables.end());
   block->scope->variables.erase("this");
- 
+
   return Object_T::New(block->scope);
 }
 vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
@@ -286,7 +330,8 @@ Value Call::Evaluate() {
   auto lvalue = operand->Evaluate();
   if (lvalue->GetType() == ValueType::Callable) {
     auto callable = static_cast<Callable_T *>(lvalue.get());
-    return callable->Call(args);
+    auto result = callable->Call(args);
+    return result;
   }
   return Value_T::UNDEFINED;
 }
@@ -382,35 +427,55 @@ ExecutionResult For::Execute() {
   return ExecutionResult::None;
 }
 ExecutionResult Assignment::Execute() {
-  context.Insert(iden->name, expr->Evaluate());
+  auto result = expr->Evaluate();
+  switch (result->GetType()) {
+        case Values::ValueType::Invalid:
+        case Values::ValueType::Null:
+        case Values::ValueType::Undefined:
+        case Values::ValueType::Object:
+        case Values::ValueType::Array:
+        case Values::ValueType::Callable:
+        case Values::ValueType::Any:
+          break;
+          // clone data types.
+        case Values::ValueType::Float:
+        case Values::ValueType::Int:
+        case Values::ValueType::Bool:
+        case Values::ValueType::String:
+          result = result->Clone();
+        }
+  
+  context.Insert(iden->name, result);
   return ExecutionResult::None;
 }
 
 Value DotExpr::Evaluate() {
   auto lvalue = left->Evaluate();
-  
+
   if (lvalue->GetType() != ValueType::Object) {
-    throw std::runtime_error("invalid lhs on dot operation : " + TypeToString(lvalue->GetType()));
+    throw std::runtime_error("invalid lhs on dot operation : " +
+                             TypeToString(lvalue->GetType()));
   }
   auto object = static_cast<Object_T *>(lvalue.get());
-  
+
   auto scope = object->scope;
-  
+
   scope->variables["this"] = lvalue;
   ASTNode::context.PushScope(scope);
-  
+
   auto result = right->Evaluate();
   ASTNode::context.PopScope();
-  
+
   scope->variables.erase("this");
-  
+
   return result;
 }
 void DotExpr::Assign(Value value) {
   auto lvalue = left->Evaluate();
-  
+
   if (lvalue->GetType() != ValueType::Object) {
-    throw std::runtime_error("invalid lhs on dot operation : " + TypeToString(lvalue->GetType()));
+    throw std::runtime_error("invalid lhs on dot operation : " +
+                             TypeToString(lvalue->GetType()));
   }
 
   auto obj = static_cast<Object_T *>(lvalue.get());
@@ -469,12 +534,13 @@ Value UnaryExpr::Evaluate() {
 Value BinExpr::Evaluate() {
   auto left = this->left->Evaluate();
   auto right = this->right->Evaluate();
-  
+
   switch (op) {
   case TType::NullCoalescing: {
-    if (left->GetType() == ValueType::Null || left->GetType() == ValueType::Undefined) {
+    if (left->GetType() == ValueType::Null ||
+        left->GetType() == ValueType::Undefined) {
       return right;
-    } 
+    }
     return left;
   };
   case TType::Add:
@@ -517,9 +583,9 @@ ExecutionResult Import::Execute() {
       return ExecutionResult::None;
     }
   }
-  
+
   importedModules.push_back(moduleName);
-  
+
   auto path = moduleRoot + moduleName + ".dll";
   auto module = LoadScritModule(moduleName, path);
   // we do this even when we ignore the object becasue it registers the native
@@ -529,14 +595,15 @@ ExecutionResult Import::Execute() {
     ASTNode::context.Insert(moduleName, object);
   } else {
     vector<Value> values = {};
-    
+
     if (!symbols.empty()) {
       for (const auto &name : symbols) {
         auto value = module->context->Find(name);
         if (value == Value_T::UNDEFINED) {
-          throw std::runtime_error("invalid import statement. could not find " + name);
+          throw std::runtime_error("invalid import statement. could not find " +
+                                   name);
         }
-        
+
         ASTNode::context.Insert(name, value);
       }
     } else {
@@ -548,8 +615,6 @@ ExecutionResult Import::Execute() {
   delete module;
   return ExecutionResult::None;
 }
-
-
 ExecutionResult RangeBasedFor::Execute() {
   ASTNode::context.PushScope();
   auto lvalue = this->rhs->Evaluate();
@@ -561,12 +626,14 @@ ExecutionResult RangeBasedFor::Execute() {
   if (Ctx::TryGetString(lvalue, string)) {
     isString = true;
   }
-  
-  if (!isString && !Ctx::TryGetArray(lvalue, array) && !Ctx::TryGetObject(lvalue, obj)) {
-    throw std::runtime_error("invalid range-based for loop: the target container must be an array, object or string.");
-  } 
+
+  if (!isString && !Ctx::TryGetArray(lvalue, array) &&
+      !Ctx::TryGetObject(lvalue, obj)) {
+    throw std::runtime_error("invalid range-based for loop: the target "
+                             "container must be an array, object or string.");
+  }
   if (array) {
-    for (auto &v: array->values) {
+    for (auto &v : array->values) {
       ASTNode::context.Insert(name, v);
       auto result = block->Execute();
       switch (result.controlChange) {
@@ -580,7 +647,7 @@ ExecutionResult RangeBasedFor::Execute() {
         goto breakLoops;
         break;
       }
-    }   
+    }
   } else if (obj) {
     auto kvp = Ctx::CreateObject();
     for (auto &[key, val] : obj->scope->variables) {
@@ -598,9 +665,9 @@ ExecutionResult RangeBasedFor::Execute() {
       case ControlChange::Break:
         goto breakLoops;
       }
-    }   
+    }
   } else if (isString) {
-     for (auto c : string) {
+    for (auto c : string) {
       ASTNode::context.Insert(name, Ctx::CreateString(std::string() + c));
       auto result = block->Execute();
       switch (result.controlChange) {
@@ -613,24 +680,21 @@ ExecutionResult RangeBasedFor::Execute() {
       case ControlChange::Break:
         goto breakLoops;
       }
-    }   
+    }
   }
-  breakLoops:
+breakLoops:
   ASTNode::context.PopScope();
   return ExecutionResult::None;
 }
-
 ExecutionResult CompoundAssignment::Execute() {
   auto _ = expr->Evaluate();
   return ExecutionResult::None;
 }
-
-
 Value CompAssignExpr::Evaluate() {
   auto lvalue = left->Evaluate();
-  
+
   auto iden = dynamic_cast<Identifier *>(left.get());
-  
+
   auto rvalue = right->Evaluate();
   switch (op) {
   case TType::AddEq: {
@@ -641,11 +705,11 @@ Value CompAssignExpr::Evaluate() {
       lvalue->Set(result);
     }
     return lvalue;
-  } 
+  }
   case TType::DivEq: {
     auto result = lvalue->Divide(rvalue);
     if (iden) {
-      context.Insert(iden->name, result);      
+      context.Insert(iden->name, result);
     } else {
       lvalue->Set(result);
     }
@@ -654,7 +718,7 @@ Value CompAssignExpr::Evaluate() {
   case TType::SubEq: {
     auto result = lvalue->Subtract(rvalue);
     if (iden) {
-      context.Insert(iden->name, result);      
+      context.Insert(iden->name, result);
     } else {
       lvalue->Set(result);
     }
@@ -663,14 +727,15 @@ Value CompAssignExpr::Evaluate() {
   case TType::MulEq: {
     auto result = lvalue->Multiply(rvalue);
     if (iden) {
-      context.Insert(iden->name, result);      
+      context.Insert(iden->name, result);
     } else {
       lvalue->Set(result);
     }
     return lvalue;
   }
   case TType::NullCoalescingEq: {
-    if (lvalue->GetType() == ValueType::Undefined || lvalue->GetType() == ValueType::Null) {
+    if (lvalue->GetType() == ValueType::Undefined ||
+        lvalue->GetType() == ValueType::Null) {
       auto result = rvalue;
       if (iden) {
         context.Insert(iden->name, rvalue);
@@ -685,7 +750,8 @@ Value CompAssignExpr::Evaluate() {
                              " in compound assignment statement");
   }
 }
-Else::Else(SourceInfo &info, IfPtr &&ifPtr, BlockPtr &&block) : Statement(info) {
+Else::Else(SourceInfo &info, IfPtr &&ifPtr, BlockPtr &&block)
+    : Statement(info) {
   this->ifStmnt = std::move(ifPtr);
   this->block = std::move(block);
 }

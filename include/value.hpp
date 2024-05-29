@@ -66,7 +66,7 @@ enum class ValueType {
 
 string TypeToString(ValueType type);
 
-struct Value_T {
+struct Value_T : std::enable_shared_from_this<Value_T> {
   static Null VNULL;
   static Undefined UNDEFINED;
   static Value InvalidCastException;
@@ -104,6 +104,8 @@ struct Value_T {
   virtual Value Subscript(Value key);
   virtual Value SubscriptAssign(Value key, Value value);
   virtual void Set(Value value) { *this = *value; }
+
+  virtual Value Clone();
 };
 
 struct Null_T : Value_T {
@@ -111,21 +113,23 @@ struct Null_T : Value_T {
   Null_T();
   string ToString() const override;
   bool Equals(Value value) override;
+
 };
 struct Undefined_T : Value_T {
   ValueType GetType() const override { return ValueType::Undefined; }
   Undefined_T();
   string ToString() const override;
   bool Equals(Value value) override;
+  
 };
+
 struct Int_T : Value_T {
   int value = 0;
   Int_T(int value);
   ~Int_T() {}
   Int_T() = delete;
-
+  
   static Int New(int value = 0) { return make_shared<Int_T>(value); }
-
   virtual bool Equals(Value value) override;
   virtual void Set(Value newValue) override;
   virtual Bool Or(Value other) override;
@@ -141,6 +145,7 @@ struct Int_T : Value_T {
   virtual Value Negate() override;
   virtual string ToString() const override;
   ValueType GetType() const override { return ValueType::Int; }
+  Value Clone() override;
 };
 struct Float_T : Value_T {
   float value = 0.0f;
@@ -163,6 +168,7 @@ struct Float_T : Value_T {
   virtual Value Negate() override;
   virtual string ToString() const override;
   ValueType GetType() const override { return ValueType::Float; }
+  Value Clone() override;
 };
 struct String_T : Value_T {
   string value;
@@ -177,6 +183,7 @@ struct String_T : Value_T {
   ValueType GetType() const override { return ValueType::String; }
   Value Subscript(Value key) override;
   Value SubscriptAssign(Value key, Value value) override;
+  Value Clone() override;
 };
 struct Bool_T : Value_T {
   bool value = false;
@@ -191,8 +198,9 @@ struct Bool_T : Value_T {
   virtual void Set(Value newValue) override;
   virtual string ToString() const override;
   ValueType GetType() const override { return ValueType::Bool; }
+  Value Clone() override;
 };
-struct Object_T : Value_T, std::enable_shared_from_this<Object_T> {
+struct Object_T : Value_T {
   Object_T(Scope scope);
   Scope scope;
   static Object New(Scope scope = nullptr) {
@@ -244,7 +252,7 @@ struct NativeCallable_T : Callable_T {
 };
 struct Array_T : Value_T {
   vector<ExpressionPtr> initializer;
-
+  
   static Array New();
   static Array New(vector<ExpressionPtr> &&init);
   static Array New(std::vector<Value> &values);
@@ -271,6 +279,9 @@ struct Array_T : Value_T {
 
 struct Ctx {
   Ctx() = delete;
+  
+  static Value Null();
+  static Value Undefined();
   static Bool CreateBool(const bool value = false);
   static String CreateString(const string value = "");
   static Int CreateInt(const int value = 0);

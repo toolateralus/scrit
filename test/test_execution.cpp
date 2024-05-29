@@ -82,7 +82,7 @@ StatementPtr GetArrayAssign(string iden, vector<Value> values = {}) {
 }
 StatementPtr GetObjectAssign(string iden, BlockPtr &&block) {
   auto id = GetIdentifier(iden);
-  auto init = make_unique<ObjectInitializer>(info, std::move(block));
+  auto init = make_unique<ObjectInitializer>(info, std::move(block), make_shared<Scope_T>());
   return make_unique<Assignment>(info, std::move(id), std::move(init));
 }
 ExpressionPtr GetLessThanExpr(string iden, int rvalue) {
