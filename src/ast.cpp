@@ -4,7 +4,6 @@
 #include "native.hpp"
 #include "parser.hpp"
 #include "value.hpp"
-#include <cstdio>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -271,22 +270,26 @@ ExecutionResult Block::Execute() {
       case ControlChange::Break:
       case ControlChange::Return:
         ASTNode::context.PopScope();
-        switch (result.value->GetType()) {
-        case Values::ValueType::Invalid:
-        case Values::ValueType::Null:
-        case Values::ValueType::Undefined:
-        case Values::ValueType::Object:
-        case Values::ValueType::Array:
-        case Values::ValueType::Callable:
-        case Values::ValueType::Any:
-          return result;
-        case Values::ValueType::Float:
-        case Values::ValueType::Int:
-        case Values::ValueType::Bool:
-        case Values::ValueType::String:
-          result.value = result.value->Clone();
-          return result;
+        
+        if (result.value != nullptr) {
+          switch (result.value->GetType()) {
+            case Values::ValueType::Invalid:
+            case Values::ValueType::Null:
+            case Values::ValueType::Undefined:
+            case Values::ValueType::Object:
+            case Values::ValueType::Array:
+            case Values::ValueType::Callable:
+            case Values::ValueType::Any:
+              return result;
+            case Values::ValueType::Float:
+            case Values::ValueType::Int:
+            case Values::ValueType::Bool:
+            case Values::ValueType::String:
+              result.value = result.value->Clone();
+              return result;
+          }
         }
+        
         return result;
       case ControlChange::None:
         continue;
@@ -437,7 +440,8 @@ ExecutionResult Assignment::Execute() {
         case Values::ValueType::Callable:
         case Values::ValueType::Any:
           break;
-          // clone data types.
+          
+        // clone value types.
         case Values::ValueType::Float:
         case Values::ValueType::Int:
         case Values::ValueType::Bool:
@@ -456,16 +460,17 @@ Value DotExpr::Evaluate() {
     throw std::runtime_error("invalid lhs on dot operation : " +
                              TypeToString(lvalue->GetType()));
   }
+  
   auto object = static_cast<Object_T *>(lvalue.get());
-
+  
   auto scope = object->scope;
-
+  
   scope->variables["this"] = lvalue;
+  
   ASTNode::context.PushScope(scope);
-
   auto result = right->Evaluate();
   ASTNode::context.PopScope();
-
+  
   scope->variables.erase("this");
 
   return result;

@@ -2,7 +2,7 @@
 
 # build the interpreter
 echo -e "\e[33mBuilding...\e[0m"
-output=$(make release 2>&1)
+output=$(make release -j24 2>&1)
 if [ $? -ne 0 ]; then
   echo "Error running make release: $output"
   exit 1
@@ -61,4 +61,4 @@ if [ $? -ne 0 ]; then
 fi
 
 echo -e "\e[32mAlias 'scrit' added to bashrc.\e[0m"
-echo -e "\e[36mRestart your terminal to use the 'scrit' command.\e[0m"
+echo -e "\e[36mIf this is the initial installation, please restart your terminal to use the 'scrit' command.\e[0m"

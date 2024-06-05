@@ -71,10 +71,10 @@ static Value sqrt(std::vector<Value> args) {
 extern "C" ScritModDef *InitScritModule_math() {
   ScritModDef *def = CreateModDef();
   *def->description = "basic math module.";
-  AddFunction(def, "toInt", toInt, ValueType::Int, {Argument(ValueType::Any, "value")});
-  AddFunction(def, "floor", floor, ValueType::Int, {Argument(ValueType::Any, "value")});
-  AddFunction(def, "round", round, ValueType::Int, {Argument(ValueType::Any, "value")});
-  AddFunction(def, "sqrt", sqrt, ValueType::Float, {Argument(ValueType::Any, "value")});
-  AddFunction(def, "toFloat", toFloat, ValueType::Float, {Argument(ValueType::Any, "value")});
+  def->AddFunction("toInt", toInt);
+  def->AddFunction("floor", floor);
+  def->AddFunction("round", round);
+  def->AddFunction("sqrt", sqrt);
+  def->AddFunction("toFloat", toFloat);
   return def;
 }

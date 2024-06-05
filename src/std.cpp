@@ -11,13 +11,13 @@
 #pragma clang diagnostic ignored "-Wunused-parameter"
 
 
-REGISTER_FUNCTION(println, ValueType::Undefined, {}) {
+REGISTER_FUNCTION(println) {
   for (const auto &arg: args) {
     printf("%s\n", arg->ToString().c_str());;
   }
   return Ctx::Undefined();
 }
-REGISTER_FUNCTION(print, ValueType::Undefined, {}) {
+REGISTER_FUNCTION(print) {
   for (const auto &arg: args) {
     printf("%s", arg->ToString().c_str());
   }
@@ -25,7 +25,7 @@ REGISTER_FUNCTION(print, ValueType::Undefined, {}) {
 }
 
 // Arrays (some of these functions support strings too., push, pop, len, clear)
-REGISTER_FUNCTION(expand, ValueType::Undefined, {}) {
+REGISTER_FUNCTION(expand) {
   if (args.size() < 2) {
     return Ctx::Undefined();
   }
@@ -54,7 +54,7 @@ REGISTER_FUNCTION(expand, ValueType::Undefined, {}) {
   }
   return Ctx::Undefined();
 }
-REGISTER_FUNCTION(clear, ValueType::Array, {Argument(ValueType::Array, "array or string")}) {
+REGISTER_FUNCTION(clear) {
   
   if (args.size() == 0) {
     return Ctx::Undefined();
@@ -69,7 +69,7 @@ REGISTER_FUNCTION(clear, ValueType::Array, {Argument(ValueType::Array, "array or
   }
   return Ctx::Undefined();
 }
-REGISTER_FUNCTION(push, ValueType::Undefined, Argument(ValueType::Array, "target"), Argument(ValueType::Any, "elementsToAdd")) {
+REGISTER_FUNCTION(push) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
@@ -93,7 +93,7 @@ REGISTER_FUNCTION(push, ValueType::Undefined, Argument(ValueType::Array, "target
   }
   return Ctx::Undefined();
 }
-REGISTER_FUNCTION(pop, ValueType::Any, {Argument(ValueType::Array, "target")}) {
+REGISTER_FUNCTION(pop) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
@@ -111,7 +111,7 @@ REGISTER_FUNCTION(pop, ValueType::Any, {Argument(ValueType::Array, "target")}) {
   auto array = static_cast<Array_T*>(args[0].get());
   return array->Pop();
 }
-REGISTER_FUNCTION(len, ValueType::Int, {Argument(ValueType::Array, "target")}) {
+REGISTER_FUNCTION(len) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
@@ -130,7 +130,7 @@ REGISTER_FUNCTION(len, ValueType::Int, {Argument(ValueType::Array, "target")}) {
 }
 
 // typeof
-REGISTER_FUNCTION(typeof, ValueType::String, {Argument(ValueType::Any, "target")}) {
+REGISTER_FUNCTION(typeof) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
@@ -139,7 +139,7 @@ REGISTER_FUNCTION(typeof, ValueType::String, {Argument(ValueType::Any, "target")
 }
 
 // Serializer
-REGISTER_FUNCTION(serialize, ValueType::String, Argument(ValueType::Any, "target"), Argument(ValueType::Object, "settings")) {
+REGISTER_FUNCTION(serialize) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
@@ -179,13 +179,13 @@ REGISTER_FUNCTION(serialize, ValueType::String, Argument(ValueType::Any, "target
 }
 
 // strings & chars
-REGISTER_FUNCTION(tostr, ValueType::String, {Argument(ValueType::Any, "target")}) {
+REGISTER_FUNCTION(tostr) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
   return Ctx::CreateString(args[0]->ToString());
 }
-REGISTER_FUNCTION(isalnum, ValueType::Bool, {Argument(ValueType::String, "char")}) {
+REGISTER_FUNCTION(isalnum) {
   auto arg = args[0];
   string value;
   if (Ctx::TryGetString(arg, value)) {
@@ -196,7 +196,7 @@ REGISTER_FUNCTION(isalnum, ValueType::Bool, {Argument(ValueType::String, "char")
   }
   return Ctx::Undefined();
 }
-REGISTER_FUNCTION(isdigit, ValueType::Bool, {Argument(ValueType::String, "char")}) {
+REGISTER_FUNCTION(isdigit) {
   auto arg = args[0];
   string value;
   if (Ctx::TryGetString(arg, value)) {
@@ -207,7 +207,7 @@ REGISTER_FUNCTION(isdigit, ValueType::Bool, {Argument(ValueType::String, "char")
   }
   return Ctx::Undefined();
 }
-REGISTER_FUNCTION(ispunct, ValueType::Bool, {Argument(ValueType::String, "char")}) {
+REGISTER_FUNCTION(ispunct) {
   auto arg = args[0];
   string value;
   if (Ctx::TryGetString(arg, value)) {
@@ -218,7 +218,7 @@ REGISTER_FUNCTION(ispunct, ValueType::Bool, {Argument(ValueType::String, "char")
   }
   return Ctx::Undefined();
 }
-REGISTER_FUNCTION(isalpha, ValueType::Bool, {Argument(ValueType::String, "char")}) {
+REGISTER_FUNCTION(isalpha) {
   auto arg = args[0];
   string value;
   if (Ctx::TryGetString(arg, value)) {
@@ -231,11 +231,11 @@ REGISTER_FUNCTION(isalpha, ValueType::Bool, {Argument(ValueType::String, "char")
 }
 
 // terminal
-REGISTER_FUNCTION(cls, ValueType::Undefined, {}) {
+REGISTER_FUNCTION(cls) {
   printf("\033[23");
   return Ctx::Undefined();
 }
-REGISTER_FUNCTION(set_cursor, ValueType::Undefined, {}) {
+REGISTER_FUNCTION(set_cursor) {
   if (args.size() != 2) {
     return Ctx::Undefined();
   }
@@ -247,12 +247,12 @@ REGISTER_FUNCTION(set_cursor, ValueType::Undefined, {}) {
   
   return Ctx::Undefined();
 }
-REGISTER_FUNCTION(readln, ValueType::String, {}) {
+REGISTER_FUNCTION(readln) {
   string input;
   std::cin >> input;
   return String_T::New(input);
 }
-REGISTER_FUNCTION(readch, ValueType::String, {}) {
+REGISTER_FUNCTION(readch) {
   // Save the old terminal settings
   struct termios old_tio, new_tio;
   tcgetattr(STDIN_FILENO, &old_tio);

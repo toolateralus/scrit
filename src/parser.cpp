@@ -217,6 +217,11 @@ ExpressionPtr Parser::ParseCompoundAssignment() {
     if (!IsCompoundAssignmentOperator(next.type)) {
       return left;
     }
+    // TODO: we need to make sure the LHS is not a literal.
+    if (dynamic_cast<Operand*>(left.get())) {
+      throw std::runtime_error("cannot use compound assignment on a literal");
+    }
+    
     Eat();
     auto expr = ParseExpression();
     return make_unique<CompAssignExpr>(info,  std::move(left), std::move(expr),

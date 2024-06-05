@@ -8,23 +8,7 @@
 #include "value.hpp"
 
 std::unordered_map<std::string, NativeCallable>
-    NativeFunctions::instantiatedCallables = {};
-
-
-extern "C" void AddFunction(ScritModDef *mod, const string &name,
-                const NativeFunctionPtr &ptr, const ValueType retType, std::vector<std::pair<ValueType, std::string>> args) {
-  (*mod->functions).push_back(NativeFunction::Create(name, ptr, retType, args));
-}
-extern "C" void AddFunctionNoInfo(ScritModDef *mod, const string &name,
-                const NativeFunctionPtr &ptr) {
-  (*mod->functions).push_back(NativeFunction::Create(name, ptr));
-}
-
-
-
-extern "C" void AddVariable(ScritModDef *mod, const std::string &name, Value value) {
-  mod->context->Insert(name, value);
-}
+    NativeFunctions::cachedCallables = {};
 
 Object ScritModDefAsObject(ScritModDef *mod) {
   m_InstantiateCallables(mod);
@@ -34,27 +18,27 @@ Object ScritModDefAsObject(ScritModDef *mod) {
 
 void m_InstantiateCallables(ScritModDef *module) {
   auto context = module->context;
-  for (const auto &func : *module->functions) {
-    context->Insert(func.name, NativeFunctions::MakeCallable(func));
+  for (const auto &[name, func] : *module->functions) {
+    context->Insert(name, NativeFunctions::MakeCallable(func));
   }
 }
 
-NativeCallable NativeFunctions::MakeCallable(const NativeFunction &fn) {
+NativeCallable NativeFunctions::MakeCallable(const NativeFunctionPtr &fn) {
   return make_shared<NativeCallable_T>(fn);
 }
 
 NativeCallable NativeFunctions::GetCallable(const std::string &name) {
-  auto fIt = instantiatedCallables.find(name);
-  if (fIt != instantiatedCallables.end()) {
+  auto fIt = cachedCallables.find(name);
+  if (fIt != cachedCallables.end() && fIt->second != nullptr) {
     return fIt->second;
   }
+  
   auto registry = GetRegistry();
   auto it = registry.find(name);
   if (it != registry.end()) {
     auto func = it->second;
     auto callable = make_shared<NativeCallable_T>(func);
-    ;
-    instantiatedCallables[name] = callable;
+    cachedCallables[name] = callable;
     return callable;
   }
   return nullptr;
@@ -87,48 +71,25 @@ ScritModDef* CreateModDef() {
   ScritModDef *mod = (ScritModDef*)malloc(sizeof(ScritModDef));
   mod->context = new Context(); 
   mod->description = new string();
-  mod->functions = new std::vector<NativeFunction>();
+  mod->functions = new std::unordered_map<std::string, NativeFunctionPtr>();
   return mod;
 }
-std::unordered_map<std::string, NativeFunction> &
+std::unordered_map<std::string, NativeFunctionPtr> &
 NativeFunctions::GetRegistry() {
-  static std::unordered_map<std::string, NativeFunction> reg;
+  static std::unordered_map<std::string, NativeFunctionPtr> reg;
   return reg;
 }
 bool NativeFunctions::Exists(const std::string &name) {
   return GetRegistry().contains(name);
 }
 
-void RegisterFunction(const std::string &name, const NativeFunctionPtr &function, const ValueType returnType, const std::initializer_list<std::pair<ValueType, std::string>> &arguments) {
-  NativeFunctions::GetRegistry()[name] = NativeFunction::Create(name, function, returnType, arguments);
+void RegisterFunction(const std::string &name, const NativeFunctionPtr &function) {
+  NativeFunctions::GetRegistry()[name] = function;
 }
-
-NativeFunction NativeFunction::Create(const std::string &name,
-                                      const NativeFunctionPtr &func) {
-  return {
-      .func = func,
-      .name = name,
-      .arguments = {},
-      .returnType = ValueType::Undefined,
-  };
+void ScritModDef::AddFunction(const std::string &name,
+                              const NativeFunctionPtr func) {
+  (*functions)[name] = func;
 }
-NativeFunction NativeFunction::Create(const std::string &name, const NativeFunctionPtr &func,
-                       const ValueType returnType,
-                       const std::vector<std::pair<ValueType, std::string>> &arguments) {
-  return {func, name, arguments, returnType};
-}
-
-std::string NativeFunction::GetInfo() {
-  std::stringstream ss = {};
-  ss << "func " << name << "(";
-  int i = 0;
-  for (const auto &[type, name] : arguments) {
-    ss << TypeToString(type) << " " << name;
-    if (i != arguments.size()) {
-      ss << ", ";
-    }
-    i++;
-  }
-  ss << ")";
-  return ss.str();
+void ScritModDef::AddVariable(const std::string &name, Value value) {
+  context->Insert(name, value);
 }

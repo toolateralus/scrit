@@ -7,110 +7,43 @@
 extern "C" ScritModDef *InitScritModule_raylib() {
   ScritModDef *def = CreateModDef();
   *def->description = "raylib bindings for scrit scripting lang";
-
-  // NOTE:
-  // this looks atrocious and intimidating, only because we create argument
-  // signatures to help the LSP provide more information about native functions
-  // to make it easier to use. this is optional
-
-  // use AddFunctionNoInfo("funname", &funcPtr)
-  // if you don't need type annotations in the LSP.
-  // Note that this may make it significantly harder to use your library.
-
-  // That would be a lot neater than what ive done here.
-  // windowing.
-  AddFunction(def, "initWindow", &initWindow, ValueType::Undefined,
-              {{ValueType::Int, "w"},
-               {ValueType::Int, "h"},
-               {ValueType::String, "title"}});
-
-  AddFunction(def, "windowShouldClose", &windowShouldClose, ValueType::Bool);
   
-  AddFunction(def, "setModelTexture", &setModelTexture, ValueType::Undefined, {{ValueType::Int, "modelID"}, {ValueType::Int, "textureID"}});
+  def->AddFunction("initWindow", &initWindow);
+  def->AddFunction("windowShouldClose", &windowShouldClose);
+  def->AddFunction("setModelTexture", &setModelTexture);
   
   // Rendering utils.
-  AddFunction(def, "beginDrawing", &beginDrawing, ValueType::Undefined);
-  AddFunction(def, "endDrawing", &endDrawing, ValueType::Undefined);
-  AddFunction(def, "loadModel", &loadModel, ValueType::Undefined,
-              {{ValueType::String, "filename"}});
-  AddFunction(def, "drawModel", &drawModel, ValueType::Undefined,
-              {{ValueType::Object, "model"},
-               {ValueType::Object, "position"},
-               {ValueType::Float, "scale"},
-               {ValueType::Object, "tint"}});
-  AddFunction(def, "unloadModel", &unloadModel, ValueType::Undefined,
-              {{ValueType::Object, "model"}});
-  AddFunction(
-      def, "loadShader", &loadShader, ValueType::Undefined,
-      {{ValueType::String, "vsFileName"}, {ValueType::String, "fsFileName"}});
-  AddFunction(def, "unloadShader", &unloadShader, ValueType::Undefined,
-              {{ValueType::Object, "shader"}});
-  AddFunction(def, "loadTexture", &loadTexture, ValueType::Undefined,
-              {{ValueType::String, "fileName"}});
-  AddFunction(def, "drawTexture", &drawTexture, ValueType::Undefined,
-              {{ValueType::Object, "texture"},
-               {ValueType::Object, "position"},
-               {ValueType::Object, "tint"}});
-  AddFunction(def, "createCamera3D", &createCamera3D, ValueType::Int);
-  AddFunction(def, "destroyCamera3D", &destroyCamera3D, ValueType::Undefined,
-              {{ValueType::Int, "cameraID"}});
-              
-  AddFunction(def, "updateCamera3DPro", &updateCamera3DPro, ValueType::Undefined,
-              {{ValueType::Int, "cameraID"}}); // TODO: fix this signature
-              
-  AddFunction(def, "beginMode3D", &beginMode3D, ValueType::Undefined,
-              {{ValueType::Int, "cameraID"}});
-  AddFunction(def, "endMode3D", &endMode3D, ValueType::Undefined);
+  def->AddFunction("beginDrawing", &beginDrawing);
+  def->AddFunction("endDrawing", &endDrawing);
+  def->AddFunction("loadModel", &loadModel);
+  def->AddFunction("drawModel", &drawModel);
+  def->AddFunction("unloadModel", &unloadModel);
+  def->AddFunction("loadShader", &loadShader);
+  def->AddFunction("unloadShader", &unloadShader);
+  def->AddFunction("loadTexture", &loadTexture);
+  def->AddFunction("drawTexture", &drawTexture);
+  def->AddFunction("createCamera3D", &createCamera3D);
+  def->AddFunction("destroyCamera3D", &destroyCamera3D);
+  def->AddFunction("updateCamera3DPro", &updateCamera3DPro); // TODO: fix this signature
+  def->AddFunction("beginMode3D", &beginMode3D);
+  def->AddFunction("endMode3D", &endMode3D);
               
   // Rendering
-  AddFunction(def, "clearBackground", &clearBackground, ValueType::Undefined,
-              {{ValueType::Object, "color"}});
-  AddFunction(def, "drawText", &drawText, ValueType::Undefined,
-              {{ValueType::String, "text"},
-               {ValueType::Int, "x"},
-               {ValueType::Int, "y"},
-               {ValueType::Int, "fontSize"},
-               {ValueType::Object, "color"}});
-  AddFunction(def, "drawCircle", &drawCircle, ValueType::Undefined,
-              {{ValueType::Int, "centerX"},
-               {ValueType::Int, "centerY"},
-               {ValueType::Float, "radius"},
-               {ValueType::Object, "color"}});
-  AddFunction(def, "drawLine", &drawLine, ValueType::Undefined,
-              {{ValueType::Int, "startX"},
-               {ValueType::Int, "startY"},
-               {ValueType::Int, "endX"},
-               {ValueType::Int, "endY"},
-               {ValueType::Object, "color"}});
-  AddFunction(def, "drawTriangle", &drawTriangle, ValueType::Undefined,
-              {{ValueType::Object, "v1"},
-               {ValueType::Object, "v2"},
-               {ValueType::Object, "v3"},
-               {ValueType::Object, "color"}});
-  AddFunction(def, "drawRectangle", &drawRectangle, ValueType::Undefined,
-              {{ValueType::Int, "x"},
-               {ValueType::Int, "y"},
-               {ValueType::Int, "width"},
-               {ValueType::Int, "height"},
-               {ValueType::Object, "color"}});
-  AddFunction(def, "drawRectangleLines", &drawRectangleLines,
-              ValueType::Undefined,
-              {{ValueType::Int, "x"},
-               {ValueType::Int, "y"},
-               {ValueType::Int, "width"},
-               {ValueType::Int, "height"},
-               {ValueType::Object, "color"}});
-
+  def->AddFunction("clearBackground", &clearBackground);
+  def->AddFunction("drawText", &drawText);
+  def->AddFunction("drawCircle", &drawCircle);
+  def->AddFunction("drawLine", &drawLine);
+  def->AddFunction("drawTriangle", &drawTriangle);
+  def->AddFunction("drawRectangle", &drawRectangle);
+  def->AddFunction("drawRectangleLines", &drawRectangleLines);
+  
   // Input
-  AddFunction(def, "isKeyDown", &isKeyDown, ValueType::Bool,
-              {{ValueType::Int, "key"}});
-  AddFunction(def, "isMouseButtonDown", &isMouseButtonDown, ValueType::Bool,
-              {{ValueType::Int, "button"}});
-  AddFunction(def, "getMousePosition", &getMousePosition, ValueType::Object);
-  AddFunction(def, "setMousePosition", &setMousePosition, ValueType::Undefined,
-              {{ValueType::Int, "x"}, {ValueType::Int, "y"}});
-  AddFunction(def, "getMouseWheelMove", &getMouseWheelMove, ValueType::Float);
-  AddFunction(def, "drawFPS", &drawFPS, ValueType::Undefined);
+  def->AddFunction("isKeyDown", &isKeyDown);
+  def->AddFunction("isMouseButtonDown", &isMouseButtonDown);
+  def->AddFunction("getMousePosition", &getMousePosition);
+  def->AddFunction("setMousePosition", &setMousePosition);
+  def->AddFunction("getMouseWheelMove", &getMouseWheelMove);
+  def->AddFunction("drawFPS", &drawFPS);
   
   // keys enum
   Object keys = Ctx::CreateObject();
@@ -118,13 +51,13 @@ extern "C" ScritModDef *InitScritModule_raylib() {
     auto value = std::dynamic_pointer_cast<Value_T>(Ctx::CreateInt(val));
     keys->SetMember(key, value);
   }
-  AddVariable(def, "keys", keys);
-
+  def->AddVariable("keys", keys);
+  
   // colors enum.
   Object colors = Ctx::CreateObject();
   for (const auto &[key, val] : GetRaylibColorsMap()) {
     colors->scope->variables[key] = CreateColor(val);
   }
-  AddVariable(def, "colors", colors);
+  def->AddVariable("colors", colors);
   return def;
 }

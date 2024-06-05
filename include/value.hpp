@@ -241,11 +241,9 @@ struct Callable_T : Value_T {
 };
 struct NativeCallable_T : Callable_T {
   NativeCallable_T() = delete;
-  NativeCallable_T(const NativeFunction &ptr);
-  NativeFunction function;
-
+  NativeCallable_T(const NativeFunctionPtr &ptr);
+  NativeFunctionPtr function;
   Value Call(ArgumentsPtr &args) override;
-
   string ToString() const override;
   bool Equals(Value value) override;
   ValueType GetType() const override { return ValueType::Callable; }

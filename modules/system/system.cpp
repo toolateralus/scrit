@@ -13,14 +13,26 @@
 #include "scrit/ast.hpp"
 
 static Value fexists(std::vector<Value> values) {
+  if (values.size() == 0) {
+    return Ctx::Undefined();
+  }
+  
   auto filename = values[0];
-  if (filename->GetType()!= ValueType::String) {
+  if (filename->GetType() != ValueType::String) {
     return Value_T::UNDEFINED;
   }
   auto fname = static_cast<String_T *>(filename.get());
+  
+  if (fname == nullptr) {
+    return Ctx::Undefined();
+  }
+  
   return Ctx::CreateBool(std::filesystem::exists(fname->value));
 }
 static Value fcreate(std::vector<Value> values) {
+  if (values.size() == 0) {
+    return Ctx::Undefined();
+  }
   auto filename = values[0];
   if (filename->GetType()!= ValueType::String) {
     return Value_T::UNDEFINED;
@@ -36,6 +48,10 @@ static Value fcreate(std::vector<Value> values) {
   return Value_T::UNDEFINED;
 }
 static Value fwrite(std::vector<Value> values) {
+  
+  if (values.size() < 2) {
+    return Ctx::Undefined();
+  }
   auto filename = values[0];
   auto content = values[1];
 
@@ -56,6 +72,9 @@ static Value fwrite(std::vector<Value> values) {
   return Value_T::UNDEFINED;
 }
 static Value fread(std::vector<Value> values) {
+  if (values.size() == 0) {
+    return Ctx::Undefined();
+  }
   auto filename = values[0];
   if (filename->GetType()!= ValueType::String) {
     return Value_T::UNDEFINED;
@@ -73,6 +92,9 @@ static Value fread(std::vector<Value> values) {
   }
 }
 static Value fdelete(std::vector<Value> values) {
+  if (values.size() == 0) {
+    return Ctx::Undefined();
+  }
   auto filename = values[0];
   if (filename->GetType()!= ValueType::String) {
     return Value_T::UNDEFINED;
@@ -86,6 +108,9 @@ static Value fdelete(std::vector<Value> values) {
   }
 }
 static Value dir_exists(std::vector<Value> values) {
+  if (values.size() == 0) {
+    return Ctx::Undefined();
+  }
   auto dirname = values[0];
   if (dirname->GetType()!= ValueType::String) {
     return Value_T::UNDEFINED;
@@ -94,6 +119,9 @@ static Value dir_exists(std::vector<Value> values) {
   return Ctx::CreateBool(std::filesystem::exists(dname->value));
 }
 static Value dir_create(std::vector<Value> values) {
+  if (values.size() == 0) {
+    return Ctx::Undefined();
+  }
   auto dirname = values[0];
   if (dirname->GetType()!= ValueType::String) {
     return Value_T::UNDEFINED;
@@ -111,6 +139,9 @@ static Value cwd(std::vector<Value> values) {
   return Ctx::CreateString(currentDir);
 }
 static Value dir_getfiles(std::vector<Value> values) {
+  if (values.size() == 0) {
+    return Ctx::Undefined();
+  }
   auto dirname = values[0];
   if (dirname->GetType()!= ValueType::String) {
     return Value_T::UNDEFINED;
@@ -125,6 +156,9 @@ static Value dir_getfiles(std::vector<Value> values) {
   return Array_T::New(files);
 }
 static Value dir_delete(std::vector<Value> values) {
+  if (values.size() == 0) {
+    return Ctx::Undefined();
+  }
   auto dirname = values[0];
   if (dirname->GetType()!= ValueType::String) {
     return Value_T::UNDEFINED;
@@ -160,6 +194,9 @@ static Value sleep(std::vector<Value> args) {
 }
 
 static Value syscall(std::vector<Value> values) {
+  if (values.size() == 0) {
+    return Ctx::Undefined();
+  }
   auto cmd = values[0];
   if (cmd->GetType()!= ValueType::String) {
     return Value_T::UNDEFINED;
@@ -176,21 +213,21 @@ extern "C" ScritModDef *InitScritModule_system() {
   ScritModDef *def = CreateModDef();
   *def->description = "system functions. file io, time, etc.";
   
-  AddFunction(def, "fexists", &fexists, ValueType::String, {Argument(ValueType::String, "filename")});
-  AddFunction(def, "fexists", &fexists, ValueType::String, {Argument(ValueType::String, "filename")});
-  AddFunction(def, "fcreate", &fcreate, ValueType::String, {Argument(ValueType::String, "filename")});
-  AddFunction(def, "fwrite", &fwrite, ValueType::String, {Argument(ValueType::String, "filename"), Argument(ValueType::String, "content")});
-  AddFunction(def, "fread", &fread, ValueType::String, {Argument(ValueType::String, "filename")});
-  AddFunction(def, "fdelete", &fdelete, ValueType::String, {Argument(ValueType::String, "filename")});
-  AddFunction(def, "cwd", &cwd, ValueType::String, {});
-  AddFunction(def, "dir_exists", &dir_exists, ValueType::String, {Argument(ValueType::String, "dirname")});
-  AddFunction(def, "dir_create", &dir_create, ValueType::String, {Argument(ValueType::String, "dirname")});
-  AddFunction(def, "dir_delete", &dir_delete, ValueType::String, {Argument(ValueType::String, "dirname")});
-  AddFunction(def, "dir_getfiles", &dir_getfiles, ValueType::String, {Argument(ValueType::String, "dirname")});
-  AddFunction(def, "time", &time, ValueType::String, {});
-  AddFunction(def, "syscall", &syscall, ValueType::String, {Argument(ValueType::String, "cmd")});
-  AddFunction(def, "exit", &exit, ValueType::String, {});
-  AddFunction(def, "sleep", &sleep, ValueType::Undefined, {{ValueType::Any, "seconds(int)|ms(float)"}});
+  def->AddFunction("fexists", &fexists);
+  def->AddFunction("fexists", &fexists);
+  def->AddFunction("fcreate", &fcreate);
+  def->AddFunction("fwrite", &fwrite);
+  def->AddFunction("fread", &fread);
+  def->AddFunction("fdelete", &fdelete);
+  def->AddFunction("cwd", &cwd);
+  def->AddFunction("dir_exists", &dir_exists);
+  def->AddFunction("dir_create", &dir_create);
+  def->AddFunction("dir_delete", &dir_delete);
+  def->AddFunction("dir_getfiles", &dir_getfiles);
+  def->AddFunction("time", &time);
+  def->AddFunction("syscall", &syscall);
+  def->AddFunction("exit", &exit);
+  def->AddFunction("sleep", &sleep);
   
   return def;
 }
