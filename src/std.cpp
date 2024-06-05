@@ -11,18 +11,7 @@
 #pragma clang diagnostic ignored "-Wunused-parameter"
 
 
-REGISTER_FUNCTION(println) {
-  for (const auto &arg: args) {
-    printf("%s\n", arg->ToString().c_str());;
-  }
-  return Ctx::Undefined();
-}
-REGISTER_FUNCTION(print) {
-  for (const auto &arg: args) {
-    printf("%s", arg->ToString().c_str());
-  }
-  return Undefined_T::UNDEFINED;
-}
+
 
 // Arrays (some of these functions support strings too., push, pop, len, clear)
 REGISTER_FUNCTION(expand) {
@@ -231,6 +220,18 @@ REGISTER_FUNCTION(isalpha) {
 }
 
 // terminal
+REGISTER_FUNCTION(println) {
+  for (const auto &arg: args) {
+    printf("%s\n", arg->ToString().c_str());;
+  }
+  return Ctx::Undefined();
+}
+REGISTER_FUNCTION(print) {
+  for (const auto &arg: args) {
+    printf("%s", arg->ToString().c_str());
+  }
+  return Undefined_T::UNDEFINED;
+}
 REGISTER_FUNCTION(cls) {
   printf("\033[23");
   return Ctx::Undefined();

@@ -576,7 +576,7 @@ Value Value_T::Clone() { return Value_T::UNDEFINED; }
 
 Value Int_T::Clone() { return Ctx::CreateInt(value); }
 Value Float_T::Clone() { return Ctx::CreateFloat(value); }
-Value String_T::Clone() { return Ctx::CreateString(value); }
+Value String_T::Clone() { return Ctx::CreateString(string(value)); }
 Value Bool_T::Clone() { return Ctx::CreateBool(value); }
 
 } // namespace Values

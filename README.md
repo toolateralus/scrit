@@ -16,3 +16,5 @@ More documentation
 [Debugging](docs/debug.md)
 
 [Creating Modules](docs/modules.md)
+
+[Standard library functions](docs/standard.md)
