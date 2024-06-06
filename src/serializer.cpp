@@ -19,13 +19,15 @@ void Writer::BuildMap(const Value_T * value) {
   foundObjs.clear();
 }
 void Writer::Map(const Value_T *val) {
-  if (foundObjs.contains(val)) {
-    if (!references.contains(val)) {
-      references[val] = references.size();
+  if (dynamic_cast<const Object_T*>(val) || dynamic_cast<const Array_T*>(val)) {
+    if (foundObjs.contains(val)) {
+      if (!references.contains(val)) {
+        references[val] = references.size();
+      }
+      return;
     }
-    return;
+    foundObjs.insert(val);
   }
-  foundObjs.insert(val);
   switch (val->GetType()) {
     case ValueType::Object: {
       auto obj = static_cast<const Object_T *>(val);
@@ -45,7 +47,11 @@ void Writer::Map(const Value_T *val) {
   }
 }
 void Writer::Write(const Value_T *val) {
-  foundObjs.insert(val);
+  
+  if (dynamic_cast<const Object_T*>(val) || dynamic_cast<const Array_T*>(val)) {
+    foundObjs.insert(val);
+  }
+  
   string indent = "";
   if (settings.StartingIndentLevel > 0 && indentLevel == 0) {
     indentLevel = settings.StartingIndentLevel;
@@ -68,7 +74,7 @@ void Writer::Write(const Value_T *val) {
           element_delimter = "";
         }
         auto value = var.get();
-        if (foundObjs.contains(value)) {
+        if ((dynamic_cast<Object_T*>(value) || dynamic_cast<Array_T*>(value)) && foundObjs.contains(value)) {
           switch (settings.ReferenceHandling) {
           case ReferenceHandling::Remove:
             break;
@@ -106,7 +112,7 @@ void Writer::Write(const Value_T *val) {
           element_delimter = "";
         }
         auto value = var.get();
-        if (foundObjs.contains(value)) {
+        if ((dynamic_cast<Object_T*>(value) || dynamic_cast<Array_T*>(value)) && foundObjs.contains(value)) {
           switch (settings.ReferenceHandling) {
           case ReferenceHandling::Remove:
             break;

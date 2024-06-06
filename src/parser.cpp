@@ -257,10 +257,10 @@ ExpressionPtr Parser::ParseLogicalOr() {
 ExpressionPtr Parser::ParseLogicalAnd() {
   auto left = ParseEquality();
 
-  if (!tokens.empty() && Peek().type == TType::And) {
+  while (!tokens.empty() && Peek().type == TType::And) {
     Eat();
     auto right = ParseEquality();
-    return std::make_unique<BinExpr>(info,  std::move(left), std::move(right),
+    left = std::make_unique<BinExpr>(info,  std::move(left), std::move(right),
                                      TType::And);
   }
 
@@ -480,6 +480,9 @@ ArgumentsPtr Parser::ParseArguments() {
       Eat();
     } else {
       next = Peek();
+      if (next.type != TType::RParen) {
+        throw std::runtime_error("Expected a comma in arguments list.");
+      }
     }
   }
   Expect(TType::RParen);

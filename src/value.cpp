@@ -38,14 +38,14 @@ Value Callable_T::Call(ArgumentsPtr &args) {
   }
 
   auto result = block->Execute();
-  
+
   ASTNode::context.PopScope();
 
   switch (result.controlChange) {
   case ControlChange::None:
     return Value_T::VNULL;
   case ControlChange::Return:
-    
+
     return result.value;
   default:
     throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
@@ -97,6 +97,20 @@ Array Array_T::New() {
   return make_shared<Array_T>(values);
 }
 
+Value NativeCallable_T::Call(std::vector<Value> &args) {
+  ASTNode::context.PushScope();
+  Value result;
+  if (function != nullptr)
+    result = function(args);
+  
+  ASTNode::context.PopScope();
+  if (result == nullptr) {
+    return UNDEFINED;
+  } else {
+    return result;
+  }
+}
+
 Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
   ASTNode::context.PushScope();
   auto values = Call::GetArgsValueList(args);
@@ -104,7 +118,7 @@ Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
 
   if (function != nullptr)
     result = function(values);
-  
+
   ASTNode::context.PopScope();
   if (result == nullptr) {
     return UNDEFINED;
@@ -530,7 +544,7 @@ Value Object_T::SubscriptAssign(Value key, Value value) {
 }
 Value Array_T::Subscript(Value key) {
   int index;
-  if (!Ctx::TryGetInt(key, index) || (size_t)index > values.size()) {
+  if (!Ctx::TryGetInt(key, index) || (size_t)index >= values.size()) {
     return UNDEFINED;
   }
   return values[index];
@@ -566,8 +580,6 @@ string TypeToString(ValueType type) {
     return "array";
   case ValueType::Callable:
     return "callable";
-  case ValueType::Any:
-    return "any";
   }
   return "";
 }
@@ -579,6 +591,21 @@ Value Float_T::Clone() { return Ctx::CreateFloat(value); }
 Value String_T::Clone() { return Ctx::CreateString(string(value)); }
 Value Bool_T::Clone() { return Ctx::CreateBool(value); }
 
+// Deep clone.
+Value Object_T::Clone() {
+  Scope scope = make_shared<Scope_T>();
+  for (const auto &[key, var] : this->scope->variables) {
+    scope->variables[key] = var->Clone();
+  }
+  return Ctx::CreateObject(scope);
+}
+Value Array_T::Clone() {
+  Array array = Ctx::CreateArray();
+  for (const auto &value : values) {
+    array->Push(value->Clone());
+  }
+  return array;
+}
 } // namespace Values
 
 Value Callable_T::Call(std::vector<Value> &values) {

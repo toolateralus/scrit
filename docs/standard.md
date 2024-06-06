@@ -279,6 +279,20 @@ you will get
 
 as the expand only expands the array to the length specified.
 
+You can also pass a callback that will get called each iteration of the expansion, to return specific values, or constructed objects.
+
+```go
+  i = 0
+  array = expand([], 50, func() {
+    return i++
+  })
+  println(array)
+  // output:
+  // some output left out for brevity.
+  // [0,1,2,3,4,5....50]
+  
+```
+
 ```go
 my_array = []
 

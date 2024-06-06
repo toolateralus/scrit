@@ -54,16 +54,16 @@ static Value fwrite(std::vector<Value> values) {
   }
   auto filename = values[0];
   auto content = values[1];
-
-  if (filename->GetType()!= ValueType::String || content->GetType()!= ValueType::String) {
-    return Ctx::CreateString("invalid arguments to fwrite");
+  
+  if (filename->GetType()!= ValueType::String) {
+    return Ctx::CreateString("invalid arguments to fwrite, filename must be a string.");
   }
   auto fname = static_cast<String_T *>(filename.get());
-  auto fcontent = static_cast<String_T *>(content.get());
-
+  auto fcontents = content->ToString();
+  
   std::ofstream file(fname->value);
   if (file.is_open()) {
-    file << fcontent->value;
+    file << fcontents;
     file.close();
   } else {
     return Ctx::CreateString("Unable to open file");

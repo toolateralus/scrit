@@ -231,10 +231,7 @@ ExecutionResult Program::Execute() {
   return ExecutionResult::None;
 }
 Value Operand::Evaluate() { return value; }
-Value Identifier::Evaluate() {
-  // if (name == "this") {
-  //   return Ctx::CreateObject(ASTNode::context.scopes.back());
-  // }
+Value Identifier::Evaluate() {  
   auto value = ASTNode::context.Find(name);
   if (value != nullptr) {
     return value;
@@ -279,7 +276,6 @@ ExecutionResult Block::Execute() {
             case Values::ValueType::Object:
             case Values::ValueType::Array:
             case Values::ValueType::Callable:
-            case Values::ValueType::Any:
               return result;
             case Values::ValueType::Float:
             case Values::ValueType::Int:
@@ -438,7 +434,6 @@ ExecutionResult Assignment::Execute() {
         case Values::ValueType::Object:
         case Values::ValueType::Array:
         case Values::ValueType::Callable:
-        case Values::ValueType::Any:
           break;
           
         // clone value types.
@@ -453,9 +448,51 @@ ExecutionResult Assignment::Execute() {
   return ExecutionResult::None;
 }
 
+Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue) {
+  if (auto call = dynamic_cast<Call*>(right.get())) {
+    if (auto name = dynamic_cast<Identifier*>(call->operand.get())) {
+      
+        Callable_T* callable = nullptr;
+        auto obj = dynamic_cast<Object_T*>(lvalue.get());
+        
+        if (obj && obj->scope->variables.contains(name->name)) {
+          callable = dynamic_cast<Callable_T*>(obj->scope->variables[name->name].get());
+          return callable->Call(call->args); // call a normal member method without pushing this as first argument.
+        }
+        if (!callable) {
+          callable =  dynamic_cast<Callable_T*>(ASTNode::context.Find(name->name).get());
+        } 
+        if (!callable && NativeFunctions::Exists(name->name)) {
+          callable = NativeFunctions::GetCallable(name->name).get();
+        }
+        
+        if (callable) {
+          auto args = call->GetArgsValueList(call->args);
+          // insert self as arg 0.
+          args.insert(args.begin(), lvalue);
+        
+          if (auto nc = dynamic_cast<NativeCallable_T*>(callable)) {
+            return nc->Call(args);
+          } else if (auto c = dynamic_cast<Callable_T*>(callable)) {
+            return c->Call(args);
+          }
+        }
+    }
+  }
+  return nullptr;
+}
+
 Value DotExpr::Evaluate() {
   auto lvalue = left->Evaluate();
-
+  
+  
+  // Try to call an ext method, or member method.
+  auto ext_method_result = TryCallMethods(right, lvalue);
+  if (ext_method_result != nullptr) {
+    return ext_method_result;
+  }
+  
+  // Below is field accessors.
   if (lvalue->GetType() != ValueType::Object) {
     throw std::runtime_error("invalid lhs on dot operation : " +
                              TypeToString(lvalue->GetType()));

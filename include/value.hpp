@@ -61,7 +61,6 @@ enum class ValueType {
   Object,
   Array,
   Callable,
-  Any, // only used for signature declarations.
 };
 
 string TypeToString(ValueType type);
@@ -226,6 +225,7 @@ struct Object_T : Value_T {
   virtual Bool Greater(Value other) override;
   virtual Bool GreaterEquals(Value other) override;
   virtual Bool LessEquals(Value other) override;
+  Value Clone() override;
 };
 struct Callable_T : Value_T {
   ~Callable_T();
@@ -244,6 +244,7 @@ struct NativeCallable_T : Callable_T {
   NativeCallable_T(const NativeFunctionPtr &ptr);
   NativeFunctionPtr function;
   Value Call(ArgumentsPtr &args) override;
+  Value Call(std::vector<Value> &args) override;
   string ToString() const override;
   bool Equals(Value value) override;
   ValueType GetType() const override { return ValueType::Callable; }
@@ -257,9 +258,9 @@ struct Array_T : Value_T {
   Array_T() = delete;
   Array_T(vector<ExpressionPtr> &&init);
   Array_T(vector<Value> init);
-
+  
   vector<Value> values;
-
+  
   Value At(Int index);
   void Assign(Int index, Value value);
   void Push(Value value);
@@ -272,6 +273,7 @@ struct Array_T : Value_T {
 
   Value Subscript(Value key) override;
   Value SubscriptAssign(Value key, Value value) override;
+  Value Clone() override;
 };
 } // namespace Values
 

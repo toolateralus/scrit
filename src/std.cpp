@@ -11,8 +11,6 @@
 #pragma clang diagnostic ignored "-Wunused-parameter"
 
 
-
-
 // Arrays (some of these functions support strings too., push, pop, len, clear)
 REGISTER_FUNCTION(expand) {
   if (args.size() < 2) {
@@ -40,9 +38,20 @@ REGISTER_FUNCTION(expand) {
       }
       
     }
+    return args[0];
   }
   return Ctx::Undefined();
 }
+
+// Create a deep clone of any value.
+REGISTER_FUNCTION(clone) {
+  if (args.size() == 0) {
+    return Ctx::Undefined();
+  }
+  return args[0]->Clone();
+}
+
+
 REGISTER_FUNCTION(clear) {
   
   if (args.size() == 0) {
@@ -66,10 +75,7 @@ REGISTER_FUNCTION(push) {
   if (args[0]->GetType() == ValueType::String) {
     auto arg = static_cast<String_T*>(args[0].get());
     for (size_t i = 1; i < args.size(); i++) {
-      if (args[i]->GetType() == ValueType::String) {
-        auto str_arg = static_cast<String_T*>(args[i].get());
-        arg->value += str_arg->value;
-      }
+        arg->value += args[i]->ToString();
     }
   }
   
@@ -82,6 +88,37 @@ REGISTER_FUNCTION(push) {
   }
   return Ctx::Undefined();
 }
+
+REGISTER_FUNCTION(front) {
+  if (args.size() == 0 || (args[0]->GetType() != Values::ValueType::String && args[0]->GetType() != Values::ValueType::Array)) {
+    return Ctx::Undefined();
+  }
+  Array arr;
+  if (Ctx::TryGetArray(args[0], arr) && arr->values.size() != 0) {
+    return arr->values.front();
+  } 
+  string str;
+  if (Ctx::TryGetString(args[0], str) && str.length() != 0) {
+    return Ctx::CreateString(string(1, str.front()));
+  }
+  return Ctx::Undefined();
+}
+
+REGISTER_FUNCTION(back) {
+  if (args.size() == 0 || (args[0]->GetType() != Values::ValueType::String && args[0]->GetType() != Values::ValueType::Array)) {
+    return Ctx::Undefined();
+  }
+  Array arr;
+  if (Ctx::TryGetArray(args[0], arr) && arr->values.size() != 0) {
+    return arr->values.back();
+  } 
+  string str;
+  if (Ctx::TryGetString(args[0], str) && str.length() != 0) {
+    return Ctx::CreateString(string(1, str.back()));
+  }
+  return Ctx::Undefined();
+}
+
 REGISTER_FUNCTION(pop) {
   if (args.empty()) {
     return Ctx::Undefined();
@@ -174,6 +211,18 @@ REGISTER_FUNCTION(tostr) {
   }
   return Ctx::CreateString(args[0]->ToString());
 }
+
+REGISTER_FUNCTION(atoi )  { 
+  if (args.size() == 0) {
+    return Ctx::Undefined();
+  }
+  string str;
+  if (!Ctx::TryGetString(args[0], str)) {
+    return Ctx::Undefined();
+  }
+  return Ctx::CreateInt(std::atoi(str.c_str()));
+} 
+
 REGISTER_FUNCTION(isalnum) {
   auto arg = args[0];
   string value;
