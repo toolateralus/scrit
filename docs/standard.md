@@ -2,6 +2,14 @@
 
 # Standard functions accessible with no includes:
 
+## Important!
+Any function in scrit can be called like an extension method. That is, if you called
+`10.println()` 
+the interpreter would actally execute
+`println(10)`
+
+This works for any free-function, which includes all standard functions _listed here_, and any _native callable_ like those loaded from a Scrit Module.
+
 
 ## General
 
