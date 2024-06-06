@@ -10,8 +10,6 @@ using std::stringstream;
 using std::vector;
 
 struct SourceInfo {
-  
-  
   static vector<SourceInfo*> &getInfos() {
     static vector<SourceInfo*> all_info;
     return all_info;
@@ -20,6 +18,10 @@ struct SourceInfo {
   SourceInfo(const int loc, const int col) : SourceInfo() {
     this->loc = loc;
     this->col = col;
+  }
+  
+  std::string ToString() const {
+    return "line: " + std::to_string(loc) + "col: " + std::to_string(col) + "\n";
   }
   
   SourceInfo() {

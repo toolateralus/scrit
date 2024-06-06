@@ -10,7 +10,7 @@
       "request": "launch",
       "name": "Debug",
       "program": "${workspaceFolder}/bin/debug/scrit",
-      "args": ["test.scrit", "test.scrit"],
+      "args": ["test.scrit", "100", "-o", "data"],
       "cwd": "${workspaceFolder}"
     },
     {

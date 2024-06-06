@@ -18,13 +18,11 @@ struct Scope_T;
 typedef shared_ptr<Scope_T> Scope;
 
 struct Scope_T {
-  Scope_T() {
-    
-  }
+  Scope_T() {}
+  auto Clone() -> Scope;
   Scope_T(Scope_T *scope) {
     variables = scope->variables;
   } 
-  
   std::map<string, Value> variables = {};
 };
 

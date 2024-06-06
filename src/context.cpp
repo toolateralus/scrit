@@ -49,3 +49,12 @@ void Context::Reset() {
   scopes.clear();
   PushScope();
 }
+auto Scope_T::Clone() -> Scope {
+  std::map<string, Value> variables = {};
+  for (const auto &[k, v] : this->variables) {
+    variables[k] = v->Clone();
+  }
+  auto scope=make_shared<Scope_T>();
+  scope->variables = variables;
+  return scope;
+}

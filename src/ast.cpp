@@ -224,7 +224,7 @@ ExecutionResult Program::Execute() {
                                  CC_ToString(result.controlChange));
       }
     } catch (std::runtime_error err) {
-      std::cout << err.what() << std::endl;
+      std::cout << statement->srcInfo.ToString() << err.what() << std::endl;
     }
     index++;
   }
@@ -291,7 +291,7 @@ ExecutionResult Block::Execute() {
         continue;
       }
     } catch (std::runtime_error err) {
-      std::cout << err.what() << std::endl;
+      std::cout << statement->srcInfo.ToString() << err.what() << std::endl;
     }
     index++;
   }
@@ -300,23 +300,26 @@ ExecutionResult Block::Execute() {
 }
 Value ObjectInitializer::Evaluate() {
   block->scope = this->scope;
-
-  auto _this = Object_T::New();
-  ;
+  
+  static auto _this = Object_T::New();
+  
+  _this->scope->variables.clear();
+  
   block->scope->variables["this"] = _this;
-
+  
   auto controlChange = block->Execute().controlChange;
-
+  
   if (controlChange != ControlChange::None) {
     throw std::runtime_error(CC_ToString(controlChange) +
                              " not allowed in object initialization.");
   }
-
-  block->scope->variables.insert(_this->scope->variables.begin(),
-                                 _this->scope->variables.end());
+  
+  for (const auto &[k, v]: _this->scope->variables) {
+    block->scope->variables[k] = v->Clone();
+  }
   block->scope->variables.erase("this");
-
-  return Object_T::New(block->scope);
+  
+  return Object_T::New(block->scope->Clone());
 }
 vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
   vector<Value> values = {};
@@ -449,15 +452,29 @@ ExecutionResult Assignment::Execute() {
 }
 
 Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue) {
+  
+  // recurse for bin expr.  
+  if (auto binExpr = dynamic_cast<BinExpr*>(right.get())) {
+    auto result = TryCallMethods(binExpr->left, lvalue);
+    if (result == nullptr) {
+      return binExpr->Evaluate();
+    }
+    auto expr = make_unique<Operand>(binExpr->srcInfo, result);
+    binExpr->left = std::move(expr);
+    return binExpr->Evaluate();
+  }
+  
   if (auto call = dynamic_cast<Call*>(right.get())) {
     if (auto name = dynamic_cast<Identifier*>(call->operand.get())) {
-      
         Callable_T* callable = nullptr;
         auto obj = dynamic_cast<Object_T*>(lvalue.get());
         
         if (obj && obj->scope->variables.contains(name->name)) {
           callable = dynamic_cast<Callable_T*>(obj->scope->variables[name->name].get());
-          return callable->Call(call->args); // call a normal member method without pushing this as first argument.
+          // call the function from the object's scope.
+          return EvaluateWithinObject(obj->scope, lvalue, [callable, call]() -> Value {
+            return callable->Call(call->args);
+          });
         }
         if (!callable) {
           callable =  dynamic_cast<Callable_T*>(ASTNode::context.Find(name->name).get());
@@ -475,12 +492,33 @@ Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue) {
             return nc->Call(args);
           } else if (auto c = dynamic_cast<Callable_T*>(callable)) {
             return c->Call(args);
+          } {
+            std::unreachable();
           }
-        }
+          
+        } else throw std::runtime_error("invalid method call: " + name->name);
     }
   }
   return nullptr;
 }
+
+Value EvaluateWithinObject(Scope scope, Value object, ExpressionPtr &expr) {
+  scope->variables["this"] = object;
+  ASTNode::context.PushScope(scope);
+  auto result = expr->Evaluate();
+  ASTNode::context.PopScope();
+  scope->variables.erase("this");
+  return result;
+}
+Value EvaluateWithinObject(Scope scope, Value object, std::function<Value()> lambda) {
+  scope->variables["this"] = object;
+  ASTNode::context.PushScope(scope);
+  auto result = lambda();
+  ASTNode::context.PopScope();
+  scope->variables.erase("this");
+  return result;
+}
+
 
 Value DotExpr::Evaluate() {
   auto lvalue = left->Evaluate();
@@ -502,14 +540,9 @@ Value DotExpr::Evaluate() {
   
   auto scope = object->scope;
   
-  scope->variables["this"] = lvalue;
+  auto result = EvaluateWithinObject(scope, lvalue, right);
   
-  ASTNode::context.PushScope(scope);
-  auto result = right->Evaluate();
-  ASTNode::context.PopScope();
   
-  scope->variables.erase("this");
-
   return result;
 }
 void DotExpr::Assign(Value value) {
@@ -602,14 +635,13 @@ Value BinExpr::Evaluate() {
   case TType::Less:
     return left->Less(right);
   case TType::GreaterEq:
-    return left->GreaterEquals(right);
+    return Ctx::CreateBool(left->Greater(right)->Equals(Value_T::True) || left->Equals(right));
   case TType::LessEq:
-    return left->LessEquals(right);
+    return Ctx::CreateBool(left->Less(right)->Equals(Value_T::True) || left->Equals(right));
   case TType::Equals:
     return Bool_T::New(left->Equals(right));
   case TType::NotEquals: {
-    auto result = left->Equals(right);
-    return Bool_T::New(!result);
+    return Bool_T::New(!left->Equals(right));
   }
   case TType::Assign:
     left->Set(right);

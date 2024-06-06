@@ -1,6 +1,7 @@
 #include "native.hpp"
 #include "value.hpp"
 #include <cctype>
+#include <cmath>
 #include <iostream>
 #include <termios.h>
 #include <unistd.h>
@@ -10,6 +11,26 @@
 
 #pragma clang diagnostic ignored "-Wunused-parameter"
 
+#define undefined Ctx::Undefined()
+#define null Ctx::Null()
+
+REGISTER_FUNCTION(mod) {
+  int v;
+  int mod;
+  if (args.empty() || !Ctx::TryGetInt(args[0], v) || !Ctx::TryGetInt(args[1], mod)) {
+    return undefined;
+  }
+  return Ctx::CreateInt(v % mod);
+}
+
+REGISTER_FUNCTION(fmod) {
+  float v;
+  float mod;
+  if (args.empty() || !Ctx::TryGetFloat(args[0], v) || !Ctx::TryGetFloat(args[1], mod)) {
+    return undefined;
+  }
+  return Ctx::CreateFloat(std::fmod(v, mod));
+}
 
 // Arrays (some of these functions support strings too., push, pop, len, clear)
 REGISTER_FUNCTION(expand) {

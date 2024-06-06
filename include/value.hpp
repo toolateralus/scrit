@@ -94,8 +94,6 @@ struct Value_T : std::enable_shared_from_this<Value_T> {
   virtual Bool And(Value) { return False; }
   virtual Bool Less(Value) { return False; }
   virtual Bool Greater(Value) { return False; }
-  virtual Bool GreaterEquals(Value) { return False; }
-  virtual Bool LessEquals(Value) { return False; }
   virtual Bool Not() { return False; }
   virtual Value Negate() {
     return std::static_pointer_cast<Value_T>(UNDEFINED);
@@ -139,8 +137,6 @@ struct Int_T : Value_T {
   virtual Value Divide(Value other) override;
   virtual Bool Less(Value other) override;
   virtual Bool Greater(Value other) override;
-  virtual Bool GreaterEquals(Value other) override;
-  virtual Bool LessEquals(Value other) override;
   virtual Value Negate() override;
   virtual string ToString() const override;
   ValueType GetType() const override { return ValueType::Int; }
@@ -162,8 +158,6 @@ struct Float_T : Value_T {
   virtual Bool And(Value other) override;
   virtual Bool Less(Value other) override;
   virtual Bool Greater(Value other) override;
-  virtual Bool GreaterEquals(Value other) override;
-  virtual Bool LessEquals(Value other) override;
   virtual Value Negate() override;
   virtual string ToString() const override;
   ValueType GetType() const override { return ValueType::Float; }
@@ -207,6 +201,9 @@ struct Object_T : Value_T {
       scope = make_shared<Scope_T>();
     return make_shared<Object_T>(scope);
   }
+
+  bool operator==(Object_T *other);
+
   string WriteMembers(std::unordered_set<const Value_T *> foundObjs) const;
   Value GetMember(const string &name);
   void SetMember(const string &name, Value &value);
@@ -223,8 +220,6 @@ struct Object_T : Value_T {
   virtual Value Divide(Value other) override;
   virtual Bool Less(Value other) override;
   virtual Bool Greater(Value other) override;
-  virtual Bool GreaterEquals(Value other) override;
-  virtual Bool LessEquals(Value other) override;
   Value Clone() override;
 };
 struct Callable_T : Value_T {
@@ -237,6 +232,8 @@ struct Callable_T : Value_T {
   virtual Value Call(std::vector<Value> &args);
   string ToString() const override;
   bool Equals(Value value) override;
+  Value Clone() override;
+
   ValueType GetType() const override { return ValueType::Callable; }
 };
 struct NativeCallable_T : Callable_T {
@@ -288,16 +285,6 @@ struct Ctx {
   static Float CreateFloat(const float value = 0.0f);
   static Object CreateObject(shared_ptr<Scope_T> scope = nullptr);
   static Array CreateArray(vector<Value> values = {});
-  
-  template<typename T>
-  static Object FromStruct(T instance) {
-    const auto size = sizeof(T);
-    auto *ptr = &instance;
-    for (int i = ptr; i < ptr + size; ++i) {
-      // try cast values to bool, int, std::string, char *, etc recursively to create
-      // a Object 
-    }
-  }
   
   static Array FromFloatVector(vector<float> &values);
   static Array FromStringVector(vector<string> &values);

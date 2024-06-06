@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 
 Bool Value_T::True = Bool_T::New(true);
 Bool Value_T::False = Bool_T::New(false);
@@ -52,9 +53,16 @@ Value Callable_T::Call(ArgumentsPtr &args) {
   }
 }
 
-Value Array_T::At(Int index) { return values.at(index->value); }
+Value Array_T::At(Int index) { 
+  if (values.size() <= index->value) {
+    throw std::runtime_error("Array access out of bounds");
+  }
+  return values.at(index->value); }
 void Array_T::Push(Value value) { values.push_back(value); }
 Value Array_T::Pop() {
+  if (values.size() == 0) {
+    throw std::runtime_error("Attempted to pop an already empty array.");
+  }
   auto val = values.back();
   values.pop_back();
   return val;
@@ -226,28 +234,7 @@ Bool Int_T::Greater(Value other) {
   }
   return False;
 }
-Bool Int_T::GreaterEquals(Value other) {
-  if (other->GetType() == ValueType::Int) {
-    return Bool_T::New(this->value >= static_cast<Int_T *>(other.get())->value);
-  }
-  if (other->GetType() == ValueType::Float) {
-    auto i =
-        Bool_T::New(this->value >= static_cast<Float_T *>(other.get())->value);
-    return i;
-  }
-  return False;
-}
-Bool Int_T::LessEquals(Value other) {
-  if (other->GetType() == ValueType::Int) {
-    return Bool_T::New(this->value <= static_cast<Int_T *>(other.get())->value);
-  }
-  if (other->GetType() == ValueType::Float) {
-    auto i =
-        Bool_T::New(this->value <= static_cast<Float_T *>(other.get())->value);
-    return i;
-  }
-  return False;
-}
+
 Value Int_T::Negate() { return Int_T::New(-value); }
 
 Value Float_T::Add(Value other) {
@@ -354,30 +341,7 @@ Bool Float_T::Greater(Value other) {
   }
   return False;
 }
-Bool Float_T::GreaterEquals(Value other) {
-  if (other->GetType() == ValueType::Float) {
-    return Bool_T::New(this->value >=
-                       static_cast<Float_T *>(other.get())->value);
-  }
-  if (other->GetType() == ValueType::Int) {
-    auto i =
-        Bool_T::New(this->value >= static_cast<Int_T *>(other.get())->value);
-    return i;
-  }
-  return False;
-}
-Bool Float_T::LessEquals(Value other) {
-  if (other->GetType() == ValueType::Float) {
-    return Bool_T::New(this->value <=
-                       static_cast<Float_T *>(other.get())->value);
-  }
-  if (other->GetType() == ValueType::Int) {
-    auto i =
-        Bool_T::New(this->value <= static_cast<Int_T *>(other.get())->value);
-    return i;
-  }
-  return False;
-}
+
 Value Float_T::Negate() { return Float_T::New(-value); }
 
 Value String_T::Add(Value other) {
@@ -489,7 +453,11 @@ bool Bool_T::Equals(Value value) {
 bool Array_T::Equals(Value value) { return value.get() == this; }
 bool NativeCallable_T::Equals(Value value) { return value.get() == this; }
 bool Callable_T::Equals(Value value) { return value.get() == this; }
-bool Object_T::Equals(Value value) { return value.get() == this; }
+
+bool Object_T::Equals(Value value) { 
+  return value == shared_from_this();
+}
+
 bool Undefined_T::Equals(Value value) {
   return value.get() == this || value->GetType() == ValueType::Undefined;
 }
@@ -606,6 +574,12 @@ Value Array_T::Clone() {
   }
   return array;
 }
+Value Callable_T::Clone() { 
+  return shared_from_this();
+}
+bool Object_T::operator==(Object_T *other) {
+  return scope->variables == other->scope->variables && this == other;
+}
 } // namespace Values
 
 Value Callable_T::Call(std::vector<Value> &values) {
@@ -709,34 +683,37 @@ bool Ctx::IsNull(Value value) { return value->Equals(Value_T::VNULL); }
 
 Value Object_T::CallOpOverload(Value &arg, const string &op_key) {
   if (!scope->variables.contains(op_key)) {
-    return Value_T::UNDEFINED;
+    throw std::runtime_error("Couldn't find operator overload: " + op_key);
   }
+  
   auto member = scope->variables[op_key];
   if (member == nullptr || member->GetType() != ValueType::Callable) {
-    return Value_T::UNDEFINED;
+    throw std::runtime_error("Operator overload was not a callable");
   }
+  
   auto callable = static_cast<Callable_T *>(member.get());
   auto args = std::vector<Value>{shared_from_this(), arg};
+  
   return callable->Call(args);
 }
 Value Object_T::Add(Value other) {
-  static const string op_key = "add_operator";
+  static const string op_key = "add";
   return CallOpOverload(other, op_key);
 }
 Value Object_T::Subtract(Value other) {
-  static const string op_key = "sub_operator";
+  static const string op_key = "sub";
   return CallOpOverload(other, op_key);
 }
 Value Object_T::Multiply(Value other) {
-  static const string op_key = "mul_operator";
+  static const string op_key = "mul";
   return CallOpOverload(other, op_key);
 }
 Value Object_T::Divide(Value other) {
-  static const string op_key = "div_operator";
+  static const string op_key = "div";
   return CallOpOverload(other, op_key);
 }
 Bool Object_T::Less(Value other) {
-  static const string op_key = "less_operator";
+  static const string op_key = "less";
   auto result = CallOpOverload(other, op_key);
   if (result->GetType() == ValueType::Bool) {
     return std::dynamic_pointer_cast<Bool_T>(result);
@@ -744,29 +721,14 @@ Bool Object_T::Less(Value other) {
   return False;
 }
 Bool Object_T::Greater(Value other) {
-  static const string op_key = "greater_operator";
+  static const string op_key = "greater";
   auto result = CallOpOverload(other, op_key);
   if (result->GetType() == ValueType::Bool) {
     return std::dynamic_pointer_cast<Bool_T>(result);
   }
   return False;
 }
-Bool Object_T::GreaterEquals(Value other) {
-  static const string op_key = "greater_eq_operator";
-  auto result = CallOpOverload(other, op_key);
-  if (result->GetType() == ValueType::Bool) {
-    return std::dynamic_pointer_cast<Bool_T>(result);
-  }
-  return False;
-}
-Bool Object_T::LessEquals(Value other) {
-  static const string op_key = "less_eq_operator";
-  auto result = CallOpOverload(other, op_key);
-  if (result->GetType() == ValueType::Bool) {
-    return std::dynamic_pointer_cast<Bool_T>(result);
-  }
-  return False;
-}
+
 Values::Array Ctx::FromFloatVector(vector<float> &values) {
   Array array = CreateArray();
   for (const auto &value : values) {

@@ -476,6 +476,11 @@ ArgumentsPtr Parser::ParseArguments() {
   while (tokens.size() > 0 && next.type != TType::RParen) {
     auto value = ParseExpression();
     values.push_back(std::move(value));
+    
+    if (tokens.empty()) {
+      throw std::runtime_error("unmatched parens, or incomplete expression");
+    }
+    
     if (Peek().type == TType::Comma) {
       Eat();
     } else {
