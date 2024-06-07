@@ -11,3 +11,6 @@ cd ../system
 
 cd ../raylib
 ./build.sh || { echo "Error building raylib"; exit 1; }
+
+cd ../sstream
+./build.sh || { echo "Error building sstrea"; exit 1; }
