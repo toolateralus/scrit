@@ -31,7 +31,7 @@ void Writer::Map(const Value_T *val) {
   switch (val->GetType()) {
     case ValueType::Object: {
       auto obj = static_cast<const Object_T *>(val);
-      for (const auto &[key, var] : obj->scope->variables) {
+      for (const auto &[key, var] : obj->scope->Members()) {
         Map(var.get());
       }
       break;
@@ -67,8 +67,8 @@ void Writer::Write(const Value_T *val) {
       auto obj = static_cast<const Object_T *>(val);
       stream << "{";
       container_delimiter = "}";
-      int i = obj->scope->variables.size();
-      for (const auto &[key, var] : obj->scope->variables) {
+      int i = obj->scope->Members().size();
+      for (const auto &[key, var] : obj->scope->Members()) {
         i--;
         if (i == 0) {
           element_delimter = "";

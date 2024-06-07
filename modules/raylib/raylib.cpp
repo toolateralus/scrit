@@ -56,7 +56,7 @@ extern "C" ScritModDef *InitScritModule_raylib() {
   // colors enum.
   Object colors = Ctx::CreateObject();
   for (const auto &[key, val] : GetRaylibColorsMap()) {
-    colors->scope->variables[key] = CreateColor(val);
+    colors->SetMember(key, CreateColor(val));
   }
   def->AddVariable("colors", colors);
   return def;

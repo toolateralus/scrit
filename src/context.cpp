@@ -25,19 +25,19 @@ Scope Context::PopScope() {
 }
 void Context::Insert(const string &name, Value value) {
   for (const auto &scope : scopes) {
-    for (auto &[key, var] : scope->variables) {
+    for (auto &[key, var] : scope->Members()) {
       if (key == name) {
         var = value;
         return;
       }
     }
   }
-  auto &variables = scopes.back()->variables;
+  auto &variables = scopes.back()->Members();
   variables[name] = value;
 }
 Value Context::Find(const string &name) {
   for (const auto &scope : scopes) {
-    for (const auto &[key, var] : scope->variables) {
+    for (const auto &[key, var] : scope->Members()) {
       if (key == name) {
         return var;
       }
@@ -57,4 +57,22 @@ auto Scope_T::Clone() -> Scope {
   auto scope=make_shared<Scope_T>();
   scope->variables = variables;
   return scope;
+}
+auto Scope_T::Get(const string &name) -> Value {
+  if (!variables.contains(name)) {
+    return Value_T::UNDEFINED;
+  }
+  return variables[name];
+  }
+auto Scope_T::Set(const string &name, Value value) -> void {
+   variables[name] = value; 
+}
+auto Scope_T::Contains(const string &name) -> bool {
+  return variables.contains(name);
+}
+auto Scope_T::Erase(const string &name) -> size_t {
+  return variables.erase(name); 
+}
+auto Scope_T::Members() -> std::map<string, Value>& {
+  return variables;
 }

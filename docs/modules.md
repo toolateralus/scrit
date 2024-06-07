@@ -123,7 +123,7 @@ extern "C" ScritModDef *InitScritModule_myTestModule() {
   
   auto object = Ctx::CreateObject(); // create a new object.
   
-  object->scope->variables["myIntegerVariable"] = Ctx::CreateInt(100); // add a member to the object called myIntegerVariable
+  object->SetMember("myIntegerVariable", Ctx::CreateInt(100)); // add a member to the object called myIntegerVariable
   
   AddVariable(def, "myObject", object);
   AddVariable(def, "myInteger", Ctx::CreateInt(20000));

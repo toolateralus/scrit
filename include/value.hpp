@@ -3,7 +3,6 @@
 #include "native.hpp"
 #include <memory>
 #include <string>
-#include <unordered_set>
 #include <vector>
 
 using std::make_shared;
@@ -195,6 +194,7 @@ struct Bool_T : Value_T {
 };
 struct Object_T : Value_T {
   Object_T(Scope scope);
+  Object_T() {}
   Scope scope;
   static Object New(Scope scope = nullptr) {
     if (!scope)
@@ -203,24 +203,24 @@ struct Object_T : Value_T {
   }
 
   bool operator==(Object_T *other);
-
-  string WriteMembers(std::unordered_set<const Value_T *> foundObjs) const;
-  Value GetMember(const string &name);
-  void SetMember(const string &name, Value &value);
-  virtual string ToString() const override;
-  string ToString(std::unordered_set<const Value_T *> foundValues) const;
-  bool Equals(Value value) override;
   ValueType GetType() const override { return ValueType::Object; }
-  Value Subscript(Value key) override;
-  Value SubscriptAssign(Value key, Value value) override;
-  Value CallOpOverload(Value &other, const string &op_key);
+  
+  virtual string ToString() const override;
+  virtual Value GetMember(const string &name);
+  virtual void SetMember(const string &name, Value value);
+  virtual bool HasMember(const string &name);
+  
+  virtual bool Equals(Value value) override;
+  virtual Value Subscript(Value key) override;
+  virtual Value SubscriptAssign(Value key, Value value) override;
+  virtual Value CallOpOverload(Value &other, const string &op_key);
   virtual Value Add(Value other) override;
   virtual Value Subtract(Value other) override;
   virtual Value Multiply(Value other) override;
   virtual Value Divide(Value other) override;
   virtual Bool Less(Value other) override;
   virtual Bool Greater(Value other) override;
-  Value Clone() override;
+  virtual Value Clone() override;
 };
 struct Callable_T : Value_T {
   ~Callable_T();
@@ -318,3 +318,4 @@ struct Ctx {
   static bool IsUndefined(Value value);
   static bool IsNull(Value value);
 };
+

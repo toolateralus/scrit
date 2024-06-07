@@ -60,9 +60,9 @@ TEST(EqTest, BoolEquals) {
 TEST(EqTest, ObjectEquals) {
   Object OBJ1 = Object_T::New();
   Object OBJ2 = Object_T::New();
-  OBJ2->scope->variables["FALSE"] = Value_T::False;
+  OBJ2->SetMember("FALSE", Value_T::False);
   Object OTHER_OBJ2 = Object_T::New();
-  OTHER_OBJ2->scope->variables["FALSE"] = Value_T::False;
+  OTHER_OBJ2->SetMember("FALSE", Value_T::False);
   ASSERT_FALSE(OBJ1->Equals(OBJ2));
   ASSERT_FALSE(OBJ2->Equals(OTHER_OBJ2));
   ASSERT_TRUE(OBJ1->Equals(OBJ1));

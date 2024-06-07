@@ -2,7 +2,6 @@
 #include "native.hpp"
 #include "value.hpp"
 #include <algorithm>
-#include <cmath>
 #include <stdexcept>
 #include <termios.h>
 #include <unistd.h>
@@ -12,6 +11,39 @@
 
 #define undefined Ctx::Undefined()
 #define null Ctx::Null()
+
+REGISTER_FUNCTION(contains) {
+  if (args.size() < 2) {
+    return undefined;
+  }
+  
+  Array result; 
+  if (!Ctx::TryGetArray(args[0], result)) {
+    throw std::runtime_error("contains may only be used on arrays. for strings, use scontains");
+  }
+  for (const auto &value: result->values) {
+    if (value->Equals(args[1])) {
+      return Value_T::True;
+    }
+  }
+  return Value_T::False; 
+}
+
+REGISTER_FUNCTION(scontains) {
+  if (args.size() < 2) {
+    return undefined;
+  }
+  string result, comparison;
+  if (!Ctx::TryGetString(args[0], result) || !Ctx::TryGetString(args[1], comparison)) {
+    throw std::runtime_error("scontains may only be used on string. for arrays, use contains");
+  }
+  for (const auto &value: result) {
+    if (comparison[0] == value)  
+      return Value_T::True;
+  }
+  return Value_T::False; 
+}
+
 
 REGISTER_FUNCTION(replace) {
   if (args.size() < 3 || args[0]->GetType() != Values::ValueType::String ||

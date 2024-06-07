@@ -108,10 +108,10 @@ void Debug::m_setBreakpoint(std::string &line, const string &breakpointKey) {
 }
 void Debug::m_printScope() {
   auto scope = ASTNode::context.scopes.back();
-  if (scope->variables.size() == 0) {
+  if (scope->Members().size() == 0) {
     std::cout << "scope empty." << '\n';
   }
-  for (const auto &[key, var] : scope->variables) {
+  for (const auto &[key, var] : scope->Members()) {
     std::cout << key << " :" << var->ToString() << "\n";
   }
   std::cout << std::flush;

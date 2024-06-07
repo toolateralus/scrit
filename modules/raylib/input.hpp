@@ -144,8 +144,8 @@ static Value isMouseButtonDown(std::vector<Value> args) {
 static Value getMousePosition(std::vector<Value> args) {
   Vector2 position = GetMousePosition();
   Object result = Ctx::CreateObject();
-  result->scope->variables["x"] = Ctx::CreateFloat(position.x);
-  result->scope->variables["y"] = Ctx::CreateFloat(position.y);
+  result->SetMember("x", Ctx::CreateFloat(position.x));
+  result->SetMember("y", Ctx::CreateFloat(position.y));
   return result;
 }
 static Value setMousePosition(std::vector<Value> args) {

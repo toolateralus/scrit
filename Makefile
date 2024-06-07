@@ -18,7 +18,7 @@ OBJDIR := obj
 BINDIR := bin
 
 # Source files
-SRCS := $(wildcard $(SRCDIR)/*.cpp)
+SRCS := $(shell find $(SRCDIR) -name "*.cpp")
 TESTSRCS := $(wildcard $(TESTDIR)/*.cpp)
 
 # Object files

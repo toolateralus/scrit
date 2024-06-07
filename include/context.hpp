@@ -1,4 +1,5 @@
 #pragma once
+#include <dlfcn.h>
 #include <map>
 #include <memory>
 #include <vector>
@@ -17,12 +18,26 @@ using namespace Values;
 struct Scope_T;
 typedef shared_ptr<Scope_T> Scope;
 
+
+
 struct Scope_T {
   Scope_T() {}
+  
+  // Why did i randomly start using this convention? Not sure.
+  // I'd like to use it more.
+  auto Contains(const string &name) -> bool;
+  auto Erase(const string &name) -> size_t;
+  auto Members() -> std::map<string, Value>&;
+  auto Get(const string &name) -> Value;
+  auto Set(const string &name, Value value) -> void;
+  auto Clear() -> void {
+    this->variables.clear();
+  }
   auto Clone() -> Scope;
   Scope_T(Scope_T *scope) {
     variables = scope->variables;
   } 
+  private:
   std::map<string, Value> variables = {};
 };
 

@@ -9,24 +9,24 @@
 
 static Object CreateVector3(const Vector3 &v) {
   Object obj = Ctx::CreateObject();
-  obj->scope->variables["x"] = Ctx::CreateFloat(v.x);
-  obj->scope->variables["y"] = Ctx::CreateFloat(v.y);
-  obj->scope->variables["z"] = Ctx::CreateFloat(v.z);
+  obj->SetMember("x", Ctx::CreateFloat(v.x));
+  obj->SetMember("y", Ctx::CreateFloat(v.y));
+  obj->SetMember("z", Ctx::CreateFloat(v.z));
   return obj;
 }
 static Object CreateQuaternion(const Quaternion &quat) {
   Object obj = Ctx::CreateObject();
-  obj->scope->variables["x"] = Ctx::CreateFloat(quat.x);
-  obj->scope->variables["y"] = Ctx::CreateFloat(quat.y);
-  obj->scope->variables["z"] = Ctx::CreateFloat(quat.z);
-  obj->scope->variables["w"] = Ctx::CreateFloat(quat.w);
+  obj->SetMember("x", Ctx::CreateFloat(quat.x));
+  obj->SetMember("y", Ctx::CreateFloat(quat.y));
+  obj->SetMember("z", Ctx::CreateFloat(quat.z));
+  obj->SetMember("w", Ctx::CreateFloat(quat.w));
   return obj;
 }
 static Object CreateTransform(const Transform &transform) {
   Object obj = Ctx::CreateObject();
-  obj->scope->variables["position"] = CreateVector3(transform.translation);
-  obj->scope->variables["rotation"] = CreateQuaternion(transform.rotation);
-  obj->scope->variables["scale"] = CreateVector3(transform.scale);
+  obj->SetMember("position", CreateVector3(transform.translation));
+  obj->SetMember("rotation", CreateQuaternion(transform.rotation));
+  obj->SetMember("scale"   , CreateVector3(transform.scale));
   return obj;
 }
 static Object CreateMatrix(const Matrix &transform) {
@@ -34,14 +34,14 @@ static Object CreateMatrix(const Matrix &transform) {
   
   // Extract translation
   Vector3 translation = {transform.m12, transform.m13, transform.m14};
-  obj->scope->variables["position"] = CreateVector3(translation);
+  obj->SetMember("position", CreateVector3(translation));
 
   // Extract scale
   Vector3 scale;
   scale.x = Vector3Length((Vector3){transform.m0, transform.m1, transform.m2});
   scale.y = Vector3Length((Vector3){transform.m4, transform.m5, transform.m6});
   scale.z = Vector3Length((Vector3){transform.m8, transform.m9, transform.m10});
-  obj->scope->variables["scale"] = CreateVector3(scale);
+  obj->SetMember("scale", CreateVector3(scale));
 
   // Normalize the matrix to extract rotation
   Matrix rotationMatrix = transform;
@@ -57,33 +57,32 @@ static Object CreateMatrix(const Matrix &transform) {
 
   // Convert the rotation matrix to a quaternion
   Quaternion rotation = QuaternionFromMatrix(rotationMatrix);
-  obj->scope->variables["rotation"] = CreateQuaternion(rotation);
+  obj->SetMember("rotation", CreateQuaternion(rotation));
 
   return obj;
 }
 
 static Object CreateColor(const Color &color) {
   Object obj = Ctx::CreateObject();
-  obj->scope->variables["r"] = Ctx::CreateInt(color.r);
-  obj->scope->variables["g"] = Ctx::CreateInt(color.g);
-  obj->scope->variables["b"] = Ctx::CreateInt(color.b);
-  obj->scope->variables["a"] = Ctx::CreateInt(color.a);
+  obj->SetMember("r", Ctx::CreateInt(color.r));
+  obj->SetMember("g", Ctx::CreateInt(color.g));
+  obj->SetMember("b", Ctx::CreateInt(color.b));
+  obj->SetMember("a", Ctx::CreateInt(color.a));
   return obj;
 }
 
 static Object CreateTexture(const Texture2D &texture) {
   Object obj = Ctx::CreateObject();
-  obj->scope->variables["id"] = Ctx::CreateInt(texture.id);
-  obj->scope->variables["width"] = Ctx::CreateInt(texture.width);
-  obj->scope->variables["height"] = Ctx::CreateInt(texture.height);
+  obj->SetMember("id", Ctx::CreateInt(texture.id));
+  obj->SetMember("width", Ctx::CreateInt(texture.width));
+  obj->SetMember("height", Ctx::CreateInt(texture.height));
   return obj;
 }
 
 static bool TryGetTexture(Object value, Texture2D& texture) {
-  auto scope = value->scope;
-  auto idVal = scope->variables["id"];
-  auto widthVal = scope->variables["width"];
-  auto heightVal = scope->variables["height"];
+  auto idVal = value->GetMember("id");
+  auto widthVal = value->GetMember("width");
+  auto heightVal = value->GetMember("height");
   if (Ctx::IsUndefined(idVal, widthVal, heightVal) ||
       Ctx::IsNull(idVal, widthVal, heightVal)) {
     return false;
@@ -106,10 +105,9 @@ static bool TryGetVector3(Object value, Vector3& vector) {
     return false;
   }
 
-  auto scope = value->scope;
-  auto xval = scope->variables["x"];
-  auto yval = scope->variables["y"];
-  auto zval = scope->variables["z"];
+  auto xval = value->GetMember("x");
+  auto yval = value->GetMember("y");
+  auto zval = value->GetMember("z");
   if (Ctx::IsUndefined(xval, yval, zval) ||
       Ctx::IsNull(xval, yval, zval)) {
     return false;
@@ -130,10 +128,10 @@ static bool TryGetQuaternion(Object value, Quaternion& quat) {
   }
 
   auto scope = value->scope;
-  auto xval = scope->variables["x"];
-  auto yval = scope->variables["y"];
-  auto zval = scope->variables["z"];
-  auto wval = scope->variables["w"];
+  auto xval = value->GetMember("x");
+  auto yval = value->GetMember("y");
+  auto zval = value->GetMember("z");
+  auto wval = value->GetMember("w");
   if (Ctx::IsUndefined(xval, yval, zval, wval) ||
       Ctx::IsNull(xval, yval, zval, wval)) {
     return false;
@@ -154,9 +152,9 @@ static bool TryGetMatrix(Object value, Matrix& matrix) {
   }
   
   auto scope = value->scope;
-  auto positionVal = scope->variables["position"];
-  auto scaleVal = scope->variables["scale"];
-  auto rotationVal = scope->variables["rotation"];
+  auto positionVal = value->GetMember("position");
+  auto scaleVal = value->GetMember("scale");
+  auto rotationVal = value->GetMember("rotation");
   
   Object posObj;
   Object scaleObj;

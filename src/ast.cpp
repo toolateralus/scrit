@@ -303,9 +303,10 @@ Value ObjectInitializer::Evaluate() {
   
   static auto _this = Object_T::New();
   
-  _this->scope->variables.clear();
+  _this->scope->Clear();
   
-  block->scope->variables["this"] = _this;
+  block->scope->Set("this", _this);
+  
   
   auto controlChange = block->Execute().controlChange;
   
@@ -314,10 +315,11 @@ Value ObjectInitializer::Evaluate() {
                              " not allowed in object initialization.");
   }
   
-  for (const auto &[k, v]: _this->scope->variables) {
-    block->scope->variables[k] = v->Clone();
+  for (const auto &[k, v]: _this->scope->Members()) {
+    block->scope->Set(k,v->Clone());
   }
-  block->scope->variables.erase("this");
+  
+  block->scope->Erase("this");
   
   return Object_T::New(block->scope->Clone());
 }
@@ -469,8 +471,8 @@ Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue) {
         Callable_T* callable = nullptr;
         auto obj = dynamic_cast<Object_T*>(lvalue.get());
         
-        if (obj && obj->scope->variables.contains(name->name)) {
-          callable = dynamic_cast<Callable_T*>(obj->scope->variables[name->name].get());
+        if (obj && obj->scope->Contains(name->name)) {
+          callable = dynamic_cast<Callable_T*>(obj->scope->Get(name->name).get());
           // call the function from the object's scope.
           return EvaluateWithinObject(obj->scope, lvalue, [callable, call]() -> Value {
             return callable->Call(call->args);
@@ -503,19 +505,19 @@ Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue) {
 }
 
 Value EvaluateWithinObject(Scope scope, Value object, ExpressionPtr &expr) {
-  scope->variables["this"] = object;
+  scope->Set("this", object);
   ASTNode::context.PushScope(scope);
   auto result = expr->Evaluate();
   ASTNode::context.PopScope();
-  scope->variables.erase("this");
+  scope->Erase("this");
   return result;
 }
 Value EvaluateWithinObject(Scope scope, Value object, std::function<Value()> lambda) {
-  scope->variables["this"] = object;
+  scope->Set("this", object);
   ASTNode::context.PushScope(scope);
   auto result = lambda();
   ASTNode::context.PopScope();
-  scope->variables.erase("this");
+  scope->Erase("this");
   return result;
 }
 
@@ -662,6 +664,7 @@ ExecutionResult Import::Execute() {
 
   auto path = moduleRoot + moduleName + ".dll";
   auto module = LoadScritModule(moduleName, path);
+  
   // we do this even when we ignore the object becasue it registers the native
   // callables.
   auto object = ScritModDefAsObject(module);
@@ -669,7 +672,6 @@ ExecutionResult Import::Execute() {
     ASTNode::context.Insert(moduleName, object);
   } else {
     vector<Value> values = {};
-
     if (!symbols.empty()) {
       for (const auto &name : symbols) {
         auto value = module->context->Find(name);
@@ -677,15 +679,21 @@ ExecutionResult Import::Execute() {
           throw std::runtime_error("invalid import statement. could not find " +
                                    name);
         }
-
+        
         ASTNode::context.Insert(name, value);
       }
     } else {
-      for (const auto &[key, var] : object->scope->variables) {
+      for (const auto &[key, var] : object->scope->Members()) {
         ASTNode::context.Insert(key, var);
+        
       }
     }
   }
+  // // create a module handle so when this scope goes out of scope, 
+  // // this module gets freed.
+  // auto handle = std::move(module->handle);
+  // ASTNode::context.scopes.back()->modules.emplace_back(handle);
+  
   delete module;
   return ExecutionResult::None;
 }
@@ -724,9 +732,9 @@ ExecutionResult RangeBasedFor::Execute() {
     }
   } else if (obj) {
     auto kvp = Ctx::CreateObject();
-    for (auto &[key, val] : obj->scope->variables) {
-      kvp->scope->variables["key"] = Ctx::CreateString(key);
-      kvp->scope->variables["value"] = val;
+    for (auto &[key, val] : obj->scope->Members()) {
+      kvp->scope->Set("key", Ctx::CreateString(key));
+      kvp->scope->Set("value", val);
       ASTNode::context.Insert(name, kvp);
       auto result = block->Execute();
       switch (result.controlChange) {

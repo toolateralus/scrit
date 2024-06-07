@@ -44,10 +44,6 @@ struct NativeFunctions {
 
 void RegisterFunction(const std::string &name, const NativeFunctionPtr &function);
 
-static std::pair<ValueType, std::string> Argument(ValueType &&type, std::string &&name) {
-  return std::make_pair(type, name);
-}
-
 #define REGISTER_FUNCTION(name) \
   Value name(std::vector<Value> args); \
   namespace { \
