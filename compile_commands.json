@@ -2,148 +2,495 @@
   {
     "arguments": [
       "/usr/bin/clang++",
-      "-g",
+      "-fPIC",
       "-std=c++2b",
-      "-Iinclude",
-      "-c",
-      "-I",
-      "/usr/include/c++",
-      "-I",
-      "/usr/include/c++",
-      "-I",
-      ".",
-      "-o",
-      "obj/ast.o",
-      "src/ast.cpp"
-    ],
-    "directory": "/home/cooper/Repos/scrit",
-    "file": "/home/cooper/Repos/scrit/src/ast.cpp",
-    "output": "/home/cooper/Repos/scrit/obj/ast.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/clang++",
       "-g",
-      "-std=c++2b",
       "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-g",
       "-c",
-      "-I",
-      "/usr/include/c++",
-      "-I",
-      "/usr/include/c++",
-      "-I",
-      ".",
       "-o",
-      "obj/context.o",
+      "obj/debug/context.o",
       "src/context.cpp"
     ],
-    "directory": "/home/cooper/Repos/scrit",
-    "file": "/home/cooper/Repos/scrit/src/context.cpp",
-    "output": "/home/cooper/Repos/scrit/obj/context.o"
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/context.cpp",
+    "output": "/home/josh/source/c++/lang/obj/debug/context.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
-      "-g",
+      "-fPIC",
       "-std=c++2b",
+      "-g",
       "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-g",
       "-c",
-      "-I",
-      "/usr/include/c++",
-      "-I",
-      "/usr/include/c++",
-      "-I",
-      ".",
       "-o",
-      "obj/main.o",
+      "obj/debug/main.o",
       "src/main.cpp"
     ],
-    "directory": "/home/cooper/Repos/scrit",
-    "file": "/home/cooper/Repos/scrit/src/main.cpp",
-    "output": "/home/cooper/Repos/scrit/obj/main.o"
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/main.cpp",
+    "output": "/home/josh/source/c++/lang/obj/debug/main.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
-      "-g",
+      "-fPIC",
       "-std=c++2b",
+      "-g",
       "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-g",
       "-c",
-      "-I",
-      "/usr/include/c++",
-      "-I",
-      "/usr/include/c++",
-      "-I",
-      ".",
       "-o",
-      "obj/parser.o",
-      "src/parser.cpp"
+      "obj/debug/debug.o",
+      "src/debug.cpp"
     ],
-    "directory": "/home/cooper/Repos/scrit",
-    "file": "/home/cooper/Repos/scrit/src/parser.cpp",
-    "output": "/home/cooper/Repos/scrit/obj/parser.o"
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/debug.cpp",
+    "output": "/home/josh/source/c++/lang/obj/debug/debug.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
-      "-g",
+      "-fPIC",
       "-std=c++2b",
+      "-g",
       "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-g",
       "-c",
-      "-I",
-      "/usr/include/c++",
-      "-I",
-      "/usr/include/c++",
-      "-I",
-      ".",
       "-o",
-      "obj/raylib.o",
-      "src/raylib.cpp"
+      "obj/debug/object.o",
+      "src/object.cpp"
     ],
-    "directory": "/home/cooper/Repos/scrit",
-    "file": "/home/cooper/Repos/scrit/src/raylib.cpp",
-    "output": "/home/cooper/Repos/scrit/obj/raylib.o"
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/object.cpp",
+    "output": "/home/josh/source/c++/lang/obj/debug/object.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
-      "-g",
+      "-fPIC",
       "-std=c++2b",
-      "-Iinclude",
-      "-c",
-      "-I",
-      "/usr/include/c++",
-      "-I",
-      "/usr/include/c++",
-      "-I",
-      ".",
-      "-o",
-      "obj/std.o",
-      "src/std.cpp"
-    ],
-    "directory": "/home/cooper/Repos/scrit",
-    "file": "/home/cooper/Repos/scrit/src/std.cpp",
-    "output": "/home/cooper/Repos/scrit/obj/std.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/clang++",
       "-g",
-      "-std=c++2b",
       "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-g",
       "-c",
-      "-I",
-      "/usr/include/c++",
-      "-I",
-      "/usr/include/c++",
-      "-I",
-      ".",
       "-o",
-      "obj/value.o",
+      "obj/debug/value.o",
       "src/value.cpp"
     ],
-    "directory": "/home/cooper/Repos/scrit",
-    "file": "/home/cooper/Repos/scrit/src/value.cpp",
-    "output": "/home/cooper/Repos/scrit/obj/value.o"
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/value.cpp",
+    "output": "/home/josh/source/c++/lang/obj/debug/value.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-c",
+      "-o",
+      "obj/debug/serializer.o",
+      "src/serializer.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/serializer.cpp",
+    "output": "/home/josh/source/c++/lang/obj/debug/serializer.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-c",
+      "-o",
+      "obj/debug/native.o",
+      "src/native.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/native.cpp",
+    "output": "/home/josh/source/c++/lang/obj/debug/native.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-c",
+      "-o",
+      "obj/debug/std.o",
+      "src/std.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/std.cpp",
+    "output": "/home/josh/source/c++/lang/obj/debug/std.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-c",
+      "-o",
+      "obj/debug/int.o",
+      "src/int.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/int.cpp",
+    "output": "/home/josh/source/c++/lang/obj/debug/int.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-c",
+      "-o",
+      "obj/debug/lexer.o",
+      "src/lexer.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/lexer.cpp",
+    "output": "/home/josh/source/c++/lang/obj/debug/lexer.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-c",
+      "-o",
+      "obj/debug/ast.o",
+      "src/ast.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/ast.cpp",
+    "output": "/home/josh/source/c++/lang/obj/debug/ast.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-c",
+      "-o",
+      "obj/debug/parser.o",
+      "src/parser.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/parser.cpp",
+    "output": "/home/josh/source/c++/lang/obj/debug/parser.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-c",
+      "-o",
+      "obj/debug/std-query.o",
+      "src/std-query.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/std-query.cpp",
+    "output": "/home/josh/source/c++/lang/obj/debug/std-query.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-O3",
+      "-c",
+      "-o",
+      "obj/release/context.o",
+      "src/context.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/context.cpp",
+    "output": "/home/josh/source/c++/lang/obj/release/context.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-O3",
+      "-c",
+      "-o",
+      "obj/release/main.o",
+      "src/main.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/main.cpp",
+    "output": "/home/josh/source/c++/lang/obj/release/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-O3",
+      "-c",
+      "-o",
+      "obj/release/debug.o",
+      "src/debug.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/debug.cpp",
+    "output": "/home/josh/source/c++/lang/obj/release/debug.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-O3",
+      "-c",
+      "-o",
+      "obj/release/object.o",
+      "src/object.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/object.cpp",
+    "output": "/home/josh/source/c++/lang/obj/release/object.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-O3",
+      "-c",
+      "-o",
+      "obj/release/value.o",
+      "src/value.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/value.cpp",
+    "output": "/home/josh/source/c++/lang/obj/release/value.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-O3",
+      "-c",
+      "-o",
+      "obj/release/serializer.o",
+      "src/serializer.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/serializer.cpp",
+    "output": "/home/josh/source/c++/lang/obj/release/serializer.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-O3",
+      "-c",
+      "-o",
+      "obj/release/native.o",
+      "src/native.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/native.cpp",
+    "output": "/home/josh/source/c++/lang/obj/release/native.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-O3",
+      "-c",
+      "-o",
+      "obj/release/std.o",
+      "src/std.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/std.cpp",
+    "output": "/home/josh/source/c++/lang/obj/release/std.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-O3",
+      "-c",
+      "-o",
+      "obj/release/int.o",
+      "src/int.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/int.cpp",
+    "output": "/home/josh/source/c++/lang/obj/release/int.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-O3",
+      "-c",
+      "-o",
+      "obj/release/lexer.o",
+      "src/lexer.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/lexer.cpp",
+    "output": "/home/josh/source/c++/lang/obj/release/lexer.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-O3",
+      "-c",
+      "-o",
+      "obj/release/ast.o",
+      "src/ast.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/ast.cpp",
+    "output": "/home/josh/source/c++/lang/obj/release/ast.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-O3",
+      "-c",
+      "-o",
+      "obj/release/parser.o",
+      "src/parser.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/parser.cpp",
+    "output": "/home/josh/source/c++/lang/obj/release/parser.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++2b",
+      "-g",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "-O3",
+      "-c",
+      "-o",
+      "obj/release/std-query.o",
+      "src/std-query.cpp"
+    ],
+    "directory": "/home/josh/source/c++/lang",
+    "file": "/home/josh/source/c++/lang/src/std-query.cpp",
+    "output": "/home/josh/source/c++/lang/obj/release/std-query.o"
   }
 ]
