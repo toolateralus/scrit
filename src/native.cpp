@@ -44,8 +44,8 @@ NativeCallable NativeFunctions::GetCallable(const std::string &name) {
   return nullptr;
 }
 
-ScritModDef* LoadScritModule(const std::string &name, const std::string &path) {
-  void *handle = dlopen(path.c_str(), RTLD_NOW);
+ScritModDef* LoadScritModule(const std::string &name, const std::string &path, void *&handle) {
+  handle = dlopen(path.c_str(), RTLD_NOW);
   if (!handle) {
     throw std::runtime_error(dlerror());
   }

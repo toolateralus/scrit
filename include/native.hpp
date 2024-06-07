@@ -1,7 +1,6 @@
 #pragma once
 #include <memory>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 #include <string>
 
@@ -13,10 +12,13 @@ namespace Values {
   typedef std::shared_ptr<NativeCallable_T> NativeCallable;
   typedef std::shared_ptr<Value_T> Value;
   typedef std::shared_ptr<Object_T> Object;
-}
-struct Context;
+};
 using namespace Values;
 
+struct Context;
+struct ScritModDef;
+
+typedef ScritModDef* (*ScriptModInitFuncPtr)();
 typedef Value (*NativeFunctionPtr)(std::vector<Value>);
 
 extern "C" struct ScritModDef {
@@ -27,12 +29,12 @@ extern "C" struct ScritModDef {
   void AddVariable(const std::string &name, Value value);
 };
 
-
 ScritModDef* CreateModDef();
 Object ScritModDefAsObject(ScritModDef *mod);
 void m_InstantiateCallables(ScritModDef *mod);
+ScritModDef* LoadScritModule(const std::string &name, const std::string &path, void *&handle);
 
-typedef ScritModDef* (*ScriptModInitFuncPtr)();
+void RegisterFunction(const std::string &name, const NativeFunctionPtr &function);
 
 struct NativeFunctions {
   static std::unordered_map<std::string, NativeCallable> cachedCallables;
@@ -41,8 +43,6 @@ struct NativeFunctions {
   static NativeCallable GetCallable(const std::string &name);
   static NativeCallable MakeCallable(const NativeFunctionPtr &fn);
 };
-
-void RegisterFunction(const std::string &name, const NativeFunctionPtr &function);
 
 #define REGISTER_FUNCTION(name) \
   Value name(std::vector<Value> args); \
@@ -54,7 +54,3 @@ void RegisterFunction(const std::string &name, const NativeFunctionPtr &function
     } name##_register; \
   } \
   Value name(std::vector<Value> args)
-  
-  
-
-ScritModDef* LoadScritModule(const std::string &name, const std::string &path);

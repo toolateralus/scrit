@@ -73,6 +73,24 @@ auto Scope_T::Contains(const string &name) -> bool {
 auto Scope_T::Erase(const string &name) -> size_t {
   return variables.erase(name); 
 }
-auto Scope_T::Members() -> std::map<string, Value>& {
-  return variables;
+auto Scope_T::Members() -> std::map<string, Value> & { return variables; }
+
+
+ScritModHandle::~ScritModHandle() {
+  // was moved or already disposed.
+  if (handle == nullptr) {
+    return;
+  }
+  printf("disposing module handle %p\n", handle);
+  dlclose(handle);
+  handle = nullptr;
+}
+ScritModHandle::ScritModHandle(void *handle) : handle(handle) {}
+
+void Context::RegisterModuleHandle(void *handle) {
+  scopes.back()->PushModule(ScritModHandle(handle));
+}
+ScritModHandle::ScritModHandle(ScritModHandle &&move) {
+  this->handle = move.handle;
+  move.handle = nullptr;
 }

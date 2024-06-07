@@ -211,7 +211,6 @@ CompAssignExpr::CompAssignExpr(SourceInfo &info, ExpressionPtr &&left,
 }
 
 ExecutionResult Program::Execute() {
-  int index = 0;
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
@@ -226,7 +225,6 @@ ExecutionResult Program::Execute() {
     } catch (std::runtime_error err) {
       std::cout << statement->srcInfo.ToString() << err.what() << std::endl;
     }
-    index++;
   }
   return ExecutionResult::None;
 }
@@ -256,8 +254,7 @@ ExecutionResult Block::Execute() {
   else {
     ASTNode::context.PushScope(scope);
   }
-
-  int index = 0;
+  
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
@@ -293,7 +290,6 @@ ExecutionResult Block::Execute() {
     } catch (std::runtime_error err) {
       std::cout << statement->srcInfo.ToString() << err.what() << std::endl;
     }
-    index++;
   }
   ASTNode::context.PopScope();
   return ExecutionResult::None;
@@ -654,20 +650,26 @@ Value BinExpr::Evaluate() {
   }
 };
 ExecutionResult Import::Execute() {
+  printf("importing: %s\n", moduleName.c_str());
+  
   for (const auto &mod : importedModules) {
     if (moduleName == mod) {
       return ExecutionResult::None;
     }
   }
-
+  
   importedModules.push_back(moduleName);
 
   auto path = moduleRoot + moduleName + ".dll";
-  auto module = LoadScritModule(moduleName, path);
+  
+  void *handle;
+  auto module = LoadScritModule(moduleName, path, handle);
+  
   
   // we do this even when we ignore the object becasue it registers the native
   // callables.
   auto object = ScritModDefAsObject(module);
+  
   if (!isWildcard && symbols.empty()) {
     ASTNode::context.Insert(moduleName, object);
   } else {
@@ -689,12 +691,11 @@ ExecutionResult Import::Execute() {
       }
     }
   }
-  // // create a module handle so when this scope goes out of scope, 
-  // // this module gets freed.
-  // auto handle = std::move(module->handle);
-  // ASTNode::context.scopes.back()->modules.emplace_back(handle);
-  
+
   delete module;
+  
+  ASTNode::context.RegisterModuleHandle(handle);
+  
   return ExecutionResult::None;
 }
 ExecutionResult RangeBasedFor::Execute() {
