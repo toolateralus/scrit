@@ -5,6 +5,9 @@
 #include <sstream>
 
 #define undefined Ctx::Undefined()
+#define __args__ std::vector<Value> args
+
+#pragma clang diagnostic ignored "-Wunused-parameter"
 
 struct StringStream : Object_T {
   std::stringstream stream;
@@ -17,7 +20,7 @@ struct StringStream : Object_T {
   }
 };
 
-Value append(std ::vector<Value> args) {
+Value append(__args__) {
   if (args.size() < 2 || args[0]->GetType() != Values::ValueType::Object) {
     return undefined;
   }
@@ -29,8 +32,21 @@ Value append(std ::vector<Value> args) {
   return undefined;
 }
 
-Value create(std ::vector<Value> args) {
-  return make_shared<StringStream>();
+Value clear(__args__) {
+  if (!args.empty() && args[0]->GetType() == Values::ValueType::Object) {
+    auto ss = dynamic_cast<StringStream*>(args[0].get());
+    ss->stream.clear();
+  }
+}
+
+Value create(__args__) {
+  auto stream =  make_shared<StringStream>();
+  if (!args.empty()) {
+    for (const auto &arg: args) {
+      stream->stream << arg->ToString();
+    }
+  }
+  return stream;
 }
 
 extern "C" ScritModDef *InitScritModule_sstream() {

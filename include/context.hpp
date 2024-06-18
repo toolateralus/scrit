@@ -19,12 +19,13 @@ struct Scope_T;
 typedef shared_ptr<Scope_T> Scope;
 
 struct ScritModHandle {
-  ScritModHandle(ScritModHandle *copy) = delete;
-  ScritModHandle(ScritModHandle &copy) = delete;
-  ScritModHandle(ScritModHandle &&move);
-  ScritModHandle() = delete;
   void *handle;
-  ScritModHandle(void *handle);
+  ScritModHandle() = delete;
+  ScritModHandle(void *handle) : handle(handle) {}
+  ScritModHandle(const ScritModHandle &copy) = delete;
+  ScritModHandle& operator=(const ScritModHandle&) = delete;
+  ScritModHandle(ScritModHandle &&move) noexcept;
+  ScritModHandle &operator=(ScritModHandle &&other) noexcept;
   ~ScritModHandle();
 };
 
