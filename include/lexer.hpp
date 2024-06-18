@@ -94,9 +94,9 @@ enum class TType {
   Break,
   Continue,
   Return,
-  Import,
+  Using,
   From,
-  Use,
+  Import,
 };
 struct SourceInfo;
 struct Token {

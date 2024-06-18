@@ -18,15 +18,17 @@ using namespace Values;
 struct Scope_T;
 typedef shared_ptr<Scope_T> Scope;
 
-struct ScritModHandle {
+struct ScritModHandle  {
   void *handle;
-  ScritModHandle() = delete;
-  ScritModHandle(void *handle) : handle(handle) {}
-  ScritModHandle(const ScritModHandle &copy) = delete;
-  ScritModHandle& operator=(const ScritModHandle&) = delete;
+  ScritModHandle() noexcept  = delete;
+  ScritModHandle(void *handle) noexcept;
+  
+  ScritModHandle(const ScritModHandle &copy) noexcept = delete;
   ScritModHandle(ScritModHandle &&move) noexcept;
+  
+  ScritModHandle &operator=(const ScritModHandle&) noexcept = delete;
   ScritModHandle &operator=(ScritModHandle &&other) noexcept;
-  ~ScritModHandle();
+  ~ScritModHandle() noexcept ;
 };
 
 struct Scope_T {

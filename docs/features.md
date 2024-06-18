@@ -255,22 +255,22 @@ println(myValue)
 ## Modules
 
 For defining modules, see the [modules.md](modules.md) file.
-### import a module as an object
+### using a module as an object
 the module will be available as an object represented by the module name
 such as `math`
 ``` ts
-import math
+using math
 
 println(math.sqrt(10))
 
 ```
 
-### import specific symbols from a module
+### using specific symbols from a module
 
 All specified symbols from the object will be available as first class members of this object
 
 ``` ts
-import {sqrt, floor, toInt} from math
+using {sqrt, floor, toInt} from math
 
 
 
@@ -278,17 +278,17 @@ println(sqrt(10) * floor(0.5) + toInt(1.0))
 
 ```
 
-### import all symbols from a module
+### using all symbols from a module
 
 All symbols from the object will be available as first class members of this object
  
 ``` ts
-import * from math
+using * from math
 println(sqrt(10 * 2) + floor(0.5))
 ```
 
 Note: `math`, `system`, and `raylib` are the three current builtin modules.
-functions like `println`, `readln`, `push` and `pop` are available without import (among a few others.)
+functions like `println`, `readln`, `push` and `pop` are available without using (among a few others.)
 
 
 

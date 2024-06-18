@@ -431,6 +431,7 @@ Value Callable_T::Clone() {
   return shared_from_this();
 }
 
+Array_T::~Array_T() {}
 } // namespace Values
 
 Value Callable_T::Call(std::vector<Value> &values) {

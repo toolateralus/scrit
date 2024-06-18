@@ -37,6 +37,7 @@ Value clear(__args__) {
     auto ss = dynamic_cast<StringStream*>(args[0].get());
     ss->stream.clear();
   }
+  return Ctx::Undefined();
 }
 
 Value create(__args__) {
@@ -47,6 +48,14 @@ Value create(__args__) {
     }
   }
   return stream;
+}
+
+Value str(__args__) {
+  if (!args.empty() && args[0]->GetType() == Values::ValueType::Object) {
+    auto ss = dynamic_cast<StringStream*>(args[0].get());
+    return Ctx::CreateString(ss->stream.str());
+  }
+  return Ctx::Undefined();
 }
 
 extern "C" ScritModDef *InitScritModule_sstream() {

@@ -34,11 +34,11 @@ void InsertCmdLineArgs(int argc, char **argv) {
 
 
 std::vector<Token> &PreProcessUseStatements(std::vector<Token> &tokens) {
-  int i = 0;
+  size_t i = 0;
   while (i < tokens.size()) {
     const auto &tok = tokens[i];
-    if (tok.type == TType::Use) {
-      if (i + 1 < tokens.size()) {
+    if (tok.type == TType::Import) {
+      if ((size_t)i + 1 < tokens.size()) {
         tokens.erase(tokens.begin() + i); // remove 'use' token
         std::string filePath = tokens[i].value; // get file path token
         tokens.erase(tokens.begin() + i); // remove file path token

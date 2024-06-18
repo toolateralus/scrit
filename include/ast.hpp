@@ -30,9 +30,9 @@ struct Else;
 struct Identifier;
 struct Parameters;
 struct Operand;
-struct Import;
+struct Using;
 // typedefs
-typedef unique_ptr<Import> ImportPtr;
+typedef unique_ptr<Using> UsingPtr;
 typedef unique_ptr<Statement> StatementPtr;
 typedef unique_ptr<Expression> ExpressionPtr;
 typedef unique_ptr<Block> BlockPtr;
@@ -144,7 +144,9 @@ struct Call : Expression, Statement {
   Value Evaluate() override;
   ExecutionResult Execute() override;
 };
+
 struct If : Statement {
+  If() = delete;
   static IfPtr NoElse(SourceInfo &info, ExpressionPtr &&condition,
                       BlockPtr &&block);
   static IfPtr WithElse(SourceInfo &info,
@@ -158,8 +160,10 @@ struct If : Statement {
   BlockPtr block;
   ElsePtr elseStmnt;
   ExecutionResult Execute() override;
+  ~If();
 };
 struct Else : Statement {
+  ~Else();
   IfPtr ifStmnt;
   BlockPtr block;
   Else(SourceInfo &info) : Statement(info) {}
@@ -274,11 +278,11 @@ struct BinExpr : Expression {
   Value Evaluate() override;
 };
 
-struct Import : Statement {
-  static vector<string> importedModules;
-  Import(SourceInfo &info, const string &name,
+struct Using : Statement {
+  static vector<string> activeModules;
+  Using(SourceInfo &info, const string &name,
          const bool isWildcard);
-  Import(SourceInfo &info, const string &name,
+  Using(SourceInfo &info, const string &name,
          vector<string> &symbols);
   vector<string> symbols;
   string moduleName;

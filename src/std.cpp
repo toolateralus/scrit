@@ -350,12 +350,26 @@ REGISTER_FUNCTION(set_cursor) {
   if (Ctx::TryGetInt(args[0], x) && Ctx::TryGetInt(args[1], y)) {
     printf("\033[%d;%dH", x, y);
   }
+  
+  return Ctx::Undefined();
+}
+REGISTER_FUNCTION(get_cursor) {
+  // Query the terminal for the cursor position
+  printf("\033[6n");
+  
+  // Read the response from the terminal
+  int x, y;
+  if (scanf("\033[%d;%dR", &x, &y) == 2) {
+    std::vector<int> pos = {x, y};
+    return Ctx::FromIntVector(pos);
+  }
 
   return Ctx::Undefined();
 }
+
 REGISTER_FUNCTION(readln) {
-  string input;
-  std::cin >> input;
+  std::string input;
+  std::getline(std::cin, input);
   return String_T::New(input);
 }
 REGISTER_FUNCTION(readch) {

@@ -19,7 +19,14 @@ void Object_T::SetMember(const string &name, Value value) {
 string Object_T::ToString() const { return Writer::ToString(this, {}); }
 
 bool Object_T::Equals(Value value) { 
-  return value == shared_from_this();
+  static string op_key = "equals";
+  if (!HasMember(op_key)) {
+    return value == shared_from_this();  
+  }
+  
+  auto result = CallOpOverload(value, op_key);
+  
+  return result && result->Equals(True);
 }
 Value Object_T::Subscript(Value key) {
   string strKey;

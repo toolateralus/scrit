@@ -135,22 +135,22 @@ extern "C" ScritModDef *InitScritModule_myTestModule() {
 
 Now, if you want to use your module, just run `./build.sh` and it will install it to `/usr/local/scrit/modules/myModuleName`
 
-to use the module in the language, just use import syntax with your given module name.
+to use the module in the language, just use using syntax with your given module name.
 
 
 ``` ts 
-// import all the objects and functions as first-class members, so theyre avaiable in this scope with no prefix.
-import * from myTestModule
+// using all the objects and functions as first-class members, so theyre avaiable in this scope with no prefix.
+using * from myTestModule
 
 x = floor(10.2)
 
-// import the module as an object
-import myTestModule
+// using the module as an object
+using myTestModule
 
 x = myTestModule.floor(10.2)
 
-// import specific members from the module as first class members
-import {floor, myObject, myInteger} from myTestModule
+// using specific members from the module as first class members
+using {floor, myObject, myInteger} from myTestModule
 
 x = floor(1.02 * myInteger * myObject.myIntegerVariable)
 

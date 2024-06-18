@@ -34,17 +34,17 @@ StatementPtr Parser::ParseLValuePostFix(ExpressionPtr &expr) {
       return make_unique<DotAssignment>(info,  std::move(expr), std::move(value));
     } 
     
-    if (Call *callable = dynamic_cast<Call *>(dotRight->right.get())) {
+    if (dynamic_cast<Call *>(dotRight->right.get())) {
       return make_unique<DotCallStmnt>(info,  std::move(expr));
     } 
     
-    if (auto compAssign = dynamic_cast<CompAssignExpr *>(dotRight->right.get())) {
+    if (dynamic_cast<CompAssignExpr *>(dotRight->right.get())) {
       return make_unique<CompoundAssignment>(info,  std::move(expr));
     }
     
-    
   } 
-  if (Subscript *subscript = dynamic_cast<Subscript *>(expr.get())) {
+  
+  if (dynamic_cast<Subscript *>(expr.get())) {
     if (Peek().type == TType::Assign) {
       Eat();
       auto value = ParseExpression();
@@ -55,7 +55,7 @@ StatementPtr Parser::ParseLValuePostFix(ExpressionPtr &expr) {
   if (auto call = dynamic_cast<Call *>(expr.get())) {
     return make_unique<Call>(info,  std::move(call->operand), std::move(call->args));
   } 
-  if (auto compAssign = dynamic_cast<CompAssignExpr *>(expr.get())) {
+  if (dynamic_cast<CompAssignExpr *>(expr.get())) {
     return make_unique<CompoundAssignment>(info,  std::move(expr));
   }
   
@@ -85,8 +85,7 @@ StatementPtr Parser::ParseStatement() {
       
       if (auto id = dynamic_cast<Identifier *>(operand.get())) {
         return ParseIdentifierStatement(make_unique<Identifier>(info,  id->name));
-      } else if (auto cmpAssign =
-                     dynamic_cast<CompAssignExpr *>(operand.get())) {
+      } else if (dynamic_cast<CompAssignExpr *>(operand.get())) {
         return make_unique<CompoundAssignment>(info,  std::move(operand));
       } else {
         return ParseLValuePostFix(operand);
@@ -151,8 +150,8 @@ StatementPtr Parser::ParseKeyword(Token token) {
   //   Expect(TType::Identifier);
   //   return new NoopStatement();
   // }
-  case TType::Import: {
-    return ParseImport();
+  case TType::Using: {
+    return ParseUsing();
   }
   case TType::Break: {
     return ParseBreak();
@@ -245,13 +244,13 @@ ExpressionPtr Parser::ParseLogicalOr() {
     return left;
   }
   
-  if (!tokens.empty() && Peek().type == TType::Or) {
+  while (!tokens.empty() && Peek().type == TType::Or) {
     Eat();
     auto right = ParseLogicalAnd();
-    return std::make_unique<BinExpr>(info,  std::move(left), std::move(right),
+    left =  std::make_unique<BinExpr>(info,  std::move(left), std::move(right),
                                      TType::Or);
   }
-
+  
   return left;
 }
 ExpressionPtr Parser::ParseLogicalAnd() {
@@ -358,7 +357,7 @@ ExpressionPtr Parser::ParseOperand() {
     auto operand = ParseOperand();
     return make_unique<UnaryExpr>(info,  std::move(operand), token.type);
   }
-
+  
   switch (token.type) {
   case TType::SubscriptLeft: {
     return ParseArrayInitializer();
@@ -616,23 +615,23 @@ unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
   auto program = make_unique<Program>(std::move(statements));
   return program;
 }
-StatementPtr Parser::ParseImport() {
+StatementPtr Parser::ParseUsing() {
   auto next = Peek();
   
-  // import all * widlcard
+  // using all * widlcard
   if (next.type == TType::Mul) {
     Eat();
     Expect(TType::From);
     auto iden = Expect(TType::Identifier);
-    return make_unique<Import>(info,  iden.value, true);
+    return make_unique<Using>(info,  iden.value, true);
   
   }
-  // plain 'import raylib' statement
+  // plain 'using raylib' statement
   else if (next.type == TType::Identifier) {
     auto iden = Expect(TType::Identifier);
-    return make_unique<Import>(info,  iden.value, false);
+    return make_unique<Using>(info,  iden.value, false);
   }
-  // 'import {iden, iden} from raylib'
+  // 'using {iden, iden} from raylib'
   else if (next.type == TType::LCurly) {
     Eat();
     vector<string> names = {};
@@ -652,14 +651,14 @@ StatementPtr Parser::ParseImport() {
       if (auto iden = dynamic_cast<Identifier *>(operand.get())) {
         names.push_back(iden->name);
       } else {
-        throw std::runtime_error("invalid import statement");
+        throw std::runtime_error("invalid using statement");
       }
     }
     Expect(TType::RCurly);
     Expect(TType::From);
     auto iden = Expect(TType::Identifier);
     
-    return make_unique<Import>(info,  iden.value, names);
+    return make_unique<Using>(info,  iden.value, names);
   }
-  throw std::runtime_error("Failed to parse import statement");
+  throw std::runtime_error("Failed to parse using statement");
 }

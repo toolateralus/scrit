@@ -2,7 +2,7 @@
 
 # Standard functions accessible with no includes:
 
-## Important!
+## Usingant!
 Any function in scrit can be called like an extension method. That is, if you called
 `10.println()` 
 the interpreter would actally execute
@@ -42,7 +42,7 @@ println(
 ```
 
   Note that builtin functions like println and anything listed here, or from an
-  `import` library, will be typeof `"native_callable"`, indicating it was written in C++.
+  `using` library, will be typeof `"native_callable"`, indicating it was written in C++.
 
 ## Terminal / IO
 

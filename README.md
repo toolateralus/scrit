@@ -19,4 +19,4 @@ More documentation
 
 [Standard library functions](docs/standard.md)
 
-[System import functions](modules/system/functions.md)
+[System using functions](modules/system/functions.md)

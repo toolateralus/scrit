@@ -1,6 +1,6 @@
-import * from system
-import * from raylib
-import  math
+using * from system
+using * from raylib
+using  math
 
 player = {
   x = 0.0

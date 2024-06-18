@@ -248,6 +248,7 @@ struct NativeCallable_T : Callable_T {
 };
 struct Array_T : Value_T {
   vector<ExpressionPtr> initializer;
+  ~Array_T();
   
   static Array New();
   static Array New(vector<ExpressionPtr> &&init);

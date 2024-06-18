@@ -302,8 +302,8 @@ Lexer::Lexer() {
       {"return", TType::Return},       {"if", TType::If},
       {"else", TType::Else},           {"false", TType::False},
       {"true", TType::True},           {"null", TType::Null},
-      {"undefined", TType::Undefined}, {"import", TType::Import},
-      {"from", TType::From},           {"use", TType::Use},
+      {"undefined", TType::Undefined}, {"using", TType::Using},
+      {"from", TType::From},           {"import", TType::Import},
   };
   loc = 1;
 }
@@ -367,8 +367,8 @@ string TTypeToString(const TType &type) {
     return "Continue";
   case TType::Return:
     return "Return";
-  case TType::Use:
-    return "Use";
+  case TType::Import:
+    return "Import";
   case TType::AddEq:
     return "AddEq";
   case TType::SubEq:
@@ -405,8 +405,8 @@ string TTypeToString(const TType &type) {
     return "Null";
   case TType::Undefined:
     return "Undefined";
-  case TType::Import:
-    return "Import";
+  case TType::Using:
+    return "Using";
   case TType::From:
     return "From";
   default:

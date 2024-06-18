@@ -10,10 +10,10 @@
 
 auto programSourceInfo = SourceInfo{0, 0};
 
-// Todo: add a scope that this was imported in so when we
+// Todo: add a scope that this was usinged in so when we
 // leave that scope we dlclose() the opened module.
 // right now it just leaves it open till the end of the program.
-std::vector<string> Import::importedModules = {};
+std::vector<string> Using::activeModules = {};
 
 Context ASTNode::context = {};
 auto ExecutionResult::None =
@@ -188,11 +188,11 @@ ElsePtr Else::NoIf(SourceInfo &info, BlockPtr &&block) {
   elseStmnt->block = std::move(block);
   return elseStmnt;
 }
-Import::Import(SourceInfo &info, const string &name, const bool isWildcard)
+Using::Using(SourceInfo &info, const string &name, const bool isWildcard)
     : Statement(info), symbols({}), moduleName(name), isWildcard(isWildcard){
 
                                                       };
-Import::Import(SourceInfo &info, const string &name, vector<string> &symbols)
+Using::Using(SourceInfo &info, const string &name, vector<string> &symbols)
     : Statement(info), symbols(symbols), moduleName(name), isWildcard(false){};
 
 UnaryStatement::UnaryStatement(SourceInfo &info, ExpressionPtr &&expr)
@@ -649,16 +649,16 @@ Value BinExpr::Evaluate() {
                              TTypeToString(op));
   }
 };
-ExecutionResult Import::Execute() {
-  printf("importing: %s\n", moduleName.c_str());
+ExecutionResult Using::Execute() {
+  printf("usinging: %s\n", moduleName.c_str());
   
-  for (const auto &mod : importedModules) {
+  for (const auto &mod : activeModules) {
     if (moduleName == mod) {
       return ExecutionResult::None;
     }
   }
   
-  importedModules.push_back(moduleName);
+  activeModules.push_back(moduleName);
 
   auto path = moduleRoot + moduleName + ".dll";
   
@@ -678,7 +678,7 @@ ExecutionResult Import::Execute() {
       for (const auto &name : symbols) {
         auto value = module->context->Find(name);
         if (value == Value_T::UNDEFINED) {
-          throw std::runtime_error("invalid import statement. could not find " +
+          throw std::runtime_error("invalid using statement. could not find " +
                                    name);
         }
         
@@ -702,15 +702,13 @@ ExecutionResult RangeBasedFor::Execute() {
   ASTNode::context.PushScope();
   auto lvalue = this->rhs->Evaluate();
   auto name = valueName->name;
-  Array array;
-  Object obj;
+  Array array = nullptr;
+  Object obj = nullptr;
   string string;
-  bool isString = false;
-  if (Ctx::TryGetString(lvalue, string)) {
-    isString = true;
-  }
-
-  if (!isString && !Ctx::TryGetArray(lvalue, array) &&
+  bool isString = Ctx::TryGetString(lvalue, string);
+  bool isObject = Ctx::TryGetObject(lvalue, obj);
+  
+  if (!isObject && !isString && !Ctx::TryGetArray(lvalue, array) &&
       !Ctx::TryGetObject(lvalue, obj)) {
     throw std::runtime_error("invalid range-based for loop: the target "
                              "container must be an array, object or string.");
@@ -731,7 +729,7 @@ ExecutionResult RangeBasedFor::Execute() {
         break;
       }
     }
-  } else if (obj) {
+  } else if (isObject) {
     auto kvp = Ctx::CreateObject();
     for (auto &[key, val] : obj->scope->Members()) {
       kvp->scope->Set("key", Ctx::CreateString(key));
@@ -838,3 +836,5 @@ Else::Else(SourceInfo &info, IfPtr &&ifPtr, BlockPtr &&block)
   this->ifStmnt = std::move(ifPtr);
   this->block = std::move(block);
 }
+If::~If() {}
+Else::~Else() {}

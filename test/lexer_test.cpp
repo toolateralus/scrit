@@ -84,7 +84,7 @@ TEST(LexerTest, LexOpTest) {
 }
 TEST(LexerTest, LexKeywordTest) {
     Lexer lexer;
-    std::vector<Token> tokens = lexer.Lex("func for continue break return if else false true null undefined import from");
+    std::vector<Token> tokens = lexer.Lex("func for continue break return if else false true null undefined using from");
     ASSERT_EQ(tokens.size(), 13);
     for (auto &token : tokens) {
         ASSERT_EQ(token.family, TFamily::Keyword);
@@ -100,7 +100,7 @@ TEST(LexerTest, LexKeywordTest) {
     ASSERT_EQ(tokens[8].type, TType::True);
     ASSERT_EQ(tokens[9].type, TType::Null);
     ASSERT_EQ(tokens[10].type, TType::Undefined);
-    ASSERT_EQ(tokens[11].type, TType::Import);
+    ASSERT_EQ(tokens[11].type, TType::Using);
     ASSERT_EQ(tokens[12].type, TType::From);
 
     ASSERT_EQ(tokens[0].value, "func");
@@ -114,7 +114,7 @@ TEST(LexerTest, LexKeywordTest) {
     ASSERT_EQ(tokens[8].value, "true");
     ASSERT_EQ(tokens[9].value, "null");
     ASSERT_EQ(tokens[10].value, "undefined");
-    ASSERT_EQ(tokens[11].value, "import");
+    ASSERT_EQ(tokens[11].value, "using");
     ASSERT_EQ(tokens[12].value, "from");
 }
 TEST(LexerTest, LexErrorTest) {

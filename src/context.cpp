@@ -76,7 +76,7 @@ auto Scope_T::Erase(const string &name) -> size_t {
 auto Scope_T::Members() -> std::map<string, Value> & { return variables; }
 
 
-ScritModHandle::~ScritModHandle() {
+ScritModHandle::~ScritModHandle() noexcept {
   // was moved or already disposed.
   if (handle == nullptr) {
     return;
@@ -85,12 +85,12 @@ ScritModHandle::~ScritModHandle() {
   dlclose(handle);
   handle = nullptr;
 }
-ScritModHandle::ScritModHandle(void *handle) : handle(handle) {}
+ScritModHandle::ScritModHandle(void *handle) noexcept : handle(handle)  {}
 
 void Context::RegisterModuleHandle(void *handle) {
   scopes.back()->PushModule(ScritModHandle(handle));
 }
-ScritModHandle::ScritModHandle(ScritModHandle &&move) {
+ScritModHandle::ScritModHandle(ScritModHandle &&move) noexcept {
   this->handle = move.handle;
   move.handle = nullptr;
 }
