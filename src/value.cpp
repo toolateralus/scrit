@@ -297,9 +297,9 @@ string Float_T::ToString() const { return std::to_string(value); }
 string String_T::ToString() const { return value; }
 
 string Bool_T::ToString() const {
-  static string TRUE = "true";
-  static string FALSE = "false";
-  return value ? TRUE : FALSE;
+  static string _TRUE = "true";
+  static string _FALSE = "false";
+  return value ? _TRUE : _FALSE;
 }
 string Undefined_T::ToString() const {
   static string undefined = "undefined";

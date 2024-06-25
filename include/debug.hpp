@@ -10,6 +10,12 @@ enum struct StepKind {
   Out,
 };
 
+enum class DebugControlFlow {
+    None,
+    Continue,
+    Break,
+};
+
 struct Breakpoint {
   int loc = -1;
   bool isTemporary = false;
@@ -19,10 +25,11 @@ struct Debug {
   Debug() = delete;
   static std::vector<Breakpoint> breakpoints;
   static StepKind requestedStep;
-  
+  static std::string breakpointKey;
   static ASTNode *lastNode;
   static int stepOutIndex;
-  
+
+  static DebugControlFlow HandleInput(std::string& line);
   static void InsertBreakpoint(const int &loc, const bool isTemporary);
   static void Continue() { requestedStep = StepKind::None; }
   static void StepOver() { requestedStep = StepKind::Over; }

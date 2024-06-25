@@ -3,8 +3,6 @@
 #include "value.hpp"
 #include <algorithm>
 #include <stdexcept>
-#include <termios.h>
-#include <unistd.h>
 #include <vector>
 
 #pragma clang diagnostic ignored "-Wunused-parameter"

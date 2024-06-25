@@ -1,7 +1,9 @@
 #pragma once
 #include "lexer.hpp"
-#include <gtest/gtest.h>
+#include <functional>
 #include <memory>
+
+#include <map>
 
 using std::vector;
 using std::string;
@@ -287,6 +289,8 @@ struct Using : Statement {
   vector<string> symbols;
   string moduleName;
   bool isWildcard;
+  // TODO: make this cross platform friendly. it's the only thing keeping us linux-only, as well as
+  // the install script.
   const string moduleRoot = "/usr/local/scrit/modules/";
   ExecutionResult Execute() override;
 };
