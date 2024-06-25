@@ -1,0 +1,81 @@
+using * from system
+
+Types = {
+  Iden = 0,
+  Num = 1,
+  Op = 2,
+}
+
+func Token(value, type) {
+  return  {
+    this.value = value
+    this.type = type,
+  }
+}
+
+errors = []
+func Error(msg) {
+  errors.push(msg)
+}
+
+func tokenize(contents) {
+  using sstream
+  toks = []
+  pos = 0
+  for {
+    if pos >= contents.len() {
+      break
+    }
+    
+    char = contents[pos]
+
+    if (char == " " || char == "\n" || char == "\t") {
+      pos++
+      continue
+    }
+
+    if ispunct(char) {
+      toks.push(Token(char, Types.Op))
+      pos++
+    } else if isalpha(char) {
+      value = sstream.create()
+      for {
+        println("starting iden")
+        if pos < contents.len() && isalpha(char) {
+          sstream.append(value, char)
+          pos++
+          char = contents[pos]
+        } else {
+          pos++
+          println("breaking ")
+          break 
+        }
+        println(char)
+      }
+    } else if isdigit(char) {
+      pos++
+      print(char)
+    } else {
+      pos++
+      Error("Something unidentified " + char)
+    }
+  }
+
+}
+// main
+func() {
+  if args.len() == 0 {
+    println("Need a file to parse")
+    return undefined
+  }  
+  
+  if !fexists(args[0]) {
+    println("File " + args[0] + " does not exists.")
+    return undefined
+  }
+
+  contents = fread(args[0])
+
+  tokenize(contents)
+
+}()

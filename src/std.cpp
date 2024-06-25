@@ -1,4 +1,5 @@
 #include "context.hpp"
+#include "lexer.hpp"
 #include "native.hpp"
 #include "serializer.hpp"
 #include "value.hpp"
@@ -17,6 +18,7 @@
 REGISTER_FUNCTION(mod) {
   int v;
   int mod;
+  
   if (args.empty() || !Ctx::TryGetInt(args[0], v) ||
       !Ctx::TryGetInt(args[1], mod)) {
     return undefined;
@@ -111,6 +113,54 @@ REGISTER_FUNCTION(push) {
   return Ctx::Undefined();
 }
 
+REGISTER_FUNCTION(index_of) {
+  #define undefined Ctx::Undefined()
+  if (args.size() < 2 || args[0]->GetType() != Values::ValueType::String) {
+    return undefined;
+  } 
+  auto str = args[0]->TryCast<String_T>();
+  auto srch_c = args[1]->TryCast<String_T>();
+  size_t found = str->value.find(srch_c->value);
+  if (found != std::string::npos) {
+    return Ctx::CreateInt(found);
+  }
+  return Ctx::CreateInt(-1);
+}
+
+
+// have to do this obnoxiously since it just auto-conflicts.
+#undef assert
+REGISTER_FUNCTION(assert) {
+  if (args.empty()) {
+    return Bool_T::False;
+  }
+  if (!args[0]->Equals(Bool_T::True)) {
+    if (args.size() > 1) {
+      throw std::runtime_error(args[1]->ToString());
+    }
+    throw std::runtime_error("assertion failed: " + args[0]->ToString());
+  }
+  return Ctx::Undefined();
+}  
+
+
+REGISTER_FUNCTION(substring) {
+  #define undefined Ctx::Undefined()
+  if (args.size() < 3 || args[0]->GetType() != Values::ValueType::String) {
+    return undefined;
+  }
+  
+  auto str = args[0]->TryCast<String_T>();
+  std::pair<int, int> indices;
+  
+  if (!Ctx::TryGetInt(args[1], indices.first)) {
+    return undefined;
+  }
+  if (!Ctx::TryGetInt(args[2], indices.second)) {
+    return undefined;
+  }
+  return Ctx::CreateString(str->value.substr(indices.first, indices.second));
+}
 REGISTER_FUNCTION(split) {
   if (args.size() < 2 || args[0]->GetType() != Values::ValueType::String ||
       args[1]->GetType() != Values::ValueType::String) {
@@ -345,7 +395,7 @@ REGISTER_FUNCTION(set_cursor) {
   if (args.size() != 2) {
     return Ctx::Undefined();
   }
-
+  
   int x, y;
   if (Ctx::TryGetInt(args[0], x) && Ctx::TryGetInt(args[1], y)) {
     printf("\033[%d;%dH", x, y);

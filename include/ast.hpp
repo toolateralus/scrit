@@ -292,6 +292,8 @@ struct Using : Statement {
 };
 
 string CC_ToString(ControlChange controlChange);
-Value EvaluateWithinObject(Scope scope, Value object, ExpressionPtr &expr);
+
+Value EvaluateWithinObject(Scope &scope, Value object, ExpressionPtr &expr);
+Value EvaluateWithinObject(Scope &scope, Value object, std::function<Value()> lambda);
+
 Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue);
-Value EvaluateWithinObject(Scope scope, Value object, std::function<Value()> lambda);

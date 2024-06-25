@@ -79,10 +79,12 @@ Value Object_T::CallOpOverload(Value &arg, const string &op_key) {
     throw std::runtime_error("Operator overload was not a callable");
   }
   
+  ASTNode::context.PushScope(scope);
   auto callable = static_cast<Callable_T *>(member.get());
   auto args = std::vector<Value>{shared_from_this(), arg};
-  
-  return callable->Call(args);
+  auto result = callable->Call(args);
+  ASTNode::context.PopScope();
+  return result;
 }
 Value Object_T::Add(Value other) {
   static const string op_key = "add";

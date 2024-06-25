@@ -1,8 +1,11 @@
 #pragma once
+#include "ast.hpp"
 #include "lexer.hpp"
 #include "native.hpp"
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <typeinfo>
 #include <vector>
 
 using std::make_shared;
@@ -102,6 +105,9 @@ struct Value_T : std::enable_shared_from_this<Value_T> {
   virtual void Set(Value value) { *this = *value; }
 
   virtual Value Clone();
+  template <typename T> T *TryCast();
+
+  template <typename T> ValueType ValueTypeFromType();
 };
 
 struct Null_T : Value_T {
@@ -109,14 +115,12 @@ struct Null_T : Value_T {
   Null_T();
   string ToString() const override;
   bool Equals(Value value) override;
-
 };
 struct Undefined_T : Value_T {
   ValueType GetType() const override { return ValueType::Undefined; }
   Undefined_T();
   string ToString() const override;
   bool Equals(Value value) override;
-  
 };
 
 struct Int_T : Value_T {
@@ -124,7 +128,7 @@ struct Int_T : Value_T {
   Int_T(int value);
   ~Int_T() {}
   Int_T() = delete;
-  
+
   static Int New(int value = 0) { return make_shared<Int_T>(value); }
   virtual bool Equals(Value value) override;
   virtual void Set(Value newValue) override;
@@ -204,12 +208,12 @@ struct Object_T : Value_T {
 
   bool operator==(Object_T *other);
   ValueType GetType() const override { return ValueType::Object; }
-  
+
   virtual string ToString() const override;
   virtual Value GetMember(const string &name);
   virtual void SetMember(const string &name, Value value);
   virtual bool HasMember(const string &name);
-  
+
   virtual bool Equals(Value value) override;
   virtual Value Subscript(Value key) override;
   virtual Value SubscriptAssign(Value key, Value value) override;
@@ -249,16 +253,16 @@ struct NativeCallable_T : Callable_T {
 struct Array_T : Value_T {
   vector<ExpressionPtr> initializer;
   ~Array_T();
-  
+
   static Array New();
   static Array New(vector<ExpressionPtr> &&init);
   static Array New(std::vector<Value> &values);
   Array_T() = delete;
   Array_T(vector<ExpressionPtr> &&init);
   Array_T(vector<Value> init);
-  
+
   vector<Value> values;
-  
+
   Value At(Int index);
   void Assign(Int index, Value value);
   void Push(Value value);
@@ -277,7 +281,7 @@ struct Array_T : Value_T {
 
 struct Ctx {
   Ctx() = delete;
-  
+
   static Value Null();
   static Value Undefined();
   static Bool CreateBool(const bool value = false);
@@ -286,12 +290,12 @@ struct Ctx {
   static Float CreateFloat(const float value = 0.0f);
   static Object CreateObject(shared_ptr<Scope_T> scope = nullptr);
   static Array CreateArray(vector<Value> values = {});
-  
+
   static Array FromFloatVector(vector<float> &values);
   static Array FromStringVector(vector<string> &values);
   static Array FromBoolVector(vector<bool> &values);
   static Array FromIntVector(vector<int> &values);
-  
+
   static bool TryGetString(Value str, string &result);
   static bool TryGetInt(Value value, int &result);
   static bool TryGetFloat(Value value, float &result);
@@ -319,4 +323,32 @@ struct Ctx {
   static bool IsUndefined(Value value);
   static bool IsNull(Value value);
 };
+template <typename T> ValueType Value_T::ValueTypeFromType() {
+  auto &t = typeid(T);
+  if (t == typeid(String_T)) {
+    return ValueType::String;
+  } else if (t == typeid(Int_T)) {
+    return ValueType::Int;
+  } else if (t == typeid(Float_T)) {
+    return ValueType::Float;
+  } else if (t == typeid(Bool_T)) {
+    return ValueType::Bool;
+  } else if (t == typeid(Object_T)) {
+    return ValueType::Object;
+  } else if (t == typeid(Array_T)) {
+    return ValueType::Array;
+  } else {
+    throw std::runtime_error("Cannot deduce type for " + string(t.name()) + ". This function is used for extracting values, and type checking while doing so. Directly use GetType() for Callable, Undefined, and other immutable values.");
+  }
+  
+}
 
+template <typename T> T *Value_T::TryCast() {
+  auto &type = typeid(T);
+  if (type == typeid(*this) && ValueTypeFromType<T>() == GetType()) {
+    return static_cast<T*>(this);
+  } 
+  throw std::runtime_error(
+      "invalid cast from : " + string(typeid(*this).name()) +
+      "to : " + string(typeid(T).name()));
+}

@@ -79,7 +79,7 @@ Block::Block(SourceInfo &info, vector<StatementPtr> &&statements)
 ObjectInitializer::ObjectInitializer(SourceInfo &info, BlockPtr &&block,
                                      Scope scope)
     : Expression(info) {
-  this->scope = make_shared<Scope_T>(scope.get());
+  this->scope = Scope_T::create(scope.get());
   this->block = std::move(block);
 }
 Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
@@ -500,7 +500,7 @@ Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue) {
   return nullptr;
 }
 
-Value EvaluateWithinObject(Scope scope, Value object, ExpressionPtr &expr) {
+Value EvaluateWithinObject(Scope &scope, Value object, ExpressionPtr &expr) {
   scope->Set("this", object);
   ASTNode::context.PushScope(scope);
   auto result = expr->Evaluate();
@@ -508,7 +508,7 @@ Value EvaluateWithinObject(Scope scope, Value object, ExpressionPtr &expr) {
   scope->Erase("this");
   return result;
 }
-Value EvaluateWithinObject(Scope scope, Value object, std::function<Value()> lambda) {
+Value EvaluateWithinObject(Scope &scope, Value object, std::function<Value()> lambda) {
   scope->Set("this", object);
   ASTNode::context.PushScope(scope);
   auto result = lambda();

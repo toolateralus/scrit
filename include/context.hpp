@@ -33,6 +33,10 @@ struct ScritModHandle  {
 
 struct Scope_T {
   Scope_T() {}
+  
+  ~Scope_T() {
+    module_handles.clear();
+  }
   auto Contains(const string &name) -> bool;
   auto Erase(const string &name) -> size_t;
   auto Members() -> std::map<string, Value>&;
@@ -48,6 +52,14 @@ struct Scope_T {
   Scope_T(Scope_T *scope) {
     variables = scope->variables;
   } 
+  
+  static auto create() -> Scope {
+    return std::make_shared<Scope_T>();
+  }
+  static auto create(Scope_T *scope) -> Scope {
+    return std::make_shared<Scope_T>(scope);
+  }
+  
   private:
   std::vector<ScritModHandle> module_handles;
   std::map<string, Value> variables = {};

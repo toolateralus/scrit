@@ -432,9 +432,11 @@ OperandPtr Parser::ParseArrayInitializer() {
     return make_unique<Operand>(info,  array);
   } else {
     vector<ExpressionPtr> values = {};
+    
     while (Peek().type != TType::SubscriptRight) {
       auto val = ParseExpression();
       values.push_back(std::move(val));
+      
       if (Peek().type == TType::Comma) {
         Eat();
       }
