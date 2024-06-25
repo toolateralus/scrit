@@ -8,6 +8,14 @@
 #include <iostream>
 #include <vector>
 
+
+#ifdef __linux__ 
+  #include <termios.h>
+  #include <unistd.h>
+#elif _WIN32 
+  #include <windows.h>
+#endif 
+
 #pragma clang diagnostic ignored "-Wunused-parameter"
 
 #define undefined Ctx::Undefined()
@@ -421,21 +429,18 @@ REGISTER_FUNCTION(readln) {
   return String_T::New(input);
 }
 REGISTER_FUNCTION(readch) {
+char ch = 0;
 #ifdef _WIN32
-    #include <windows.h>
     DWORD mode, cc;
     HANDLE h = GetStdHandle(STD_INPUT_HANDLE);
     if (h == NULL) {
-        return undefined;
-}
-    char ch;
+      return undefined;
+    }
     GetConsoleMode(h, &mode);
     SetConsoleMode(h, mode & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT));
     ReadConsole(h, &ch, 1, &cc, NULL);
     SetConsoleMode(h, mode);
 #else
-#include <termios.h>
-#include <unistd.h>
     struct termios old_tio, new_tio;
     tcgetattr(STDIN_FILENO, &old_tio);
     new_tio = old_tio;
@@ -444,5 +449,5 @@ REGISTER_FUNCTION(readch) {
     read(STDIN_FILENO, &ch, 1);
     tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);
 #endif
-    return Ctx::CreateString(std::string(1, ch));
+  return Ctx::CreateString(std::string(1, ch));
 }

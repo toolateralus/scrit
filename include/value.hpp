@@ -272,7 +272,7 @@ struct Array_T : Value_T {
   string ToString() const override;
   bool Equals(Value value) override;
   ValueType GetType() const override { return ValueType::Array; }
-
+  
   Value Subscript(Value key) override;
   Value SubscriptAssign(Value key, Value value) override;
   Value Clone() override;

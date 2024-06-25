@@ -41,45 +41,6 @@ NativeCallable NativeFunctions::GetCallable(const std::string& name) {
 		return fIt->second;
 	}
 
-<<<<<<< ours
-ScritModDef* LoadScritModule(const std::string &name, const std::string &path, void *&handle) {
-  handle = dlopen(path.c_str(), RTLD_NOW);
-  if (!handle) {
-    throw std::runtime_error(dlerror());
-  }
-  
-  auto fnName = "InitScritModule_" + name;
-  void *func = dlsym(handle, fnName.c_str());
-  if (!func) {
-    throw std::runtime_error(dlerror());
-  }
-  ScriptModInitFuncPtr function = (ScriptModInitFuncPtr)func;
-
-  if (!function) { 
-    dlclose(handle);
-    throw std::runtime_error(
-        "Invalid function signature on " + fnName +
-        ". This function must return a ScritModDef* and take no arguments.");
-  }
-  
-  auto mod = function();
-  return mod;
-}
-ScritModDef* CreateModDef() { 
-  ScritModDef *mod = (ScritModDef*)malloc(sizeof(ScritModDef));
-  mod->context = new Context(); 
-  mod->description = new string();
-  mod->functions = new std::unordered_map<std::string, NativeFunctionPtr>();
-  return mod;
-}
-std::unordered_map<std::string, NativeFunctionPtr> &
-NativeFunctions::GetRegistry() {
-  static std::unordered_map<std::string, NativeFunctionPtr> reg;
-  return reg;
-}
-bool NativeFunctions::Exists(const std::string &name) {
-  return GetRegistry().contains(name);
-=======
 	auto registry = GetRegistry();
 	auto it = registry.find(name);
 	if (it != registry.end()) {
@@ -89,39 +50,38 @@ bool NativeFunctions::Exists(const std::string &name) {
 		return callable;
 	}
 	return nullptr;
->>>>>>> theirs
 }
 
-ScritModDef* LoadScritModule(const std::string& name, const std::string& path) {
+ScritModDef* LoadScritModule(const std::string& name, const std::string& path, void *&out_handle) {
 #ifdef __linux__
-	void* handle = dlopen(path.c_str(), RTLD_NOW);
-	if (!handle) {
+	out_handle = dlopen(path.c_str(), RTLD_NOW);
+	if (!out_handle) {
 		throw std::runtime_error(dlerror());
 	}
 
 	auto fnName = "InitScritModule_" + name;
-	void* func = dlsym(handle, fnName.c_str());
+	void* func = dlsym(out_handle, fnName.c_str());
 	if (!func) {
 		throw std::runtime_error(dlerror());
 	}
 	ScriptModInitFuncPtr function = (ScriptModInitFuncPtr)func;
 
 	if (!function) {
-		dlclose(handle);
+		dlclose(out_handle);
 		throw std::runtime_error(
 			"Invalid function signature on " + fnName +
 			". This function must return a ScritModDef* and take no arguments.");
 	}
 
 	auto mod = function();
-	return mod
+	return mod;
 #else
 	HMODULE handle = LoadLibraryA(path.c_str());
-
+	out_handle = (void*)handle
 	if (!handle) {
 		throw std::runtime_error("Failed to load module: " + path);
 	}
-
+	
 	auto fnName = "InitScritModule_" + name;
 	FARPROC func = GetProcAddress(handle, fnName.c_str());
 	if (!func) {
@@ -129,14 +89,14 @@ ScritModDef* LoadScritModule(const std::string& name, const std::string& path) {
 		throw std::runtime_error("Failed to find function: " + fnName);
 	}
 	ScriptModInitFuncPtr function = reinterpret_cast<ScriptModInitFuncPtr>(func);
-
+	
 	if (!function) {
 		FreeLibrary(handle);
 		throw std::runtime_error(
 			"Invalid function signature on " + fnName +
 			". This function must return a ScritModDef* and take no arguments.");
 	}
-
+	
 	auto mod = function();
 	return mod;
 #endif
