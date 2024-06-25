@@ -167,7 +167,7 @@ struct String_T : Value_T {
   String_T(const string &value);
   String_T() = delete;
   ~String_T() {}
-  static String New(string value = "") { return make_shared<String_T>(value); }
+  static String New(string value = std::string("")) { return make_shared<String_T>(value); }
   virtual bool Equals(Value value) override;
   virtual Value Add(Value other) override;
   virtual void Set(Value newValue) override;
@@ -280,7 +280,7 @@ struct Ctx {
   static Value Null();
   static Value Undefined();
   static Bool CreateBool(const bool value = false);
-  static String CreateString(const string value = "");
+  static String CreateString(const string value = std::string(""));
   static Int CreateInt(const int value = 0);
   static Float CreateFloat(const float value = 0.0f);
   static Object CreateObject(shared_ptr<Scope_T> scope = nullptr);

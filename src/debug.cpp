@@ -3,19 +3,46 @@
 #include "context.hpp"
 #include "value.hpp"
 #include <algorithm>
-#include <gtest/gtest_prod.h>
 #include <stdexcept>
-#include <sys/select.h>
+#include <iostream>
 
 
 std::vector<Breakpoint> Debug::breakpoints = {};
-auto Debug::requestedStep = StepKind::None;
+StepKind Debug::requestedStep = StepKind::None;
 ASTNode *Debug::lastNode = nullptr;
 int Debug::stepOutIndex = -1;
+std::string Debug::breakpointKey = "br:";
+
+DebugControlFlow Debug::HandleInput(std::string& line) {
+    if (line == "over" || line == "ov") {
+        StepOver();
+        return DebugControlFlow::Break;
+    }
+    else if (line == "in" || line == "i") {
+        StepIn();
+        return DebugControlFlow::Break;
+    }
+    else if (line == "out" || line == "o") {
+        StepOut();
+        return DebugControlFlow::Break;
+    }
+    else if (line.length() > Debug::breakpointKey.length() &&
+        line.substr(0, Debug::breakpointKey.length()) == Debug::breakpointKey) {
+        m_setBreakpoint(line, Debug::breakpointKey);
+        return DebugControlFlow::Continue;
+    }
+    else if (line == "continue" || line == "c") {
+        Continue();
+        return DebugControlFlow::Break;
+    }
+    else if (line == "inspect" || line == "s") {
+        m_printScope();
+    }
+    return DebugControlFlow::None;
+
+}
 
 void Debug::m_hangUpOnBreakpoint(ASTNode *owner, ASTNode *node) {
-  static const string breakpointKey = "br:";
-  
   if (lastNode == nullptr)
     m_getInfo(owner, node);
   
@@ -38,38 +65,22 @@ void Debug::m_hangUpOnBreakpoint(ASTNode *owner, ASTNode *node) {
   std::cout << "node: " << typeid(*node).name() << "\n";
   
   while (requestedStep == StepKind::None && breakpoint.loc == node->srcInfo.loc) {
-    usleep(100'000);
-
-    fd_set set;
-    struct timeval timeout;
-    FD_ZERO(&set);
-    FD_SET(0, &set);
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 100'000;
-    if (select(1, &set, NULL, NULL, &timeout) > 0) {
-      std::string line;
-      if (std::getline(std::cin, line)) {
-        if (line == "over" || line == "ov") {
-          StepOver();
-          break;
-        } else if (line == "in" || line == "i") {
-          StepIn();
-          break;
-        } else if (line == "out" || line == "o") {
-          StepOut();
-          break;
-        } else if (line.length() > breakpointKey.length() &&
-                   line.substr(0, breakpointKey.length()) == breakpointKey) {
-          m_setBreakpoint(line, breakpointKey);
-          continue;
-        } else if (line == "continue" || line == "c") {
-          Continue();
-          break;
-        } else if (line == "inspect" || line == "s") {
-          m_printScope();
-        }
-      }
+    std::string line;
+    if (std::getline(std::cin, line)) {
+        switch (HandleInput(line)) {
+        case DebugControlFlow::None:
+            goto loopnone;
+        case DebugControlFlow::Break: 
+            goto loopbreak;
+        case DebugControlFlow::Continue:
+            goto loopcontinue;
+		}
     }
+loopbreak:
+    break;
+loopcontinue:
+loopnone:
+    continue;
   }
   
   switch (requestedStep) {

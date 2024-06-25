@@ -16,12 +16,9 @@ auto programSourceInfo = SourceInfo{0, 0};
 std::vector<string> Import::importedModules = {};
 
 Context ASTNode::context = {};
-auto ExecutionResult::None =
-    ExecutionResult(ControlChange::None, Value_T::UNDEFINED);
-auto ExecutionResult::Break =
-    ExecutionResult(ControlChange::Break, Value_T::UNDEFINED);
-auto ExecutionResult::Continue =
-    ExecutionResult(ControlChange::Continue, Value_T::UNDEFINED);
+ExecutionResult ExecutionResult::None = ExecutionResult(ControlChange::None, Value_T::UNDEFINED);
+ExecutionResult ExecutionResult::Break = ExecutionResult(ControlChange::Break, Value_T::UNDEFINED);
+ExecutionResult ExecutionResult::Continue = ExecutionResult(ControlChange::Continue, Value_T::UNDEFINED);
 
 string CC_ToString(ControlChange controlChange) {
   switch (controlChange) {
@@ -494,10 +491,9 @@ Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue) {
             return nc->Call(args);
           } else if (auto c = dynamic_cast<Callable_T*>(callable)) {
             return c->Call(args);
-          } {
-            std::unreachable();
-          }
-          
+          } else {
+			throw std::runtime_error("invalid method call: " + name->name);
+		  }
         } else throw std::runtime_error("invalid method call: " + name->name);
     }
   }

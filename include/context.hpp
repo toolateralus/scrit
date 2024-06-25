@@ -1,8 +1,15 @@
 #pragma once
+
+#ifdef __linux__
 #include <dlfcn.h>
+#else
+#include <windows.h>
+#endif
+
 #include <map>
 #include <memory>
 #include <vector>
+#include <string>
 
 using std::shared_ptr;
 using std::string;
@@ -17,7 +24,6 @@ using namespace Values;
 
 struct Scope_T;
 typedef shared_ptr<Scope_T> Scope;
-
 
 
 struct Scope_T {
@@ -43,7 +49,7 @@ struct Scope_T {
 
 struct Context {
   Context();
-  vector<Scope> scopes;
+  vector<Scope> scopes = {};
   Scope PushScope(Scope scope = nullptr);
   Scope PopScope();
   Value Find(const string &name);

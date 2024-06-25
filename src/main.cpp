@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
         std::cout << "Parsing failed\n";
       }
     } else {
-      std::cout << "Failed to open file\n";
+      std::cout << "Failed to open file: " << filename << "\n";
     }
   }
 }
