@@ -70,7 +70,6 @@ string TypeToString(ValueType type);
 struct Value_T : std::enable_shared_from_this<Value_T> {
   static Null VNULL;
   static Undefined UNDEFINED;
-  static Value InvalidCastException;
   static Bool False;
   static Bool True;
 
@@ -102,11 +101,18 @@ struct Value_T : std::enable_shared_from_this<Value_T> {
   }
   virtual Value Subscript(Value key);
   virtual Value SubscriptAssign(Value key, Value value);
+  
+  // this doesnt work nor does it make sense.
   virtual void Set(Value value) { *this = *value; }
 
   virtual Value Clone();
+  
+  
+  
+  
+  
+  
   template <typename T> T *TryCast();
-
   template <typename T> ValueType ValueTypeFromType();
 };
 
@@ -205,19 +211,20 @@ struct Object_T : Value_T {
       scope = make_shared<Scope_T>();
     return make_shared<Object_T>(scope);
   }
-
+  
   bool operator==(Object_T *other);
+  
   ValueType GetType() const override { return ValueType::Object; }
-
+  
   virtual string ToString() const override;
   virtual Value GetMember(const string &name);
   virtual void SetMember(const string &name, Value value);
   virtual bool HasMember(const string &name);
-
+  
   virtual bool Equals(Value value) override;
   virtual Value Subscript(Value key) override;
   virtual Value SubscriptAssign(Value key, Value value) override;
-  virtual Value CallOpOverload(Value &other, const string &op_key);
+  Value CallOpOverload(Value &other, const string &op_key);
   virtual Value Add(Value other) override;
   virtual Value Subtract(Value other) override;
   virtual Value Multiply(Value other) override;
@@ -226,6 +233,7 @@ struct Object_T : Value_T {
   virtual Bool Greater(Value other) override;
   virtual Value Clone() override;
 };
+
 struct Callable_T : Value_T {
   ~Callable_T();
   Callable_T(); // for native callables only.
@@ -240,6 +248,8 @@ struct Callable_T : Value_T {
 
   ValueType GetType() const override { return ValueType::Callable; }
 };
+
+
 struct NativeCallable_T : Callable_T {
   NativeCallable_T() = delete;
   NativeCallable_T(const NativeFunctionPtr &ptr);

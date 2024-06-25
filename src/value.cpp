@@ -10,7 +10,7 @@
 Bool Value_T::True = Bool_T::New(true);
 Bool Value_T::False = Bool_T::New(false);
 Null Value_T::VNULL = make_shared<Null_T>();
-Value Value_T::InvalidCastException = make_shared<::Null_T>();
+
 Undefined Value_T::UNDEFINED = make_shared<::Undefined_T>();
 
 
@@ -18,8 +18,8 @@ Value Callable_T::Call(ArgumentsPtr &args) {
 
   auto scope = ASTNode::context.PushScope();
   auto values = Call::GetArgsValueList(args);
-
-  int i = 0;
+  
+  size_t i = 0;
   for (const auto &[key, value] : params->map) {
     if (i < values.size()) {
       scope->Set(key, values[i]);
@@ -47,7 +47,7 @@ Value Callable_T::Call(ArgumentsPtr &args) {
 }
 
 Value Array_T::At(Int index) { 
-  if (values.size() <= index->value) {
+  if (values.size() <= (size_t)index->value) {
     throw std::runtime_error("Array access out of bounds");
   }
   return values.at(index->value); }
@@ -274,7 +274,7 @@ void Bool_T::Set(Value newValue) {
 string Callable_T::ToString() const {
   std::stringstream ss = {};
   ss << "callable(";
-  int i = 0;
+  size_t i = 0;
   for (const auto &[name, value] : params->map) {
     ss << name;
     if (i != params->map.size()) {
@@ -358,6 +358,7 @@ Value String_T::Subscript(Value key) {
 }
 
 Value Value_T::SubscriptAssign(Value, Value) { return UNDEFINED; }
+
 Value String_T::SubscriptAssign(Value key, Value value) {
   int idx;
   string string;
@@ -370,7 +371,6 @@ Value String_T::SubscriptAssign(Value key, Value value) {
   }
   return UNDEFINED;
 }
-
 
 Value Array_T::Subscript(Value key) {
   int index;
@@ -436,7 +436,7 @@ Array_T::~Array_T() {}
 
 Value Callable_T::Call(std::vector<Value> &values) {
   auto scope = ASTNode::context.PushScope();
-  int i = 0;
+  size_t i = 0;
   for (const auto &[key, value] : params->map) {
     if (i < values.size()) {
       scope->Set(key, values[i]);
@@ -447,8 +447,10 @@ Value Callable_T::Call(std::vector<Value> &values) {
     }
     i++;
   }
+  
   auto result = block->Execute();
   ASTNode::context.PopScope();
+  
   switch (result.controlChange) {
   case ControlChange::None:
     return Value_T::VNULL;
