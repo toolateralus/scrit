@@ -47,8 +47,7 @@ struct NativeFunctions {
   static NativeCallable MakeCallable(const NativeFunctionPtr &fn);
 };
 
-#define REGISTER_FUNCTION(name) \
- Value name(std::vector<Value> args); \
+#define REGISTER_FUNCTION(name) Value name(std::vector<Value> args);\
   namespace { \
     struct name##_Register { \
       name##_Register() { \

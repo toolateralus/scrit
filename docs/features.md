@@ -325,9 +325,7 @@ we have a `=> expression` and `=> { block returning some value}` syntax for 'lam
 right now, it's a bit clunky, and lambdas are just basically a way to either
 
 1. Avoid using the return keyword in single-expression match cases
-2. Assign a variable to the result of an encapsulated scope.
-
-The clunkiness arises from needing to use the `=` operator AND `=>` when you are assigning a variable to the result of a lambda.
+2. Assign a variable to the result of a block.
 
 So, as we saw in [Pattern matching](#pattern-matching), this is fairly clean and very `rust-like`. However, for assigning a variable, currently (subject to change), this is what we are looking at.
 
@@ -338,7 +336,7 @@ So, as we saw in [Pattern matching](#pattern-matching), this is fairly clean and
 // we would just be creating an object.
 // variable = { v = ..., x = ..., etc.}
 
-variable = => {
+variable => {
   v = do_something(state_obj, intensity)
   x = something_else(state_obj, v, intensity)
   return complete_action(v, x, intensity)
@@ -348,7 +346,7 @@ variable = => {
 
 // there is no real purpose to do this yet.
 // later, we will have C# style property fields which get evaluated like a getter each time it's accessed.
-variable = => 1
+variable => 1
 
 
 ```

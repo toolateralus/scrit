@@ -114,7 +114,7 @@ struct Value_T : std::enable_shared_from_this<Value_T> {
   
   
   
-  template <typename T> T *TryCast();
+  template <typename T> T *Cast();
   template <typename T> ValueType ValueTypeFromType();
 };
 
@@ -288,6 +288,19 @@ struct Array_T : Value_T {
   Value Subscript(Value key) override;
   Value SubscriptAssign(Value key, Value value) override;
   Value Clone() override;
+  
+  std::vector<Value>::const_iterator begin() const {
+    return values.begin();
+  }
+  std::vector<Value>::const_iterator end() const {
+    return values.end();
+  }
+  std::vector<Value>::const_reverse_iterator rbegin() const {
+    return values.rbegin();
+  }
+  std::vector<Value>::const_reverse_iterator rend() const {
+    return values.rend();
+  }
 };
 } // namespace Values
 
@@ -356,7 +369,7 @@ template <typename T> ValueType Value_T::ValueTypeFromType() {
   
 }
 
-template <typename T> T *Value_T::TryCast() {
+template <typename T> T *Value_T::Cast() {
   auto &type = typeid(T);
   if (type == typeid(*this) && ValueTypeFromType<T>() == GetType()) {
     return static_cast<T*>(this);

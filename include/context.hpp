@@ -42,6 +42,7 @@ struct Scope_T {
   struct Key {
     const std::string value;
     const Mutability mutability;
+    
     Key(const std::string &value, const Mutability &mutability) : value(value), mutability(mutability){}
     bool operator<(const Key& other) const {
       return value < other.value;
@@ -52,23 +53,15 @@ struct Scope_T {
     
   };
   Scope_T() {}
-  
-  ~Scope_T() {
-    module_handles.clear();
-  }
-  
   auto Find(const std::string &name) -> std::_Rb_tree_iterator<std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>>;
-  
   auto Contains(const string &name) -> bool;
   auto Erase(const string &name) -> size_t;
   auto Members() -> std::map<Key, Value>&;
   auto Get(const string &name) -> Value;
-  
   auto Set(const Key &name, Value value) -> void;
-  
   auto Set(const string &name, Value value, const Mutability &mutability = Mutability::Const) -> void;
   auto Clear() -> void {
-    this->variables.clear();
+    variables.clear();
   }
   auto Clone() -> Scope;
   auto PushModule(ScritModHandle &&handle) {
@@ -77,23 +70,21 @@ struct Scope_T {
   Scope_T(Scope_T *scope) {
     variables = scope->variables;
   } 
-  
-  static auto create() -> Scope {
+  static auto Create() -> Scope {
     return std::make_shared<Scope_T>();
   }
-  static auto create(Scope_T *scope) -> Scope {
+  static auto Create(Scope_T *scope) -> Scope {
     return std::make_shared<Scope_T>(scope);
   }
-  
   auto end() {
     return variables.end();
   }
-  
-  private:
+private:
   std::vector<ScritModHandle> module_handles;
   std::map<Key, Value> variables = {};
 };
 
+typedef std::_Rb_tree_iterator<std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>> VarIter;
 
 struct Context {
   Context();
@@ -101,8 +92,9 @@ struct Context {
   void RegisterModuleHandle(void *handle);
   Scope PushScope(Scope scope = nullptr);
   Scope PopScope();
+  void Delete(const string &name);
   auto Find(const string &name) const -> Value;
-  auto FindIter(const string &name) const -> std::_Rb_tree_iterator<std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>>;
+  auto FindIter(const string &name) const -> VarIter;
   void Insert(const string &name, Value value, const Mutability &mutability);
   void Reset();
 };

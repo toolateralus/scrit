@@ -31,7 +31,6 @@ REGISTER_FUNCTION(mod) {
   }
   return Ctx::CreateInt(v % mod);
 }
-
 REGISTER_FUNCTION(fmod) {
   float v;
   float mod;
@@ -41,7 +40,6 @@ REGISTER_FUNCTION(fmod) {
   }
   return Ctx::CreateFloat(std::fmod(v, mod));
 }
-
 // Arrays (some of these functions support strings too., push, pop, len, clear)
 REGISTER_FUNCTION(expand) {
   if (args.size() < 2) {
@@ -73,7 +71,6 @@ REGISTER_FUNCTION(expand) {
   }
   return Ctx::Undefined();
 }
-
 // Create a deep clone of any value.
 REGISTER_FUNCTION(clone) {
   if (args.size() == 0) {
@@ -81,7 +78,6 @@ REGISTER_FUNCTION(clone) {
   }
   return args[0]->Clone();
 }
-
 REGISTER_FUNCTION(clear) {
 
   if (args.size() == 0) {
@@ -118,14 +114,13 @@ REGISTER_FUNCTION(push) {
   }
   return Ctx::Undefined();
 }
-
 REGISTER_FUNCTION(index_of) {
   #define undefined Ctx::Undefined()
   if (args.size() < 2 || args[0]->GetType() != Values::ValueType::String) {
     return undefined;
   } 
-  auto str = args[0]->TryCast<String_T>();
-  auto srch_c = args[1]->TryCast<String_T>();
+  auto str = args[0]->Cast<String_T>();
+  auto srch_c = args[1]->Cast<String_T>();
   size_t found = str->value.find(srch_c->value);
   if (found != std::string::npos) {
     return Ctx::CreateInt(found);
@@ -148,15 +143,13 @@ REGISTER_FUNCTION(assert) {
   }
   return Ctx::Undefined();
 }  
-
-
 REGISTER_FUNCTION(substring) {
   #define undefined Ctx::Undefined()
   if (args.size() < 3 || args[0]->GetType() != Values::ValueType::String) {
     return undefined;
   }
   
-  auto str = args[0]->TryCast<String_T>();
+  auto str = args[0]->Cast<String_T>();
   std::pair<int, int> indices;
   
   if (!Ctx::TryGetInt(args[1], indices.first)) {
@@ -198,7 +191,6 @@ REGISTER_FUNCTION(split) {
   
   return Ctx::FromStringVector(tokens);
 }
-
 REGISTER_FUNCTION(front) {
   if (args.size() == 0 || (args[0]->GetType() != Values::ValueType::String &&
                            args[0]->GetType() != Values::ValueType::Array)) {
@@ -214,7 +206,6 @@ REGISTER_FUNCTION(front) {
   }
   return Ctx::Undefined();
 }
-
 REGISTER_FUNCTION(back) {
   if (args.size() == 0 || (args[0]->GetType() != Values::ValueType::String &&
                            args[0]->GetType() != Values::ValueType::Array)) {
@@ -230,7 +221,6 @@ REGISTER_FUNCTION(back) {
   }
   return Ctx::Undefined();
 }
-
 REGISTER_FUNCTION(pop) {
   if (args.empty()) {
     return Ctx::Undefined();
@@ -258,7 +248,7 @@ REGISTER_FUNCTION(len) {
   if (Ctx::TryGetString(args[0], result)) {
     return Int_T::New(result.length());
   }
-
+  
   Array array;
   if (Ctx::TryGetArray(args[0], array)) {
     return Int_T::New(array->values.size());
@@ -275,7 +265,6 @@ REGISTER_FUNCTION(type) {
   string typeName;
   return Ctx::CreateString(TypeToString(args[0]->GetType()));
 }
-
 // Serializer
 REGISTER_FUNCTION(serialize) {
   if (args.empty()) {
@@ -314,7 +303,6 @@ REGISTER_FUNCTION(serialize) {
   writer.Write(val.get());
   return Ctx::CreateString(writer.stream.str());
 }
-
 // strings & chars
 REGISTER_FUNCTION(tostr) {
   if (args.empty()) {
@@ -322,7 +310,6 @@ REGISTER_FUNCTION(tostr) {
   }
   return Ctx::CreateString(args[0]->ToString());
 }
-
 REGISTER_FUNCTION(atoi) {
   if (args.size() == 0) {
     return Ctx::Undefined();

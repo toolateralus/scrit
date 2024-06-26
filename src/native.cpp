@@ -118,7 +118,7 @@ ScritModDef* LoadScritModule(const std::string& name, const std::string& path, v
 	bool NativeFunctions::Exists(const std::string & name) {
 		return GetRegistry().contains(name);
 	}
-
+	
 	void RegisterFunction(const std::string & name, const NativeFunctionPtr & function) {
 		NativeFunctions::GetRegistry()[name] = function;
 	}

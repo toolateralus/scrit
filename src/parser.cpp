@@ -4,6 +4,7 @@
 #include "lexer.hpp"
 #include "value.hpp"
 #include <algorithm>
+#include <exception>
 #include <iostream>
 #include <stdexcept>
 
@@ -70,13 +71,13 @@ StatementPtr Parser::ParseLValuePostFix(ExpressionPtr &expr) {
 StatementPtr Parser::ParseStatement() {
   while (tokens.size() > 0) {
     auto token = Peek();
-
+    
     info = token.info;
-
+    
     switch (token.family) {
     case TFamily::Identifier: {
       auto operand = ParseExpression();
-
+      
       if (auto unary = dynamic_cast<UnaryExpr *>(operand.get())) {
         if (unary->op != TType::Increment && unary->op != TType::Decrement) {
           throw std::runtime_error("unexpected unary expression statement : " +
@@ -84,7 +85,7 @@ StatementPtr Parser::ParseStatement() {
         }
         return make_unique<UnaryStatement>(info, std::move(operand));
       }
-
+      
       if (auto id = dynamic_cast<Identifier *>(operand.get())) {
         return ParseIdentifierStatement(
             make_unique<Identifier>(info, id->name));
@@ -112,18 +113,26 @@ StatementPtr Parser::ParseStatement() {
       return ParseKeyword(token);
     }
     default:
-      throw std::runtime_error("Failed to parse statement:: token " +
-                               TTypeToString(token.type));
+      throw std::runtime_error(
+        string("Failed to parse statement. ") + info.ToString() +  "\ntoken " + TTypeToString(token.type));
     }
   }
   throw std::runtime_error("Unexpecrted end of input");
 }
 StatementPtr Parser::ParseKeyword(Token token) {
   switch (token.type) {
-
-  case TType::Mut:
-  case TType::Const:
-
+  
+  case TType::Mut: {
+    auto next = Expect(TType::Identifier);
+    auto iden = make_unique<Identifier>(info, next.value);
+    return ParseAssignment(std::move(iden), Mutability::Mut);
+  }
+  case TType::Const: {
+    auto next = Expect(TType::Identifier);
+    auto iden = make_unique<Identifier>(info, next.value);
+    return ParseAssignment(std::move(iden), Mutability::Const);
+  }
+  
   case TType::Match: {
     return ParseMatchStatement();
   }
@@ -407,7 +416,9 @@ ExpressionPtr Parser::ParseOperand() {
   case TType::LCurly: {
     Eat();
     vector<StatementPtr> statements = {};
+    
     auto scope = ASTNode::context.PushScope();
+    
     while (tokens.size() > 0) {
       auto next = Peek();
       if (next.type == TType::Comma) {
@@ -420,8 +431,11 @@ ExpressionPtr Parser::ParseOperand() {
       auto statement = ParseStatement();
       statements.push_back(std::move(statement));
     }
+    
     Expect(TType::RCurly);
+    
     ASTNode::context.PopScope();
+    
     return make_unique<ObjectInitializer>(
         info, make_unique<Block>(info, std::move(statements)),
         std::move(scope));
@@ -581,20 +595,39 @@ BlockPtr Parser::ParseBlock() {
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};
   auto next = Peek();
+  
+  // Empty block.
   if (next.type == TType::RCurly) {
     Eat();
     return make_unique<Block>(info, std::move(statements));
   }
-
+  
   while (tokens.size() > 0) {
-    if (Peek(1).type == TType::RCurly) {
-      statements.push_back(make_unique<Return>(info, ParseOperand()));
+    
+    // If the last line of a block is an identifier or a literal, we just create an implicit return.
+    // I am not sure that it's possible, but I would love to have a rust-like clone of their implicit returns.
+    // that is, any expression can be the last 'statement' of a block and have an implicit return. like a match or complex expression etc.
+    if (Peek(1).type == TType::RCurly && (Peek().family == TFamily::Identifier || Peek().family == TFamily::Literal)) {
+      statements.push_back(make_unique<Return>(info, ParseExpression()));
       break;
     }
-
+  
+    // add each statement to the block.  
     auto statement = ParseStatement();
     statements.push_back(std::move(statement));
     next = Peek();
+    
+    // If we get a return statement, we just discard any unreachable code.
+    // this reduces some memory usage and simplifies the AST.
+    if (dynamic_cast<Return*>(statement.get())) {
+      // eat up the remainder of the block following the return statement we just paresed.
+      while (!tokens.empty() && next.type != TType::RCurly) {
+        next = Eat();
+      }
+      // break the parse loop.
+      break;
+    }
+    
     if (next.type == TType::RCurly) {
       break;
     }
@@ -708,10 +741,22 @@ unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
       auto statement = ParseStatement();
       statements.push_back(std::move(statement));
     } catch (std::runtime_error e) {
-      std::cout << "Parser exception! : " << e.what() << std::endl;
+      
+      auto what = string(e.what());
+      
+      if (!what.contains("source_info:"))  {
+        what += info.ToString();
+      }
+      
+      std::cout << "Parser exception! : " << what  << std::endl;
       // try to eat a token. This will eventuallya llow the parser to continue
       // normally if any well formed code exists past this exception. However,
       // this results in a bulk of unrelated errors.
+      
+      // if there are none left, just stop.
+      if (tokens.empty()) {
+        break;
+      }
       Eat();
     }
   }

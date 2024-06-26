@@ -21,7 +21,8 @@ struct SourceInfo {
   }
   
   std::string ToString() const {
-    return "line: " + std::to_string(loc) + "col: " + std::to_string(col) + "\n";
+    return string("\nsource_info: {\n\t")
+        + "line: " + std::to_string(loc) + "\n\tcol: " + std::to_string(col) + "\n}\n";
   }
   
   SourceInfo() {

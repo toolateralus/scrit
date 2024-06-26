@@ -25,6 +25,16 @@ Scope Context::PopScope() {
   scopes.pop_back();
   return scope;
 }
+
+void Context::Delete(const string &name) {
+  for (const auto &scope : scopes) {
+    if (scope->Contains(name)) {
+      scope->Erase(name);
+      return;
+    }
+  }
+}
+
 void Context::Insert(const string &name, Value value, const Mutability &mutability) {
   for (const auto &scope : scopes) {
     if (scope->Contains(name)) {
@@ -32,9 +42,10 @@ void Context::Insert(const string &name, Value value, const Mutability &mutabili
       return;
     }
   }
-  scopes.back()->Set(name,value, mutability);
+  scopes.back()->Set(name, value, mutability);
 }
-std::_Rb_tree_iterator<std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>> Context::FindIter(const string &name) const
+
+auto Context::FindIter(const string &name) const -> VarIter
  {
   for (const auto &scope : scopes) {
     if (scope->Contains(name)) {
@@ -91,12 +102,12 @@ auto Scope_T::Set(const string &name, Value value, const Mutability &mutability)
     if (it->first.mutability == Mutability::Mut) {
       variables[it->first] = value;
     } else {
-      throw std::runtime_error("Cannot set a const value");
+      throw std::runtime_error("Cannot set a const value.. identifier: " + name);
     }
   }
 }
 auto Scope_T::Contains(const string &name) -> bool {
-  return Find(name) == variables.end();
+  return Find(name) != variables.end();
 }
 auto Scope_T::Erase(const string &name) -> size_t {
   auto it = Find(name);
@@ -114,7 +125,6 @@ ScritModHandle::~ScritModHandle() noexcept {
   if (handle == nullptr) {
     return;
   }
-  printf("disposing module handle %p\n", handle);
   dlclose(handle);
   handle = nullptr;
 }
@@ -128,10 +138,10 @@ ScritModHandle::ScritModHandle(ScritModHandle &&move) noexcept {
   move.handle = nullptr;
 }
 auto Scope_T::Find(const std::string &name) -> std::_Rb_tree_iterator<std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>> {
-  std::_Rb_tree_iterator<std::pair<const Key, std::shared_ptr<Values::Value_T>>>
-      it = std::find_if(
+  auto it = std::find_if(
           variables.begin(), variables.end(),
           [&](const auto &pair) { return name == pair.first.value; });
           
-    return it;
+  return it;
 }
+

@@ -78,7 +78,7 @@ Block::Block(SourceInfo &info, vector<StatementPtr> &&statements)
 ObjectInitializer::ObjectInitializer(SourceInfo &info, BlockPtr &&block,
                                      Scope scope)
     : Expression(info) {
-  this->scope = Scope_T::create(scope.get());
+  this->scope = Scope_T::Create(scope.get());
   this->block = std::move(block);
 }
 Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
@@ -202,6 +202,7 @@ RangeBasedFor::RangeBasedFor(SourceInfo &info, ExpressionPtr &&lhs,
                              ExpressionPtr &&rhs, BlockPtr &&block)
     : Statement(info), lhs(std::move(lhs)), rhs(std::move(rhs)),
       block(std::move(block)) {}
+      
 CompAssignExpr::CompAssignExpr(SourceInfo &info, ExpressionPtr &&left,
                                ExpressionPtr &&right, TType op)
     : Expression(info), left(std::move(left)), right(std::move(right)), op(op) {
@@ -302,18 +303,17 @@ Value ObjectInitializer::Evaluate() {
   
   _this->scope->Clear();
   
-  block->scope->Set("this", _this);
-  
+  block->scope->Set("this", _this, Mutability::Mut);
   
   auto controlChange = block->Execute().controlChange;
   
   if (controlChange != ControlChange::None) {
     throw std::runtime_error(CC_ToString(controlChange) +
-                             " not allowed in object initialization.");
+                             " not allowed in object initialization. did you mean to use a lambda? .. => { some body of code returning a value ..}");
   }
   
   for (const auto &[k, v]: _this->scope->Members()) {
-    block->scope->Set(k,v->Clone());
+    block->scope->Set(k, v->Clone());
   }
   
   block->scope->Erase("this");
@@ -452,7 +452,6 @@ ExecutionResult Assignment::Execute() {
   context.Insert(iden->name, result, mutability);
   return ExecutionResult::None;
 }
-
 Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue) {
   
   // recurse for bin expr.  
@@ -519,7 +518,6 @@ Value EvaluateWithinObject(Scope &scope, Value object, std::function<Value()> la
   scope->Erase("this");
   return result;
 }
-
 
 Value DotExpr::Evaluate() {
   auto lvalue = left->Evaluate();
@@ -653,8 +651,6 @@ Value BinExpr::Evaluate() {
   }
 };
 ExecutionResult Using::Execute() {
-  printf("usinging: %s\n", moduleName.c_str());
-  
   for (const auto &mod : activeModules) {
     if (moduleName == mod) {
       return ExecutionResult::None;
@@ -725,6 +721,7 @@ ExecutionResult RangeBasedFor::Execute() {
   }
   if (array) {
     for (auto &v : array->values) {
+      ASTNode::context.Delete(name);
       ASTNode::context.Insert(name, v, Mutability::Const);
       auto result = block->Execute();
       switch (result.controlChange) {
@@ -783,7 +780,7 @@ ExecutionResult CompoundAssignment::Execute() {
 }
 Value CompAssignExpr::Evaluate() {
   auto lvalue = left->Evaluate();
-
+  
   auto iden = dynamic_cast<Identifier *>(left.get());
   
   auto it = context.FindIter(iden->name);
@@ -791,11 +788,9 @@ Value CompAssignExpr::Evaluate() {
   if (it->second == nullptr) {
     throw std::runtime_error("variable did not exist: cannot compound assign");
   }
-
-  Mutability mut = it->first.mutability;
-
-  auto rvalue = right->Evaluate();
   
+  Mutability mut = it->first.mutability;
+  auto rvalue = right->Evaluate();
   
   switch (op) {
   case TType::AddEq: {

@@ -2,6 +2,7 @@
 #include "native.hpp"
 #include "value.hpp"
 #include <algorithm>
+#include <ranges>
 #include <stdexcept>
 #include <vector>
 
@@ -10,21 +11,88 @@
 #define undefined Ctx::Undefined()
 #define null Ctx::Null()
 
+struct Iterator : Object_T {
+  std::vector<Value>::iterator it;
+  Iterator(std::vector<Value>::iterator it)
+      : it(it) {}
+      
+  static shared_ptr<Iterator> BeginFromArray(Array_T *array) {
+    return make_shared<Iterator>(array->values.begin());
+  }
+  static shared_ptr<Iterator> EndFromArray( Array_T *array) {
+    return make_shared<Iterator>(array->values.end());
+  }
+  
+  Value GetMember(const string &name) override {
+    if (name == "current") {
+      return *it;
+    }
+    return undefined;
+  }
+  
+  Value Add(Value other) override {
+    if (other->GetType() != ValueType::Int) {
+      return undefined;
+    }
+    const int value = other->Cast<Int_T>()->value;
+    it += value;
+    // Annoyingly, we have to create new shared pointers.
+    return shared_from_this();
+  }
+  Value Subtract(Value other) override {
+    if (other->GetType() != ValueType::Int) {
+      return undefined;
+    }
+    const int value = other->Cast<Int_T>()->value;
+    it -= value;
+    // Annoyingly, we have to create new shared pointers.
+    return shared_from_this();
+  }
+  bool Equals(Value other) override {
+    auto other_it = dynamic_cast<Iterator *>(other.get());
+    if (!other_it) {
+      return false;
+    }
+    return other_it->it == this->it;
+  }
+};
+
+REGISTER_FUNCTION(begin) {
+  if (args.empty()) {
+    return undefined;
+  }
+  if (args[0]->GetType() != Values::ValueType::Array) {
+    return undefined; 
+  }
+  return Iterator::BeginFromArray(args[0]->Cast<Array_T>());
+}
+REGISTER_FUNCTION(end) {
+  if (args.empty()) {
+    return undefined;
+  }
+  if (args[0]->GetType() != Values::ValueType::Array) {
+    return undefined;
+  }
+  return Iterator::EndFromArray(args[0]->Cast<Array_T>());
+}
+
+
 REGISTER_FUNCTION(contains) {
   if (args.size() < 2) {
     return undefined;
   }
-  
-  Array result; 
+
+  Array result;
   if (!Ctx::TryGetArray(args[0], result)) {
-    throw std::runtime_error("contains may only be used on arrays. for strings, use scontains");
+    throw std::runtime_error(
+        "contains may only be used on arrays. for strings, use scontains");
   }
-  for (const auto &value: result->values) {
+  for (const auto &value : result->values) {
     if (value->Equals(args[1])) {
       return Value_T::True;
     }
   }
-  return Value_T::False; 
+  return Value_T::False;
 }
 
 REGISTER_FUNCTION(scontains) {
@@ -32,16 +100,17 @@ REGISTER_FUNCTION(scontains) {
     return undefined;
   }
   string result, comparison;
-  if (!Ctx::TryGetString(args[0], result) || !Ctx::TryGetString(args[1], comparison)) {
-    throw std::runtime_error("scontains may only be used on string. for arrays, use contains");
+  if (!Ctx::TryGetString(args[0], result) ||
+      !Ctx::TryGetString(args[1], comparison)) {
+    throw std::runtime_error(
+        "scontains may only be used on string. for arrays, use contains");
   }
-  for (const auto &value: result) {
-    if (comparison[0] == value)  
+  for (const auto &value : result) {
+    if (comparison[0] == value)
       return Value_T::True;
   }
-  return Value_T::False; 
+  return Value_T::False;
 }
-
 
 REGISTER_FUNCTION(replace) {
   if (args.size() < 3 || args[0]->GetType() != Values::ValueType::String ||
@@ -49,19 +118,19 @@ REGISTER_FUNCTION(replace) {
       args[2]->GetType() != Values::ValueType::String) {
     return undefined;
   }
-  
-  string string; 
+
+  string string;
   Ctx::TryGetString(args[0], string);
-  
+
   auto pattern = static_cast<String_T *>(args[1].get());
   auto replacement = static_cast<String_T *>(args[2].get());
-  
+
   size_t pos = 0;
   while ((pos = string.find(pattern->value, pos)) != std::string::npos) {
     string.replace(pos, pattern->value.length(), replacement->value);
     pos += replacement->value.length();
   }
-  
+
   return Ctx::CreateString(string);
 }
 

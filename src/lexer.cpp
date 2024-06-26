@@ -423,6 +423,9 @@ string TTypeToString(const TType &type) {
     return "Const";
   case TType::Mut:
     return "Mut";
+    
+  default:
+    return "Unknown";
   }
 }
 string TFamilyToString(const TFamily &family) {
