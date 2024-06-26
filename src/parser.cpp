@@ -202,6 +202,13 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
     return make_unique<CompoundAssignment>(
         info, make_unique<CompAssignExpr>(info, std::move(identifier),
                                           std::move(value), next.type));
+  } else if (next.type == TType::Lambda) {
+    Eat();
+    
+    // TODO: make it so lambda fields are treated like C# properties - evaluated on access, not just assignment.
+    auto expr = ParseLambda();
+    return make_unique<Assignment>(info, std::move(identifier), std::move(expr))
+    
   } else {
     throw std::runtime_error("failed to parse assignment: invalid operator.");
   }
@@ -570,7 +577,8 @@ BlockPtr Parser::ParseBlock() {
     Eat();
     return make_unique<Block>(info, std::move(statements));
   }
-
+  
+  
   while (tokens.size() > 0) {
     if (Peek(1).type == TType::RCurly) {
       statements.push_back(make_unique<Return>(info, ParseOperand()));
@@ -611,52 +619,46 @@ IfPtr Parser::ParseIf() {
 }
 StatementPtr Parser::ParseFor() {
   auto info = this->info;
-
+  
   auto scope = ASTNode::context.PushScope();
+  
   if (!tokens.empty() && Peek().type == TType::LParen) {
     Eat();
   }
   StatementPtr decl = nullptr;
   ExpressionPtr condition = nullptr;
   StatementPtr inc = nullptr;
-
+  
   // for {}
   if (Peek().type == TType::LCurly) {
     return make_unique<For>(info, nullptr, nullptr, nullptr, ParseBlock(),
                             ASTNode::context.PopScope());
   }
-  // for i=0,i<?,i=i+1 {}
-  if (Peek().type == TType::Identifier) {
-    auto idTok = Peek();
-    auto op = ParseExpression();
-    auto iden = dynamic_cast<Identifier *>(op.get());
-    // Range based for loop for iden : array/obj {}
-    if (iden && Peek().type == TType::Colon) {
-      Eat();
-      auto rhs = ParseExpression();
-      return make_unique<RangeBasedFor>(
-          info, make_unique<Identifier>(info, iden->name), std::move(rhs),
-          ParseBlock());
-    }
-
-    // for i=0,i<..,i++
-    if (Peek().type == TType::Assign) {
-      decl = ParseAssignment(make_unique<Identifier>(info, iden->name));
-      Expect(TType::Comma);
-      condition = ParseExpression();
-      Expect(TType::Comma);
-      inc = ParseStatement();
-      return make_unique<For>(info, std::move(decl), std::move(condition),
-                              std::move(inc), ParseBlock(),
-                              ASTNode::context.PopScope());
-    } else {
-      tokens.push_back(idTok);
-    }
+  
+  if ((tokens.size() > 1 && Peek(1).type == TType::Assign) || (tokens.size() > 2 && Peek(2).type == TType::Assign)) {
+    decl = ParseStatement();
+    Expect(TType::Comma);
+    condition = ParseExpression();
+    Expect(TType::Comma);
+    inc = ParseStatement();
+    return make_unique<For>(info, std::move(decl), std::move(condition),
+                            std::move(inc), ParseBlock(),
+                            ASTNode::context.PopScope());  
+  }
+  
+  auto expr = ParseExpression();
+  
+  // for expr : array/obj {}
+  if (Peek().type == TType::Colon) {
+    Eat();
+    auto rhs = ParseExpression();
+    return make_unique<RangeBasedFor>(
+        info, std::move(expr), std::move(rhs),
+        ParseBlock());
   }
 
   // for CONDITION {}
-  condition = ParseExpression();
-  return make_unique<For>(info, std::move(decl), std::move(condition),
+  return make_unique<For>(info, std::move(decl), std::move(expr),
                           std::move(inc), ParseBlock(),
                           ASTNode::context.PopScope());
 }

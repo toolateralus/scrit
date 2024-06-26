@@ -198,9 +198,9 @@ UnaryStatement::UnaryStatement(SourceInfo &info, ExpressionPtr &&expr)
 CompoundAssignment::CompoundAssignment(SourceInfo &info,
                                        ExpressionPtr &&cmpAssignExpr)
     : Statement(info), expr(std::move(cmpAssignExpr)) {}
-RangeBasedFor::RangeBasedFor(SourceInfo &info, IdentifierPtr &&lhs,
+RangeBasedFor::RangeBasedFor(SourceInfo &info, ExpressionPtr &&lhs,
                              ExpressionPtr &&rhs, BlockPtr &&block)
-    : Statement(info), valueName(std::move(lhs)), rhs(std::move(rhs)),
+    : Statement(info), lhs(std::move(lhs)), rhs(std::move(rhs)),
       block(std::move(block)) {}
 CompAssignExpr::CompAssignExpr(SourceInfo &info, ExpressionPtr &&left,
                                ExpressionPtr &&right, TType op)
@@ -387,15 +387,18 @@ ExecutionResult For::Execute() {
         context.PopScope();
         return ExecutionResult::None;
       }
-      result = increment->Execute();
-      switch (result.controlChange) {
-      case ControlChange::None:
-        break;
-      case ControlChange::Continue:
-      case ControlChange::Return:
-      case ControlChange::Break:
-        throw std::runtime_error(CC_ToString(result.controlChange) +
-                                 " not allowed in for initialization.");
+      
+      if (increment) {
+        result = increment->Execute();
+        switch (result.controlChange) {
+        case ControlChange::None:
+          break;
+        case ControlChange::Continue:
+        case ControlChange::Return:
+        case ControlChange::Break:
+          throw std::runtime_error(CC_ToString(result.controlChange) +
+                                  " not allowed in for initialization.");
+        }
       }
     }
   } else {
@@ -701,7 +704,14 @@ ExecutionResult Using::Execute() {
 ExecutionResult RangeBasedFor::Execute() {
   ASTNode::context.PushScope();
   auto lvalue = this->rhs->Evaluate();
-  auto name = valueName->name;
+  
+  auto lhs = dynamic_cast<Identifier *>(this->lhs.get());
+  
+  if (!lhs) {
+    throw std::runtime_error("the left hand side of a range based for loop must be an identifier. example: for i : array/object/string {..}");
+  }
+  
+  auto name = lhs->name;
   Array array = nullptr;
   Object obj = nullptr;
   string string;

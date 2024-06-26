@@ -183,9 +183,9 @@ struct For : Statement {
 };
 
 struct RangeBasedFor : Statement {
-  RangeBasedFor(SourceInfo &info, IdentifierPtr &&lhs, ExpressionPtr &&rhs,
+  RangeBasedFor(SourceInfo &info, ExpressionPtr &&lhs, ExpressionPtr &&rhs,
                 BlockPtr &&block);
-  IdentifierPtr valueName;
+  ExpressionPtr lhs;
   ExpressionPtr rhs;
   BlockPtr block;
   ExecutionResult Execute() override;
