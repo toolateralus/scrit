@@ -13,24 +13,33 @@ using std::vector;
 
 struct Parser {
   vector<Token> tokens;
-  Token Peek();
+  Token Peek(size_t lookahead = 0);
   Token Eat();
   Token Expect(const TType ttype);
   SourceInfo info;
   unique_ptr<Program> Parse(vector<Token> &&tokens);
-  StatementPtr ParseUsing();
+  BlockPtr ParseBlock();
+  StatementPtr ParseStatement();
+  StatementPtr ParseKeyword(Token keyword);
+  
+  StatementPtr ParseCall(IdentifierPtr identifier);
+  StatementPtr ParseAssignment(IdentifierPtr identifier);
   StatementPtr ParseLValuePostFix(ExpressionPtr &expr);
+  StatementPtr ParseIdentifierStatement(IdentifierPtr identifier);
+  
+  ExpressionPtr ParseLambda();
+  StatementPtr ParseUsing();
   StatementPtr ParseFor();
   IfPtr ParseIf();
   ElsePtr ParseElse();
   StatementPtr ParseContinue();
   StatementPtr ParseReturn();
   StatementPtr ParseBreak();
-  StatementPtr ParseIdentifierStatement(IdentifierPtr identifier);
-  StatementPtr ParseAssignment(IdentifierPtr identifier);
-  StatementPtr ParseCall(IdentifierPtr identifier);
-  StatementPtr ParseStatement();
-  StatementPtr ParseKeyword(Token keyword);
+  ExpressionPtr ParseMatch();
+  StatementPtr ParseMatchStatement();
+
+  ParametersPtr ParseParameters();
+  ArgumentsPtr ParseArguments();
   
   ExpressionPtr ParseExpression();
   ExpressionPtr ParseCompoundAssignment();
@@ -41,9 +50,6 @@ struct Parser {
   ExpressionPtr ParseTerm();
   ExpressionPtr ParseFactor();
   ExpressionPtr ParsePostfix();
-  BlockPtr ParseBlock();
-  ParametersPtr ParseParameters();
-  ArgumentsPtr ParseArguments();
   ExpressionPtr ParseUnary();
   ExpressionPtr ParseOperand();
   OperandPtr ParseArrayInitializer();

@@ -243,7 +243,11 @@ ExecutionResult Parameters::Execute() { return ExecutionResult::None; }
 ExecutionResult Continue::Execute() { return ExecutionResult::Continue; }
 ExecutionResult Break::Execute() { return ExecutionResult::Break; }
 ExecutionResult Return::Execute() {
-  return ExecutionResult(ControlChange::Return, value->Evaluate());
+  // return a value.
+  if (value)
+    return ExecutionResult(ControlChange::Return, value->Evaluate());
+  // return undefined implicitly.
+  else return ExecutionResult(ControlChange::Return, Value_T::UNDEFINED);
 }
 ExecutionResult Block::Execute() {
   if (scope == nullptr)
@@ -834,3 +838,35 @@ Else::Else(SourceInfo &info, IfPtr &&ifPtr, BlockPtr &&block)
 }
 If::~If() {}
 Else::~Else() {}
+
+
+Value Match::Evaluate() {
+  auto val = expr->Evaluate();
+
+  size_t i = 0;
+  
+  // Check our expression's resulting value against the provided match cases.
+  for (const auto &expr: branch_lhs) {
+    const auto branch_value = expr->Evaluate();
+    
+    // TODO: add | operator for several matches. Just like rust.
+    if (branch_value->Equals(val)) {
+      return branch_rhs[i]->Evaluate();
+    }
+    i++;
+  }
+  // If we have not found a single match up to this point: hit our default case
+  // if provided. If not, do nothing.
+  if (branch_default)
+    return branch_default->Evaluate();
+  else
+    return Value_T::UNDEFINED;
+}
+
+Value Lambda::Evaluate() {
+  auto result = block->Execute();
+  if (result.controlChange != ControlChange::Return || result.value == nullptr) {
+    return Value_T::UNDEFINED;
+  }
+  return result.value;
+}

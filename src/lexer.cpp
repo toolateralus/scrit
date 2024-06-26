@@ -31,8 +31,7 @@ vector<Token> Lexer::Lex(const string &input) {
 
   while (pos < input.length()) {
     cur = input[pos];
-    
-    
+
     // IGNORED CHARACTERS
     {
       // ignore newlines.
@@ -42,14 +41,14 @@ vector<Token> Lexer::Lex(const string &input) {
         col = 0;
         continue;
       }
-      
+
       // ignore tab space.
       if (cur == '\t') {
         pos++;
         col++;
         continue;
       }
-      
+
       // ignore whitespace.
       if (cur == ' ') {
         pos++;
@@ -57,9 +56,9 @@ vector<Token> Lexer::Lex(const string &input) {
         continue;
       }
     }
-    
+
     // COMMENTS
-    { 
+    {
       // Single line comments.
       if (input.length() > pos + 1 && cur == '/' && input[pos + 1] == '/') {
         pos += 2; // move past //
@@ -73,10 +72,10 @@ vector<Token> Lexer::Lex(const string &input) {
         loc++;
         continue;
       }
-      
+
       // /*  multi line comments */
       if (input.length() > pos + 1 && cur == '/' && input[pos + 1] == '*') {
-        // ignore the comment /* thing. 
+        // ignore the comment /* thing.
         pos += 2;
         col += 2;
         while (input.length() > pos + 1) {
@@ -294,9 +293,13 @@ Lexer::Lexer() {
                {":", TType::Colon},
                {"=", TType::Assign},
                {"??", TType::NullCoalescing},
+               {"=>", TType::Lambda},
                // these are escpaed because theyre trigraphs
-               {"\?\?=", TType::NullCoalescingEq}};
+               {"\?\?=", TType::NullCoalescingEq}
+
+  };
   keywords = {
+      {"default", TType::Default},     {"match", TType::Match},
       {"func", TType::Func},           {"for", TType::For},
       {"continue", TType::Continue},   {"break", TType::Break},
       {"return", TType::Return},       {"if", TType::If},
@@ -409,8 +412,12 @@ string TTypeToString(const TType &type) {
     return "Using";
   case TType::From:
     return "From";
-  default:
-    return "Unknown";
+  case TType::Match:
+    return "Match";
+  case TType::Lambda:
+    return "Lambda '=>'";
+  case TType::Default:
+    return "Default";
   }
 }
 string TFamilyToString(const TFamily &family) {

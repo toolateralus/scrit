@@ -90,6 +90,14 @@ enum class TType {
   True,
   Null,
   Undefined,
+  // TODO: add try & catch.
+  
+  Match,
+  // => used for implicit return and block expressions: returning a value from a block opposed to 
+  // creating an object.
+  Lambda,
+  // default keyword. used right now for match statements.
+  Default,
   
   Break,
   Continue,

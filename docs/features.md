@@ -17,7 +17,6 @@ Thanks.
 
 ## arrays
 
-
 ### Pushing values 
 ```ts
 
@@ -251,6 +250,136 @@ println(myValue)
 
 ```
 
+## Pattern matching
+
+scrit has a rust-like pattern matching system using the `match` keyword.
+the syntax is nearly identical to `rust`.
+
+
+
+It can be used as an expression as such:
+```rust
+variable = match some_expression {
+  0 => 1
+  1 => 0
+  2 => {
+    some_value = 3.5 * factor_of("some_condition")
+    return some_value
+  }
+}
+```
+
+It can be used as a statement as such:
+```rust
+match get_state_indicator() {
+  0 => println("Error! Something happened.")
+  1 => mutate_based_on_key(system_manager, Actions.Rotate)
+  2 => {
+    system.exit()
+  }
+}
+```
+
+default values are denoted by the `default` keyword
+
+
+```rust
+match "this could be any string.. that's a lot of possible values" {
+  default => panic("that wasn't supposed to happen...")
+  "some specific string" => {
+    // do something.
+  }
+}
+```
+
+
+note that a default could be defined several times, and the latest default will be taken.
+On the other hand, if an expression case is defined several times, the first defined occurence of that value will always be taken.
+
+
+```rust
+
+match 0 {
+  0 => println("this will happen")
+  0 => println("this will not happen")
+}
+
+
+match 1 {
+  0 => println("this will not happen")
+  0 => println("this will not happen")
+  default => println("this will also not happen")
+  default => println("because this will happen")
+}
+```
+
+This is because there is only one default, whereas we don't know the value of the expressions until interpretation.
+So, each time a default is defined, it's overwriting the old one, however, the parser has no idea several expressions that
+evaluate to the same value have been defined. beware!
+
+
+## Lambdas
+
+we have a `=> expression` and `=> { block returning some value}` syntax for 'lambda's.
+
+right now, it's a bit clunky, and lambdas are just basically a way to either
+
+1. Avoid using the return keyword in single-expression match cases
+2. Assign a variable to the result of an encapsulated scope.
+
+The clunkiness arises from needing to use the `=` operator AND `=>` when you are assigning a variable to the result of a lambda.
+
+So, as we saw in [Pattern matching](#pattern-matching), this is fairly clean and very `rust-like`. However, for assigning a variable, currently (subject to change), this is what we are looking at.
+
+
+```js
+
+// note that if we omitted the => here,
+// we would just be creating an object.
+// variable = { v = ..., x = ..., etc.}
+
+variable = => {
+  v = do_something(state_obj, intensity)
+  x = something_else(state_obj, v, intensity)
+  return complete_action(v, x, intensity)
+}
+
+// OR...
+
+// there is no real purpose to do this yet.
+// later, we will have C# style property fields which get evaluated like a getter each time it's accessed.
+variable = => 1
+
+
+```
+
+## Omitting the return keyword for the last statement in a block
+
+Just like rust, you can return a value by placing a single operand at the end of a block, instead of using return.
+
+So, for example, we can change this function
+
+```go
+func get_something(state) {
+  if state.entities >= 100 {
+    return 2.0
+  }
+  return 0.0
+}
+
+```
+To look more like this
+
+
+```go
+func get_something(state) {
+  if state.entities >= 100 {
+    2.0
+  }
+  0.0
+}
+```
+It does the same thing, but the return is implicit.
 
 ## Modules
 
@@ -305,6 +434,8 @@ functions like `println`, `readln`, `push` and `pop` are available without using
 - throw OBJECT/VALUE
 
 #### breakpoint debugging & language server
+
+## pattern matching
 
 
 #### operator overloading for objects

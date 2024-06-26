@@ -1,19 +1,19 @@
 #pragma once
 #include "lexer.hpp"
+#include <cassert>
 #include <functional>
 #include <memory>
 
 #include <map>
 
-using std::vector;
 using std::string;
-
+using std::vector;
 
 enum struct TType;
 struct Context;
 
 namespace Values {
-  struct Value_T;
+struct Value_T;
 }
 struct Scope_T;
 typedef std::shared_ptr<Values::Value_T> Value;
@@ -33,7 +33,10 @@ struct Identifier;
 struct Parameters;
 struct Operand;
 struct Using;
+struct Lambda;
+
 // typedefs
+typedef unique_ptr<Lambda> LambdaPtr;
 typedef unique_ptr<Using> UsingPtr;
 typedef unique_ptr<Statement> StatementPtr;
 typedef unique_ptr<Expression> ExpressionPtr;
@@ -61,9 +64,6 @@ struct ExecutionResult {
   Value value;
 };
 
-
-
-
 struct ASTNode {
   SourceInfo srcInfo;
   ASTNode(SourceInfo &info) : srcInfo(info) {}
@@ -71,7 +71,6 @@ struct ASTNode {
   static Context context;
   virtual ~ASTNode() {}
 };
-
 
 struct Executable : ASTNode {
   virtual ~Executable() {}
@@ -120,9 +119,10 @@ struct Break : Statement {
   ExecutionResult Execute() override;
 };
 struct Return : Statement {
-
+  Return(SourceInfo &info) : Statement(info) {}
   Return(SourceInfo &info, ExpressionPtr &&value);
   ExpressionPtr value;
+
   ExecutionResult Execute() override;
 };
 struct Block : Statement {
@@ -140,8 +140,7 @@ struct ObjectInitializer : Expression {
 struct Call : Expression, Statement {
   ExpressionPtr operand;
   ArgumentsPtr args;
-  Call(SourceInfo &info, ExpressionPtr &&operand,
-       ArgumentsPtr &&args);
+  Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args);
   static vector<Value> GetArgsValueList(ArgumentsPtr &args);
   Value Evaluate() override;
   ExecutionResult Execute() override;
@@ -151,13 +150,11 @@ struct If : Statement {
   If() = delete;
   static IfPtr NoElse(SourceInfo &info, ExpressionPtr &&condition,
                       BlockPtr &&block);
-  static IfPtr WithElse(SourceInfo &info,
-                        ExpressionPtr &&condition, BlockPtr &&block,
-                        ElsePtr &&elseStmnt);
-  If(SourceInfo &info, ExpressionPtr &&condition,
-     BlockPtr &&block);
-  If(SourceInfo &info, ExpressionPtr &&condition,
-     BlockPtr &&block, ElsePtr &&elseStmnt);
+  static IfPtr WithElse(SourceInfo &info, ExpressionPtr &&condition,
+                        BlockPtr &&block, ElsePtr &&elseStmnt);
+  If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block);
+  If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block,
+     ElsePtr &&elseStmnt);
   ExpressionPtr condition;
   BlockPtr block;
   ElsePtr elseStmnt;
@@ -180,15 +177,14 @@ struct For : Statement {
   StatementPtr increment;
   BlockPtr block;
   Scope scope;
-  For(SourceInfo &info, StatementPtr &&decl,
-      ExpressionPtr &&condition, StatementPtr &&inc, BlockPtr &&block,
-      Scope scope);
+  For(SourceInfo &info, StatementPtr &&decl, ExpressionPtr &&condition,
+      StatementPtr &&inc, BlockPtr &&block, Scope scope);
   ExecutionResult Execute() override;
 };
 
 struct RangeBasedFor : Statement {
-  RangeBasedFor(SourceInfo &info, IdentifierPtr &&lhs,
-                ExpressionPtr &&rhs, BlockPtr &&block);
+  RangeBasedFor(SourceInfo &info, IdentifierPtr &&lhs, ExpressionPtr &&rhs,
+                BlockPtr &&block);
   IdentifierPtr valueName;
   ExpressionPtr rhs;
   BlockPtr block;
@@ -198,16 +194,15 @@ struct RangeBasedFor : Statement {
 struct Assignment : Statement {
   IdentifierPtr iden;
   ExpressionPtr expr;
-  Assignment(SourceInfo &info, IdentifierPtr &&iden,
-             ExpressionPtr &&expr);
+  Assignment(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&expr);
   ExecutionResult Execute() override;
 };
 
 struct CompAssignExpr : Expression {
   ExpressionPtr left, right;
   TType op;
-  CompAssignExpr(SourceInfo &info, ExpressionPtr &&left,
-                 ExpressionPtr &&right, TType op);
+  CompAssignExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right,
+                 TType op);
   Value Evaluate() override;
 };
 
@@ -221,16 +216,14 @@ struct Noop : Statement {
   ExecutionResult Execute() override { return ExecutionResult::None; }
 };
 struct DotExpr : Expression {
-  DotExpr(SourceInfo &info, ExpressionPtr &&left,
-          ExpressionPtr &&right);
+  DotExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right);
   ExpressionPtr left;
   ExpressionPtr right;
   Value Evaluate() override;
   void Assign(Value value);
 };
 struct DotAssignment : Statement {
-  DotAssignment(SourceInfo &info, ExpressionPtr &&dot,
-                ExpressionPtr &&value);
+  DotAssignment(SourceInfo &info, ExpressionPtr &&dot, ExpressionPtr &&value);
   ExpressionPtr dot;
   ExpressionPtr value;
   ExecutionResult Execute() override;
@@ -241,15 +234,14 @@ struct DotCallStmnt : Statement {
   ExecutionResult Execute() override;
 };
 struct Subscript : Expression {
-  Subscript(SourceInfo &info, ExpressionPtr &&left,
-            ExpressionPtr &&idx);
+  Subscript(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&idx);
   ExpressionPtr left;
   ExpressionPtr index;
   Value Evaluate();
 };
 struct SubscriptAssignStmnt : Statement {
-  SubscriptAssignStmnt(SourceInfo &info,
-                       ExpressionPtr &&subscript, ExpressionPtr &&value);
+  SubscriptAssignStmnt(SourceInfo &info, ExpressionPtr &&subscript,
+                       ExpressionPtr &&value);
   ExpressionPtr subscript;
   ExpressionPtr value;
   ExecutionResult Execute() override;
@@ -275,29 +267,66 @@ struct BinExpr : Expression {
   ExpressionPtr left;
   ExpressionPtr right;
   TType op;
-  BinExpr(SourceInfo &info, ExpressionPtr &&left,
-          ExpressionPtr &&right, TType op);
+  BinExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right,
+          TType op);
   Value Evaluate() override;
 };
 
 struct Using : Statement {
   static vector<string> activeModules;
-  Using(SourceInfo &info, const string &name,
-         const bool isWildcard);
-  Using(SourceInfo &info, const string &name,
-         vector<string> &symbols);
+  Using(SourceInfo &info, const string &name, const bool isWildcard);
+  Using(SourceInfo &info, const string &name, vector<string> &symbols);
   vector<string> symbols;
   string moduleName;
   bool isWildcard;
-  // TODO: make this cross platform friendly. it's the only thing keeping us linux-only, as well as
-  // the install script.
+  // TODO: make this cross platform friendly. it's the only thing keeping us
+  // linux-only, as well as the install script.
   const string moduleRoot = "/usr/local/scrit/modules/";
   ExecutionResult Execute() override;
+};
+
+struct Lambda : Expression {
+  BlockPtr block;
+  Lambda(SourceInfo &info, BlockPtr &&block)
+      : Expression(info), block(std::move(block)) {}
+  Value Evaluate() override;
+};
+
+// TODO: make a match expression that calls into this and just returns the
+// control flow change result.
+struct Match : Expression {
+  ExpressionPtr expr;
+  std::vector<ExpressionPtr> branch_lhs = {};
+  std::vector<ExpressionPtr> branch_rhs = {};
+  ExpressionPtr branch_default;
+  
+  Match(SourceInfo &info, ExpressionPtr &&expr,
+        std::vector<ExpressionPtr> &&branch_lhs,
+        std::vector<ExpressionPtr> &&branch_rhs,
+        ExpressionPtr &&branch_default = nullptr)
+      : Expression(info), expr(std::move(expr)),
+        branch_lhs(std::move(branch_lhs)), branch_rhs(std::move(branch_rhs)),
+        branch_default(std::move(branch_default)) {
+    assert(branch_lhs.size() == branch_rhs.size());
+  }
+  
+  Value Evaluate() override;
+};
+
+struct MatchStatement : Statement {
+  ExpressionPtr match;
+  MatchStatement(SourceInfo &info, ExpressionPtr &&match) : Statement(info), match(std::move(match)) {}
+  ExecutionResult Execute() override {
+    auto result = match->Evaluate();
+    // we could just this value since its unreachable in this case.
+    return ExecutionResult(ControlChange::None, result);
+  }
 };
 
 string CC_ToString(ControlChange controlChange);
 
 Value EvaluateWithinObject(Scope &scope, Value object, ExpressionPtr &expr);
-Value EvaluateWithinObject(Scope &scope, Value object, std::function<Value()> lambda);
+Value EvaluateWithinObject(Scope &scope, Value object,
+                           std::function<Value()> lambda);
 
 Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue);
