@@ -99,6 +99,9 @@ enum class TType {
   // default keyword. used right now for match statements.
   Default,
   
+  Const, 
+  Mut,
+  
   Break,
   Continue,
   Return,

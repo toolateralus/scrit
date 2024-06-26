@@ -1,5 +1,6 @@
 #pragma once
 #include "lexer.hpp"
+
 #include <cassert>
 #include <functional>
 #include <memory>
@@ -8,6 +9,11 @@
 
 using std::string;
 using std::vector;
+
+enum class Mutability {
+  Const = 0,
+  Mut,
+};
 
 enum struct TType;
 struct Context;
@@ -192,9 +198,10 @@ struct RangeBasedFor : Statement {
 };
 
 struct Assignment : Statement {
-  IdentifierPtr iden;
-  ExpressionPtr expr;
-  Assignment(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&expr);
+  const IdentifierPtr iden;
+  const ExpressionPtr expr;
+  const Mutability mutability;
+  Assignment(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&expr, const Mutability &mutability);
   ExecutionResult Execute() override;
 };
 

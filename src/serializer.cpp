@@ -75,27 +75,27 @@ void Writer::Write(const Value_T *val) {
         }
         auto value = var.get();
         if ((dynamic_cast<Object_T*>(value) || dynamic_cast<Array_T*>(value)) && foundObjs.contains(value)) {
-          switch (settings.ReferenceHandling) {
+          switch (settings.ref_handling) {
           case ReferenceHandling::Remove:
             break;
           case ReferenceHandling::Mark:
-            stream << indent << '\"' << key << "\" : ";
+            stream << indent << '\"' << key.value << "\" : ";
             stream << "ref";
             stream << element_delimter;
             break;
           case ReferenceHandling::Preserve:
-            stream << indent << '\"' << key << "\" : ";
+            stream << indent << '\"' << key.value << "\" : ";
             stream << "ref:" << references[value];
             stream << element_delimter;
             break;
           }
           continue;
         }
-        if (settings.ReferenceHandling == ReferenceHandling::Preserve &&
+        if (settings.ref_handling == ReferenceHandling::Preserve &&
             references.contains(value)) {
           stream << "<ref:" << references[value] << ">";
         }
-        stream << indent << '\"' << key << "\" : ";
+        stream << indent << '\"' << key.value << "\" : ";
         Write(value);
         stream << element_delimter;
       }
@@ -113,7 +113,7 @@ void Writer::Write(const Value_T *val) {
         }
         auto value = var.get();
         if ((dynamic_cast<Object_T*>(value) || dynamic_cast<Array_T*>(value)) && foundObjs.contains(value)) {
-          switch (settings.ReferenceHandling) {
+          switch (settings.ref_handling) {
           case ReferenceHandling::Remove:
             break;
           case ReferenceHandling::Mark:
@@ -129,7 +129,7 @@ void Writer::Write(const Value_T *val) {
           }
           continue;
         }
-        if (settings.ReferenceHandling == ReferenceHandling::Preserve &&
+        if (settings.ref_handling == ReferenceHandling::Preserve &&
             references.contains(value)) {
           stream << "<ref:" << references[value] << ">";
         }
@@ -152,7 +152,7 @@ void Writer::Write(const Value_T *val) {
 };
 string Writer::ToString(const Value_T * value, WriterSettings settings) {
   Writer writer{.settings = settings};
-  if (settings.ReferenceHandling == ReferenceHandling::Preserve) {
+  if (settings.ref_handling == ReferenceHandling::Preserve) {
     writer.BuildMap(value);
   }
   writer.Write(value);

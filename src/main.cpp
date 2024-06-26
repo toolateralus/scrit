@@ -1,3 +1,4 @@
+#include "ast.hpp"
 #include "context.hpp"
 #include "debug.hpp"
 #include "lexer.hpp"
@@ -29,7 +30,7 @@ void InsertCmdLineArgs(int argc, char **argv) {
       }
     }
   }
-  ASTNode::context.Insert("args", args);
+  ASTNode::context.Insert("args", args, Mutability::Const);
 }
 
 

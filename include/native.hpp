@@ -1,4 +1,5 @@
 #pragma once
+#include "ast.hpp"
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -21,12 +22,14 @@ struct ScritModDef;
 typedef ScritModDef* (*ScriptModInitFuncPtr)();
 typedef Value (*NativeFunctionPtr)(std::vector<Value>);
 
+enum struct Mutability;
+
 extern "C" struct ScritModDef {
   std::string *description;
   Context *context;
   std::unordered_map<std::string, NativeFunctionPtr> *functions;
   void AddFunction(const std::string &name, const NativeFunctionPtr func);
-  void AddVariable(const std::string &name, Value value);
+  void AddVariable(const std::string &name, Value value, const Mutability &mut);
 };
 
 ScritModDef* CreateModDef();
@@ -45,7 +48,7 @@ struct NativeFunctions {
 };
 
 #define REGISTER_FUNCTION(name) \
-  Value name(std::vector<Value> args); \
+ Value name(std::vector<Value> args); \
   namespace { \
     struct name##_Register { \
       name##_Register() { \

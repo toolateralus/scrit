@@ -13,7 +13,7 @@ enum struct ReferenceHandling {
 struct WriterSettings {
   int StartingIndentLevel = 0;
   int IndentSize = 0;
-  ReferenceHandling ReferenceHandling = ReferenceHandling::Mark;
+  ReferenceHandling ref_handling = ReferenceHandling::Mark;
 };
 
 struct Writer {

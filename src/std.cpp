@@ -268,7 +268,7 @@ REGISTER_FUNCTION(len) {
 }
 
 // typeof
-REGISTER_FUNCTION(typeof) {
+REGISTER_FUNCTION(type) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
@@ -306,7 +306,7 @@ REGISTER_FUNCTION(serialize) {
       } else if (refHandling == "preserve") {
         handling = ReferenceHandling::Preserve;
       }
-      settings.ReferenceHandling = handling;
+      settings.ref_handling = handling;
     }
   }
   Writer writer = {.settings = settings};

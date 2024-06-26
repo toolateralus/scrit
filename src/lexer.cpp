@@ -299,6 +299,7 @@ Lexer::Lexer() {
 
   };
   keywords = {
+      {"const", TType::Const},         {"mut", TType::Mut},
       {"default", TType::Default},     {"match", TType::Match},
       {"func", TType::Func},           {"for", TType::For},
       {"continue", TType::Continue},   {"break", TType::Break},
@@ -418,6 +419,10 @@ string TTypeToString(const TType &type) {
     return "Lambda '=>'";
   case TType::Default:
     return "Default";
+  case TType::Const:
+    return "Const";
+  case TType::Mut:
+    return "Mut";
   }
 }
 string TFamilyToString(const TFamily &family) {

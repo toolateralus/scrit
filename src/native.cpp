@@ -1,4 +1,5 @@
 #include "native.hpp"
+#include "ast.hpp"
 #include "context.hpp"
 #include "value.hpp"
 #include <cstdlib>
@@ -26,8 +27,8 @@ Object ScritModDefAsObject(ScritModDef* mod) {
 
 void m_InstantiateCallables(ScritModDef* module) {
 	auto context = module->context;
-	for (const auto& [name, func] : *module->functions) {
-		context->Insert(name, NativeFunctions::MakeCallable(func));
+	for (const auto& [key, func] : *module->functions) {
+		context->Insert(key, NativeFunctions::MakeCallable(func), Mutability::Const);
 	}
 }
 
@@ -125,6 +126,6 @@ ScritModDef* LoadScritModule(const std::string& name, const std::string& path, v
 		const NativeFunctionPtr func) {
 		(*functions)[name] = func;
 	}
-	void ScritModDef::AddVariable(const std::string & name, Value value) {
-		context->Insert(name, value);
+	void ScritModDef::AddVariable(const std::string & name, Value value, const Mutability &mutability) {
+		context->Insert(name, value, mutability);
 	}

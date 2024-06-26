@@ -1,5 +1,7 @@
 #include "context.hpp"
+#include "ast.hpp"
 #include "value.hpp"
+#include <stdexcept>
 
 
 
@@ -23,22 +25,29 @@ Scope Context::PopScope() {
   scopes.pop_back();
   return scope;
 }
-void Context::Insert(const string &name, Value value) {
+void Context::Insert(const string &name, Value value, const Mutability &mutability) {
   for (const auto &scope : scopes) {
-    for (auto &[key, var] : scope->Members()) {
-      if (key == name) {
-        var = value;
-        return;
-      }
+    if (scope->Contains(name)) {
+      scope->Set(name, value, mutability);
+      return;
     }
   }
-  auto &variables = scopes.back()->Members();
-  variables[name] = value;
+  scopes.back()->Set(name,value, mutability);
 }
-Value Context::Find(const string &name) {
+std::_Rb_tree_iterator<std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>> Context::FindIter(const string &name) const
+ {
+  for (const auto &scope : scopes) {
+    if (scope->Contains(name)) {
+      return scope->Find(name);
+    }
+  }
+  return scopes.back()->end();
+}
+
+auto Context::Find(const string &name) const -> Value {
   for (const auto &scope : scopes) {
     for (const auto &[key, var] : scope->Members()) {
-      if (key == name) {
+      if (key.value == name) {
         return var;
       }
     }
@@ -50,30 +59,54 @@ void Context::Reset() {
   PushScope();
 }
 auto Scope_T::Clone() -> Scope {
-  std::map<string, Value> variables = {};
+  std::map<Key, Value> variables = {};
+  
   for (const auto &[k, v] : this->variables) {
     variables[k] = v->Clone();
   }
+  
   auto scope=make_shared<Scope_T>();
   scope->variables = variables;
   return scope;
 }
 auto Scope_T::Get(const string &name) -> Value {
-  if (!variables.contains(name)) {
+  
+  auto it = Find(name);
+  if (it == variables.end()) {
     return Value_T::UNDEFINED;
   }
-  return variables[name];
+  return variables[it->first];
+}
+
+auto Scope_T::Set(const Scope_T::Key &key, Value value) -> void {
+  variables[key] = value;
+}
+  
+auto Scope_T::Set(const string &name, Value value, const Mutability &mutability) -> void {
+  auto it = Find(name);
+  
+  if (it == variables.end()) {
+    variables[Key(name, mutability)] = value;
+  } else {
+    if (it->first.mutability == Mutability::Mut) {
+      variables[it->first] = value;
+    } else {
+      throw std::runtime_error("Cannot set a const value");
+    }
   }
-auto Scope_T::Set(const string &name, Value value) -> void {
-   variables[name] = value; 
 }
 auto Scope_T::Contains(const string &name) -> bool {
-  return variables.contains(name);
+  return Find(name) == variables.end();
 }
 auto Scope_T::Erase(const string &name) -> size_t {
-  return variables.erase(name); 
+  auto it = Find(name);
+  if (it != variables.end()) {
+    variables.erase(it);
+    return 1;
+  }
+  return 0;
 }
-auto Scope_T::Members() -> std::map<string, Value> & { return variables; }
+auto Scope_T::Members() -> std::map<Key, Value> & { return variables; }
 
 
 ScritModHandle::~ScritModHandle() noexcept {
@@ -93,4 +126,12 @@ void Context::RegisterModuleHandle(void *handle) {
 ScritModHandle::ScritModHandle(ScritModHandle &&move) noexcept {
   this->handle = move.handle;
   move.handle = nullptr;
+}
+auto Scope_T::Find(const std::string &name) -> std::_Rb_tree_iterator<std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>> {
+  std::_Rb_tree_iterator<std::pair<const Key, std::shared_ptr<Values::Value_T>>>
+      it = std::find_if(
+          variables.begin(), variables.end(),
+          [&](const auto &pair) { return name == pair.first.value; });
+          
+    return it;
 }

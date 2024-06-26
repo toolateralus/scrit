@@ -120,6 +120,10 @@ StatementPtr Parser::ParseStatement() {
 }
 StatementPtr Parser::ParseKeyword(Token token) {
   switch (token.type) {
+
+  case TType::Mut:
+  case TType::Const:
+
   case TType::Match: {
     return ParseMatchStatement();
   }
@@ -130,7 +134,7 @@ StatementPtr Parser::ParseKeyword(Token token) {
     auto block = ParseBlock();
     ASTNode::context.Insert(
         name.value,
-        make_shared<Callable_T>(std::move(block), std::move(parameters)));
+        make_shared<Callable_T>(std::move(block), std::move(parameters)), Mutability::Const);
     return make_unique<Noop>(info);
   }
   case TType::If: {
@@ -177,6 +181,7 @@ StatementPtr Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
   case TType::SubEq:
   case TType::DivEq:
   case TType::NullCoalescingEq:
+  case TType::Lambda:
   case TType::Assign: {
     return ParseAssignment(std::move(identifier));
   }
@@ -189,13 +194,16 @@ StatementPtr Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
         token.ToString());
   }
 }
-StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
+
+StatementPtr Parser::ParseAssignment(IdentifierPtr identifier,
+                                     Mutability mutability) {
   Token next = Peek();
   if (next.type == TType::Assign) {
     Eat();
     auto value = ParseExpression();
     return make_unique<Assignment>(info, std::move(identifier),
-                                   std::move(value));
+                                   std::move(value), mutability);
+  
   } else if (IsCompoundAssignmentOperator(next.type)) {
     Eat();
     auto value = ParseExpression();
@@ -203,12 +211,12 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
         info, make_unique<CompAssignExpr>(info, std::move(identifier),
                                           std::move(value), next.type));
   } else if (next.type == TType::Lambda) {
-    Eat();
-    
-    // TODO: make it so lambda fields are treated like C# properties - evaluated on access, not just assignment.
+    // TODO: make it so lambda fields are treated like C# properties - evaluated
+    // on access, not just assignment.
     auto expr = ParseLambda();
-    return make_unique<Assignment>(info, std::move(identifier), std::move(expr))
-    
+    return make_unique<Assignment>(info, std::move(identifier), std::move(expr),
+                                   mutability);
+
   } else {
     throw std::runtime_error("failed to parse assignment: invalid operator.");
   }
@@ -577,14 +585,13 @@ BlockPtr Parser::ParseBlock() {
     Eat();
     return make_unique<Block>(info, std::move(statements));
   }
-  
-  
+
   while (tokens.size() > 0) {
     if (Peek(1).type == TType::RCurly) {
       statements.push_back(make_unique<Return>(info, ParseOperand()));
       break;
     }
-    
+
     auto statement = ParseStatement();
     statements.push_back(std::move(statement));
     next = Peek();
@@ -619,23 +626,24 @@ IfPtr Parser::ParseIf() {
 }
 StatementPtr Parser::ParseFor() {
   auto info = this->info;
-  
+
   auto scope = ASTNode::context.PushScope();
-  
+
   if (!tokens.empty() && Peek().type == TType::LParen) {
     Eat();
   }
   StatementPtr decl = nullptr;
   ExpressionPtr condition = nullptr;
   StatementPtr inc = nullptr;
-  
+
   // for {}
   if (Peek().type == TType::LCurly) {
     return make_unique<For>(info, nullptr, nullptr, nullptr, ParseBlock(),
                             ASTNode::context.PopScope());
   }
-  
-  if ((tokens.size() > 1 && Peek(1).type == TType::Assign) || (tokens.size() > 2 && Peek(2).type == TType::Assign)) {
+
+  if ((tokens.size() > 1 && Peek(1).type == TType::Assign) ||
+      (tokens.size() > 2 && Peek(2).type == TType::Assign)) {
     decl = ParseStatement();
     Expect(TType::Comma);
     condition = ParseExpression();
@@ -643,18 +651,17 @@ StatementPtr Parser::ParseFor() {
     inc = ParseStatement();
     return make_unique<For>(info, std::move(decl), std::move(condition),
                             std::move(inc), ParseBlock(),
-                            ASTNode::context.PopScope());  
+                            ASTNode::context.PopScope());
   }
-  
+
   auto expr = ParseExpression();
-  
+
   // for expr : array/obj {}
   if (Peek().type == TType::Colon) {
     Eat();
     auto rhs = ParseExpression();
-    return make_unique<RangeBasedFor>(
-        info, std::move(expr), std::move(rhs),
-        ParseBlock());
+    return make_unique<RangeBasedFor>(info, std::move(expr), std::move(rhs),
+                                      ParseBlock());
   }
 
   // for CONDITION {}

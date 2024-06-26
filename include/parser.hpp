@@ -11,6 +11,8 @@ using std::unique_ptr;
 using std::make_unique;
 using std::vector;
 
+
+
 struct Parser {
   vector<Token> tokens;
   Token Peek(size_t lookahead = 0);
@@ -23,7 +25,7 @@ struct Parser {
   StatementPtr ParseKeyword(Token keyword);
   
   StatementPtr ParseCall(IdentifierPtr identifier);
-  StatementPtr ParseAssignment(IdentifierPtr identifier);
+  StatementPtr ParseAssignment(IdentifierPtr identifier, Mutability mutability = Mutability::Const);
   StatementPtr ParseLValuePostFix(ExpressionPtr &expr);
   StatementPtr ParseIdentifierStatement(IdentifierPtr identifier);
   

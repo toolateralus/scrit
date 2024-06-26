@@ -123,7 +123,7 @@ void Debug::m_printScope() {
     std::cout << "scope empty." << '\n';
   }
   for (const auto &[key, var] : scope->Members()) {
-    std::cout << key << " :" << var->ToString() << "\n";
+    std::cout << key.value << " :" << var->ToString() << "\n";
   }
   std::cout << std::flush;
 }

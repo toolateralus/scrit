@@ -5,6 +5,7 @@
 #include "parser.hpp"
 #include "value.hpp"
 #include <iostream>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 
@@ -31,6 +32,7 @@ string CC_ToString(ControlChange controlChange) {
   case ControlChange::Break:
     return "Break";
   }
+  return "";
 }
 ExecutionResult::ExecutionResult(ControlChange controlChange, Value value) {
   this->controlChange = controlChange;
@@ -94,10 +96,8 @@ For::For(SourceInfo &info, StatementPtr &&decl, ExpressionPtr &&condition,
   this->scope = scope;
 }
 Assignment::Assignment(SourceInfo &info, IdentifierPtr &&iden,
-                       ExpressionPtr &&expr)
-    : Statement(info) {
-  this->iden = std::move(iden);
-  this->expr = std::move(expr);
+                       ExpressionPtr &&expr, const Mutability &mutability)
+    : Statement(info) , iden(std::move(iden)), expr(std::move(expr)), mutability(mutability) {
 }
 
 DotExpr::DotExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right)
@@ -449,7 +449,7 @@ ExecutionResult Assignment::Execute() {
           result = result->Clone();
         }
   
-  context.Insert(iden->name, result);
+  context.Insert(iden->name, result, mutability);
   return ExecutionResult::None;
 }
 
@@ -674,7 +674,7 @@ ExecutionResult Using::Execute() {
   auto object = ScritModDefAsObject(module);
   
   if (!isWildcard && symbols.empty()) {
-    ASTNode::context.Insert(moduleName, object);
+    ASTNode::context.Insert(moduleName, object, Mutability::Const);
   } else {
     vector<Value> values = {};
     if (!symbols.empty()) {
@@ -685,11 +685,11 @@ ExecutionResult Using::Execute() {
                                    name);
         }
         
-        ASTNode::context.Insert(name, value);
+        ASTNode::context.Insert(name, value, Mutability::Const);
       }
     } else {
       for (const auto &[key, var] : object->scope->Members()) {
-        ASTNode::context.Insert(key, var);
+        ASTNode::context.Insert(key.value, var, key.mutability);
         
       }
     }
@@ -725,7 +725,7 @@ ExecutionResult RangeBasedFor::Execute() {
   }
   if (array) {
     for (auto &v : array->values) {
-      ASTNode::context.Insert(name, v);
+      ASTNode::context.Insert(name, v, Mutability::Const);
       auto result = block->Execute();
       switch (result.controlChange) {
       case ControlChange::None:
@@ -742,9 +742,9 @@ ExecutionResult RangeBasedFor::Execute() {
   } else if (isObject) {
     auto kvp = Ctx::CreateObject();
     for (auto &[key, val] : obj->scope->Members()) {
-      kvp->scope->Set("key", Ctx::CreateString(key));
+      kvp->scope->Set("key", Ctx::CreateString(key.value));
       kvp->scope->Set("value", val);
-      ASTNode::context.Insert(name, kvp);
+      ASTNode::context.Insert(name, kvp, Mutability::Const);
       auto result = block->Execute();
       switch (result.controlChange) {
       case ControlChange::None:
@@ -759,7 +759,7 @@ ExecutionResult RangeBasedFor::Execute() {
     }
   } else if (isString) {
     for (auto c : string) {
-      ASTNode::context.Insert(name, Ctx::CreateString(std::string() + c));
+      ASTNode::context.Insert(name, Ctx::CreateString(std::string() + c), Mutability::Const);
       auto result = block->Execute();
       switch (result.controlChange) {
       case ControlChange::None:
@@ -785,13 +785,23 @@ Value CompAssignExpr::Evaluate() {
   auto lvalue = left->Evaluate();
 
   auto iden = dynamic_cast<Identifier *>(left.get());
+  
+  auto it = context.FindIter(iden->name);
+  
+  if (it->second == nullptr) {
+    throw std::runtime_error("variable did not exist: cannot compound assign");
+  }
+
+  Mutability mut = it->first.mutability;
 
   auto rvalue = right->Evaluate();
+  
+  
   switch (op) {
   case TType::AddEq: {
     auto result = lvalue->Add(rvalue);
     if (iden) {
-      context.Insert(iden->name, result);
+      context.Insert(iden->name, result, mut);
     } else {
       lvalue->Set(result);
     }
@@ -800,7 +810,7 @@ Value CompAssignExpr::Evaluate() {
   case TType::DivEq: {
     auto result = lvalue->Divide(rvalue);
     if (iden) {
-      context.Insert(iden->name, result);
+      context.Insert(iden->name, result, mut);
     } else {
       lvalue->Set(result);
     }
@@ -809,7 +819,7 @@ Value CompAssignExpr::Evaluate() {
   case TType::SubEq: {
     auto result = lvalue->Subtract(rvalue);
     if (iden) {
-      context.Insert(iden->name, result);
+      context.Insert(iden->name, result, mut);
     } else {
       lvalue->Set(result);
     }
@@ -818,7 +828,7 @@ Value CompAssignExpr::Evaluate() {
   case TType::MulEq: {
     auto result = lvalue->Multiply(rvalue);
     if (iden) {
-      context.Insert(iden->name, result);
+      context.Insert(iden->name, result, mut);
     } else {
       lvalue->Set(result);
     }
@@ -829,7 +839,7 @@ Value CompAssignExpr::Evaluate() {
         lvalue->GetType() == ValueType::Null) {
       auto result = rvalue;
       if (iden) {
-        context.Insert(iden->name, rvalue);
+        context.Insert(iden->name, rvalue, mut);
       } else {
         lvalue->Set(rvalue);
       }

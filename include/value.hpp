@@ -14,6 +14,7 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
+
 // forward declare AST nodes.
 struct Identifier;
 struct Block;
@@ -27,6 +28,7 @@ typedef unique_ptr<Block> BlockPtr;
 typedef unique_ptr<Arguments> ArgumentsPtr;
 typedef unique_ptr<Parameters> ParametersPtr;
 typedef Value (*NativeFunctionPtr)(std::vector<Value>);
+
 
 namespace Values {
 
@@ -333,6 +335,7 @@ struct Ctx {
   static bool IsUndefined(Value value);
   static bool IsNull(Value value);
 };
+
 template <typename T> ValueType Value_T::ValueTypeFromType() {
   auto &t = typeid(T);
   if (t == typeid(String_T)) {
