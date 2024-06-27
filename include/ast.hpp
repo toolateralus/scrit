@@ -40,6 +40,7 @@ struct Parameters;
 struct Operand;
 struct Using;
 struct Lambda;
+struct FunctionDecl;
 
 // typedefs
 typedef unique_ptr<Lambda> LambdaPtr;
@@ -53,6 +54,7 @@ typedef unique_ptr<Else> ElsePtr;
 typedef unique_ptr<Identifier> IdentifierPtr;
 typedef unique_ptr<Parameters> ParametersPtr;
 typedef unique_ptr<Operand> OperandPtr;
+typedef unique_ptr<FunctionDecl> FunctionDeclPtr;
 
 enum struct ControlChange {
   None,
@@ -139,8 +141,7 @@ struct Block : Statement {
 };
 struct ObjectInitializer : Expression {
   BlockPtr block;
-  Scope scope;
-  ObjectInitializer(SourceInfo &info, BlockPtr &&block, Scope scope);
+  ObjectInitializer(SourceInfo &info, BlockPtr &&block);
   Value Evaluate() override;
 };
 struct Call : Expression, Statement {
@@ -201,7 +202,8 @@ struct Assignment : Statement {
   const IdentifierPtr iden;
   const ExpressionPtr expr;
   const Mutability mutability;
-  Assignment(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&expr, const Mutability &mutability);
+  Assignment(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&expr,
+             const Mutability &mutability);
   ExecutionResult Execute() override;
 };
 
@@ -218,6 +220,16 @@ struct CompoundAssignment : Statement {
   CompoundAssignment(SourceInfo &info, ExpressionPtr &&expr);
   ExecutionResult Execute() override;
 };
+
+struct FunctionDecl : Statement {
+  BlockPtr block;
+  ParametersPtr parameters;
+  const string name;
+  FunctionDecl(SourceInfo &info, string &name, BlockPtr &&block, ParametersPtr &&parameters)
+      :  Statement(info), block(std::move(block)), parameters(std::move(parameters)), name(name) {}
+  ExecutionResult Execute() override;
+};
+
 struct Noop : Statement {
   Noop(SourceInfo &info) : Statement(info) {}
   ExecutionResult Execute() override { return ExecutionResult::None; }
@@ -306,7 +318,7 @@ struct Match : Expression {
   std::vector<ExpressionPtr> branch_lhs = {};
   std::vector<ExpressionPtr> branch_rhs = {};
   ExpressionPtr branch_default;
-  
+
   Match(SourceInfo &info, ExpressionPtr &&expr,
         std::vector<ExpressionPtr> &&branch_lhs,
         std::vector<ExpressionPtr> &&branch_rhs,
@@ -316,13 +328,14 @@ struct Match : Expression {
         branch_default(std::move(branch_default)) {
     assert(branch_lhs.size() == branch_rhs.size());
   }
-  
+
   Value Evaluate() override;
 };
 
 struct MatchStatement : Statement {
   ExpressionPtr match;
-  MatchStatement(SourceInfo &info, ExpressionPtr &&match) : Statement(info), match(std::move(match)) {}
+  MatchStatement(SourceInfo &info, ExpressionPtr &&match)
+      : Statement(info), match(std::move(match)) {}
   ExecutionResult Execute() override {
     auto result = match->Evaluate();
     // we could just this value since its unreachable in this case.

@@ -1,4 +1,5 @@
 #include <memory>
+#include <scrit/ast.hpp>
 #include <scrit/native.hpp>
 #include <scrit/scritmod.hpp>
 #include <scrit/value.hpp>
@@ -9,23 +10,29 @@
 
 #pragma clang diagnostic ignored "-Wunused-parameter"
 
-struct StringStream : Object_T {
-  std::stringstream stream;
-  StringStream() : Object_T() {
-    scope = std::make_shared<Scope_T>();
-    stream = {};
-  }
+struct StringStream : Value_T {
+  std::stringstream stream = std::stringstream("");
+  StringStream() : Value_T() {}
   string ToString() const override {
     return stream.str();
+  }
+  ValueType GetType() const override {
+    // Todo: add a less janky way to do this.
+    // It seems silly to convince the interpreter we're an object when we don't use any of that.
+    return ValueType::Object;
+  }
+  bool Equals(Value v) override {
+    // compare pointers? hard to say here. We're basically abusing the interpreter by saying this is not an object (with inheritance).
+    return this == v.get();
   }
 };
 
 Value append(__args__) {
-  if (args.size() < 2 || args[0]->GetType() != Values::ValueType::Object) {
+  if (args.size() < 2) {
     return undefined;
   }
   
-  if (auto ss = dynamic_cast<StringStream*>(args[0].get())) {
+  if (auto ss = std::dynamic_pointer_cast<StringStream>(args[0])) {
     auto str = args[1]->ToString();
     ss->stream << str;
   }
@@ -33,15 +40,17 @@ Value append(__args__) {
 }
 
 Value clear(__args__) {
-  if (!args.empty() && args[0]->GetType() == Values::ValueType::Object) {
-    auto ss = dynamic_cast<StringStream*>(args[0].get());
-    ss->stream.clear();
+  if (args.empty()) {
+    return undefined;
+  }
+  if (auto ss = std::dynamic_pointer_cast<StringStream>(args[0])) {
+    ss->stream = {}; // the clear method in the ::stringstream does not seem to actually clear the contents but the 'error state' whatever that is.
   }
   return Ctx::Undefined();
 }
 
 Value create(__args__) {
-  auto stream =  make_shared<StringStream>();
+  auto stream = make_shared<StringStream>();
   if (!args.empty()) {
     for (const auto &arg: args) {
       stream->stream << arg->ToString();
@@ -50,18 +59,17 @@ Value create(__args__) {
   return stream;
 }
 
-Value str(__args__) {
-  if (!args.empty() && args[0]->GetType() == Values::ValueType::Object) {
-    auto ss = dynamic_cast<StringStream*>(args[0].get());
-    return Ctx::CreateString(ss->stream.str());
-  }
-  return Ctx::Undefined();
-}
-
 extern "C" ScritModDef *InitScritModule_sstream() {
   ScritModDef *def = CreateModDef();
-  *def->description = "String stream module used to test the ability to create extended objects for Scrit.";
+  
+  *def->description = 
+  "String stream module used to test the ability to create extended objects for Scrit.\n" 
+  "usage:\n\tsstream.create(<optional default value string>) to create the string object.\n"
+  "\tsstream.append(stream, value) to append any value to the stream\n"
+  "\tsstream.clear(stream) to clear the stream.\n";
   def->AddFunction("append", append);
   def->AddFunction("create", create);
+  def->AddFunction("clear", clear);
+  def->AddVariable("sstream_description", Ctx::CreateString(*def->description), Mutability::Const);
   return def;
 }

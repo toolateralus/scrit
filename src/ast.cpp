@@ -75,10 +75,8 @@ Block::Block(SourceInfo &info, vector<StatementPtr> &&statements)
     : Statement(info) {
   this->statements = std::move(statements);
 }
-ObjectInitializer::ObjectInitializer(SourceInfo &info, BlockPtr &&block,
-                                     Scope scope)
+ObjectInitializer::ObjectInitializer(SourceInfo &info, BlockPtr &&block)
     : Expression(info) {
-  this->scope = Scope_T::Create(scope.get());
   this->block = std::move(block);
 }
 Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
@@ -297,11 +295,10 @@ ExecutionResult Block::Execute() {
   return ExecutionResult::None;
 }
 Value ObjectInitializer::Evaluate() {
-  block->scope = this->scope;
-  
   static auto _this = Object_T::New();
-  
   _this->scope->Clear();
+  
+  block->scope = Scope_T::Create();
   
   block->scope->Set("this", _this, Mutability::Mut);
   
@@ -318,7 +315,9 @@ Value ObjectInitializer::Evaluate() {
   
   block->scope->Erase("this");
   
-  return Object_T::New(block->scope->Clone());
+  auto cloned = block->scope->Clone();
+  
+  return Object_T::New(cloned);
 }
 vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
   vector<Value> values = {};
@@ -330,7 +329,7 @@ vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
 Value Call::Evaluate() {
   auto lvalue = operand->Evaluate();
   if (lvalue->GetType() == ValueType::Callable) {
-    auto callable = static_cast<Callable_T *>(lvalue.get());
+    auto callable = std::static_pointer_cast<Callable_T>(lvalue);
     auto result = callable->Call(args);
     return result;
   }
@@ -884,4 +883,11 @@ Value Lambda::Evaluate() {
     return Value_T::UNDEFINED;
   }
   return result.value;
+}
+
+ExecutionResult FunctionDecl::Execute() {
+  ASTNode::context.Insert(
+      name, make_shared<Callable_T>(std::move(block), std::move(parameters)),
+      Mutability::Const);
+  return ExecutionResult::None;
 }

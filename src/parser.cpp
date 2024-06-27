@@ -4,7 +4,6 @@
 #include "lexer.hpp"
 #include "value.hpp"
 #include <algorithm>
-#include <exception>
 #include <iostream>
 #include <stdexcept>
 
@@ -68,16 +67,24 @@ StatementPtr Parser::ParseLValuePostFix(ExpressionPtr &expr) {
                            name);
 }
 
+FunctionDeclPtr Parser::ParseFunctionDeclaration() {
+  auto info = this->info;
+  auto name = Expect(TType::Identifier).value;
+  auto parameters = ParseParameters();
+  auto block = ParseBlock();
+  return make_unique<FunctionDecl>(info, name, std::move(block), std::move(parameters));
+}
+
 StatementPtr Parser::ParseStatement() {
   while (tokens.size() > 0) {
     auto token = Peek();
-    
+
     info = token.info;
-    
+
     switch (token.family) {
     case TFamily::Identifier: {
       auto operand = ParseExpression();
-      
+
       if (auto unary = dynamic_cast<UnaryExpr *>(operand.get())) {
         if (unary->op != TType::Increment && unary->op != TType::Decrement) {
           throw std::runtime_error("unexpected unary expression statement : " +
@@ -85,7 +92,7 @@ StatementPtr Parser::ParseStatement() {
         }
         return make_unique<UnaryStatement>(info, std::move(operand));
       }
-      
+
       if (auto id = dynamic_cast<Identifier *>(operand.get())) {
         return ParseIdentifierStatement(
             make_unique<Identifier>(info, id->name));
@@ -101,27 +108,21 @@ StatementPtr Parser::ParseStatement() {
       // for func(..) {...}() anonymous func declaration & invocation
       // statements.
       if (token.type == TType::Func && Peek().type == TType::LParen) {
-        auto info = this->info;
-        auto parameters = ParseParameters();
-        auto body = ParseBlock();
-        auto arguments = ParseArguments();
-        auto op = make_unique<Operand>(
-            info,
-            make_shared<Callable_T>(std::move(body), std::move(parameters)));
-        return make_unique<Call>(info, std::move(op), std::move(arguments));
+        return ParseAnonFuncInlineCall();
       }
       return ParseKeyword(token);
     }
     default:
-      throw std::runtime_error(
-        string("Failed to parse statement. ") + info.ToString() +  "\ntoken " + TTypeToString(token.type));
+      throw std::runtime_error(string("Failed to parse statement. ") +
+                               info.ToString() + "\ntoken " +
+                               TTypeToString(token.type));
     }
   }
   throw std::runtime_error("Unexpecrted end of input");
 }
 StatementPtr Parser::ParseKeyword(Token token) {
   switch (token.type) {
-  
+
   case TType::Mut: {
     auto next = Expect(TType::Identifier);
     auto iden = make_unique<Identifier>(info, next.value);
@@ -132,19 +133,12 @@ StatementPtr Parser::ParseKeyword(Token token) {
     auto iden = make_unique<Identifier>(info, next.value);
     return ParseAssignment(std::move(iden), Mutability::Const);
   }
-  
+
   case TType::Match: {
     return ParseMatchStatement();
   }
   case TType::Func: {
-    auto info = this->info;
-    auto name = Expect(TType::Identifier);
-    auto parameters = ParseParameters();
-    auto block = ParseBlock();
-    ASTNode::context.Insert(
-        name.value,
-        make_shared<Callable_T>(std::move(block), std::move(parameters)), Mutability::Const);
-    return make_unique<Noop>(info);
+    return ParseFunctionDeclaration();
   }
   case TType::If: {
     return ParseIf();
@@ -212,7 +206,7 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier,
     auto value = ParseExpression();
     return make_unique<Assignment>(info, std::move(identifier),
                                    std::move(value), mutability);
-  
+
   } else if (IsCompoundAssignmentOperator(next.type)) {
     Eat();
     auto value = ParseExpression();
@@ -388,6 +382,102 @@ ExpressionPtr Parser::ParsePostfix() {
 
   return expr;
 }
+/*
+   This is for functions as such:
+   // declare an anon func.
+   func(){
+      // do something
+   }() // <- this '()' operator calls this anon func in place.
+   
+   
+   This is equivalent to a block scope in a C function body, like:
+   
+   `int main() {
+    // some c code...
+    {
+      // some scoped c code...
+    }
+    return 0;
+   }`
+   
+*/
+StatementPtr Parser::ParseAnonFuncInlineCall() {
+  auto info = this->info;
+  auto parameters = ParseParameters();
+  auto body = ParseBlock();
+  auto arguments = ParseArguments();
+  auto op = make_unique<Operand>(
+      info, make_shared<Callable_T>(std::move(body), std::move(parameters)));
+  return make_unique<Call>(info, std::move(op), std::move(arguments));
+}
+
+/*
+  This parses
+  func() { ... }
+  
+  See ParseAnonFuncInlineCall for anon functions that call themselsves immedately, ie a C style block scope.
+  
+  
+*/
+ExpressionPtr Parser::ParseAnonFunc() {
+  auto info = this->info;
+  Eat(); // eat the 'func' keyword.
+  auto params = ParseParameters();
+  auto body = ParseBlock();
+  auto callable = make_shared<Callable_T>(std::move(body), std::move(params));
+  return make_unique<Operand>(info, callable);
+}
+
+ExpressionPtr Parser::ParseObjectInitializer() {
+    Expect(TType::LCurly);
+    vector<StatementPtr> statements = {};
+    
+    while (tokens.size() > 0) {
+      auto next = Peek();
+      
+      switch (next.type) {
+        // 
+        case TType::Comma: {
+          Eat();
+          continue;
+        }
+          
+        // break the loop not the switch.
+        case TType::RCurly:
+          goto endloop;
+          
+        case TType::Func:
+          Eat(); // eat keyword.
+          statements.push_back(ParseFunctionDeclaration());
+          break;
+          
+        case TType::Mut:
+        case TType::Const: {
+          auto mutability = Eat().type == TType::Mut ? Mutability::Mut : Mutability::Const;
+          auto iden = Expect(TType::Identifier);
+          statements.push_back(ParseAssignment(make_unique<Identifier>(info, iden.value), mutability));
+          break;
+        }
+        case TType::Identifier: {
+          auto iden = Eat();
+          statements.push_back(ParseAssignment(make_unique<Identifier>(info, iden.value), Mutability::Const));
+          break;
+        }
+        
+        default: 
+          throw std::runtime_error("Invalid statement in object initalizer: " + TTypeToString(next.type) + " you may only have variable declarations/assignment and function declarations." + info.ToString());
+      }
+    
+    }
+    endloop:
+    
+    
+    Expect(TType::RCurly);
+    
+    return make_unique<ObjectInitializer>(
+        info, make_unique<Block>(info, std::move(statements)));
+}
+
 ExpressionPtr Parser::ParseOperand() {
   auto token = Peek();
   if (token.type == TType::Sub || token.type == TType::Not ||
@@ -406,39 +496,10 @@ ExpressionPtr Parser::ParseOperand() {
     return ParseArrayInitializer();
   }
   case TType::Func: {
-    auto info = this->info;
-    Eat();
-    auto params = ParseParameters();
-    auto body = ParseBlock();
-    auto callable = make_shared<Callable_T>(std::move(body), std::move(params));
-    return make_unique<Operand>(info, callable);
+    return ParseAnonFunc();
   }
   case TType::LCurly: {
-    Eat();
-    vector<StatementPtr> statements = {};
-    
-    auto scope = ASTNode::context.PushScope();
-    
-    while (tokens.size() > 0) {
-      auto next = Peek();
-      if (next.type == TType::Comma) {
-        Eat();
-        continue;
-      }
-      if (next.type == TType::RCurly) {
-        break;
-      }
-      auto statement = ParseStatement();
-      statements.push_back(std::move(statement));
-    }
-    
-    Expect(TType::RCurly);
-    
-    ASTNode::context.PopScope();
-    
-    return make_unique<ObjectInitializer>(
-        info, make_unique<Block>(info, std::move(statements)),
-        std::move(scope));
+    return ParseObjectInitializer();
   }
   case TType::Lambda: {
     return ParseLambda();
@@ -595,39 +656,44 @@ BlockPtr Parser::ParseBlock() {
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};
   auto next = Peek();
-  
+
   // Empty block.
   if (next.type == TType::RCurly) {
     Eat();
     return make_unique<Block>(info, std::move(statements));
   }
-  
+
   while (tokens.size() > 0) {
-    
-    // If the last line of a block is an identifier or a literal, we just create an implicit return.
-    // I am not sure that it's possible, but I would love to have a rust-like clone of their implicit returns.
-    // that is, any expression can be the last 'statement' of a block and have an implicit return. like a match or complex expression etc.
-    if (Peek(1).type == TType::RCurly && (Peek().family == TFamily::Identifier || Peek().family == TFamily::Literal)) {
+
+    // If the last line of a block is an identifier or a literal, we just create
+    // an implicit return. I am not sure that it's possible, but I would love to
+    // have a rust-like clone of their implicit returns. that is, any expression
+    // can be the last 'statement' of a block and have an implicit return. like
+    // a match or complex expression etc.
+    if (Peek(1).type == TType::RCurly &&
+        (Peek().family == TFamily::Identifier ||
+         Peek().family == TFamily::Literal)) {
       statements.push_back(make_unique<Return>(info, ParseExpression()));
       break;
     }
-  
-    // add each statement to the block.  
+
+    // add each statement to the block.
     auto statement = ParseStatement();
     statements.push_back(std::move(statement));
     next = Peek();
-    
+
     // If we get a return statement, we just discard any unreachable code.
     // this reduces some memory usage and simplifies the AST.
-    if (dynamic_cast<Return*>(statement.get())) {
-      // eat up the remainder of the block following the return statement we just paresed.
+    if (dynamic_cast<Return *>(statement.get())) {
+      // eat up the remainder of the block following the return statement we
+      // just paresed.
       while (!tokens.empty() && next.type != TType::RCurly) {
         next = Eat();
       }
       // break the parse loop.
       break;
     }
-    
+
     if (next.type == TType::RCurly) {
       break;
     }
@@ -705,8 +771,16 @@ StatementPtr Parser::ParseFor() {
 StatementPtr Parser::ParseContinue() { return make_unique<Continue>(info); }
 StatementPtr Parser::ParseReturn() {
   auto next = Peek();
-  if (tokens.empty() || next.family == TFamily::Keyword ||
-      next.family == TFamily::Operator) {
+  
+  // This riduculous if statement is to check if the next token is a part of an expression.
+  // this is how we judge whether to parse a return expression or not.
+  if (tokens.empty() ||
+      (next.family == TFamily::Keyword && next.type != TType::Null &&
+       next.type != TType::Undefined && next.type != TType::False &&
+       next.type != TType::True) ||
+      (next.family == TFamily::Operator && next.type != TType::LParen &&
+       next.type != TType::LCurly &&
+       (next.type != TType::Sub && next.type != TType::Not))) {
     return make_unique<Return>(info);
   }
   return make_unique<Return>(info, ParseExpression());
@@ -741,18 +815,18 @@ unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
       auto statement = ParseStatement();
       statements.push_back(std::move(statement));
     } catch (std::runtime_error e) {
-      
+
       auto what = string(e.what());
-      
-      if (!what.contains("source_info:"))  {
+
+      if (!what.contains("source_info:")) {
         what += info.ToString();
       }
-      
-      std::cout << "Parser exception! : " << what  << std::endl;
+
+      std::cout << "Parser exception! : " << what << std::endl;
       // try to eat a token. This will eventuallya llow the parser to continue
       // normally if any well formed code exists past this exception. However,
       // this results in a bulk of unrelated errors.
-      
+
       // if there are none left, just stop.
       if (tokens.empty()) {
         break;

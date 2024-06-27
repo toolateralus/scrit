@@ -119,7 +119,7 @@ Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
 
   if (function != nullptr)
     result = function(values);
-
+  
   ASTNode::context.PopScope();
   if (result == nullptr) {
     return UNDEFINED;

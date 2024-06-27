@@ -21,6 +21,7 @@ struct Parser {
   SourceInfo info;
   unique_ptr<Program> Parse(vector<Token> &&tokens);
   BlockPtr ParseBlock();
+  StatementPtr ParseAnonFuncInlineCall();
   StatementPtr ParseStatement();
   StatementPtr ParseKeyword(Token keyword);
   
@@ -54,5 +55,11 @@ struct Parser {
   ExpressionPtr ParsePostfix();
   ExpressionPtr ParseUnary();
   ExpressionPtr ParseOperand();
+  
+  
+  FunctionDeclPtr ParseFunctionDeclaration();
+  
+  ExpressionPtr ParseAnonFunc();
+  ExpressionPtr ParseObjectInitializer();
   OperandPtr ParseArrayInitializer();
 };

@@ -1,1 +1,1 @@
-sudo clang++ -std=c++2b -shared -fPIC -o /usr/local/scrit/modules/sstream.dll sstream.cpp -lscrit
+sudo clang++ -g -std=c++2b -shared -fPIC -o /usr/local/scrit/modules/sstream.dll sstream.cpp -lscrit

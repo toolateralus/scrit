@@ -51,13 +51,13 @@ extern "C" ScritModDef *InitScritModule_raylib() {
     auto value = std::dynamic_pointer_cast<Value_T>(Ctx::CreateInt(val));
     keys->SetMember(key, value);
   }
-  def->AddVariable("keys", keys);
+  def->AddVariable("keys", keys, Mutability::Const);
   
   // colors enum.
   Object colors = Ctx::CreateObject();
   for (const auto &[key, val] : GetRaylibColorsMap()) {
     colors->SetMember(key, CreateColor(val));
   }
-  def->AddVariable("colors", colors);
+  def->AddVariable("colors", colors, Mutability::Const);
   return def;
 }
