@@ -248,13 +248,52 @@ ExecutionResult Return::Execute() {
   // return undefined implicitly.
   else return ExecutionResult(ControlChange::Return, Value_T::UNDEFINED);
 }
-ExecutionResult Block::Execute() {
-  if (scope == nullptr)
-    scope = ASTNode::context.PushScope();
-  else {
-    ASTNode::context.PushScope(scope);
-  }
+
+ExecutionResult Block::Execute(Scope scope) {
+  ASTNode::context.PushScope(scope);
   
+  for (auto &statement : statements) {
+    Debug::m_hangUpOnBreakpoint(this, statement.get());
+    try {
+      auto result = statement->Execute();
+      switch (result.controlChange) {
+      case ControlChange::Continue:
+      case ControlChange::Break:
+      case ControlChange::Return:
+        ASTNode::context.PopScope();
+        
+        if (result.value != nullptr) {
+          switch (result.value->GetType()) {
+            case Values::ValueType::Invalid:
+            case Values::ValueType::Null:
+            case Values::ValueType::Undefined:
+            case Values::ValueType::Object:
+            case Values::ValueType::Array:
+            case Values::ValueType::Callable:
+              return result;
+            case Values::ValueType::Float:
+            case Values::ValueType::Int:
+            case Values::ValueType::Bool:
+            case Values::ValueType::String:
+              result.value = result.value->Clone();
+              return result;
+          }
+        }
+        
+        return result;
+      case ControlChange::None:
+        continue;
+      }
+    } catch (std::runtime_error err) {
+      std::cout << statement->srcInfo.ToString() << err.what() << std::endl;
+    }
+  }
+  ASTNode::context.PopScope();
+  return ExecutionResult::None;
+}
+
+ExecutionResult Block::Execute() {
+  ASTNode::context.PushScope();
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
@@ -296,28 +335,19 @@ ExecutionResult Block::Execute() {
 }
 Value ObjectInitializer::Evaluate() {
   static auto _this = Object_T::New();
+  
   _this->scope->Clear();
+  _this->scope->Set("this", _this, Mutability::Mut);
   
-  block->scope = Scope_T::Create();
-  
-  block->scope->Set("this", _this, Mutability::Mut);
-  
-  auto controlChange = block->Execute().controlChange;
+  const auto exec_result = block->Execute(_this->scope);
+  const auto controlChange = exec_result.controlChange;
   
   if (controlChange != ControlChange::None) {
     throw std::runtime_error(CC_ToString(controlChange) +
                              " not allowed in object initialization. did you mean to use a lambda? .. => { some body of code returning a value ..}");
   }
-  
-  for (const auto &[k, v]: _this->scope->Members()) {
-    block->scope->Set(k, v->Clone());
-  }
-  
-  block->scope->Erase("this");
-  
-  auto cloned = block->scope->Clone();
-  
-  return Object_T::New(cloned);
+  _this->scope->Erase("this");
+  return Object_T::New(_this->scope);
 }
 vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
   vector<Value> values = {};

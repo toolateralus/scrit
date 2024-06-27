@@ -72,7 +72,8 @@ FunctionDeclPtr Parser::ParseFunctionDeclaration() {
   auto name = Expect(TType::Identifier).value;
   auto parameters = ParseParameters();
   auto block = ParseBlock();
-  return make_unique<FunctionDecl>(info, name, std::move(block), std::move(parameters));
+  return make_unique<FunctionDecl>(info, name, std::move(block),
+                                   std::move(parameters));
 }
 
 StatementPtr Parser::ParseStatement() {
@@ -221,7 +222,8 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier,
                                    mutability);
 
   } else {
-    throw std::runtime_error("failed to parse assignment: invalid operator.");
+    throw std::runtime_error("failed to parse assignment: invalid operator." +
+                             TTypeToString(next.type));
   }
 }
 StatementPtr Parser::ParseCall(IdentifierPtr identifier) {
@@ -388,10 +390,10 @@ ExpressionPtr Parser::ParsePostfix() {
    func(){
       // do something
    }() // <- this '()' operator calls this anon func in place.
-   
-   
+
+
    This is equivalent to a block scope in a C function body, like:
-   
+
    `int main() {
     // some c code...
     {
@@ -399,7 +401,7 @@ ExpressionPtr Parser::ParsePostfix() {
     }
     return 0;
    }`
-   
+
 */
 StatementPtr Parser::ParseAnonFuncInlineCall() {
   auto info = this->info;
@@ -414,10 +416,11 @@ StatementPtr Parser::ParseAnonFuncInlineCall() {
 /*
   This parses
   func() { ... }
-  
-  See ParseAnonFuncInlineCall for anon functions that call themselsves immedately, ie a C style block scope.
-  
-  
+
+  See ParseAnonFuncInlineCall for anon functions that call themselsves
+  immedately, ie a C style block scope.
+
+
 */
 ExpressionPtr Parser::ParseAnonFunc() {
   auto info = this->info;
@@ -429,53 +432,71 @@ ExpressionPtr Parser::ParseAnonFunc() {
 }
 
 ExpressionPtr Parser::ParseObjectInitializer() {
-    Expect(TType::LCurly);
-    vector<StatementPtr> statements = {};
-    
-    while (tokens.size() > 0) {
-      auto next = Peek();
-      
-      switch (next.type) {
-        // 
-        case TType::Comma: {
-          Eat();
-          continue;
-        }
-          
-        // break the loop not the switch.
-        case TType::RCurly:
-          goto endloop;
-          
-        case TType::Func:
-          Eat(); // eat keyword.
-          statements.push_back(ParseFunctionDeclaration());
-          break;
-          
-        case TType::Mut:
-        case TType::Const: {
-          auto mutability = Eat().type == TType::Mut ? Mutability::Mut : Mutability::Const;
-          auto iden = Expect(TType::Identifier);
-          statements.push_back(ParseAssignment(make_unique<Identifier>(info, iden.value), mutability));
-          break;
-        }
-        case TType::Identifier: {
-          auto iden = Eat();
-          statements.push_back(ParseAssignment(make_unique<Identifier>(info, iden.value), Mutability::Const));
-          break;
-        }
-        
-        default: 
-          throw std::runtime_error("Invalid statement in object initalizer: " + TTypeToString(next.type) + " you may only have variable declarations/assignment and function declarations." + info.ToString());
-      }
-    
+  Expect(TType::LCurly);
+  vector<StatementPtr> statements = {};
+
+  while (tokens.size() > 0) {
+    auto next = Peek();
+
+    switch (next.type) {
+    //
+    case TType::Comma: {
+      Eat();
+      continue;
     }
-    endloop:
-    
-    
-    Expect(TType::RCurly);
-    
-    return make_unique<ObjectInitializer>(
-        info, make_unique<Block>(info, std::move(statements)));
+
+    // break the loop not the switch.
+    case TType::RCurly:
+      goto endloop;
+
+    case TType::Func:
+      Eat(); // eat keyword.
+      statements.push_back(ParseFunctionDeclaration());
+      break;
+
+    case TType::Mut:
+    case TType::Const: {
+      auto mutability =
+          Eat().type == TType::Mut ? Mutability::Mut : Mutability::Const;
+      auto iden = Expect(TType::Identifier);
+      statements.push_back(ParseAssignment(
+          make_unique<Identifier>(info, iden.value), mutability));
+      break;
+    }
+    case TType::Identifier: {
+      auto iden = Eat();
+      
+      // this.something = blah
+      // dot assignment for aliases: 
+      // purely to prevent naming conflicts.
+      if (Peek().type == TType::Dot) {
+        tokens.push_back(iden);
+        auto dot = ParsePostfix();
+        auto assign = ParseLValuePostFix(dot);
+        statements.push_back(std::move(assign));
+        break;
+      }
+      
+      statements.push_back(ParseAssignment(
+        make_unique<Identifier>(info, iden.value), Mutability::Const));
+      break;
+    }
+
+    default:
+      throw std::runtime_error(
+          "Invalid statement in object initalizer: " +
+          TTypeToString(next.type) +
+          " you may only have variable declarations/assignment and function "
+          "declarations." +
+          info.ToString());
+    }
+  }
+endloop:
+
+  Expect(TType::RCurly);
+
+  return make_unique<ObjectInitializer>(
+      info, make_unique<Block>(info, std::move(statements)));
 }
 
 ExpressionPtr Parser::ParseOperand() {
@@ -771,13 +792,14 @@ StatementPtr Parser::ParseFor() {
 StatementPtr Parser::ParseContinue() { return make_unique<Continue>(info); }
 StatementPtr Parser::ParseReturn() {
   auto next = Peek();
-  
-  // This riduculous if statement is to check if the next token is a part of an expression.
-  // this is how we judge whether to parse a return expression or not.
+
+  // This riduculous if statement is to check if the next token is a part of an
+  // expression. this is how we judge whether to parse a return expression or
+  // not. We should probably make a better way to do this, just don't know how.
   if (tokens.empty() ||
       (next.family == TFamily::Keyword && next.type != TType::Null &&
        next.type != TType::Undefined && next.type != TType::False &&
-       next.type != TType::True) ||
+       next.type != TType::True && next.type != TType::Match) ||
       (next.family == TFamily::Operator && next.type != TType::LParen &&
        next.type != TType::LCurly &&
        (next.type != TType::Sub && next.type != TType::Not))) {

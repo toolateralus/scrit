@@ -130,14 +130,14 @@ struct Return : Statement {
   Return(SourceInfo &info) : Statement(info) {}
   Return(SourceInfo &info, ExpressionPtr &&value);
   ExpressionPtr value;
-
+  
   ExecutionResult Execute() override;
 };
 struct Block : Statement {
   Block(SourceInfo &info, vector<StatementPtr> &&statements);
   vector<StatementPtr> statements;
-  Scope scope;
   ExecutionResult Execute() override;
+  ExecutionResult Execute(Scope scope);
 };
 struct ObjectInitializer : Expression {
   BlockPtr block;
