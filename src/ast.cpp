@@ -129,7 +129,7 @@ SubscriptAssignStmnt::SubscriptAssignStmnt(SourceInfo &info,
 }
 UnaryExpr::UnaryExpr(SourceInfo &info, ExpressionPtr &&left, TType op)
     : Expression(info) {
-  this->left = std::move(left);
+  this->operand = std::move(left);
   this->op = op;
 }
 BinExpr::BinExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right,
@@ -641,23 +641,24 @@ ExecutionResult SubscriptAssignStmnt::Execute() {
   return ExecutionResult::None;
 }
 Value UnaryExpr::Evaluate() {
-  auto lvalue = left->Evaluate();
+  auto v_operand = operand->Evaluate();
+  
   switch (op) {
   case TType::Sub:
-    return lvalue->Negate();
+    return v_operand->Negate();
   case TType::Not:
-    return lvalue->Not();
+    return v_operand->Not();
   case TType::Increment:
-    lvalue->Set(lvalue->Add(Ctx::CreateInt(1)));
-    return lvalue;
+    v_operand->Set(v_operand->Add(Ctx::CreateInt(1)));
+    return v_operand;
   case TType::Decrement:
-    lvalue->Set(lvalue->Subtract(Ctx::CreateInt(1)));
-    return lvalue;
+    v_operand->Set(v_operand->Subtract(Ctx::CreateInt(1)));
+    return v_operand;
   default:
     throw std::runtime_error("invalid operator in unary expression " +
                              TTypeToString(op));
   }
-  return Value_T::VNULL;
+  return Value_T::UNDEFINED;
 }
 Value BinExpr::Evaluate() {
   auto left = this->left->Evaluate();
@@ -752,7 +753,6 @@ ExecutionResult Using::Execute() {
   return ExecutionResult::None;
 }
 ExecutionResult RangeBasedFor::Execute() {
-  ASTNode::context.PushScope();
   auto lvalue = this->rhs->Evaluate();
   
   auto lhs = dynamic_cast<Identifier *>(this->lhs.get());
@@ -773,12 +773,15 @@ ExecutionResult RangeBasedFor::Execute() {
     throw std::runtime_error("invalid range-based for loop: the target "
                              "container must be an array, object or string.");
   }
+  
   if (array) {
     for (auto &v : array->values) {
-      ASTNode::context.scopes.back()->Clear();
-      ASTNode::context.Erase(name);
-      ASTNode::context.Insert(name, v, Mutability::Const);
+      
+      ASTNode::context.PushScope();
+      ASTNode::context.scopes.back()->Set(name, v, Mutability::Const);
       auto result = block->Execute();
+      ASTNode::context.PopScope();
+      
       switch (result.controlChange) {
       case ControlChange::None:
         break;
@@ -794,13 +797,16 @@ ExecutionResult RangeBasedFor::Execute() {
   } else if (isObject) {
     auto kvp = Ctx::CreateObject();
     for (auto &[key, val] : obj->scope->Members()) {
-      ASTNode::context.scopes.back()->Clear();
+      
+      ASTNode::context.PushScope();
       kvp->scope->Erase("key");
       kvp->scope->Erase("value");
       kvp->scope->Set("key", Ctx::CreateString(key.value));
       kvp->scope->Set("value", val);
-      ASTNode::context.Insert(name, kvp, Mutability::Const);
+      ASTNode::context.scopes.back()->Set(name, kvp, Mutability::Const);
       auto result = block->Execute();
+      ASTNode::context.PopScope();
+      
       switch (result.controlChange) {
       case ControlChange::None:
         break;
@@ -811,12 +817,15 @@ ExecutionResult RangeBasedFor::Execute() {
       case ControlChange::Break:
         goto breakLoops;
       }
+      
     }
   } else if (isString) {
     for (auto c : string) {
-      ASTNode::context.scopes.back()->Clear();
-      ASTNode::context.Insert(name, Ctx::CreateString(std::string() + c), Mutability::Const);
+      ASTNode::context.PushScope();
+      ASTNode::context.scopes.back()->Set(name, Ctx::CreateString(std::string() + c), Mutability::Const);
       auto result = block->Execute();
+      ASTNode::context.PopScope();
+      
       switch (result.controlChange) {
       case ControlChange::None:
         break;
@@ -830,7 +839,6 @@ ExecutionResult RangeBasedFor::Execute() {
     }
   }
 breakLoops:
-  ASTNode::context.PopScope();
   return ExecutionResult::None;
 }
 ExecutionResult CompoundAssignment::Execute() {

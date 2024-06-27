@@ -508,7 +508,7 @@ ExpressionPtr Parser::ParseOperand() {
   if (token.type == TType::Sub || token.type == TType::Not ||
       token.type == TType::Increment || token.type == TType::Decrement) {
     Eat();
-    auto operand = ParseOperand();
+    auto operand = ParseExpression();
     return make_unique<UnaryExpr>(info, std::move(operand), token.type);
   }
 

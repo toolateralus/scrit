@@ -1,5 +1,5 @@
 
-using {fwrite, fexists, cwd, exit, dir_create, syscall} from system
+using {directory, file} from system
 
 func buildScript(name) {
   return "sudo clang++ -std=c++2b -shared -fPIC -o /usr/local/scrit/modules/" + name + ".dll " + name + ".cpp" + " -lscrit"
@@ -8,14 +8,17 @@ func buildScript(name) {
 func cppBoilerplate(name) {
 return "#include <scrit/scritmod.hpp>
 
+// provide your function and object definitions here.
+// Note that these will stay alive in the language until the using ... statement goes out of scope.
 static Value doSomething(std::vector<Value> values) {
   return Value_T::UNDEFINED;
 }
 
+// Link your module with your definitions here
 extern \"C\" ScritModDef* InitScritModule_" + name + "() {
   ScritModDef *def = CreateModDef();
   *def->description = \"your description here\";
-  def->AddFunction(\"doSomething\", &doSomething);
+  AddFunction(def, \"doSomething\", &doSomething);
   return def;
 }"
 }
@@ -29,7 +32,7 @@ func createModule(name) {
     println("Creating module: " + name)
   }
   
-  path = cwd() + "/" + name
+  path = directory.current() + "/" + name
   
   if path == undefined {
     println("invalid path: was undefined")
@@ -39,28 +42,26 @@ func createModule(name) {
   cppPath = path + "/" + name + ".cpp"
   bashPath = path + "/build.sh"
   
-  mut err = dir_create(path)
+  mut err = directory.create(path)
   if (err != undefined) {
     println("dir create error: " + err)
     return 1
   }
   
-  err = fwrite(bashPath, buildScript())
+  err = file.write(bashPath, buildScript())
   if (err != undefined) {
     println("fwrite error: " + err)
     return 1
   }
   
-  err = fwrite(cppPath, cppBoilerplate(name))
+  err = file.write(cppPath, cppBoilerplate(name))
   if (err != undefined) {
     println("fwrite error: " + err)
     return 1
   }
   
   syscall("chmod +x " + bashPath)
-  
   return 0
-  
 }
 
 func() {

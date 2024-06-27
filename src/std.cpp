@@ -40,58 +40,15 @@ REGISTER_FUNCTION(fmod) {
   }
   return Ctx::CreateFloat(std::fmod(v, mod));
 }
-// Arrays (some of these functions support strings too., push, pop, len, clear)
-REGISTER_FUNCTION(expand) {
-  if (args.size() < 2) {
-    return Ctx::Undefined();
-  }
 
-  int value;
-  if (args[0]->GetType() == ValueType::Array &&
-      Ctx::TryGetInt(args[1], value)) {
-    auto array = dynamic_cast<Array_T *>(args[0].get());
 
-    auto default_value = args.size() > 2 ? args[2] : Value_T::UNDEFINED;
 
-    Callable_T *callable = nullptr;
-    if (default_value->GetType() == ValueType::Callable) {
-      callable = static_cast<Callable_T *>(default_value.get());
-    }
-
-    std::vector<Value> empty = {};
-
-    for (int i = 0; i < value; i++) {
-      if (callable) {
-        array->Push(callable->Call(empty));
-      } else {
-        array->Push(default_value);
-      }
-    }
-    return args[0];
-  }
-  return Ctx::Undefined();
-}
 // Create a deep clone of any value.
 REGISTER_FUNCTION(clone) {
   if (args.size() == 0) {
     return Ctx::Undefined();
   }
   return args[0]->Clone();
-}
-REGISTER_FUNCTION(clear) {
-
-  if (args.size() == 0) {
-    return Ctx::Undefined();
-  }
-
-  if (args[0]->GetType() == ValueType::String) {
-    auto str = dynamic_cast<String_T *>(args[0].get());
-    str->value = "";
-  } else if (args[0]->GetType() == ValueType::Array) {
-    auto array = dynamic_cast<Array_T *>(args[0].get());
-    array->values.clear();
-  }
-  return Ctx::Undefined();
 }
 
 
@@ -125,93 +82,6 @@ REGISTER_FUNCTION(assert) {
   return Ctx::Undefined();
 }  
 
-
-REGISTER_FUNCTION(push) {
-  if (args.empty()) {
-    return Ctx::Undefined();
-  }
-  
-  if (args[0]->GetType() == ValueType::String) {
-    auto arg = static_cast<String_T *>(args[0].get());
-    for (size_t i = 1; i < args.size(); i++) {
-      arg->value += args[i]->ToString();
-    }
-  }
-  
-  if (args[0]->GetType() != ValueType::Array) {
-    return Ctx::Undefined();
-  }
-  auto array = static_cast<Array_T *>(args[0].get());
-  for (size_t i = 1; i < args.size(); i++) {
-    array->Push(args[i]);
-  }
-  return Ctx::Undefined();
-}
-REGISTER_FUNCTION(front) {
-  if (args.size() == 0 || (args[0]->GetType() != Values::ValueType::String &&
-                           args[0]->GetType() != Values::ValueType::Array)) {
-    return Ctx::Undefined();
-  }
-  Array arr;
-  if (Ctx::TryGetArray(args[0], arr) && arr->values.size() != 0) {
-    return arr->values.front();
-  }
-  string str;
-  if (Ctx::TryGetString(args[0], str) && str.length() != 0) {
-    return Ctx::CreateString(string(1, str.front()));
-  }
-  return Ctx::Undefined();
-}
-REGISTER_FUNCTION(back) {
-  if (args.size() == 0 || (args[0]->GetType() != Values::ValueType::String &&
-                           args[0]->GetType() != Values::ValueType::Array)) {
-    return Ctx::Undefined();
-  }
-  Array arr;
-  if (Ctx::TryGetArray(args[0], arr) && arr->values.size() != 0) {
-    return arr->values.back();
-  }
-  string str;
-  if (Ctx::TryGetString(args[0], str) && str.length() != 0) {
-    return Ctx::CreateString(string(1, str.back()));
-  }
-  return Ctx::Undefined();
-}
-REGISTER_FUNCTION(pop) {
-  if (args.empty()) {
-    return Ctx::Undefined();
-  }
-
-  if (args[0]->GetType() == ValueType::String) {
-    auto str_value = static_cast<String_T *>(args[0].get());
-    string character = std::string(1, str_value->value.back());
-    str_value->value.pop_back();
-    return Ctx::CreateString(character);
-  }
-
-  if (args[0]->GetType() != ValueType::Array) {
-    return Ctx::Undefined();
-  }
-  auto array = static_cast<Array_T *>(args[0].get());
-  return array->Pop();
-}
-REGISTER_FUNCTION(len) {
-  if (args.empty()) {
-    return Ctx::Undefined();
-  }
-
-  string result;
-  if (Ctx::TryGetString(args[0], result)) {
-    return Int_T::New(result.length());
-  }
-  
-  Array array;
-  if (Ctx::TryGetArray(args[0], array)) {
-    return Int_T::New(array->values.size());
-  }
-
-  return Ctx::Undefined();
-}
 
 // typeof
 REGISTER_FUNCTION(type) {

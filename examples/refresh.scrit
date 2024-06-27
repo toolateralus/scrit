@@ -1,15 +1,14 @@
 // This file is used to refresh the set of links to the examples in the info.md document. This itself is not inherently an example.
-using * from system
-
+using {file, directory} from system
 using {contains, without} from string
 
-working_dir = cwd()
+working_dir = directory.current()
 
-mut info = "info.md".fread()
+mut info = file.read("info.md")
 
 println(info)
 
-files = dir_getfiles(working_dir)
+files = directory.getfiles(working_dir)
           .where(
             func(f) {
               return f.contains(".scrit")
@@ -17,11 +16,15 @@ files = dir_getfiles(working_dir)
           )
           
 for file : files {
+
+  
   link = "[" + file.without(".scrit") + "](" + file + ")"
   
-  if !(info.contains(link)) {
+  if !info.contains(link) {
     info = info + "\n" + link
   }
 }
 
-fwrite("info.md", info)
+
+
+file.write("info.md", info)

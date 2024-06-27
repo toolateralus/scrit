@@ -107,6 +107,7 @@ static Value fdelete(std::vector<Value> values) {
     return Ctx::CreateString("Unable to delete file");
   }
 }
+
 static Value dir_exists(std::vector<Value> values) {
   if (values.size() == 0) {
     return Ctx::Undefined();
@@ -134,7 +135,7 @@ static Value dir_create(std::vector<Value> values) {
     return Ctx::CreateString("Unable to create directory");
   }
 }
-static Value cwd(std::vector<Value> values) {
+static Value cwd(std::vector<Value>) {
   std::string currentDir = std::filesystem::current_path().string();
   return Ctx::CreateString(currentDir);
 }
@@ -171,7 +172,8 @@ static Value dir_delete(std::vector<Value> values) {
     return Ctx::CreateString("Unable to delete directory");
   }
 }
-static Value time(std::vector<Value> values) {
+
+static Value time(std::vector<Value>) {
   auto now = std::chrono::high_resolution_clock::now();
   long milliseconds = (double)std::chrono::duration_cast<std::chrono::milliseconds>(
                          now.time_since_epoch())
@@ -204,26 +206,40 @@ static Value syscall(std::vector<Value> values) {
   auto command = static_cast<String_T *>(cmd.get());
   return Ctx::CreateInt(system(command->value.c_str()));
 }
-static Value exit(std::vector<Value> values) {
+static Value exit(std::vector<Value>) {
   std::exit(0);
   return Value_T::UNDEFINED;
+}
+
+
+
+static Value file() {
+  auto obj = Ctx::CreateObject();
+  obj->SetMember("read", NativeFunctions::MakeCallable(fread));
+  obj->SetMember("write", NativeFunctions::MakeCallable(fwrite));
+  obj->SetMember("create", NativeFunctions::MakeCallable(fcreate));
+  obj->SetMember("exists", NativeFunctions::MakeCallable(fexists));
+  obj->SetMember("delete", NativeFunctions::MakeCallable(fdelete));
+  return obj;
+}
+
+static Value directory() {
+  auto obj = Ctx::CreateObject();
+  obj->SetMember("exists", NativeFunctions::MakeCallable(dir_exists));
+  obj->SetMember("create", NativeFunctions::MakeCallable(dir_create));
+  obj->SetMember("delete", NativeFunctions::MakeCallable(dir_delete));
+  obj->SetMember("getfiles", NativeFunctions::MakeCallable(dir_getfiles));
+  obj->SetMember("current", NativeFunctions::MakeCallable(cwd));
+  return obj;
 }
 
 extern "C" ScritModDef *InitScritModule_system() {
   ScritModDef *def = CreateModDef();
   *def->description = "system functions. file io, time, etc.";
   
-  def->AddFunction("fexists", &fexists);
-  def->AddFunction("fexists", &fexists);
-  def->AddFunction("fcreate", &fcreate);
-  def->AddFunction("fwrite", &fwrite);
-  def->AddFunction("fread", &fread);
-  def->AddFunction("fdelete", &fdelete);
-  def->AddFunction("cwd", &cwd);
-  def->AddFunction("dir_exists", &dir_exists);
-  def->AddFunction("dir_create", &dir_create);
-  def->AddFunction("dir_delete", &dir_delete);
-  def->AddFunction("dir_getfiles", &dir_getfiles);
+  def->AddVariable("directory", directory(), Mutability::Const);
+  def->AddVariable("file", file(), Mutability::Const);
+  
   def->AddFunction("time", &time);
   def->AddFunction("syscall", &syscall);
   def->AddFunction("exit", &exit);

@@ -48,11 +48,124 @@ function(remove) {
 
   return undefined;
 }
+
+function(clear) {
+  if (args.size() == 0) {
+    return Ctx::Undefined();
+  }
+
+  if (args[0]->GetType() == ValueType::Array) {
+    auto array = dynamic_cast<Array_T *>(args[0].get());
+    array->values.clear();
+  }
+  return Ctx::Undefined();
+}
+
+function(expand) {
+  if (args.size() < 2) {
+    return Ctx::Undefined();
+  }
+
+  int value;
+  if (args[0]->GetType() == ValueType::Array &&
+      Ctx::TryGetInt(args[1], value)) {
+    auto array = dynamic_cast<Array_T *>(args[0].get());
+
+    auto default_value = args.size() > 2 ? args[2] : Value_T::UNDEFINED;
+
+    Callable_T *callable = nullptr;
+    if (default_value->GetType() == ValueType::Callable) {
+      callable = static_cast<Callable_T *>(default_value.get());
+    }
+
+    std::vector<Value> empty = {};
+
+    for (int i = 0; i < value; i++) {
+      if (callable) {
+        array->Push(callable->Call(empty));
+      } else {
+        array->Push(default_value);
+      }
+    }
+    return args[0];
+  }
+  return Ctx::Undefined();
+}
+
+function(push) {
+  if (args.empty()) {
+    return Ctx::Undefined();
+  }
+
+  if (args[0]->GetType() != ValueType::Array) {
+    return Ctx::Undefined();
+  }
+  auto array = static_cast<Array_T *>(args[0].get());
+  for (size_t i = 1; i < args.size(); i++) {
+    array->Push(args[i]);
+  }
+  return Ctx::Undefined();
+}
+
+function(front) {
+  if (args.size() == 0 || args[0]->GetType() != ValueType::Array) {
+    return Ctx::Undefined();
+  }
+  auto array = static_cast<Array_T *>(args[0].get());
+  if (array->values.size() != 0) {
+    return array->values.front();
+  }
+  return Ctx::Undefined();
+}
+
+function(back) {
+  if (args.size() == 0 || args[0]->GetType() != ValueType::Array) {
+    return Ctx::Undefined();
+  }
+  auto array = static_cast<Array_T *>(args[0].get());
+  if (array->values.size() != 0) {
+    return array->values.back();
+  }
+  return Ctx::Undefined();
+}
+
+function(pop) {
+  if (args.empty()) {
+    return Ctx::Undefined();
+  }
+
+  if (args[0]->GetType() != ValueType::Array) {
+    return Ctx::Undefined();
+  }
+  auto array = static_cast<Array_T *>(args[0].get());
+  return array->Pop();
+}
+
+function(len) {
+  if (args.empty()) {
+    return Ctx::Undefined();
+  }
+
+  Array array;
+  if (Ctx::TryGetArray(args[0], array)) {
+    return Int_T::New(array->values.size());
+  }
+
+  return Ctx::Undefined();
+}
+
 extern "C" ScritModDef* InitScritModule_array() {
   ScritModDef *def = CreateModDef();
   *def->description = "your description here";
   
   def->AddFunction("remove", remove);
   def->AddFunction("contains", contains);
+  def->AddFunction("clear", clear);
+  def->AddFunction("expand", expand);
+  def->AddFunction("push", push);
+  def->AddFunction("front", front);
+  def->AddFunction("back", back);
+  def->AddFunction("pop", pop);
+  def->AddFunction("len", len);
   return def;
 }

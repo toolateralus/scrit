@@ -281,7 +281,7 @@ struct SubscriptAssignStmnt : Statement {
 };
 struct UnaryExpr : Expression {
   UnaryExpr(SourceInfo &info, ExpressionPtr &&left, TType op);
-  ExpressionPtr left;
+  ExpressionPtr operand;
   TType op;
   Value Evaluate() override;
 };
