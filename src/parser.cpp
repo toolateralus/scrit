@@ -121,9 +121,13 @@ StatementPtr Parser::ParseStatement() {
   }
   throw std::runtime_error("Unexpecrted end of input");
 }
+
+
 StatementPtr Parser::ParseKeyword(Token token) {
   switch (token.type) {
-
+  case TType::Delete: {
+    return ParseDelete();
+  }
   case TType::Mut: {
     auto next = Expect(TType::Identifier);
     auto iden = make_unique<Identifier>(info, next.value);
@@ -913,4 +917,13 @@ StatementPtr Parser::ParseUsing() {
 // variable. Just like rust.
 StatementPtr Parser::ParseMatchStatement() {
   return make_unique<MatchStatement>(info, ParseMatch());
+}
+DeletePtr Parser::ParseDelete() {
+  
+  if (Peek(1).type == TType::Dot) {
+    return make_unique<Delete>(info, ParsePostfix());
+  }
+  
+  auto iden = Expect(TType::Identifier);
+  return make_unique<Delete>(info, make_unique<Identifier>(info, iden.value));
 }

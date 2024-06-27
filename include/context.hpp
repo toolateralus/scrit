@@ -92,7 +92,7 @@ struct Context {
   void RegisterModuleHandle(void *handle);
   Scope PushScope(Scope scope = nullptr);
   Scope PopScope();
-  void Delete(const string &name);
+  void Erase(const string &name);
   auto Find(const string &name) const -> Value;
   auto FindIter(const string &name) const -> VarIter;
   void Insert(const string &name, Value value, const Mutability &mutability);

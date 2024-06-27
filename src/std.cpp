@@ -1,3 +1,4 @@
+#include "ast.hpp"
 #include "context.hpp"
 #include "lexer.hpp"
 #include "native.hpp"
@@ -129,6 +130,21 @@ REGISTER_FUNCTION(index_of) {
 }
 
 
+REGISTER_FUNCTION(nameof) {
+  if (args.empty()) {
+    return undefined;
+  }
+  const auto &ctx = ASTNode::context;
+  for (const auto &scope : ctx.scopes) {
+    for (const auto &member: scope->Members()) {
+      if (args[0]->Equals(member.second)) {
+        return Ctx::CreateString(member.first.value);
+      }
+    }    
+  }
+  return undefined;
+}
+
 // have to do this obnoxiously since it just auto-conflicts.
 #undef assert
 REGISTER_FUNCTION(assert) {
@@ -137,7 +153,7 @@ REGISTER_FUNCTION(assert) {
   }
   if (!args[0]->Equals(Bool_T::True)) {
     if (args.size() > 1) {
-      throw std::runtime_error(args[1]->ToString());
+      throw std::runtime_error("assertion failed: " + args[1]->ToString());
     }
     throw std::runtime_error("assertion failed: " + args[0]->ToString());
   }

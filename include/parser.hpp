@@ -43,7 +43,9 @@ struct Parser {
 
   ParametersPtr ParseParameters();
   ArgumentsPtr ParseArguments();
-  
+
+  DeletePtr ParseDelete();
+
   ExpressionPtr ParseExpression();
   ExpressionPtr ParseCompoundAssignment();
   ExpressionPtr ParseLogicalOr();

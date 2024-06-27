@@ -299,15 +299,16 @@ Lexer::Lexer() {
 
   };
   keywords = {
-      {"const", TType::Const},         {"mut", TType::Mut},
-      {"default", TType::Default},     {"match", TType::Match},
-      {"func", TType::Func},           {"for", TType::For},
-      {"continue", TType::Continue},   {"break", TType::Break},
-      {"return", TType::Return},       {"if", TType::If},
-      {"else", TType::Else},           {"false", TType::False},
-      {"true", TType::True},           {"null", TType::Null},
-      {"undefined", TType::Undefined}, {"using", TType::Using},
-      {"from", TType::From},           {"import", TType::Import},
+      {"delete", TType::Delete}, {"const", TType::Const},
+      {"mut", TType::Mut},       {"default", TType::Default},
+      {"match", TType::Match},   {"func", TType::Func},
+      {"for", TType::For},       {"continue", TType::Continue},
+      {"break", TType::Break},   {"return", TType::Return},
+      {"if", TType::If},         {"else", TType::Else},
+      {"false", TType::False},   {"true", TType::True},
+      {"null", TType::Null},     {"undefined", TType::Undefined},
+      {"using", TType::Using},   {"from", TType::From},
+      {"import", TType::Import},
   };
   loc = 1;
 }
@@ -423,9 +424,8 @@ string TTypeToString(const TType &type) {
     return "Const";
   case TType::Mut:
     return "Mut";
-    
-  default:
-    return "Unknown";
+  case TType::Delete:
+    return "Delete";
   }
 }
 string TFamilyToString(const TFamily &family) {

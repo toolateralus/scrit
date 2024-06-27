@@ -5,6 +5,7 @@
 #include "parser.hpp"
 #include "value.hpp"
 #include <iostream>
+#include <memory>
 #include <ranges>
 #include <stdexcept>
 #include <string>
@@ -362,6 +363,19 @@ Value Call::Evaluate() {
     auto callable = std::static_pointer_cast<Callable_T>(lvalue);
     auto result = callable->Call(args);
     return result;
+  } else {
+    // Here we overload the () operator. this is done in a special case because we don't treat invocation of callables
+    // like a binary expression, it's its own binary expr node.
+    auto obj = std::dynamic_pointer_cast<Object_T>(lvalue);
+    if (obj && obj->HasMember("op_call")) {
+      auto fn = obj->GetMember("op_call");
+      auto callable = std::dynamic_pointer_cast<Callable_T>(fn);
+      if (callable) {
+        auto args_values = GetArgsValueList(args);      
+        args_values.insert(args_values.begin(), obj);
+        return callable->Call(args_values);
+      }
+    }
   }
   return Value_T::UNDEFINED;
 }
@@ -532,7 +546,7 @@ Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue) {
 }
 
 Value EvaluateWithinObject(Scope &scope, Value object, ExpressionPtr &expr) {
-  scope->Set("this", object);
+  scope->Set("this", object, Mutability::Mut);
   ASTNode::context.PushScope(scope);
   auto result = expr->Evaluate();
   ASTNode::context.PopScope();
@@ -540,7 +554,7 @@ Value EvaluateWithinObject(Scope &scope, Value object, ExpressionPtr &expr) {
   return result;
 }
 Value EvaluateWithinObject(Scope &scope, Value object, std::function<Value()> lambda) {
-  scope->Set("this", object);
+  scope->Set("this", object, Mutability::Mut);
   ASTNode::context.PushScope(scope);
   auto result = lambda();
   ASTNode::context.PopScope();
@@ -750,7 +764,7 @@ ExecutionResult RangeBasedFor::Execute() {
   }
   if (array) {
     for (auto &v : array->values) {
-      ASTNode::context.Delete(name);
+      ASTNode::context.Erase(name);
       ASTNode::context.Insert(name, v, Mutability::Const);
       auto result = block->Execute();
       switch (result.controlChange) {
@@ -768,8 +782,11 @@ ExecutionResult RangeBasedFor::Execute() {
   } else if (isObject) {
     auto kvp = Ctx::CreateObject();
     for (auto &[key, val] : obj->scope->Members()) {
+      kvp->scope->Erase("key");
+      kvp->scope->Erase("value");
       kvp->scope->Set("key", Ctx::CreateString(key.value));
       kvp->scope->Set("value", val);
+      context.Erase(name);
       ASTNode::context.Insert(name, kvp, Mutability::Const);
       auto result = block->Execute();
       switch (result.controlChange) {
@@ -921,3 +938,40 @@ ExecutionResult FunctionDecl::Execute() {
       Mutability::Const);
   return ExecutionResult::None;
 }
+
+ExecutionResult Delete::Execute() {
+  // delete a plain identifier. easy!
+  if (iden) {
+    context.Erase(iden->name);
+    return ExecutionResult::None;
+  } 
+  
+  // delete an an object behind a dot expression. ^.^  
+  if (auto *dot = dynamic_cast<DotExpr*>(this->dot.get())) {
+    while (auto rdot = dynamic_cast<DotExpr *>(dot->right.get())) {
+      dot = rdot;
+    }
+    
+    Value host = dot->left->Evaluate();
+    
+    auto iden = dynamic_cast<Identifier *>(dot->right.get());
+    if (!iden) {
+      throw std::runtime_error("invalid dot expression in delete statement.");
+    }
+    auto &name = iden->name;
+    
+    if (auto host_obj = std::dynamic_pointer_cast<Object_T>(host)) {
+      host_obj->scope->Erase(name);
+    } else {
+      throw std::runtime_error("invalid dot expression in delete statement.");
+    }
+  } else {
+    throw std::runtime_error("invalid delete statement.");
+  }
+  return ExecutionResult::None;
+}
+Delete::Delete(SourceInfo &info, ExpressionPtr &&dot)
+    : Statement(info), dot(std::move(dot)) {}
+Delete::Delete(SourceInfo &info, IdentifierPtr &&iden)
+    : Statement(info), iden(std::move(iden)) {}
+Delete::~Delete() {}

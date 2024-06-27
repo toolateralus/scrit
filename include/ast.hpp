@@ -6,6 +6,7 @@
 #include <memory>
 
 #include <map>
+#include <variant>
 
 using std::string;
 using std::vector;
@@ -41,8 +42,10 @@ struct Operand;
 struct Using;
 struct Lambda;
 struct FunctionDecl;
+struct Delete;
 
 // typedefs
+typedef unique_ptr<Delete> DeletePtr;
 typedef unique_ptr<Lambda> LambdaPtr;
 typedef unique_ptr<Using> UsingPtr;
 typedef unique_ptr<Statement> StatementPtr;
@@ -133,6 +136,17 @@ struct Return : Statement {
   
   ExecutionResult Execute() override;
 };
+
+struct DotExpr;
+struct Delete : Statement {
+    IdentifierPtr iden;
+    ExpressionPtr dot;
+    ~Delete();
+    Delete(SourceInfo &info, ExpressionPtr &&dot);
+    Delete(SourceInfo &info, IdentifierPtr &&iden);
+    ExecutionResult Execute() override;
+};
+
 struct Block : Statement {
   Block(SourceInfo &info, vector<StatementPtr> &&statements);
   vector<StatementPtr> statements;

@@ -26,7 +26,7 @@ Scope Context::PopScope() {
   return scope;
 }
 
-void Context::Delete(const string &name) {
+void Context::Erase(const string &name) {
   for (const auto &scope : scopes) {
     if (scope->Contains(name)) {
       scope->Erase(name);
