@@ -6,4 +6,3 @@ Note that these examples are very subject to change as the language is very new 
 I will try my best to at least make note of deprecated examples when the time comes, if not fix them vigilantly.
 
 [class](class.scrit)
-[undefined

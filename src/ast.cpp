@@ -776,9 +776,8 @@ ExecutionResult RangeBasedFor::Execute() {
   
   if (array) {
     for (auto &v : array->values) {
-      
-      ASTNode::context.PushScope();
-      ASTNode::context.scopes.back()->Set(name, v, Mutability::Const);
+      auto scope = ASTNode::context.PushScope();
+      scope->Set(name, v, Mutability::Const);
       auto result = block->Execute();
       ASTNode::context.PopScope();
       
@@ -797,13 +796,12 @@ ExecutionResult RangeBasedFor::Execute() {
   } else if (isObject) {
     auto kvp = Ctx::CreateObject();
     for (auto &[key, val] : obj->scope->Members()) {
-      
-      ASTNode::context.PushScope();
       kvp->scope->Erase("key");
       kvp->scope->Erase("value");
       kvp->scope->Set("key", Ctx::CreateString(key.value));
       kvp->scope->Set("value", val);
-      ASTNode::context.scopes.back()->Set(name, kvp, Mutability::Const);
+      auto scope = ASTNode::context.PushScope();
+      scope->Set(name, kvp, Mutability::Const);
       auto result = block->Execute();
       ASTNode::context.PopScope();
       
@@ -821,8 +819,8 @@ ExecutionResult RangeBasedFor::Execute() {
     }
   } else if (isString) {
     for (auto c : string) {
-      ASTNode::context.PushScope();
-      ASTNode::context.scopes.back()->Set(name, Ctx::CreateString(std::string() + c), Mutability::Const);
+      auto scope = ASTNode::context.PushScope();
+      scope->Set(name, Ctx::CreateString(std::string() + c), Mutability::Const);
       auto result = block->Execute();
       ASTNode::context.PopScope();
       

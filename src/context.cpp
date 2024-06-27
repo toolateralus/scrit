@@ -27,18 +27,18 @@ Scope Context::PopScope() {
 }
 
 void Context::Erase(const string &name) {
-  for (const auto &scope : scopes) {
-    if (scope->Contains(name)) {
-      scope->Erase(name);
+  for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
+    if ((*it)->Contains(name)) {
+      (*it)->Erase(name);
       return;
     }
   }
 }
 
 void Context::Insert(const string &name, Value value, const Mutability &mutability) {
-  for (const auto &scope : scopes) {
-    if (scope->Contains(name)) {
-      scope->Set(name, value, mutability);
+  for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
+    if ((*it)->Contains(name)) {
+      (*it)->Set(name, value, mutability);
       return;
     }
   }
@@ -46,18 +46,18 @@ void Context::Insert(const string &name, Value value, const Mutability &mutabili
 }
 
 auto Context::FindIter(const string &name) const -> VarIter
- {
-  for (const auto &scope : scopes) {
-    if (scope->Contains(name)) {
-      return scope->Find(name);
+{
+  for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
+    if ((*it)->Contains(name)) {
+      return (*it)->Find(name);
     }
   }
   return scopes.back()->end();
 }
 
 auto Context::Find(const string &name) const -> Value {
-  for (const auto &scope : scopes) {
-    for (const auto &[key, var] : scope->Members()) {
+  for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
+    for (const auto &[key, var] : (*it)->Members()) {
       if (key.value == name) {
         return var;
       }
@@ -81,7 +81,6 @@ auto Scope_T::Clone() -> Scope {
   return scope;
 }
 auto Scope_T::Get(const string &name) -> Value {
-  
   auto it = Find(name);
   if (it == variables.end()) {
     return Value_T::UNDEFINED;
@@ -137,7 +136,8 @@ ScritModHandle::ScritModHandle(ScritModHandle &&move) noexcept {
   this->handle = move.handle;
   move.handle = nullptr;
 }
-auto Scope_T::Find(const std::string &name) -> std::_Rb_tree_iterator<std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>> {
+
+auto Scope_T::Find(const std::string &name) -> VarIter {
   auto it = std::find_if(
           variables.begin(), variables.end(),
           [&](const auto &pair) { return name == pair.first.value; });

@@ -1,12 +1,10 @@
-// This file is used to refresh the set of links to the examples in the info.md document. This itself is not inherently an example.
 using {file, directory} from system
 using {contains, without} from string
+using sstream
 
 working_dir = directory.current()
 
 mut info = file.read("info.md")
-
-println(info)
 
 files = directory.getfiles(working_dir)
           .where(
@@ -14,17 +12,17 @@ files = directory.getfiles(working_dir)
               return f.contains(".scrit")
             }
           )
-          
-for file : files {
 
+stream = sstream.create(info)
+
+for file : files {
+  link = "[" + file.without(".scrit") + "](" + file + ")\n"
   
-  link = "[" + file.without(".scrit") + "](" + file + ")"
-  
-  if !info.contains(link) {
-    info = info + "\n" + link
+  println("for file: " + file + " inserting: " + link)
+  if !tostr(stream).contains(link) {
+    sstream.append(stream, link)
   }
 }
 
+file.write("info.md", stream)
 
-
-file.write("info.md", info)
