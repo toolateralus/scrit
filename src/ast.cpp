@@ -208,6 +208,17 @@ CompAssignExpr::CompAssignExpr(SourceInfo &info, ExpressionPtr &&left,
 }
 
 ExecutionResult Program::Execute() {
+  
+  // create an object called global, so we can bypass any shadowed variables.
+  auto global = Object_T::New(ASTNode::context.scopes.front());
+  
+  // include all of the native functions in this global object.
+  for(const auto &[name, _] : NativeFunctions::GetRegistry()) {
+    global->SetMember(name, NativeFunctions::GetCallable(name));
+  }
+  
+  ASTNode::context.Insert("global", global, Mutability::Mut);
+  
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
@@ -764,6 +775,7 @@ ExecutionResult RangeBasedFor::Execute() {
   }
   if (array) {
     for (auto &v : array->values) {
+      ASTNode::context.scopes.back()->Clear();
       ASTNode::context.Erase(name);
       ASTNode::context.Insert(name, v, Mutability::Const);
       auto result = block->Execute();
@@ -782,11 +794,11 @@ ExecutionResult RangeBasedFor::Execute() {
   } else if (isObject) {
     auto kvp = Ctx::CreateObject();
     for (auto &[key, val] : obj->scope->Members()) {
+      ASTNode::context.scopes.back()->Clear();
       kvp->scope->Erase("key");
       kvp->scope->Erase("value");
       kvp->scope->Set("key", Ctx::CreateString(key.value));
       kvp->scope->Set("value", val);
-      context.Erase(name);
       ASTNode::context.Insert(name, kvp, Mutability::Const);
       auto result = block->Execute();
       switch (result.controlChange) {
@@ -802,6 +814,7 @@ ExecutionResult RangeBasedFor::Execute() {
     }
   } else if (isString) {
     for (auto c : string) {
+      ASTNode::context.scopes.back()->Clear();
       ASTNode::context.Insert(name, Ctx::CreateString(std::string() + c), Mutability::Const);
       auto result = block->Execute();
       switch (result.controlChange) {

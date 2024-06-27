@@ -12,8 +12,8 @@ Value Object_T::GetMember(const string &name) {
     return Value_T::UNDEFINED;
 }
 
-void Object_T::SetMember(const string &name, Value value) {
-  scope->Set(name, value);
+void Object_T::SetMember(const string &name, Value value, Mutability mutability) {
+  scope->Set(name, value, mutability);
 }
 
 string Object_T::ToString() const { return Writer::ToString(this, {}); }

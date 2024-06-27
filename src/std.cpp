@@ -4,7 +4,6 @@
 #include "native.hpp"
 #include "serializer.hpp"
 #include "value.hpp"
-#include <cctype>
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -94,40 +93,6 @@ REGISTER_FUNCTION(clear) {
   }
   return Ctx::Undefined();
 }
-REGISTER_FUNCTION(push) {
-  if (args.empty()) {
-    return Ctx::Undefined();
-  }
-
-  if (args[0]->GetType() == ValueType::String) {
-    auto arg = static_cast<String_T *>(args[0].get());
-    for (size_t i = 1; i < args.size(); i++) {
-      arg->value += args[i]->ToString();
-    }
-  }
-
-  if (args[0]->GetType() != ValueType::Array) {
-    return Ctx::Undefined();
-  }
-  auto array = static_cast<Array_T *>(args[0].get());
-  for (size_t i = 1; i < args.size(); i++) {
-    array->Push(args[i]);
-  }
-  return Ctx::Undefined();
-}
-REGISTER_FUNCTION(index_of) {
-  #define undefined Ctx::Undefined()
-  if (args.size() < 2 || args[0]->GetType() != Values::ValueType::String) {
-    return undefined;
-  } 
-  auto str = args[0]->Cast<String_T>();
-  auto srch_c = args[1]->Cast<String_T>();
-  size_t found = str->value.find(srch_c->value);
-  if (found != std::string::npos) {
-    return Ctx::CreateInt(found);
-  }
-  return Ctx::CreateInt(-1);
-}
 
 
 REGISTER_FUNCTION(nameof) {
@@ -159,53 +124,28 @@ REGISTER_FUNCTION(assert) {
   }
   return Ctx::Undefined();
 }  
-REGISTER_FUNCTION(substring) {
-  #define undefined Ctx::Undefined()
-  if (args.size() < 3 || args[0]->GetType() != Values::ValueType::String) {
-    return undefined;
-  }
-  
-  auto str = args[0]->Cast<String_T>();
-  std::pair<int, int> indices;
-  
-  if (!Ctx::TryGetInt(args[1], indices.first)) {
-    return undefined;
-  }
-  if (!Ctx::TryGetInt(args[2], indices.second)) {
-    return undefined;
-  }
-  return Ctx::CreateString(str->value.substr(indices.first, indices.second));
-}
-REGISTER_FUNCTION(split) {
-  if (args.size() < 2 || args[0]->GetType() != Values::ValueType::String ||
-      args[1]->GetType() != Values::ValueType::String) {
+
+
+REGISTER_FUNCTION(push) {
+  if (args.empty()) {
     return Ctx::Undefined();
   }
   
-  string s;
-  if (!Ctx::TryGetString(args[0], s)) {
+  if (args[0]->GetType() == ValueType::String) {
+    auto arg = static_cast<String_T *>(args[0].get());
+    for (size_t i = 1; i < args.size(); i++) {
+      arg->value += args[i]->ToString();
+    }
+  }
+  
+  if (args[0]->GetType() != ValueType::Array) {
     return Ctx::Undefined();
   }
-  
-  string delim;
-  if (!Ctx::TryGetString(args[1], delim)) {
-    return Ctx::Undefined();
+  auto array = static_cast<Array_T *>(args[0].get());
+  for (size_t i = 1; i < args.size(); i++) {
+    array->Push(args[i]);
   }
-  
-  if (!s.contains(delim)) {
-    return Ctx::CreateArray();
-  }
-  
-  char delimiter = delim.at(0);
-  std::vector<std::string> tokens;
-  std::string token;
-  std::istringstream tokenStream(s);
-  
-  while (std::getline(tokenStream, token, delimiter)) {
-    tokens.push_back(token);
-  }
-  
-  return Ctx::FromStringVector(tokens);
+  return Ctx::Undefined();
 }
 REGISTER_FUNCTION(front) {
   if (args.size() == 0 || (args[0]->GetType() != Values::ValueType::String &&
@@ -278,6 +218,14 @@ REGISTER_FUNCTION(type) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
+  
+  if (auto obj = std::dynamic_pointer_cast<Object_T>(args[0])) {
+    if (obj->HasMember("type")) {
+      auto type = obj->GetMember("type");
+      return type;
+    }
+  }
+  
   string typeName;
   return Ctx::CreateString(TypeToString(args[0]->GetType()));
 }
@@ -337,50 +285,7 @@ REGISTER_FUNCTION(atoi) {
   return Ctx::CreateInt(std::atoi(str.c_str()));
 }
 
-REGISTER_FUNCTION(isalnum) {
-  auto arg = args[0];
-  string value;
-  if (Ctx::TryGetString(arg, value)) {
-    if (value.empty()) {
-      return Value_T::False;
-    }
-    return Ctx::CreateBool(std::isalnum(value[0]));
-  }
-  return Ctx::Undefined();
-}
-REGISTER_FUNCTION(isdigit) {
-  auto arg = args[0];
-  string value;
-  if (Ctx::TryGetString(arg, value)) {
-    if (value.empty()) {
-      return Value_T::False;
-    }
-    return Ctx::CreateBool(std::isdigit(value[0]));
-  }
-  return Ctx::Undefined();
-}
-REGISTER_FUNCTION(ispunct) {
-  auto arg = args[0];
-  string value;
-  if (Ctx::TryGetString(arg, value)) {
-    if (value.empty()) {
-      return Value_T::False;
-    }
-    return Ctx::CreateBool(std::ispunct(value[0]));
-  }
-  return Ctx::Undefined();
-}
-REGISTER_FUNCTION(isalpha) {
-  auto arg = args[0];
-  string value;
-  if (Ctx::TryGetString(arg, value)) {
-    if (value.empty()) {
-      return Value_T::False;
-    }
-    return Ctx::CreateBool(std::isalpha(value[0]));
-  }
-  return Ctx::Undefined();
-}
+
 
 // terminal
 REGISTER_FUNCTION(println) {

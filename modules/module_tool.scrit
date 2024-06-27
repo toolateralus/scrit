@@ -1,0 +1,81 @@
+
+using {fwrite, fexists, cwd, exit, dir_create, syscall} from system
+
+func buildScript(name) {
+  return "sudo clang++ -std=c++2b -shared -fPIC -o /usr/local/scrit/modules/" + name + ".dll " + name + ".cpp" + " -lscrit"
+}
+
+func cppBoilerplate(name) {
+return "#include <scrit/scritmod.hpp>
+
+static Value doSomething(std::vector<Value> values) {
+  return Value_T::UNDEFINED;
+}
+
+extern \"C\" ScritModDef* InitScritModule_" + name + "() {
+  ScritModDef *def = CreateModDef();
+  *def->description = \"your description here\";
+  def->AddFunction(\"doSomething\", &doSomething);
+  return def;
+}"
+}
+
+func createModule(name) {
+  
+  if name == undefined {
+    println("invalid name: was undefined")
+    return 1
+  } else {
+    println("Creating module: " + name)
+  }
+  
+  path = cwd() + "/" + name
+  
+  if path == undefined {
+    println("invalid path: was undefined")
+    return 1
+  }
+  
+  cppPath = path + "/" + name + ".cpp"
+  bashPath = path + "/build.sh"
+  
+  mut err = dir_create(path)
+  if (err != undefined) {
+    println("dir create error: " + err)
+    return 1
+  }
+  
+  err = fwrite(bashPath, buildScript())
+  if (err != undefined) {
+    println("fwrite error: " + err)
+    return 1
+  }
+  
+  err = fwrite(cppPath, cppBoilerplate(name))
+  if (err != undefined) {
+    println("fwrite error: " + err)
+    return 1
+  }
+  
+  syscall("chmod +x " + bashPath)
+  
+  return 0
+  
+}
+
+func() {
+  if len(args) == 0 {
+    println("Must provide a module name.")
+    return 1
+  }
+  println("Are you sure you want to create a module named :" + args[0])
+  println("type [y/n] and press enter")
+  input = readln()
+  if (input == "y") {
+    return createModule(args[0])
+  } 
+  
+  return 0
+}()
+
+

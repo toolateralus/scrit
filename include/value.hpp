@@ -220,7 +220,7 @@ struct Object_T : Value_T {
   
   virtual string ToString() const override;
   virtual Value GetMember(const string &name);
-  virtual void SetMember(const string &name, Value value);
+  virtual void SetMember(const string &name, Value value, Mutability mutability = Mutability::Const);
   virtual bool HasMember(const string &name);
   
   virtual bool Equals(Value value) override;
@@ -369,8 +369,7 @@ template <typename T> ValueType Value_T::ValueTypeFromType() {
 }
 
 template <typename T> T *Value_T::Cast() {
-  auto &type = typeid(T);
-  if (type == typeid(*this) && ValueTypeFromType<T>() == GetType()) {
+  if (ValueTypeFromType<T>() == GetType() && typeid(T) == typeid(*this)) {
     return static_cast<T*>(this);
   } 
   throw std::runtime_error(
