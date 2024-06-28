@@ -139,7 +139,10 @@ StatementPtr Parser::ParseKeyword(Token token) {
     return ParseMatchStatement();
   }
   case TType::Func: {
-    return ParseFunctionDeclaration();
+    auto funcdecl = ParseFunctionDeclaration();
+    auto callable = make_shared<Callable_T>(std::move(funcdecl->block), std::move(funcdecl->parameters));
+    ASTNode::context.Insert(funcdecl->name, callable, Mutability::Const);
+    return make_unique<Noop>(info);
   }
   case TType::If: {
     return ParseIf();

@@ -1,6 +1,7 @@
 using array
 
 
+
 // Using global variables to maintain state between functions with more explicit ownership
 // of the variable.
 
@@ -11,14 +12,12 @@ func log(v) {
   array.push(global.logs, v)
 }
 
-// dump the global storage member 'logs'
+// dump the global storage member 'logs' into stdout
 func dump_logs() {
   println(global.logs)
 }
 
 
-
-  
 //  using global variables to maintain state between calls to anonymous functions passed as predicates
 
 // create a 100 element array with a predicate that returns an int that increments from 0 to 100
@@ -39,7 +38,3 @@ a = array.expand([], 100, func() {
   return global.i
 })
 
-
-log(a)
-
-dump_logs()
