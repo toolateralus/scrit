@@ -405,7 +405,7 @@ Value Call::Evaluate() {
     // Here we overload the () operator. this is done in a special case because we don't treat invocation of callables
     // like a binary expression, it's its own binary expr node.
     auto obj = std::dynamic_pointer_cast<Object_T>(lvalue);
-    if (obj && obj->HasMember("op_call")) {
+    if (obj && obj->HasMember("call")) {
       auto fn = obj->GetMember("op_call");
       auto callable = std::dynamic_pointer_cast<Callable_T>(fn);
       if (callable) {

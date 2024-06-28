@@ -1,5 +1,5 @@
 using {file, directory} from system
-using {contains, without} from string
+using {contains, remove} from string
 using sstream
 
 working_dir = directory.current()
@@ -15,12 +15,12 @@ files = directory.getfiles(working_dir)
 
 stream = sstream.create(info)
 
+link => "[" + file.remove(".scrit") + "](" + file + ")\n"
 
 for file : files {
   // For some insanely odd reason, 
   // 'link' prints the same value each iteration, even though
   // 'file' is always different.
-  link = "[" + file.without(".scrit") + "](" + file + ")\n"
   
   println("for file: " + file + " link = " + link)
   

@@ -8,3 +8,4 @@ I will try my best to at least make note of deprecated examples when the time co
 
 [class](class.scrit)
 [static](static.scrit)
+[some](some.scrit)
