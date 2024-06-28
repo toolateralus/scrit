@@ -2,6 +2,7 @@
 #include "ast.hpp"
 #include "lexer.hpp"
 #include "native.hpp"
+#include "context.hpp"
 #include <memory>
 #include <stdexcept>
 #include <string>

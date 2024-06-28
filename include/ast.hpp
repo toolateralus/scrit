@@ -7,6 +7,8 @@
 
 #include <map>
 
+class ASTVisitor;
+
 using std::string;
 using std::vector;
 
@@ -80,65 +82,78 @@ struct ASTNode {
 
   static Context context;
   virtual ~ASTNode() {}
+  virtual void Accept(ASTVisitor* visitor) = 0;
 };
 
 struct Executable : ASTNode {
   virtual ~Executable() {}
   virtual ExecutionResult Execute() = 0;
+  void Accept(ASTVisitor* visitor) override;
   Executable(SourceInfo &info) : ASTNode(info) {}
 };
 struct Statement : Executable {
   Statement(SourceInfo &info) : Executable(info) {}
+  void Accept(ASTVisitor* visitor) override;
 };
 struct Program : Executable {
   vector<StatementPtr> statements;
   Program(vector<StatementPtr> &&statements);
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 struct Expression : ASTNode {
   Expression(SourceInfo &info) : ASTNode(info) {}
   virtual ~Expression() {}
   virtual Value Evaluate() = 0;
+  void Accept(ASTVisitor* visitor) override;
 };
 struct Operand : Expression {
   Operand(SourceInfo &info, Value value);
   Value value;
   Value Evaluate() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 struct Identifier : Expression {
   Identifier(SourceInfo &info, string &name);
   string name;
   Value Evaluate() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 struct Arguments : Expression {
   Arguments(SourceInfo &info, vector<ExpressionPtr> &&args);
   vector<ExpressionPtr> values;
   Value Evaluate() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 struct TupleInitializer : Expression {
   vector<ExpressionPtr> values;
   TupleInitializer(SourceInfo &info, vector<ExpressionPtr> &&values)
       : Expression(info), values(std::move(values)) {}
   Value Evaluate() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 struct Property : Statement {
   const IdentifierPtr iden;
   ExpressionPtr lambda;
   Property(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&lambda);
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 struct Parameters : Statement {
   std::map<string, Value> map;
   Parameters(SourceInfo &info, std::map<string, Value> &&params);
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 struct Continue : Statement {
   Continue(SourceInfo &info) : Statement(info) {}
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 struct Break : Statement {
   Break(SourceInfo &info) : Statement(info) {}
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 struct Return : Statement {
   Return(SourceInfo &info) : Statement(info) {}
@@ -146,6 +161,7 @@ struct Return : Statement {
   ExpressionPtr value;
 
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 
 struct DotExpr;
@@ -156,6 +172,7 @@ struct Delete : Statement {
   Delete(SourceInfo &info, ExpressionPtr &&dot);
   Delete(SourceInfo &info, IdentifierPtr &&iden);
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 
 struct Block : Statement {
@@ -163,11 +180,13 @@ struct Block : Statement {
   vector<StatementPtr> statements;
   ExecutionResult Execute() override;
   ExecutionResult Execute(Scope scope);
+  void Accept(ASTVisitor* visitor) override;
 };
 struct ObjectInitializer : Expression {
   BlockPtr block;
   ObjectInitializer(SourceInfo &info, BlockPtr &&block);
   Value Evaluate() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 struct Call : Expression, Statement {
   ExpressionPtr operand;
@@ -176,6 +195,7 @@ struct Call : Expression, Statement {
   static vector<Value> GetArgsValueList(ArgumentsPtr &args);
   Value Evaluate() override;
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 
 struct If : Statement {
@@ -191,6 +211,7 @@ struct If : Statement {
   BlockPtr block;
   ElsePtr elseStmnt;
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
   ~If();
 };
 struct Else : Statement {
@@ -202,6 +223,7 @@ struct Else : Statement {
   static ElsePtr NoIf(SourceInfo &info, BlockPtr &&block);
   static ElsePtr New(SourceInfo &info, IfPtr &&ifStmnt);
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 struct For : Statement {
   StatementPtr decl;
@@ -212,6 +234,7 @@ struct For : Statement {
   For(SourceInfo &info, StatementPtr &&decl, ExpressionPtr &&condition,
       StatementPtr &&inc, BlockPtr &&block, Scope scope);
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 
 struct RangeBasedFor : Statement {
@@ -221,6 +244,7 @@ struct RangeBasedFor : Statement {
   ExpressionPtr rhs;
   BlockPtr block;
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 
 struct Assignment : Statement {
@@ -230,6 +254,7 @@ struct Assignment : Statement {
   Assignment(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&expr,
              const Mutability &mutability);
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 
 struct TupleDeconstruction : Statement {
@@ -239,6 +264,7 @@ struct TupleDeconstruction : Statement {
   vector<IdentifierPtr> idens;
   ExpressionPtr tuple;
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 
 struct CompAssignExpr : Expression {
@@ -247,12 +273,14 @@ struct CompAssignExpr : Expression {
   CompAssignExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right,
                  TType op);
   Value Evaluate() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 
 struct CompoundAssignment : Statement {
   ExpressionPtr expr;
   CompoundAssignment(SourceInfo &info, ExpressionPtr &&expr);
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 
 struct FunctionDecl : Statement {
@@ -264,17 +292,20 @@ struct FunctionDecl : Statement {
       : Statement(info), block(std::move(block)),
         parameters(std::move(parameters)), name(name) {}
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 
 struct Noop : Statement {
   Noop(SourceInfo &info) : Statement(info) {}
   ExecutionResult Execute() override { return ExecutionResult::None; }
+  void Accept(ASTVisitor* visitor) override;
 };
 struct DotExpr : Expression {
   DotExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right);
   ExpressionPtr left;
   ExpressionPtr right;
   Value Evaluate() override;
+  void Accept(ASTVisitor* visitor) override;
   void Assign(Value value);
 };
 struct DotAssignment : Statement {
@@ -282,17 +313,20 @@ struct DotAssignment : Statement {
   ExpressionPtr dot;
   ExpressionPtr value;
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 struct DotCallStmnt : Statement {
   DotCallStmnt(SourceInfo &info, ExpressionPtr &&dot);
   ExpressionPtr dot;
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 struct Subscript : Expression {
   Subscript(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&idx);
   ExpressionPtr left;
   ExpressionPtr index;
-  Value Evaluate();
+  Value Evaluate() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 struct SubscriptAssignStmnt : Statement {
   SubscriptAssignStmnt(SourceInfo &info, ExpressionPtr &&subscript,
@@ -300,12 +334,14 @@ struct SubscriptAssignStmnt : Statement {
   ExpressionPtr subscript;
   ExpressionPtr value;
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 struct UnaryExpr : Expression {
   UnaryExpr(SourceInfo &info, ExpressionPtr &&left, TType op);
   ExpressionPtr operand;
   TType op;
   Value Evaluate() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 
 // this is basically only for decrement / increment right now
@@ -316,6 +352,7 @@ struct UnaryStatement : Statement {
     expr->Evaluate();
     return ExecutionResult::None;
   }
+  void Accept(ASTVisitor* visitor) override;
 };
 
 struct BinExpr : Expression {
@@ -325,6 +362,7 @@ struct BinExpr : Expression {
   BinExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right,
           TType op);
   Value Evaluate() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 
 struct Using : Statement {
@@ -338,6 +376,7 @@ struct Using : Statement {
   // linux-only, as well as the install script.
   const string moduleRoot = "/usr/local/scrit/modules/";
   ExecutionResult Execute() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 
 struct Lambda : Expression {
@@ -348,6 +387,7 @@ struct Lambda : Expression {
   Lambda(SourceInfo &info, BlockPtr &&block)
       : Expression(info), block(std::move(block)) {}
   Value Evaluate() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 
 // TODO: make a match expression that calls into this and just returns the
@@ -369,6 +409,7 @@ struct Match : Expression {
   }
 
   Value Evaluate() override;
+  void Accept(ASTVisitor* visitor) override;
 };
 
 struct MatchStatement : Statement {
@@ -380,6 +421,7 @@ struct MatchStatement : Statement {
     // we could just this value since its unreachable in this case.
     return ExecutionResult(ControlChange::None, result);
   }
+  void Accept(ASTVisitor* visitor) override;
 };
 
 string CC_ToString(ControlChange controlChange);
