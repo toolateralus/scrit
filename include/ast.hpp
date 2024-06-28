@@ -124,7 +124,8 @@ struct TupleInitializer : Expression {
 struct Property : Statement {
   const IdentifierPtr iden;
   ExpressionPtr lambda;
-  Property(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&lambda);
+  const Mutability mutability;
+  Property(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&lambda, const Mutability &mut);
   ExecutionResult Execute() override;
 };
 struct Parameters : Statement {

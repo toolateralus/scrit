@@ -959,7 +959,6 @@ Value Match::Evaluate() {
 Value Lambda::Evaluate() {
   if (block) {
     auto result = block->Execute();
-    
     if (result.controlChange != ControlChange::Return || result.value == nullptr) {
       return Value_T::UNDEFINED;
     }
@@ -1036,15 +1035,14 @@ ExecutionResult TupleDeconstruction::Execute() {
   
   return ExecutionResult::None;
 }
-Property::Property(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&lambda)
-    : Statement(info), iden(std::move(iden)), lambda(std::move(lambda)) {}
+Property::Property(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&lambda, const Mutability &mut)
+    : Statement(info), iden(std::move(iden)), lambda(std::move(lambda)), mutability(mut) {}
     
 ExecutionResult Property::Execute() {
   if (lambda) {
     Scope_T::Key key = Scope_T::Key(
       iden->name,
-      Mutability::Const,
-      Scope_T::VariableMode::Property
+      mutability
     );
     context.Insert(key, make_shared<Lambda_T>(std::move(lambda)));
   }

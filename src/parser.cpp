@@ -210,7 +210,7 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier,
   
   if (next.type == TType::Lambda) {
     auto lambda = ParseLambda();
-    return make_unique<Property>(info, std::move(identifier), std::move(lambda));
+    return make_unique<Property>(info, std::move(identifier), std::move(lambda), mutability);
   }
   if (next.type == TType::Assign) {
     Eat();
@@ -445,26 +445,26 @@ ExpressionPtr Parser::ParseAnonFunc() {
 ExpressionPtr Parser::ParseObjectInitializer() {
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};
-
+  
   while (tokens.size() > 0) {
     auto next = Peek();
-
+    
     switch (next.type) {
     //
     case TType::Comma: {
       Eat();
       continue;
     }
-
+    
     // break the loop not the switch.
     case TType::RCurly:
       goto endloop;
-
+    
     case TType::Func:
       Eat(); // eat keyword.
       statements.push_back(ParseFunctionDeclaration());
       break;
-
+    
     case TType::Mut:
     case TType::Const: {
       auto mutability =

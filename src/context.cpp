@@ -99,20 +99,15 @@ auto Scope_T::Get(const string &name) -> Value {
 }
 
 auto Scope_T::Set(const Scope_T::Key &key, Value value) -> void {
-  if (!variables.contains(key) && key.mode == VariableMode::Property) {
-    variables[key] = value;
-  } else if (key.mode != VariableMode::Property)  {
-    variables[key] = value;
-  }
+  variables[key] = value;
 }
   
 auto Scope_T::Set(const string &name, Value value, const Mutability &mutability) -> void {
   auto it = Find(name);
-  
   if (it == variables.end()) {
     variables[Key(name, mutability)] = value;
   } else {
-    if (it->first.mode == VariableMode::Variable && it->first.mutability == Mutability::Mut) {
+    if (it->first.mutability == Mutability::Mut) {
       variables[it->first] = value;
     } else {
       throw std::runtime_error("Cannot set a const value.. identifier: " + name);

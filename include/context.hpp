@@ -40,19 +40,12 @@ struct ScritModHandle {
 
 struct Scope_T {
 
-  enum struct VariableMode {
-    Variable,
-    Property,
-  };
-
   struct Key {
     const std::string value;
     const Mutability mutability;
-    const VariableMode mode = VariableMode::Variable;
     
-    Key(const std::string &value, const Mutability &mutability,
-        const VariableMode &mode = VariableMode::Variable)
-        : value(value), mutability(mutability), mode(mode) {}
+    Key(const std::string &value, const Mutability &mutability)
+        : value(value), mutability(mutability) {}
         
     bool operator<(const Key &other) const { return value < other.value; }
     bool operator==(const Key &other) const {

@@ -1,0 +1,25 @@
+using {len} from array
+
+mut array = []
+
+array.len()
+
+x = (0, 1, 2)
+a, b, c = x
+
+
+println(
+  match x {
+    (a, b, c) => { 
+      a *= 2
+      
+      if a >= 10 {
+        "right"   
+      } else {
+        "wrong"
+      }
+      
+    }
+    default => { "wrong" }
+  }
+)
