@@ -410,6 +410,8 @@ string TypeToString(ValueType type) {
     return "array";
   case ValueType::Callable:
     return "callable";
+  case Values::ValueType::Tuple:
+    return "tuple";
   }
   return "";
 }
@@ -432,6 +434,25 @@ Value Callable_T::Clone() {
 }
 
 Array_T::~Array_T() {}
+
+auto Tuple_T::Deconstruct(vector<IdentifierPtr> &idens) const -> void {
+  // produce the maximum number of values available given
+  // both arrays are at least that size.
+  size_t max = std::min(idens.size(), this->values.size());
+  
+  // deconstruct the tuple into the fields.
+  for (size_t i = 0; i < max; ++i) {
+    auto &iden = idens[i];
+    auto &value = values[i];
+    ASTNode::context.Insert(iden->name, value, Mutability::Mut);
+  }
+  
+  for (size_t i = max; i < idens.size(); ++i) {
+    auto &iden = idens[i];
+    ASTNode::context.Insert(iden->name, Ctx::Undefined(), Mutability::Mut);
+  }
+}
+
 } // namespace Values
 
 Value Callable_T::Call(std::vector<Value> &values) {

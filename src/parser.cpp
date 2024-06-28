@@ -66,7 +66,6 @@ StatementPtr Parser::ParseLValuePostFix(ExpressionPtr &expr) {
   throw std::runtime_error("Failed to parse LValue postfix statement:: " +
                            name);
 }
-
 FunctionDeclPtr Parser::ParseFunctionDeclaration() {
   auto info = this->info;
   auto name = Expect(TType::Identifier).value;
@@ -75,7 +74,6 @@ FunctionDeclPtr Parser::ParseFunctionDeclaration() {
   return make_unique<FunctionDecl>(info, name, std::move(block),
                                    std::move(parameters));
 }
-
 StatementPtr Parser::ParseStatement() {
   while (tokens.size() > 0) {
     auto token = Peek();
@@ -121,8 +119,6 @@ StatementPtr Parser::ParseStatement() {
   }
   throw std::runtime_error("Unexpecrted end of input");
 }
-
-
 StatementPtr Parser::ParseKeyword(Token token) {
   switch (token.type) {
   case TType::Delete: {
@@ -190,6 +186,9 @@ StatementPtr Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
   case TType::DivEq:
   case TType::NullCoalescingEq:
   case TType::Lambda:
+  case TType::Comma: {
+    return ParseTupleDeconstruction(std::move(identifier));
+  }
   case TType::Assign: {
     return ParseAssignment(std::move(identifier));
   }
@@ -202,13 +201,13 @@ StatementPtr Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
         token.ToString());
   }
 }
-
 StatementPtr Parser::ParseAssignment(IdentifierPtr identifier,
                                      Mutability mutability) {
   Token next = Peek();
   if (next.type == TType::Assign) {
     Eat();
     auto value = ParseExpression();
+    
     return make_unique<Assignment>(info, std::move(identifier),
                                    std::move(value), mutability);
 
@@ -496,11 +495,33 @@ ExpressionPtr Parser::ParseObjectInitializer() {
     }
   }
 endloop:
-
+  
   Expect(TType::RCurly);
-
+  
   return make_unique<ObjectInitializer>(
       info, make_unique<Block>(info, std::move(statements)));
+}
+
+ExpressionPtr Parser::ParseTuple(ExpressionPtr &&expr) {
+  Eat(); // eat first comma.
+  vector<ExpressionPtr> values;
+  values.push_back(std::move(expr));
+  
+  while (!tokens.empty()) {
+    auto next = Peek();
+    
+    if (next.type == TType::RParen) {
+      break;
+    }
+    
+    values.push_back(ParseExpression());
+    
+    if (Peek().type == TType::Comma) {
+      Eat();
+    }
+  }
+  Expect(TType::RParen);
+  return make_unique<TupleInitializer>(info, std::move(values));
 }
 
 ExpressionPtr Parser::ParseOperand() {
@@ -511,7 +532,7 @@ ExpressionPtr Parser::ParseOperand() {
     auto operand = ParseExpression();
     return make_unique<UnaryExpr>(info, std::move(operand), token.type);
   }
-
+  
   switch (token.type) {
   case TType::Match: {
     Eat();
@@ -556,6 +577,11 @@ ExpressionPtr Parser::ParseOperand() {
   case TType::LParen: {
     Eat();
     auto expr = ParseExpression();
+    
+    if (Peek().type == TType::Comma) {
+      return ParseTuple(std::move(expr));
+    }
+    
     Expect(TType::RParen);
     return expr;
   }
@@ -926,4 +952,29 @@ DeletePtr Parser::ParseDelete() {
   
   auto iden = Expect(TType::Identifier);
   return make_unique<Delete>(info, make_unique<Identifier>(info, iden.value));
+}
+
+StatementPtr Parser::ParseTupleDeconstruction(IdentifierPtr &&iden) {
+  vector<IdentifierPtr> idens;
+  idens.push_back(std::move(iden));
+  Expect(TType::Comma);
+  
+  while (!tokens.empty()) {
+    if (Peek().type == TType::Assign) {
+      break;
+    }
+    
+    auto iden = Expect(TType::Identifier);
+    idens.push_back(make_unique<Identifier>(info, iden.value));
+    
+    if (Peek().type == TType::Comma) {
+      Eat();
+    }
+  }
+  
+  Expect(TType::Assign);
+  
+  auto tuple = ParseExpression();
+  
+  return make_unique<TupleDeconstruction>(info, std::move(idens), std::move(tuple));
 }

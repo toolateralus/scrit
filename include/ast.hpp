@@ -6,7 +6,6 @@
 #include <memory>
 
 #include <map>
-#include <variant>
 
 using std::string;
 using std::vector;
@@ -116,6 +115,13 @@ struct Arguments : Expression {
   vector<ExpressionPtr> values;
   Value Evaluate() override;
 };
+struct TupleInitializer : Expression {
+  vector<ExpressionPtr> values;
+  TupleInitializer(SourceInfo &info, vector<ExpressionPtr> &&values)
+      : Expression(info), values(std::move(values)) {}
+  Value Evaluate() override;
+};
+
 struct Parameters : Statement {
   std::map<string, Value> map;
   Parameters(SourceInfo &info, std::map<string, Value> &&params);
@@ -133,18 +139,18 @@ struct Return : Statement {
   Return(SourceInfo &info) : Statement(info) {}
   Return(SourceInfo &info, ExpressionPtr &&value);
   ExpressionPtr value;
-  
+
   ExecutionResult Execute() override;
 };
 
 struct DotExpr;
 struct Delete : Statement {
-    IdentifierPtr iden;
-    ExpressionPtr dot;
-    ~Delete();
-    Delete(SourceInfo &info, ExpressionPtr &&dot);
-    Delete(SourceInfo &info, IdentifierPtr &&iden);
-    ExecutionResult Execute() override;
+  IdentifierPtr iden;
+  ExpressionPtr dot;
+  ~Delete();
+  Delete(SourceInfo &info, ExpressionPtr &&dot);
+  Delete(SourceInfo &info, IdentifierPtr &&iden);
+  ExecutionResult Execute() override;
 };
 
 struct Block : Statement {
@@ -221,6 +227,15 @@ struct Assignment : Statement {
   ExecutionResult Execute() override;
 };
 
+struct TupleDeconstruction : Statement {
+  TupleDeconstruction(SourceInfo &info, vector<IdentifierPtr> &&idens,
+                      ExpressionPtr &&tuple)
+      : Statement(info), idens(std::move(idens)), tuple(std::move(tuple)) {}
+  vector<IdentifierPtr> idens;
+  ExpressionPtr tuple;
+  ExecutionResult Execute() override;
+};
+
 struct CompAssignExpr : Expression {
   ExpressionPtr left, right;
   TType op;
@@ -239,8 +254,10 @@ struct FunctionDecl : Statement {
   BlockPtr block;
   ParametersPtr parameters;
   const string name;
-  FunctionDecl(SourceInfo &info, string &name, BlockPtr &&block, ParametersPtr &&parameters)
-      :  Statement(info), block(std::move(block)), parameters(std::move(parameters)), name(name) {}
+  FunctionDecl(SourceInfo &info, string &name, BlockPtr &&block,
+               ParametersPtr &&parameters)
+      : Statement(info), block(std::move(block)),
+        parameters(std::move(parameters)), name(name) {}
   ExecutionResult Execute() override;
 };
 

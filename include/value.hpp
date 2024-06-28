@@ -3,6 +3,7 @@
 #include "lexer.hpp"
 #include "native.hpp"
 #include <memory>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <typeinfo>
@@ -65,6 +66,7 @@ enum class ValueType {
   Object,
   Array,
   Callable,
+  Tuple,
 };
 
 string TypeToString(ValueType type);
@@ -301,7 +303,93 @@ struct Array_T : Value_T {
     return values.rend();
   }
 };
+
+struct Tuple_T : Value_T {
+  vector<Value> values = {};
+  Tuple_T(vector<Value> values) : values(values) {}
+  auto Deconstruct(vector<IdentifierPtr> &idens) const -> void;
+  ValueType GetType() const override {
+    return ValueType::Tuple;
+  }
+  string ToString() const override {
+    vector<string> strings;
+    
+    for (const auto &v : values) {
+      strings.push_back(v->ToString());
+    }
+
+    if (!strings.empty()) {
+        return "(" + std::accumulate(std::next(strings.begin()), strings.end(), strings[0],
+            [](const string& a, const string& b) {
+                return a + ", " + b;
+            }) + ")";
+    } else {
+        return "()";
+    }
+  }
+  bool Equals(Value other)  override {
+    auto other_tuple = std::dynamic_pointer_cast<Tuple_T>(other);
+    
+    if (!other_tuple) {
+      return false;
+    }
+    
+    auto other_vals = other_tuple->values;
+    
+    if (other_vals.size() != this->values.size()) {
+      return false;
+    }
+    
+    size_t i = 0;
+    for (const auto &v: other_vals) {
+      if (!v->Equals(this->values[i])) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  Value Clone() override {
+    vector<Value> values;
+    for (const auto &v: this->values) {
+      values.push_back(v->Clone());
+    }
+    return make_shared<Tuple_T>(values);
+  }
+};
+
+
+template <typename T> ValueType Value_T::ValueTypeFromType() {
+  auto &t = typeid(T);
+  if (t == typeid(String_T)) {
+    return ValueType::String;
+  } else if (t == typeid(Int_T)) {
+    return ValueType::Int;
+  } else if (t == typeid(Float_T)) {
+    return ValueType::Float;
+  } else if (t == typeid(Bool_T)) {
+    return ValueType::Bool;
+  } else if (t == typeid(Object_T)) {
+    return ValueType::Object;
+  } else if (t == typeid(Array_T)) {
+    return ValueType::Array;
+  } else {
+    throw std::runtime_error("Cannot deduce type for " + string(t.name()) + ". This function is used for extracting values, and type checking while doing so. Directly use GetType() for Callable, Undefined, and other immutable values.");
+  }
+  
+}
+
+template <typename T> T *Value_T::Cast() {
+  if (ValueTypeFromType<T>() == GetType() && typeid(T) == typeid(*this)) {
+    return static_cast<T*>(this);
+  } 
+  throw std::runtime_error(
+      "invalid cast from : " + string(typeid(*this).name()) +
+      "to : " + string(typeid(T).name()));
+}
+
 } // namespace Values
+
 
 struct Ctx {
   Ctx() = delete;
@@ -348,31 +436,3 @@ struct Ctx {
   static bool IsNull(Value value);
 };
 
-template <typename T> ValueType Value_T::ValueTypeFromType() {
-  auto &t = typeid(T);
-  if (t == typeid(String_T)) {
-    return ValueType::String;
-  } else if (t == typeid(Int_T)) {
-    return ValueType::Int;
-  } else if (t == typeid(Float_T)) {
-    return ValueType::Float;
-  } else if (t == typeid(Bool_T)) {
-    return ValueType::Bool;
-  } else if (t == typeid(Object_T)) {
-    return ValueType::Object;
-  } else if (t == typeid(Array_T)) {
-    return ValueType::Array;
-  } else {
-    throw std::runtime_error("Cannot deduce type for " + string(t.name()) + ". This function is used for extracting values, and type checking while doing so. Directly use GetType() for Callable, Undefined, and other immutable values.");
-  }
-  
-}
-
-template <typename T> T *Value_T::Cast() {
-  if (ValueTypeFromType<T>() == GetType() && typeid(T) == typeid(*this)) {
-    return static_cast<T*>(this);
-  } 
-  throw std::runtime_error(
-      "invalid cast from : " + string(typeid(*this).name()) +
-      "to : " + string(typeid(T).name()));
-}

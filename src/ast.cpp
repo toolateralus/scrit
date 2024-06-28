@@ -247,8 +247,11 @@ Value Identifier::Evaluate() {
   return Value_T::UNDEFINED;
 }
 Value Arguments::Evaluate() {
-  // do nothing here.
-  return Value_T::VNULL;
+  vector<Value> values;
+  for (const auto &v: this->values) {
+    values.push_back(v->Evaluate());
+  }
+  return make_shared<Tuple_T>(values);
 }
 ExecutionResult Parameters::Execute() { return ExecutionResult::None; }
 ExecutionResult Continue::Execute() { return ExecutionResult::Continue; }
@@ -283,6 +286,7 @@ ExecutionResult Block::Execute(Scope scope) {
             case Values::ValueType::Array:
             case Values::ValueType::Callable:
               return result;
+            case Values::ValueType::Tuple:
             case Values::ValueType::Float:
             case Values::ValueType::Int:
             case Values::ValueType::Bool:
@@ -325,6 +329,8 @@ ExecutionResult Block::Execute() {
             case Values::ValueType::Array:
             case Values::ValueType::Callable:
               return result;
+              
+            case Values::ValueType::Tuple:
             case Values::ValueType::Float:
             case Values::ValueType::Int:
             case Values::ValueType::Bool:
@@ -496,11 +502,13 @@ ExecutionResult Assignment::Execute() {
           break;
           
         // clone value types.
+        case Values::ValueType::Tuple:
         case Values::ValueType::Float:
         case Values::ValueType::Int:
         case Values::ValueType::Bool:
         case Values::ValueType::String:
           result = result->Clone();
+          break;
         }
   
   context.Insert(iden->name, result, mutability);
@@ -989,8 +997,31 @@ ExecutionResult Delete::Execute() {
   }
   return ExecutionResult::None;
 }
+
 Delete::Delete(SourceInfo &info, ExpressionPtr &&dot)
     : Statement(info), dot(std::move(dot)) {}
+    
 Delete::Delete(SourceInfo &info, IdentifierPtr &&iden)
     : Statement(info), iden(std::move(iden)) {}
+    
 Delete::~Delete() {}
+
+Value TupleInitializer::Evaluate() {
+  vector<Value> values;
+  
+  for (const auto &v: this->values) {
+    values.push_back(v->Evaluate());
+  }
+  return make_shared<Tuple_T>(values);
+}
+
+ExecutionResult TupleDeconstruction::Execute() {
+  auto tuple = this->tuple->Evaluate();
+  std::cout << "type: " << TypeToString(tuple->GetType()) << std::endl;
+  auto value = std::dynamic_pointer_cast<Tuple_T>(tuple);
+  
+  if (value)
+    value->Deconstruct(this->idens);
+  
+  return ExecutionResult::None;
+}
