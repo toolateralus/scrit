@@ -121,7 +121,12 @@ struct TupleInitializer : Expression {
       : Expression(info), values(std::move(values)) {}
   Value Evaluate() override;
 };
-
+struct Property : Statement {
+  const IdentifierPtr iden;
+  ExpressionPtr lambda;
+  Property(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&lambda);
+  ExecutionResult Execute() override;
+};
 struct Parameters : Statement {
   std::map<string, Value> map;
   Parameters(SourceInfo &info, std::map<string, Value> &&params);
@@ -336,7 +341,10 @@ struct Using : Statement {
 };
 
 struct Lambda : Expression {
-  BlockPtr block;
+  BlockPtr block = nullptr;
+  ExpressionPtr expr = nullptr;
+  Lambda(SourceInfo &info, ExpressionPtr &&expr)
+      : Expression(info), expr(std::move(expr)) {}
   Lambda(SourceInfo &info, BlockPtr &&block)
       : Expression(info), block(std::move(block)) {}
   Value Evaluate() override;

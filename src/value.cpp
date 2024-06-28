@@ -4,6 +4,7 @@
 #include "serializer.hpp"
 
 #include <memory>
+#include <numeric>
 #include <sstream>
 #include <stdexcept>
 
@@ -390,6 +391,7 @@ Value Array_T::SubscriptAssign(Value key, Value value) {
 namespace Values {
 string TypeToString(ValueType type) {
   switch (type) {
+    
   case ValueType::Invalid:
     return "invalid";
   case ValueType::Null:
@@ -412,6 +414,8 @@ string TypeToString(ValueType type) {
     return "callable";
   case Values::ValueType::Tuple:
     return "tuple";
+  case ValueType::Lambda:
+    return "property";
   }
   return "";
 }
@@ -453,6 +457,63 @@ auto Tuple_T::Deconstruct(vector<IdentifierPtr> &idens) const -> void {
   }
 }
 
+bool Tuple_T::Equals(Value other) {
+  auto other_tuple = std::dynamic_pointer_cast<Tuple_T>(other);
+
+  if (!other_tuple) {
+    return false;
+  }
+
+  auto other_vals = other_tuple->values;
+
+  if (other_vals.size() != this->values.size()) {
+    return false;
+  }
+
+  size_t i = 0;
+  for (const auto &v : other_vals) {
+    if (!v->Equals(this->values[i])) {
+      throw std::runtime_error(string(v->ToString() + " did not equal " +
+                                      this->values[i]->ToString()));
+      return false;
+    }
+    ++i;
+  }
+
+  return true;
+}
+Value Tuple_T::Clone() {
+  vector<Value> values;
+  for (const auto &v : this->values) {
+    values.push_back(v->Clone());
+  }
+  return make_shared<Tuple_T>(values);
+}
+string Tuple_T::ToString() const {
+  vector<string> strings;
+
+  for (const auto &v : values) {
+    strings.push_back(v->ToString());
+  }
+
+  if (!strings.empty()) {
+    return "(" +
+           std::accumulate(
+               std::next(strings.begin()), strings.end(), strings[0],
+               [](const string &a, const string &b) { return a + ", " + b; }) +
+           ")";
+  } else {
+    return "()";
+  }
+}
+Value Lambda_T::Clone() { return Ctx::Undefined(); }
+bool Lambda_T::Equals(Value other) {
+  auto o = std::dynamic_pointer_cast<Lambda_T>(other);
+  if (o) {
+    return o->lambda.get() == this->lambda.get();
+  }
+  return false;
+}
 } // namespace Values
 
 Value Callable_T::Call(std::vector<Value> &values) {

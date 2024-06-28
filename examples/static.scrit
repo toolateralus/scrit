@@ -1,0 +1,45 @@
+using array
+
+
+// Using global variables to maintain state between functions with more explicit ownership
+// of the variable.
+
+// if global.logs doesn't exist create it and
+// push the messages passed in.
+func log(v) {
+  global.logs ??= => []
+  array.push(global.logs, v)
+}
+
+// dump the global storage member 'logs'
+func dump_logs() {
+  println(global.logs)
+}
+
+
+
+  
+//  using global variables to maintain state between calls to anonymous functions passed as predicates
+
+// create a 100 element array with a predicate that returns an int that increments from 0 to 100
+a = array.expand([], 100, func() {
+  // on the first call to this func, this will declare a global int called i
+  global.i ??= 0
+  
+  // each call will increment global.i until it reaches 100.
+  // on the 100th call, this will delete the variable.
+  // we return 100 explicitly to avoid 
+  // storing a local variable of global.i just to produce the same effect.
+  if global.i++ == 100 {
+    delete global.i
+    return 100
+  }
+  
+  // return the global index.
+  return global.i
+})
+
+
+log(a)
+
+dump_logs()

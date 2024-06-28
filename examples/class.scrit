@@ -14,6 +14,7 @@ const Vec2 = {
   // this just makes this base instance a functor that produces instances of it's self.
   // we declare this as mut since 
   // it will be removed from the object on instantiation.
+  // ()
   mut op_call = func(self) {
     // make a deep clone of this object.
     mut def = self.clone()
@@ -23,8 +24,6 @@ const Vec2 = {
     return def
   }
 }
-
-
 
 instance = Vec2()
 

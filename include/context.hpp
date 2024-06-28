@@ -9,8 +9,8 @@
 
 #include <map>
 #include <memory>
-#include <vector>
 #include <string>
+#include <vector>
 
 using std::shared_ptr;
 using std::string;
@@ -25,66 +25,72 @@ using namespace Values;
 
 struct Scope_T;
 typedef shared_ptr<Scope_T> Scope;
-struct ScritModHandle  {
+struct ScritModHandle {
   void *handle;
-  ScritModHandle() noexcept  = delete;
+  ScritModHandle() noexcept = delete;
   ScritModHandle(void *handle) noexcept;
-  
+
   ScritModHandle(const ScritModHandle &copy) noexcept = delete;
   ScritModHandle(ScritModHandle &&move) noexcept;
-  
-  ScritModHandle &operator=(const ScritModHandle&) noexcept = delete;
+
+  ScritModHandle &operator=(const ScritModHandle &) noexcept = delete;
   ScritModHandle &operator=(ScritModHandle &&other) noexcept;
-  ~ScritModHandle() noexcept ;
+  ~ScritModHandle() noexcept;
 };
 
 struct Scope_T {
+
+  enum struct VariableMode {
+    Variable,
+    Property,
+  };
+
   struct Key {
     const std::string value;
     const Mutability mutability;
+    const VariableMode mode = VariableMode::Variable;
     
-    Key(const std::string &value, const Mutability &mutability) : value(value), mutability(mutability){}
-    bool operator<(const Key& other) const {
-      return value < other.value;
-    }
-    bool operator==(const Key& other) const {
+    Key(const std::string &value, const Mutability &mutability,
+        const VariableMode &mode = VariableMode::Variable)
+        : value(value), mutability(mutability), mode(mode) {}
+        
+    bool operator<(const Key &other) const { return value < other.value; }
+    bool operator==(const Key &other) const {
       return value == other.value && mutability == other.mutability;
     }
-    
   };
   Scope_T() {}
-  auto Find(const std::string &name) -> std::_Rb_tree_iterator<std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>>;
+  auto Find(const std::string &name) -> std::_Rb_tree_iterator<
+      std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>>;
   auto Contains(const string &name) -> bool;
   auto Erase(const string &name) -> size_t;
-  auto Members() -> std::map<Key, Value>&;
+  auto Members() -> std::map<Key, Value> &;
   auto Get(const string &name) -> Value;
+  
   auto Set(const Key &name, Value value) -> void;
-  auto Set(const string &name, Value value, const Mutability &mutability = Mutability::Const) -> void;
-  auto Clear() -> void {
-    variables.clear();
-  }
+  
+  auto Set(const string &name, Value value,
+           const Mutability &mutability = Mutability::Const) -> void;
+  auto Clear() -> void { variables.clear(); }
   auto Clone() -> Scope;
   auto PushModule(ScritModHandle &&handle) {
     module_handles.push_back(std::move(handle));
   }
-  Scope_T(Scope_T *scope) {
-    variables = scope->variables;
-  } 
-  static auto Create() -> Scope {
-    return std::make_shared<Scope_T>();
-  }
+  Scope_T(Scope_T *scope) { variables = scope->variables; }
+  static auto Create() -> Scope { return std::make_shared<Scope_T>(); }
   static auto Create(Scope_T *scope) -> Scope {
     return std::make_shared<Scope_T>(scope);
   }
-  auto end() {
-    return variables.end();
-  }
+  auto end() { return variables.end(); }
+
 private:
   std::vector<ScritModHandle> module_handles;
   std::map<Key, Value> variables = {};
 };
 
-typedef std::_Rb_tree_iterator<std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>> VarIter;
+typedef std::_Rb_tree_iterator<
+    std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>>
+    VarIter;
 
 struct Context {
   Context();
@@ -96,5 +102,6 @@ struct Context {
   auto Find(const string &name) const -> Value;
   auto FindIter(const string &name) const -> VarIter;
   void Insert(const string &name, Value value, const Mutability &mutability);
+  void Insert(const Scope_T::Key &key, Value value);
   void Reset();
 };

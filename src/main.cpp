@@ -32,7 +32,7 @@ void InsertCmdLineArgs(int argc, char **argv) {
   }
   ASTNode::context.Insert("args", args, Mutability::Const);
 }
-
+  
 
 std::vector<Token> &PreProcessUseStatements(std::vector<Token> &tokens) {
   size_t i = 0;

@@ -186,11 +186,11 @@ StatementPtr Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
   case TType::DivEq:
   case TType::NullCoalescingEq:
   case TType::Lambda:
-  case TType::Comma: {
-    return ParseTupleDeconstruction(std::move(identifier));
-  }
   case TType::Assign: {
     return ParseAssignment(std::move(identifier));
+  }
+  case TType::Comma: {
+    return ParseTupleDeconstruction(std::move(identifier));
   }
   case TType::LParen: {
     return ParseCall(std::move(identifier));
@@ -204,6 +204,11 @@ StatementPtr Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
 StatementPtr Parser::ParseAssignment(IdentifierPtr identifier,
                                      Mutability mutability) {
   Token next = Peek();
+  
+  if (next.type == TType::Lambda) {
+    auto lambda = ParseLambda();
+    return make_unique<Property>(info, std::move(identifier), std::move(lambda));
+  }
   if (next.type == TType::Assign) {
     Eat();
     auto value = ParseExpression();
@@ -601,7 +606,7 @@ ExpressionPtr Parser::ParseLambda() {
   // here we use lambda as basically an implicit return.
   // => some_expression
   else {
-    return ParseExpression();
+    return make_unique<Lambda>(info, ParseExpression());
   }
 }
 

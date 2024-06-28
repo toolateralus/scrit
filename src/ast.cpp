@@ -240,6 +240,9 @@ Value Operand::Evaluate() { return value; }
 Value Identifier::Evaluate() {  
   auto value = ASTNode::context.Find(name);
   if (value != nullptr) {
+    if (auto lambda = std::dynamic_pointer_cast<Lambda_T>(value)) {
+      return lambda->Evaluate();
+    }
     return value;
   } else if (NativeFunctions::Exists(name)) {
     return NativeFunctions::GetCallable(name);
@@ -263,6 +266,53 @@ ExecutionResult Return::Execute() {
   // return undefined implicitly.
   else return ExecutionResult(ControlChange::Return, Value_T::UNDEFINED);
 }
+void ApplyCopySemantics(Value &result) {
+   switch (result->GetType()) {
+      case Values::ValueType::Invalid:
+      case Values::ValueType::Null:
+      case Values::ValueType::Undefined:
+      case Values::ValueType::Object:
+      case Values::ValueType::Array:
+      case Values::ValueType::Callable:
+        break;
+      case Values::ValueType::Tuple:
+      case Values::ValueType::Float:
+      case Values::ValueType::Int:
+      case Values::ValueType::Bool:
+      case Values::ValueType::String:
+        result = result->Clone();
+        break;
+      case Values::ValueType::Lambda: {
+        auto lambda = static_cast<Lambda_T *>(result.get());
+        result = lambda->Evaluate();
+        break;
+      }
+    }
+}
+
+void ApplyCopySemantics(ExecutionResult &result) {
+   switch (result.value->GetType()) {
+      case Values::ValueType::Invalid:
+      case Values::ValueType::Null:
+      case Values::ValueType::Undefined:
+      case Values::ValueType::Object:
+      case Values::ValueType::Array:
+      case Values::ValueType::Callable:
+        break;
+      case Values::ValueType::Tuple:
+      case Values::ValueType::Float:
+      case Values::ValueType::Int:
+      case Values::ValueType::Bool:
+      case Values::ValueType::String:
+        result.value = result.value->Clone();
+        break;
+      case Values::ValueType::Lambda: {
+        auto lambda = static_cast<Lambda_T *>(result.value.get());
+        result.value = lambda->Evaluate();
+        break;
+      }
+    }
+}
 
 ExecutionResult Block::Execute(Scope scope) {
   ASTNode::context.PushScope(scope);
@@ -278,22 +328,8 @@ ExecutionResult Block::Execute(Scope scope) {
         ASTNode::context.PopScope();
         
         if (result.value != nullptr) {
-          switch (result.value->GetType()) {
-            case Values::ValueType::Invalid:
-            case Values::ValueType::Null:
-            case Values::ValueType::Undefined:
-            case Values::ValueType::Object:
-            case Values::ValueType::Array:
-            case Values::ValueType::Callable:
-              return result;
-            case Values::ValueType::Tuple:
-            case Values::ValueType::Float:
-            case Values::ValueType::Int:
-            case Values::ValueType::Bool:
-            case Values::ValueType::String:
-              result.value = result.value->Clone();
-              return result;
-          }
+          ApplyCopySemantics(result);
+          return result;
         }
         
         return result;
@@ -321,23 +357,8 @@ ExecutionResult Block::Execute() {
         ASTNode::context.PopScope();
         
         if (result.value != nullptr) {
-          switch (result.value->GetType()) {
-            case Values::ValueType::Invalid:
-            case Values::ValueType::Null:
-            case Values::ValueType::Undefined:
-            case Values::ValueType::Object:
-            case Values::ValueType::Array:
-            case Values::ValueType::Callable:
-              return result;
-              
-            case Values::ValueType::Tuple:
-            case Values::ValueType::Float:
-            case Values::ValueType::Int:
-            case Values::ValueType::Bool:
-            case Values::ValueType::String:
-              result.value = result.value->Clone();
-              return result;
-          }
+          ApplyCopySemantics(result);
+          return result;
         }
         
         return result;
@@ -492,24 +513,9 @@ ExecutionResult For::Execute() {
 }
 ExecutionResult Assignment::Execute() {
   auto result = expr->Evaluate();
-  switch (result->GetType()) {
-        case Values::ValueType::Invalid:
-        case Values::ValueType::Null:
-        case Values::ValueType::Undefined:
-        case Values::ValueType::Object:
-        case Values::ValueType::Array:
-        case Values::ValueType::Callable:
-          break;
-          
-        // clone value types.
-        case Values::ValueType::Tuple:
-        case Values::ValueType::Float:
-        case Values::ValueType::Int:
-        case Values::ValueType::Bool:
-        case Values::ValueType::String:
-          result = result->Clone();
-          break;
-        }
+  
+  ApplyCopySemantics(result);
+  
   
   context.Insert(iden->name, result, mutability);
   return ExecutionResult::None;
@@ -930,7 +936,6 @@ Else::~Else() {}
 
 Value Match::Evaluate() {
   auto val = expr->Evaluate();
-
   size_t i = 0;
   
   // Check our expression's resulting value against the provided match cases.
@@ -952,11 +957,18 @@ Value Match::Evaluate() {
 }
 
 Value Lambda::Evaluate() {
-  auto result = block->Execute();
-  if (result.controlChange != ControlChange::Return || result.value == nullptr) {
-    return Value_T::UNDEFINED;
+  if (block) {
+    auto result = block->Execute();
+    
+    if (result.controlChange != ControlChange::Return || result.value == nullptr) {
+      return Value_T::UNDEFINED;
+    }
+    return result.value;
+  } else if (expr) {
+    return expr->Evaluate();
+  } else {
+    throw std::runtime_error("invalid lambda");
   }
-  return result.value;
 }
 
 ExecutionResult FunctionDecl::Execute() {
@@ -1017,11 +1029,24 @@ Value TupleInitializer::Evaluate() {
 
 ExecutionResult TupleDeconstruction::Execute() {
   auto tuple = this->tuple->Evaluate();
-  std::cout << "type: " << TypeToString(tuple->GetType()) << std::endl;
   auto value = std::dynamic_pointer_cast<Tuple_T>(tuple);
   
   if (value)
     value->Deconstruct(this->idens);
   
+  return ExecutionResult::None;
+}
+Property::Property(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&lambda)
+    : Statement(info), iden(std::move(iden)), lambda(std::move(lambda)) {}
+    
+ExecutionResult Property::Execute() {
+  if (lambda) {
+    Scope_T::Key key = Scope_T::Key(
+      iden->name,
+      Mutability::Const,
+      Scope_T::VariableMode::Property
+    );
+    context.Insert(key, make_shared<Lambda_T>(std::move(lambda)));
+  }
   return ExecutionResult::None;
 }

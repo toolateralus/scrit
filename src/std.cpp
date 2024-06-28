@@ -41,8 +41,6 @@ REGISTER_FUNCTION(fmod) {
   return Ctx::CreateFloat(std::fmod(v, mod));
 }
 
-
-
 // Create a deep clone of any value.
 REGISTER_FUNCTION(clone) {
   if (args.size() == 0) {
@@ -50,7 +48,6 @@ REGISTER_FUNCTION(clone) {
   }
   return args[0]->Clone();
 }
-
 
 REGISTER_FUNCTION(nameof) {
   if (args.empty()) {

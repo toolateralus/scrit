@@ -4,7 +4,7 @@ using sstream
 
 working_dir = directory.current()
 
-mut info = file.read("info.md")
+info = file.read("info.md")
 
 files = directory.getfiles(working_dir)
           .where(
@@ -21,6 +21,8 @@ for file : files {
   // 'link' prints the same value each iteration, even though
   // 'file' is always different.
   link = "[" + file.without(".scrit") + "](" + file + ")\n"
+  
+  println("for file: " + file + " link = " + link)
   
   if !tostr(stream).contains(link) {
     sstream.append(stream, link)

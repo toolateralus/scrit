@@ -3,7 +3,6 @@
 #include "lexer.hpp"
 #include "native.hpp"
 #include <memory>
-#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <typeinfo>
@@ -67,6 +66,7 @@ enum class ValueType {
   Array,
   Callable,
   Tuple,
+  Lambda,
 };
 
 string TypeToString(ValueType type);
@@ -311,53 +311,26 @@ struct Tuple_T : Value_T {
   ValueType GetType() const override {
     return ValueType::Tuple;
   }
-  string ToString() const override {
-    vector<string> strings;
-    
-    for (const auto &v : values) {
-      strings.push_back(v->ToString());
-    }
-
-    if (!strings.empty()) {
-        return "(" + std::accumulate(std::next(strings.begin()), strings.end(), strings[0],
-            [](const string& a, const string& b) {
-                return a + ", " + b;
-            }) + ")";
-    } else {
-        return "()";
-    }
-  }
-  bool Equals(Value other)  override {
-    auto other_tuple = std::dynamic_pointer_cast<Tuple_T>(other);
-    
-    if (!other_tuple) {
-      return false;
-    }
-    
-    auto other_vals = other_tuple->values;
-    
-    if (other_vals.size() != this->values.size()) {
-      return false;
-    }
-    
-    size_t i = 0;
-    for (const auto &v: other_vals) {
-      if (!v->Equals(this->values[i])) {
-        return false;
-      }
-    }
-    
-    return true;
-  }
-  Value Clone() override {
-    vector<Value> values;
-    for (const auto &v: this->values) {
-      values.push_back(v->Clone());
-    }
-    return make_shared<Tuple_T>(values);
-  }
+  string ToString() const override;
+  bool Equals(Value other) override;
+  Value Clone() override;
 };
 
+struct Lambda_T : Value_T {
+  ExpressionPtr lambda;
+  Lambda_T(ExpressionPtr &&lambda) : lambda(std::move(lambda)) {}
+  Value Evaluate() {
+    return lambda->Evaluate();
+  }
+  ValueType GetType() const override {
+    return ValueType::Lambda;
+  }
+  string ToString() const override {
+    return "property: " + lambda->Evaluate()->ToString();
+  }
+  bool Equals(Value other) override;
+  Value Clone() override;
+};
 
 template <typename T> ValueType Value_T::ValueTypeFromType() {
   auto &t = typeid(T);
