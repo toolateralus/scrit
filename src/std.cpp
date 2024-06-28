@@ -94,7 +94,7 @@ REGISTER_FUNCTION(type) {
   }
   
   string typeName;
-  return Ctx::CreateString(TypeToString(args[0]->GetType()));
+  return Ctx::CreateString(TypeToString(args[0]->GetPrimitiveType()));
 }
 // Serializer
 REGISTER_FUNCTION(serialize) {

@@ -1,9 +1,11 @@
 #include "ast.hpp"
+#include "type.hpp"
 #include "context.hpp"
 #include "debug.hpp"
 #include "native.hpp"
 #include "parser.hpp"
 #include "value.hpp"
+
 #include <iostream>
 #include <memory>
 #include <ranges>
@@ -51,18 +53,16 @@ If::If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block)
   this->condition = std::move(condition);
   this->block = std::move(block);
 }
-Arguments::Arguments(SourceInfo &info, vector<ExpressionPtr> &&args)
-    : Expression(info) {
+Arguments::Arguments(SourceInfo &info,  vector<ExpressionPtr> &&args)
+    : Expression(info, TypeSystem::Undefined()) {
   this->values = std::move(args);
 }
-Parameters::Parameters(SourceInfo &info, std::map<string, Value> &&params)
+Parameters::Parameters(SourceInfo &info, std::map<string, Param> &&params)
     : Statement(info) {
   this->map = std::move(params);
 }
-Identifier::Identifier(SourceInfo &info, string &name) : Expression(info) {
-  this->name = name;
-}
-Operand::Operand(SourceInfo &info, Value value) : Expression(info) {
+Identifier::Identifier(SourceInfo &info, const Type &type, const string &name) : Expression(info, type), name(name) {}
+Operand::Operand(SourceInfo &info, const Type &type, Value value) : Expression(info, type) {
   this->value = value;
 }
 Program::Program(vector<StatementPtr> &&statements)
@@ -76,12 +76,12 @@ Block::Block(SourceInfo &info, vector<StatementPtr> &&statements)
     : Statement(info) {
   this->statements = std::move(statements);
 }
-ObjectInitializer::ObjectInitializer(SourceInfo &info, BlockPtr &&block)
-    : Expression(info) {
+ObjectInitializer::ObjectInitializer(SourceInfo &info, const Type &type, BlockPtr &&block)
+    : Expression(info, type) {
   this->block = std::move(block);
 }
 Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
-    : Expression(info), Statement(info) {
+    : Expression(info, operand->type), Statement(info) {
   this->operand = std::move(operand);
   this->args = std::move(args);
 }
@@ -94,13 +94,13 @@ For::For(SourceInfo &info, StatementPtr &&decl, ExpressionPtr &&condition,
   this->block = std::move(block);
   this->scope = scope;
 }
-Assignment::Assignment(SourceInfo &info, IdentifierPtr &&iden,
+Assignment::Assignment(SourceInfo &info, const Type &type, IdentifierPtr &&iden,
                        ExpressionPtr &&expr, const Mutability &mutability)
-    : Statement(info) , iden(std::move(iden)), expr(std::move(expr)), mutability(mutability) {
+    : Statement(info) , iden(std::move(iden)), expr(std::move(expr)), mutability(mutability), type(type) {
 }
 
-DotExpr::DotExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right)
-    : Expression(info) {
+DotExpr::DotExpr(SourceInfo &info, const Type &type, ExpressionPtr &&left, ExpressionPtr &&right)
+    : Expression(info, type) {
   this->left = std::move(left);
   this->right = std::move(right);
 }
@@ -114,9 +114,9 @@ DotCallStmnt::DotCallStmnt(SourceInfo &info, ExpressionPtr &&dot)
     : Statement(info) {
   this->dot = std::move(dot);
 }
-Subscript::Subscript(SourceInfo &info, ExpressionPtr &&left,
+Subscript::Subscript(SourceInfo &info, const Type &type, ExpressionPtr &&left,
                      ExpressionPtr &&idx)
-    : Expression(info) {
+    : Expression(info, type) {
   this->left = std::move(left);
   this->index = std::move(idx);
 }
@@ -127,14 +127,18 @@ SubscriptAssignStmnt::SubscriptAssignStmnt(SourceInfo &info,
   this->subscript = std::move(subscript);
   this->value = std::move(value);
 }
-UnaryExpr::UnaryExpr(SourceInfo &info, ExpressionPtr &&left, TType op)
-    : Expression(info) {
+UnaryExpr::UnaryExpr(SourceInfo &info, const Type &type, ExpressionPtr &&left, TType op)
+    : Expression(info, type) {
   this->operand = std::move(left);
   this->op = op;
 }
 BinExpr::BinExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right,
                  TType op)
-    : Expression(info) {
+    : Expression(info, nullptr) {
+  if (left->type != right->type) {
+    throw std::runtime_error("invalid types in binary expression");
+  }
+  this->type = left->type;
   this->left = std::move(left);
   this->right = std::move(right);
   this->op = op;
@@ -197,6 +201,7 @@ UnaryStatement::UnaryStatement(SourceInfo &info, ExpressionPtr &&expr)
 CompoundAssignment::CompoundAssignment(SourceInfo &info,
                                        ExpressionPtr &&cmpAssignExpr)
     : Statement(info), expr(std::move(cmpAssignExpr)) {}
+    
 RangeBasedFor::RangeBasedFor(SourceInfo &info, ExpressionPtr &&lhs,
                              ExpressionPtr &&rhs, BlockPtr &&block)
     : Statement(info), lhs(std::move(lhs)), rhs(std::move(rhs)),
@@ -204,7 +209,8 @@ RangeBasedFor::RangeBasedFor(SourceInfo &info, ExpressionPtr &&lhs,
       
 CompAssignExpr::CompAssignExpr(SourceInfo &info, ExpressionPtr &&left,
                                ExpressionPtr &&right, TType op)
-    : Expression(info), left(std::move(left)), right(std::move(right)), op(op) {
+    : Expression(info, nullptr), left(std::move(left)), right(std::move(right)), op(op) {
+      this->type = left->type;
 }
 
 ExecutionResult Program::Execute() {
@@ -267,22 +273,22 @@ ExecutionResult Return::Execute() {
   else return ExecutionResult(ControlChange::Return, Value_T::UNDEFINED);
 }
 void ApplyCopySemantics(Value &result) {
-   switch (result->GetType()) {
-      case Values::ValueType::Invalid:
-      case Values::ValueType::Null:
-      case Values::ValueType::Undefined:
-      case Values::ValueType::Object:
-      case Values::ValueType::Array:
-      case Values::ValueType::Callable:
+   switch (result->GetPrimitiveType()) {
+      case Values::PrimitveType::Invalid:
+      case Values::PrimitveType::Null:
+      case Values::PrimitveType::Undefined:
+      case Values::PrimitveType::Object:
+      case Values::PrimitveType::Array:
+      case Values::PrimitveType::Callable:
         break;
-      case Values::ValueType::Tuple:
-      case Values::ValueType::Float:
-      case Values::ValueType::Int:
-      case Values::ValueType::Bool:
-      case Values::ValueType::String:
+      case Values::PrimitveType::Tuple:
+      case Values::PrimitveType::Float:
+      case Values::PrimitveType::Int:
+      case Values::PrimitveType::Bool:
+      case Values::PrimitveType::String:
         result = result->Clone();
         break;
-      case Values::ValueType::Lambda: {
+      case Values::PrimitveType::Lambda: {
         auto lambda = static_cast<Lambda_T *>(result.get());
         result = lambda->Evaluate();
         break;
@@ -291,22 +297,22 @@ void ApplyCopySemantics(Value &result) {
 }
 
 void ApplyCopySemantics(ExecutionResult &result) {
-   switch (result.value->GetType()) {
-      case Values::ValueType::Invalid:
-      case Values::ValueType::Null:
-      case Values::ValueType::Undefined:
-      case Values::ValueType::Object:
-      case Values::ValueType::Array:
-      case Values::ValueType::Callable:
+   switch (result.value->GetPrimitiveType()) {
+      case Values::PrimitveType::Invalid:
+      case Values::PrimitveType::Null:
+      case Values::PrimitveType::Undefined:
+      case Values::PrimitveType::Object:
+      case Values::PrimitveType::Array:
+      case Values::PrimitveType::Callable:
         break;
-      case Values::ValueType::Tuple:
-      case Values::ValueType::Float:
-      case Values::ValueType::Int:
-      case Values::ValueType::Bool:
-      case Values::ValueType::String:
+      case Values::PrimitveType::Tuple:
+      case Values::PrimitveType::Float:
+      case Values::PrimitveType::Int:
+      case Values::PrimitveType::Bool:
+      case Values::PrimitveType::String:
         result.value = result.value->Clone();
         break;
-      case Values::ValueType::Lambda: {
+      case Values::PrimitveType::Lambda: {
         auto lambda = static_cast<Lambda_T *>(result.value.get());
         result.value = lambda->Evaluate();
         break;
@@ -397,7 +403,7 @@ vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
 }
 Value Call::Evaluate() {
   auto lvalue = operand->Evaluate();
-  if (lvalue->GetType() == ValueType::Callable) {
+  if (lvalue->GetPrimitiveType() == PrimitveType::Callable) {
     auto callable = std::static_pointer_cast<Callable_T>(lvalue);
     auto result = callable->Call(args);
     return result;
@@ -447,7 +453,7 @@ ExecutionResult For::Execute() {
     while (true) {
       auto conditionResult = condition->Evaluate();
 
-      if (conditionResult->GetType() != ValueType::Bool) {
+      if (conditionResult->GetPrimitiveType() != PrimitveType::Bool) {
         return ExecutionResult::None;
       }
 
@@ -528,7 +534,7 @@ Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue) {
     if (result == nullptr) {
       return binExpr->Evaluate();
     }
-    auto expr = make_unique<Operand>(binExpr->srcInfo, result);
+    auto expr = make_unique<Operand>(binExpr->srcInfo, binExpr->type, result);
     binExpr->left = std::move(expr);
     return binExpr->Evaluate();
   }
@@ -598,9 +604,9 @@ Value DotExpr::Evaluate() {
   }
   
   // Below is field accessors.
-  if (lvalue->GetType() != ValueType::Object) {
+  if (lvalue->GetPrimitiveType() != PrimitveType::Object) {
     throw std::runtime_error("invalid lhs on dot operation : " +
-                             TypeToString(lvalue->GetType()));
+                             TypeToString(lvalue->GetPrimitiveType()));
   }
   
   auto object = static_cast<Object_T *>(lvalue.get());
@@ -615,9 +621,9 @@ Value DotExpr::Evaluate() {
 void DotExpr::Assign(Value value) {
   auto lvalue = left->Evaluate();
 
-  if (lvalue->GetType() != ValueType::Object) {
+  if (lvalue->GetPrimitiveType() != PrimitveType::Object) {
     throw std::runtime_error("invalid lhs on dot operation : " +
-                             TypeToString(lvalue->GetType()));
+                             TypeToString(lvalue->GetPrimitiveType()));
   }
 
   auto obj = static_cast<Object_T *>(lvalue.get());
@@ -680,8 +686,8 @@ Value BinExpr::Evaluate() {
 
   switch (op) {
   case TType::NullCoalescing: {
-    if (left->GetType() == ValueType::Null ||
-        left->GetType() == ValueType::Undefined) {
+    if (left->GetPrimitiveType() == PrimitveType::Null ||
+        left->GetPrimitiveType() == PrimitveType::Undefined) {
       return right;
     }
     return left;
@@ -909,8 +915,8 @@ Value CompAssignExpr::Evaluate() {
     return lvalue;
   }
   case TType::NullCoalescingEq: {
-    if (lvalue->GetType() == ValueType::Undefined ||
-        lvalue->GetType() == ValueType::Null) {
+    if (lvalue->GetPrimitiveType() == PrimitveType::Undefined ||
+        lvalue->GetPrimitiveType() == PrimitveType::Null) {
       auto result = rvalue;
       if (iden) {
         context.Insert(iden->name, rvalue, mut);
@@ -972,7 +978,7 @@ Value Lambda::Evaluate() {
 
 ExecutionResult FunctionDecl::Execute() {
   ASTNode::context.Insert(
-      name, make_shared<Callable_T>(std::move(block), std::move(parameters)),
+      name, make_shared<Callable_T>(returnType, std::move(block), std::move(parameters)),
       Mutability::Const);
   return ExecutionResult::None;
 }
@@ -1047,4 +1053,18 @@ ExecutionResult Property::Execute() {
     context.Insert(key, make_shared<Lambda_T>(std::move(lambda)));
   }
   return ExecutionResult::None;
+}
+// TODO: fix this.
+Identifier::Identifier(SourceInfo &info, const string &name) : Expression(info, nullptr), name(name) {
+  
+}
+
+TupleInitializer::TupleInitializer(SourceInfo &info,
+                                   vector<ExpressionPtr> &&values)
+    : Expression(info, nullptr),
+      values(std::move(values)) {
+        for (const auto &v : values) {
+          this->types.push_back(v->type);  
+        }
+        this->type = TypeSystem::FromTuple(this->types);
 }

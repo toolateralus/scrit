@@ -1,5 +1,6 @@
 #pragma once
 #include "lexer.hpp"
+#include "native.hpp"
 
 #include <cassert>
 #include <functional>
@@ -20,8 +21,14 @@ struct Context;
 
 namespace Values {
 struct Value_T;
+struct Type_T;
+enum class PrimitveType;
 }
+
+using Type = std::shared_ptr<Values::Type_T>;
+
 struct Scope_T;
+
 typedef std::shared_ptr<Values::Value_T> Value;
 typedef std::shared_ptr<Scope_T> Scope;
 
@@ -43,20 +50,26 @@ struct Lambda;
 struct FunctionDecl;
 struct Delete;
 
+namespace Values {
+  struct Type_T;
+};
+
+using Type = std::shared_ptr<Values::Type_T>;
+
 // typedefs
-typedef unique_ptr<Delete> DeletePtr;
-typedef unique_ptr<Lambda> LambdaPtr;
-typedef unique_ptr<Using> UsingPtr;
-typedef unique_ptr<Statement> StatementPtr;
-typedef unique_ptr<Expression> ExpressionPtr;
-typedef unique_ptr<Block> BlockPtr;
-typedef unique_ptr<Arguments> ArgumentsPtr;
-typedef unique_ptr<If> IfPtr;
-typedef unique_ptr<Else> ElsePtr;
-typedef unique_ptr<Identifier> IdentifierPtr;
-typedef unique_ptr<Parameters> ParametersPtr;
-typedef unique_ptr<Operand> OperandPtr;
-typedef unique_ptr<FunctionDecl> FunctionDeclPtr;
+using DeletePtr = std::unique_ptr<Delete>;
+using LambdaPtr = std::unique_ptr<Lambda>;
+using UsingPtr = std::unique_ptr<Using>;
+using StatementPtr = std::unique_ptr<Statement>;
+using ExpressionPtr = std::unique_ptr<Expression>;
+using BlockPtr = std::unique_ptr<Block>;
+using ArgumentsPtr = std::unique_ptr<Arguments>;
+using IfPtr = std::unique_ptr<If>;
+using ElsePtr = std::unique_ptr<Else>;
+using IdentifierPtr = std::unique_ptr<Identifier>;
+using ParametersPtr = std::unique_ptr<Parameters>;
+using OperandPtr = std::unique_ptr<Operand>;
+using FunctionDeclPtr = std::unique_ptr<FunctionDecl>;
 
 enum struct ControlChange {
   None,
@@ -64,7 +77,6 @@ enum struct ControlChange {
   Continue,
   Break,
 };
-
 struct ExecutionResult {
   ExecutionResult(ControlChange controlChange, Value value);
   static ExecutionResult None;
@@ -73,7 +85,6 @@ struct ExecutionResult {
   ControlChange controlChange;
   Value value;
 };
-
 struct ASTNode {
   SourceInfo srcInfo;
   ASTNode(SourceInfo &info) : srcInfo(info) {}
@@ -81,7 +92,6 @@ struct ASTNode {
   static Context context;
   virtual ~ASTNode() {}
 };
-
 struct Executable : ASTNode {
   virtual ~Executable() {}
   virtual ExecutionResult Execute() = 0;
@@ -96,18 +106,20 @@ struct Program : Executable {
   ExecutionResult Execute() override;
 };
 struct Expression : ASTNode {
-  Expression(SourceInfo &info) : ASTNode(info) {}
+  Type type;
+  Expression(SourceInfo &info, const Type &type) : ASTNode(info), type(type) {}
   virtual ~Expression() {}
   virtual Value Evaluate() = 0;
 };
 struct Operand : Expression {
-  Operand(SourceInfo &info, Value value);
+  Operand(SourceInfo &info, const Type &type, Value value);
   Value value;
   Value Evaluate() override;
 };
 struct Identifier : Expression {
-  Identifier(SourceInfo &info, string &name);
-  string name;
+  const string name;
+  Identifier(SourceInfo &info, const Type &type, const string &name);
+  Identifier(SourceInfo &info, const string &name);
   Value Evaluate() override;
 };
 struct Arguments : Expression {
@@ -117,8 +129,8 @@ struct Arguments : Expression {
 };
 struct TupleInitializer : Expression {
   vector<ExpressionPtr> values;
-  TupleInitializer(SourceInfo &info, vector<ExpressionPtr> &&values)
-      : Expression(info), values(std::move(values)) {}
+  vector<Type> types;
+  TupleInitializer(SourceInfo &info, vector<ExpressionPtr> &&values);
   Value Evaluate() override;
 };
 struct Property : Statement {
@@ -129,8 +141,20 @@ struct Property : Statement {
   ExecutionResult Execute() override;
 };
 struct Parameters : Statement {
-  std::map<string, Value> map;
-  Parameters(SourceInfo &info, std::map<string, Value> &&params);
+  struct Param {
+    Value value;
+    Type type;
+  };
+  std::map<string, Param> map;
+  
+  auto ParamTypes() -> vector<Type> {
+    vector<Type> types;
+    for (const auto &[_, p]: map) {
+      types.push_back(p.type);
+    }
+    return types;
+  }
+  Parameters(SourceInfo &info, std::map<string, Param> &&params);
   ExecutionResult Execute() override;
 };
 struct Continue : Statement {
@@ -145,10 +169,8 @@ struct Return : Statement {
   Return(SourceInfo &info) : Statement(info) {}
   Return(SourceInfo &info, ExpressionPtr &&value);
   ExpressionPtr value;
-
   ExecutionResult Execute() override;
 };
-
 struct DotExpr;
 struct Delete : Statement {
   IdentifierPtr iden;
@@ -158,7 +180,6 @@ struct Delete : Statement {
   Delete(SourceInfo &info, IdentifierPtr &&iden);
   ExecutionResult Execute() override;
 };
-
 struct Block : Statement {
   Block(SourceInfo &info, vector<StatementPtr> &&statements);
   vector<StatementPtr> statements;
@@ -167,7 +188,7 @@ struct Block : Statement {
 };
 struct ObjectInitializer : Expression {
   BlockPtr block;
-  ObjectInitializer(SourceInfo &info, BlockPtr &&block);
+  ObjectInitializer(SourceInfo &info, const Type &type, BlockPtr &&block);
   Value Evaluate() override;
 };
 struct Call : Expression, Statement {
@@ -178,15 +199,14 @@ struct Call : Expression, Statement {
   Value Evaluate() override;
   ExecutionResult Execute() override;
 };
-
 struct If : Statement {
   If() = delete;
   static IfPtr NoElse(SourceInfo &info, ExpressionPtr &&condition,
                       BlockPtr &&block);
-  static IfPtr WithElse(SourceInfo &info, ExpressionPtr &&condition,
+  static IfPtr WithElse(SourceInfo &info,  ExpressionPtr &&condition,
                         BlockPtr &&block, ElsePtr &&elseStmnt);
-  If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block);
-  If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block,
+  If(SourceInfo &info,  ExpressionPtr &&condition, BlockPtr &&block);
+  If(SourceInfo &info,  ExpressionPtr &&condition, BlockPtr &&block,
      ElsePtr &&elseStmnt);
   ExpressionPtr condition;
   BlockPtr block;
@@ -199,9 +219,9 @@ struct Else : Statement {
   IfPtr ifStmnt;
   BlockPtr block;
   Else(SourceInfo &info) : Statement(info) {}
-  Else(SourceInfo &info, IfPtr &&ifPtr, BlockPtr &&block);
-  static ElsePtr NoIf(SourceInfo &info, BlockPtr &&block);
-  static ElsePtr New(SourceInfo &info, IfPtr &&ifStmnt);
+  Else(SourceInfo &info,  IfPtr &&ifPtr, BlockPtr &&block);
+  static ElsePtr NoIf(SourceInfo &info,  BlockPtr &&block);
+  static ElsePtr New(SourceInfo &info,  IfPtr &&ifStmnt);
   ExecutionResult Execute() override;
 };
 struct For : Statement {
@@ -210,29 +230,27 @@ struct For : Statement {
   StatementPtr increment;
   BlockPtr block;
   Scope scope;
-  For(SourceInfo &info, StatementPtr &&decl, ExpressionPtr &&condition,
+  For(SourceInfo &info,  StatementPtr &&decl, ExpressionPtr &&condition,
       StatementPtr &&inc, BlockPtr &&block, Scope scope);
   ExecutionResult Execute() override;
 };
-
 struct RangeBasedFor : Statement {
-  RangeBasedFor(SourceInfo &info, ExpressionPtr &&lhs, ExpressionPtr &&rhs,
+  RangeBasedFor(SourceInfo &info,  ExpressionPtr &&lhs, ExpressionPtr &&rhs,
                 BlockPtr &&block);
   ExpressionPtr lhs;
   ExpressionPtr rhs;
   BlockPtr block;
   ExecutionResult Execute() override;
 };
-
 struct Assignment : Statement {
   const IdentifierPtr iden;
   const ExpressionPtr expr;
   const Mutability mutability;
-  Assignment(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&expr,
+  const Type type;
+  Assignment(SourceInfo &info, const Type &type, IdentifierPtr &&iden, ExpressionPtr &&expr,
              const Mutability &mutability);
   ExecutionResult Execute() override;
 };
-
 struct TupleDeconstruction : Statement {
   TupleDeconstruction(SourceInfo &info, vector<IdentifierPtr> &&idens,
                       ExpressionPtr &&tuple)
@@ -241,7 +259,6 @@ struct TupleDeconstruction : Statement {
   ExpressionPtr tuple;
   ExecutionResult Execute() override;
 };
-
 struct CompAssignExpr : Expression {
   ExpressionPtr left, right;
   TType op;
@@ -249,30 +266,28 @@ struct CompAssignExpr : Expression {
                  TType op);
   Value Evaluate() override;
 };
-
 struct CompoundAssignment : Statement {
   ExpressionPtr expr;
   CompoundAssignment(SourceInfo &info, ExpressionPtr &&expr);
   ExecutionResult Execute() override;
 };
-
 struct FunctionDecl : Statement {
   BlockPtr block;
   ParametersPtr parameters;
   const string name;
+  const Type returnType;
   FunctionDecl(SourceInfo &info, string &name, BlockPtr &&block,
-               ParametersPtr &&parameters)
+               ParametersPtr &&parameters, const Type &returnType)
       : Statement(info), block(std::move(block)),
-        parameters(std::move(parameters)), name(name) {}
+        parameters(std::move(parameters)), name(name), returnType(returnType) {}
   ExecutionResult Execute() override;
 };
-
 struct Noop : Statement {
   Noop(SourceInfo &info) : Statement(info) {}
   ExecutionResult Execute() override { return ExecutionResult::None; }
 };
 struct DotExpr : Expression {
-  DotExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right);
+  DotExpr(SourceInfo &info, const Type &type, ExpressionPtr &&left, ExpressionPtr &&right);
   ExpressionPtr left;
   ExpressionPtr right;
   Value Evaluate() override;
@@ -290,7 +305,7 @@ struct DotCallStmnt : Statement {
   ExecutionResult Execute() override;
 };
 struct Subscript : Expression {
-  Subscript(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&idx);
+  Subscript(SourceInfo &info, const Type &type, ExpressionPtr &&left, ExpressionPtr &&idx);
   ExpressionPtr left;
   ExpressionPtr index;
   Value Evaluate();
@@ -303,12 +318,11 @@ struct SubscriptAssignStmnt : Statement {
   ExecutionResult Execute() override;
 };
 struct UnaryExpr : Expression {
-  UnaryExpr(SourceInfo &info, ExpressionPtr &&left, TType op);
+  UnaryExpr(SourceInfo &info, const Type &type, ExpressionPtr &&left, TType op);
   ExpressionPtr operand;
   TType op;
   Value Evaluate() override;
 };
-
 // this is basically only for decrement / increment right now
 struct UnaryStatement : Statement {
   ExpressionPtr expr;
@@ -318,7 +332,6 @@ struct UnaryStatement : Statement {
     return ExecutionResult::None;
   }
 };
-
 struct BinExpr : Expression {
   ExpressionPtr left;
   ExpressionPtr right;
@@ -327,11 +340,10 @@ struct BinExpr : Expression {
           TType op);
   Value Evaluate() override;
 };
-
 struct Using : Statement {
   static vector<string> activeModules;
-  Using(SourceInfo &info, const string &name, const bool isWildcard);
-  Using(SourceInfo &info, const string &name, vector<string> &symbols);
+  Using(SourceInfo &info,  const string &name, const bool isWildcard);
+  Using(SourceInfo &info,  const string &name, vector<string> &symbols);
   vector<string> symbols;
   string moduleName;
   bool isWildcard;
@@ -340,17 +352,15 @@ struct Using : Statement {
   const string moduleRoot = "/usr/local/scrit/modules/";
   ExecutionResult Execute() override;
 };
-
 struct Lambda : Expression {
   BlockPtr block = nullptr;
   ExpressionPtr expr = nullptr;
-  Lambda(SourceInfo &info, ExpressionPtr &&expr)
-      : Expression(info), expr(std::move(expr)) {}
-  Lambda(SourceInfo &info, BlockPtr &&block)
-      : Expression(info), block(std::move(block)) {}
+  Lambda(SourceInfo &info, const Type &type, ExpressionPtr &&expr)
+      : Expression(info, type), expr(std::move(expr)) {}
+  Lambda(SourceInfo &info, const Type &type, BlockPtr &&block)
+      : Expression(info, type), block(std::move(block)) {}
   Value Evaluate() override;
 };
-
 // TODO: make a match expression that calls into this and just returns the
 // control flow change result.
 struct Match : Expression {
@@ -359,11 +369,11 @@ struct Match : Expression {
   std::vector<ExpressionPtr> branch_rhs = {};
   ExpressionPtr branch_default;
 
-  Match(SourceInfo &info, ExpressionPtr &&expr,
+  Match(SourceInfo &info, const Type &type, ExpressionPtr &&expr,
         std::vector<ExpressionPtr> &&branch_lhs,
         std::vector<ExpressionPtr> &&branch_rhs,
         ExpressionPtr &&branch_default = nullptr)
-      : Expression(info), expr(std::move(expr)),
+      : Expression(info, type), expr(std::move(expr)),
         branch_lhs(std::move(branch_lhs)), branch_rhs(std::move(branch_rhs)),
         branch_default(std::move(branch_default)) {
     assert(branch_lhs.size() == branch_rhs.size());
@@ -371,7 +381,6 @@ struct Match : Expression {
 
   Value Evaluate() override;
 };
-
 struct MatchStatement : Statement {
   ExpressionPtr match;
   MatchStatement(SourceInfo &info, ExpressionPtr &&match)
@@ -382,9 +391,7 @@ struct MatchStatement : Statement {
     return ExecutionResult(ControlChange::None, result);
   }
 };
-
 string CC_ToString(ControlChange controlChange);
-
 Value EvaluateWithinObject(Scope &scope, Value object, ExpressionPtr &expr);
 Value EvaluateWithinObject(Scope &scope, Value object,
                            std::function<Value()> lambda);

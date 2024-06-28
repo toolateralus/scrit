@@ -110,6 +110,8 @@ enum class TType {
   From,
   Import,
   Delete,
+  Let,
+  Arrow
 };
 struct SourceInfo;
 struct Token {

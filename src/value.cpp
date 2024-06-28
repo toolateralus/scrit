@@ -1,17 +1,19 @@
-#include "value.hpp"
 #include "ast.hpp"
 #include "context.hpp"
 #include "serializer.hpp"
+#include "type.hpp"
+#include "value.hpp"
+#include <unordered_map>
 
 #include <memory>
 #include <numeric>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 
 Bool Value_T::True = Bool_T::New(true);
 Bool Value_T::False = Bool_T::New(false);
 Null Value_T::VNULL = make_shared<Null_T>();
-
 Undefined Value_T::UNDEFINED = make_shared<::Undefined_T>();
 
 
@@ -22,12 +24,17 @@ Value Callable_T::Call(ArgumentsPtr &args) {
   
   size_t i = 0;
   for (const auto &[key, value] : params->map) {
-    if (i < values.size()) {
+    if (i >= values.size()) {
+      if (value.value != nullptr) {
+        scope->Set(key, value.value); 
+      }
+      continue;
+    }
+    
+    if (value.type == values[i]->type) {
       scope->Set(key, values[i]);
-    } else if (value != nullptr) {
-      scope->Set(key, value);
     } else {
-      break;
+      throw std::runtime_error("invalid type argument for function call. expected: " + value.type->name + " got: " + values[i]->type->name);
     }
     i++;
   }
@@ -132,11 +139,11 @@ NativeCallable_T::NativeCallable_T(const NativeFunctionPtr &function)
     : function(function) {}
 
 Value Float_T::Add(Value other) {
-  if (other->GetType() == ValueType::Float) {
+  if (other->GetPrimitiveType() == PrimitveType::Float) {
     return Float_T::New(this->value +
                         static_cast<Float_T *>(other.get())->value);
   }
-  if (other->GetType() == ValueType::Int) {
+  if (other->GetPrimitiveType() == PrimitveType::Int) {
     auto i =
         Float_T::New(this->value + static_cast<Int_T *>(other.get())->value);
     return i;
@@ -144,11 +151,11 @@ Value Float_T::Add(Value other) {
   return Value_T::VNULL;
 }
 Value Float_T::Subtract(Value other) {
-  if (other->GetType() == ValueType::Float) {
+  if (other->GetPrimitiveType() == PrimitveType::Float) {
     return Float_T::New(this->value -
                         static_cast<Float_T *>(other.get())->value);
   }
-  if (other->GetType() == ValueType::Int) {
+  if (other->GetPrimitiveType() == PrimitveType::Int) {
     auto i =
         Float_T::New(this->value - static_cast<Int_T *>(other.get())->value);
     return i;
@@ -156,11 +163,11 @@ Value Float_T::Subtract(Value other) {
   return Value_T::VNULL;
 }
 Value Float_T::Multiply(Value other) {
-  if (other->GetType() == ValueType::Float) {
+  if (other->GetPrimitiveType() == PrimitveType::Float) {
     return Float_T::New(this->value *
                         static_cast<Float_T *>(other.get())->value);
   }
-  if (other->GetType() == ValueType::Int) {
+  if (other->GetPrimitiveType() == PrimitveType::Int) {
     auto i =
         Float_T::New(this->value * static_cast<Int_T *>(other.get())->value);
     return i;
@@ -168,11 +175,11 @@ Value Float_T::Multiply(Value other) {
   return Value_T::VNULL;
 }
 Value Float_T::Divide(Value other) {
-  if (other->GetType() == ValueType::Float) {
+  if (other->GetPrimitiveType() == PrimitveType::Float) {
     return Float_T::New(this->value /
                         static_cast<Float_T *>(other.get())->value);
   }
-  if (other->GetType() == ValueType::Int) {
+  if (other->GetPrimitiveType() == PrimitveType::Int) {
     auto i =
         Float_T::New(this->value / static_cast<Int_T *>(other.get())->value);
     return i;
@@ -180,19 +187,19 @@ Value Float_T::Divide(Value other) {
   return Value_T::VNULL;
 }
 void Float_T::Set(Value newValue) {
-  if (newValue->GetType() == ValueType::Float) {
+  if (newValue->GetPrimitiveType() == PrimitveType::Float) {
     this->value = static_cast<Float_T *>(newValue.get())->value;
   }
-  if (newValue->GetType() == ValueType::Int) {
+  if (newValue->GetPrimitiveType() == PrimitveType::Int) {
     this->value = static_cast<Int_T *>(newValue.get())->value;
   }
 }
 Bool Float_T::Or(Value other) {
-  if (other->GetType() == ValueType::Float) {
+  if (other->GetPrimitiveType() == PrimitveType::Float) {
     return Bool_T::New(this->value ||
                        static_cast<Float_T *>(other.get())->value);
   }
-  if (other->GetType() == ValueType::Int) {
+  if (other->GetPrimitiveType() == PrimitveType::Int) {
     auto i =
         Bool_T::New(this->value || static_cast<Int_T *>(other.get())->value);
     return i;
@@ -200,11 +207,11 @@ Bool Float_T::Or(Value other) {
   return False;
 }
 Bool Float_T::And(Value other) {
-  if (other->GetType() == ValueType::Float) {
+  if (other->GetPrimitiveType() == PrimitveType::Float) {
     return Bool_T::New(this->value &&
                        static_cast<Float_T *>(other.get())->value);
   }
-  if (other->GetType() == ValueType::Int) {
+  if (other->GetPrimitiveType() == PrimitveType::Int) {
     auto i =
         Bool_T::New(this->value && static_cast<Int_T *>(other.get())->value);
     return i;
@@ -212,11 +219,11 @@ Bool Float_T::And(Value other) {
   return False;
 }
 Bool Float_T::Less(Value other) {
-  if (other->GetType() == ValueType::Float) {
+  if (other->GetPrimitiveType() == PrimitveType::Float) {
     return Bool_T::New(this->value <
                        static_cast<Float_T *>(other.get())->value);
   }
-  if (other->GetType() == ValueType::Int) {
+  if (other->GetPrimitiveType() == PrimitveType::Int) {
     auto i =
         Bool_T::New(this->value < static_cast<Int_T *>(other.get())->value);
     return i;
@@ -224,11 +231,11 @@ Bool Float_T::Less(Value other) {
   return False;
 }
 Bool Float_T::Greater(Value other) {
-  if (other->GetType() == ValueType::Float) {
+  if (other->GetPrimitiveType() == PrimitveType::Float) {
     return Bool_T::New(this->value >
                        static_cast<Float_T *>(other.get())->value);
   }
-  if (other->GetType() == ValueType::Int) {
+  if (other->GetPrimitiveType() == PrimitveType::Int) {
     auto i =
         Bool_T::New(this->value > static_cast<Int_T *>(other.get())->value);
     return i;
@@ -242,20 +249,20 @@ Value String_T::Add(Value other) {
   return String_T::New(value + other->ToString());
 }
 void String_T::Set(Value newValue) {
-  if (newValue->GetType() == ValueType::String) {
+  if (newValue->GetPrimitiveType() == PrimitveType::String) {
     this->value = static_cast<String_T *>(newValue.get())->value;
   }
 }
 
 Bool Bool_T::Or(Value other) {
-  if (other->GetType() == ValueType::Bool) {
+  if (other->GetPrimitiveType() == PrimitveType::Bool) {
     return Bool_T::New(this->value ||
                        static_cast<Bool_T *>(other.get())->value);
   }
   return False;
 }
 Bool Bool_T::And(Value other) {
-  if (other->GetType() == ValueType::Bool) {
+  if (other->GetPrimitiveType() == PrimitveType::Bool) {
     return Bool_T::New(this->value &&
                        static_cast<Bool_T *>(other.get())->value);
   }
@@ -263,10 +270,10 @@ Bool Bool_T::And(Value other) {
 }
 Bool Bool_T::Not() { return Bool_T::New(!value); }
 void Bool_T::Set(Value newValue) {
-  if (newValue->GetType() == ValueType::Bool) {
+  if (newValue->GetPrimitiveType() == PrimitveType::Bool) {
     this->value = static_cast<Bool_T *>(newValue.get())->value;
   }
-  if (newValue->GetType() == ValueType::Int) {
+  if (newValue->GetPrimitiveType() == PrimitveType::Int) {
     this->value = (bool)static_cast<Int_T *>(newValue.get());
   }
 }
@@ -313,7 +320,7 @@ string Null_T::ToString() const {
 
 
 bool String_T::Equals(Value value) {
-  if (value->GetType() == ValueType::String) {
+  if (value->GetPrimitiveType() == PrimitveType::String) {
     return static_cast<String_T *>(value.get())->value == this->value;
   }
   return false;
@@ -323,17 +330,17 @@ Array Array_T::New(vector<Value> &values) {
   return array;
 }
 bool Float_T::Equals(Value value) {
-  if (value->GetType() == ValueType::Float) {
+  if (value->GetPrimitiveType() == PrimitveType::Float) {
     return static_cast<Float_T *>(value.get())->value == this->value;
   }
-  if (value->GetType() == ValueType::Float) {
+  if (value->GetPrimitiveType() == PrimitveType::Float) {
     auto i = this->value == static_cast<Float_T *>(value.get())->value;
     return i;
   }
   return false;
 }
 bool Bool_T::Equals(Value value) {
-  if (value->GetType() == ValueType::Bool) {
+  if (value->GetPrimitiveType() == PrimitveType::Bool) {
     return static_cast<Bool_T *>(value.get())->value == this->value;
   }
   return false;
@@ -343,10 +350,10 @@ bool NativeCallable_T::Equals(Value value) { return value.get() == this; }
 bool Callable_T::Equals(Value value) { return value.get() == this; }
 
 bool Undefined_T::Equals(Value value) {
-  return value.get() == this || value->GetType() == ValueType::Undefined;
+  return value.get() == this || value->GetPrimitiveType() == PrimitveType::Undefined;
 }
 bool Null_T::Equals(Value value) {
-  return value == Value_T::VNULL || value->GetType() == ValueType::Null;
+  return value == Value_T::VNULL || value->GetPrimitiveType() == PrimitveType::Null;
 }
 
 Value Value_T::Subscript(Value) { return UNDEFINED; }
@@ -389,32 +396,32 @@ Value Array_T::SubscriptAssign(Value key, Value value) {
 }
 
 namespace Values {
-string TypeToString(ValueType type) {
+string TypeToString(PrimitveType type) {
   switch (type) {
     
-  case ValueType::Invalid:
+  case PrimitveType::Invalid:
     return "invalid";
-  case ValueType::Null:
+  case PrimitveType::Null:
     return "null";
-  case ValueType::Undefined:
+  case PrimitveType::Undefined:
     return "undefined";
-  case ValueType::Float:
+  case PrimitveType::Float:
     return "float";
-  case ValueType::Int:
+  case PrimitveType::Int:
     return "int";
-  case ValueType::Bool:
+  case PrimitveType::Bool:
     return "bool";
-  case ValueType::String:
+  case PrimitveType::String:
     return "string";
-  case ValueType::Object:
+  case PrimitveType::Object:
     return "object";
-  case ValueType::Array:
+  case PrimitveType::Array:
     return "array";
-  case ValueType::Callable:
+  case PrimitveType::Callable:
     return "callable";
-  case Values::ValueType::Tuple:
+  case Values::PrimitveType::Tuple:
     return "tuple";
-  case ValueType::Lambda:
+  case PrimitveType::Lambda:
     return "property";
   }
   return "";
@@ -514,7 +521,22 @@ bool Lambda_T::Equals(Value other) {
   }
   return false;
 }
-} // namespace Values
+
+Object Object_T::New(Scope scope) {
+  if (!scope)
+    scope = make_shared<Scope_T>();
+  return make_shared<Object_T>(scope);
+}
+
+Object_T::Object_T() : Value_T(TypeSystem::Get("object")) {}
+
+Tuple_T::Tuple_T(vector<Value> values) : Value_T(nullptr), values(values) {
+  auto types = vector<Type>();
+  for (const auto &v: values) {
+    types.push_back(v->type);
+  }
+  this->type = TypeSystem::FromTuple(types);
+}
 
 Value Callable_T::Call(std::vector<Value> &values) {
   auto scope = ASTNode::context.PushScope();
@@ -522,8 +544,8 @@ Value Callable_T::Call(std::vector<Value> &values) {
   for (const auto &[key, value] : params->map) {
     if (i < values.size()) {
       scope->Set(key, values[i]);
-    } else if (value != nullptr) {
-      scope->Set(key, value);
+    } else if (value.value != nullptr) {
+      scope->Set(key, value.value);
     } else {
       break;
     }
@@ -542,80 +564,39 @@ Value Callable_T::Call(std::vector<Value> &values) {
     throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
   }
 }
-Float_T::Float_T(float value) { this->value = value; }
-Array_T::Array_T(vector<ExpressionPtr> &&init) {
+Float_T::Float_T(float value) : Value_T(TypeSystem::Get("float")) { this->value = value; }
+Array_T::Array_T(vector<ExpressionPtr> &&init) : Value_T(TypeSystem::Get("array"))  {
   initializer = std::move(init);
   for (auto &arg : initializer) {
     auto value = arg->Evaluate();
     Push(value);
   }
 }
-Callable_T::Callable_T(BlockPtr &&block, ParametersPtr &&params)
-    : block(std::move(block)), params(std::move(params)) {}
-String_T::String_T(const string &value) { this->value = value; }
-Callable_T::Callable_T() {}
+Callable_T::Callable_T(const Type &returnType, BlockPtr &&block, ParametersPtr &&params)
+    : Value_T(nullptr), block(std::move(block)), params(std::move(params))  {
+      this->type = TypeSystem::FromCallable(returnType, this->params->ParamTypes());
+    }
+String_T::String_T(const string &value) : Value_T(TypeSystem::Get("string")) { this->value = value; }
+// this is only for native callables.
+// Todo: implement native callable type.
+Callable_T::Callable_T() : Value_T(TypeSystem::Get("native_callable")) {}
 
-Null_T::Null_T() {}
-Undefined_T::Undefined_T() {}
-Bool_T::Bool_T(bool value) { this->value = value; }
-Array_T::Array_T(vector<Value> init) { this->values = init; }
+Null_T::Null_T() : Value_T(TypeSystem::Get("null")) {}
+Undefined_T::Undefined_T() : Value_T(TypeSystem::Get("undefined")) {}
+Bool_T::Bool_T(bool value) : Value_T(TypeSystem::Get("bool")) { this->value = value; }
+Array_T::Array_T(vector<Value> init) : Value_T(nullptr)  { this->values = init; 
+  if (init.size() != 0) {
+    this->type = TypeSystem::ArrayTypeFromInner(init[0]->type);
+  } else {
+    this->type = TypeSystem::Get("array");
+  }
+}
 
 Callable_T::~Callable_T() {}
 
-Value Ctx::Undefined() { return Value_T::UNDEFINED; }
-Value Ctx::Null() { return Value_T::VNULL; }
 
-Bool Ctx::CreateBool(const bool value) { return Bool_T::New(value); }
-String Ctx::CreateString(const string value) { return String_T::New(value); }
-Int Ctx::CreateInt(const int value) { return Int_T::New(value); }
-Float Ctx::CreateFloat(const float value) { return Float_T::New(value); }
-Object Ctx::CreateObject(Scope scope) { return Object_T::New(scope); }
-Array Ctx::CreateArray(vector<Value> values) { return Array_T::New(values); }
 
-bool Ctx::TryGetArray(Value value, Array &result) {
-  if (value->GetType() == ValueType::Array) {
-    result = std::dynamic_pointer_cast<Array_T>(value);
-    return true;
-  }
-  return false;
 }
-bool Ctx::TryGetObject(Value value, Object &result) {
-  if (value->GetType() == ValueType::Object) {
-    result = std::dynamic_pointer_cast<Object_T>(value);
-    return true;
-  }
-  return false;
-}
-bool Ctx::TryGetBool(Value value, bool &result) {
-  if (value->GetType() == ValueType::Bool) {
-    result = static_cast<Bool_T *>(value.get())->value;
-    return true;
-  }
-  return false;
-}
-bool Ctx::TryGetFloat(Value value, float &result) {
-  if (value->GetType() == ValueType::Float) {
-    result = static_cast<Float_T *>(value.get())->value;
-    return true;
-  }
-  return false;
-}
-bool Ctx::TryGetInt(Value value, int &result) {
-  if (value->GetType() == ValueType::Int) {
-    result = static_cast<Int_T *>(value.get())->value;
-    return true;
-  }
-  return false;
-}
-bool Ctx::TryGetString(Value value, string &result) {
-  if (value->GetType() == ValueType::String) {
-    result = static_cast<String_T *>(value.get())->value;
-    return true;
-  }
-  return false;
-}
-bool Ctx::IsUndefined(Value value) { return value->Equals(Value_T::UNDEFINED); }
-bool Ctx::IsNull(Value value) { return value->Equals(Value_T::VNULL); }
 
 Values::Array Ctx::FromFloatVector(vector<float> &values) {
   Array array = CreateArray();
@@ -645,3 +626,57 @@ Values::Array Ctx::FromIntVector(vector<int> &values) {
   }
   return array;
 }
+Value Ctx::Undefined()  { return Value_T::UNDEFINED; }
+Value Ctx::Null() { return Value_T::VNULL; }
+
+Bool Ctx::CreateBool(const bool value) { return Bool_T::New(value); }
+String Ctx::CreateString(const string value) { return String_T::New(value); }
+Int Ctx::CreateInt(const int value) { return Int_T::New(value); }
+Float Ctx::CreateFloat(const float value) { return Float_T::New(value); }
+Object Ctx::CreateObject(Scope scope) { return Object_T::New(scope); }
+Array Ctx::CreateArray(vector<Value> values) { return Array_T::New(values); }
+
+bool Ctx::TryGetArray(Value value, Array &result) {
+  if (value->GetPrimitiveType() == PrimitveType::Array) {
+    result = std::dynamic_pointer_cast<Array_T>(value);
+    return true;
+  }
+  return false;
+}
+bool Ctx::TryGetObject(Value value, Object &result) {
+  if (value->GetPrimitiveType() == PrimitveType::Object) {
+    result = std::dynamic_pointer_cast<Object_T>(value);
+    return true;
+  }
+  return false;
+}
+bool Ctx::TryGetBool(Value value, bool &result) {
+  if (value->GetPrimitiveType() == PrimitveType::Bool) {
+    result = static_cast<Bool_T *>(value.get())->value;
+    return true;
+  }
+  return false;
+}
+bool Ctx::TryGetFloat(Value value, float &result) {
+  if (value->GetPrimitiveType() == PrimitveType::Float) {
+    result = static_cast<Float_T *>(value.get())->value;
+    return true;
+  }
+  return false;
+}
+bool Ctx::TryGetInt(Value value, int &result) {
+  if (value->GetPrimitiveType() == PrimitveType::Int) {
+    result = static_cast<Int_T *>(value.get())->value;
+    return true;
+  }
+  return false;
+}
+bool Ctx::TryGetString(Value value, string &result) {
+  if (value->GetPrimitiveType() == PrimitveType::String) {
+    result = static_cast<String_T *>(value.get())->value;
+    return true;
+  }
+  return false;
+}
+bool Ctx::IsUndefined(Value value) { return value->Equals(Value_T::UNDEFINED); }
+bool Ctx::IsNull(Value value) { return value->Equals(Value_T::VNULL); }

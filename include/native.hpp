@@ -9,7 +9,7 @@ namespace Values {
   struct Value_T;
   struct Object_T;
   struct NativeCallable_T;
-  enum struct ValueType;
+  enum struct PrimitveType;
   typedef std::shared_ptr<NativeCallable_T> NativeCallable;
   typedef std::shared_ptr<Value_T> Value;
   typedef std::shared_ptr<Object_T> Object;
@@ -47,6 +47,7 @@ struct NativeFunctions {
   static NativeCallable MakeCallable(const NativeFunctionPtr &fn);
 };
 
+#pragma GCC diagnostic push
 #define REGISTER_FUNCTION(name) Value name(std::vector<Value> args);\
   namespace { \
     struct name##_Register { \
@@ -56,3 +57,5 @@ struct NativeFunctions {
     } name##_register; \
   } \
   Value name(std::vector<Value> args)
+
+#pragma GCC diagnostic pop

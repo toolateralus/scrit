@@ -54,7 +54,7 @@ typedef shared_ptr<Int_T> Int;
 typedef shared_ptr<Float_T> Float;
 typedef shared_ptr<Object_T> Object;
 
-enum class ValueType {
+enum class PrimitveType {
   Invalid,
   Null,
   Undefined,
@@ -69,18 +69,21 @@ enum class ValueType {
   Lambda,
 };
 
-string TypeToString(ValueType type);
+string TypeToString(PrimitveType type);
 
 struct Value_T : std::enable_shared_from_this<Value_T> {
   static Null VNULL;
   static Undefined UNDEFINED;
   static Bool False;
   static Bool True;
-
-  virtual ValueType GetType() const = 0;
+  
+  Type type;
+  
+  virtual PrimitveType GetPrimitiveType() const = 0;
   virtual ~Value_T() {}
-  Value_T() {}
-
+  
+  Value_T(const Type &type): type(type) {}
+  
   virtual string ToString() const = 0;
   virtual bool Equals(Value) = 0;
   virtual Value Add(Value) {
@@ -106,28 +109,22 @@ struct Value_T : std::enable_shared_from_this<Value_T> {
   virtual Value Subscript(Value key);
   virtual Value SubscriptAssign(Value key, Value value);
   
-  // this doesnt work nor does it make sense.
-  virtual void Set(Value value) { *this = *value; }
-
+  virtual void Set(Value) { }
+  
   virtual Value Clone();
   
-  
-  
-  
-  
-  
   template <typename T> T *Cast();
-  template <typename T> ValueType ValueTypeFromType();
+  template <typename T> PrimitveType ValueTypeFromType();
 };
 
 struct Null_T : Value_T {
-  ValueType GetType() const override { return ValueType::Null; }
+  PrimitveType GetPrimitiveType() const override { return PrimitveType::Null; }
   Null_T();
   string ToString() const override;
   bool Equals(Value value) override;
 };
 struct Undefined_T : Value_T {
-  ValueType GetType() const override { return ValueType::Undefined; }
+  PrimitveType GetPrimitiveType() const override { return PrimitveType::Undefined; }
   Undefined_T();
   string ToString() const override;
   bool Equals(Value value) override;
@@ -152,7 +149,7 @@ struct Int_T : Value_T {
   virtual Bool Greater(Value other) override;
   virtual Value Negate() override;
   virtual string ToString() const override;
-  ValueType GetType() const override { return ValueType::Int; }
+  PrimitveType GetPrimitiveType() const override { return PrimitveType::Int; }
   Value Clone() override;
 };
 struct Float_T : Value_T {
@@ -173,7 +170,7 @@ struct Float_T : Value_T {
   virtual Bool Greater(Value other) override;
   virtual Value Negate() override;
   virtual string ToString() const override;
-  ValueType GetType() const override { return ValueType::Float; }
+  PrimitveType GetPrimitiveType() const override { return PrimitveType::Float; }
   Value Clone() override;
 };
 struct String_T : Value_T {
@@ -186,7 +183,7 @@ struct String_T : Value_T {
   virtual Value Add(Value other) override;
   virtual void Set(Value newValue) override;
   string ToString() const override;
-  ValueType GetType() const override { return ValueType::String; }
+  PrimitveType GetPrimitiveType() const override { return PrimitveType::String; }
   Value Subscript(Value key) override;
   Value SubscriptAssign(Value key, Value value) override;
   Value Clone() override;
@@ -203,22 +200,18 @@ struct Bool_T : Value_T {
   virtual Bool Not() override;
   virtual void Set(Value newValue) override;
   virtual string ToString() const override;
-  ValueType GetType() const override { return ValueType::Bool; }
+  PrimitveType GetPrimitiveType() const override { return PrimitveType::Bool; }
   Value Clone() override;
 };
 struct Object_T : Value_T {
   Object_T(Scope scope);
-  Object_T() {}
+  Object_T();
   Scope scope;
-  static Object New(Scope scope = nullptr) {
-    if (!scope)
-      scope = make_shared<Scope_T>();
-    return make_shared<Object_T>(scope);
-  }
-  
+  static Object New(Scope scope = nullptr);
+
   bool operator==(Object_T *other);
   
-  ValueType GetType() const override { return ValueType::Object; }
+  PrimitveType GetPrimitiveType() const override { return PrimitveType::Object; }
   
   virtual string ToString() const override;
   virtual Value GetMember(const string &name);
@@ -241,7 +234,7 @@ struct Object_T : Value_T {
 struct Callable_T : Value_T {
   ~Callable_T();
   Callable_T(); // for native callables only.
-  Callable_T(BlockPtr &&block, ParametersPtr &&params);
+  Callable_T(const Type &returnType, BlockPtr &&block, ParametersPtr &&params);
   BlockPtr block;
   ParametersPtr params;
   virtual Value Call(ArgumentsPtr &args);
@@ -250,7 +243,7 @@ struct Callable_T : Value_T {
   bool Equals(Value value) override;
   Value Clone() override;
 
-  ValueType GetType() const override { return ValueType::Callable; }
+  PrimitveType GetPrimitiveType() const override { return PrimitveType::Callable; }
 };
 
 struct NativeCallable_T : Callable_T {
@@ -261,7 +254,7 @@ struct NativeCallable_T : Callable_T {
   Value Call(std::vector<Value> &args) override;
   string ToString() const override;
   bool Equals(Value value) override;
-  ValueType GetType() const override { return ValueType::Callable; }
+  PrimitveType GetPrimitiveType() const override { return PrimitveType::Callable; }
 };
 struct Array_T : Value_T {
   vector<ExpressionPtr> initializer;
@@ -284,7 +277,7 @@ struct Array_T : Value_T {
   Value Remove(Int index);
   string ToString() const override;
   bool Equals(Value value) override;
-  ValueType GetType() const override { return ValueType::Array; }
+  PrimitveType GetPrimitiveType() const override { return PrimitveType::Array; }
   
   Value Subscript(Value key) override;
   Value SubscriptAssign(Value key, Value value) override;
@@ -306,10 +299,10 @@ struct Array_T : Value_T {
 
 struct Tuple_T : Value_T {
   vector<Value> values = {};
-  Tuple_T(vector<Value> values) : values(values) {}
+  Tuple_T(vector<Value> values);
   auto Deconstruct(vector<IdentifierPtr> &idens) const -> void;
-  ValueType GetType() const override {
-    return ValueType::Tuple;
+  PrimitveType GetPrimitiveType() const override {
+    return PrimitveType::Tuple;
   }
   string ToString() const override;
   bool Equals(Value other) override;
@@ -318,12 +311,12 @@ struct Tuple_T : Value_T {
 
 struct Lambda_T : Value_T {
   ExpressionPtr lambda;
-  Lambda_T(ExpressionPtr &&lambda) : lambda(std::move(lambda)) {}
+  Lambda_T(ExpressionPtr &&lambda) : Value_T(lambda->type), lambda(std::move(lambda)) {}
   Value Evaluate() {
     return lambda->Evaluate();
   }
-  ValueType GetType() const override {
-    return ValueType::Lambda;
+  PrimitveType GetPrimitiveType() const override {
+    return PrimitveType::Lambda;
   }
   string ToString() const override {
     return "property: " + lambda->Evaluate()->ToString();
@@ -332,20 +325,20 @@ struct Lambda_T : Value_T {
   Value Clone() override;
 };
 
-template <typename T> ValueType Value_T::ValueTypeFromType() {
+template <typename T> PrimitveType Value_T::ValueTypeFromType() {
   auto &t = typeid(T);
   if (t == typeid(String_T)) {
-    return ValueType::String;
+    return PrimitveType::String;
   } else if (t == typeid(Int_T)) {
-    return ValueType::Int;
+    return PrimitveType::Int;
   } else if (t == typeid(Float_T)) {
-    return ValueType::Float;
+    return PrimitveType::Float;
   } else if (t == typeid(Bool_T)) {
-    return ValueType::Bool;
+    return PrimitveType::Bool;
   } else if (t == typeid(Object_T)) {
-    return ValueType::Object;
+    return PrimitveType::Object;
   } else if (t == typeid(Array_T)) {
-    return ValueType::Array;
+    return PrimitveType::Array;
   } else {
     throw std::runtime_error("Cannot deduce type for " + string(t.name()) + ". This function is used for extracting values, and type checking while doing so. Directly use GetType() for Callable, Undefined, and other immutable values.");
   }
@@ -353,7 +346,7 @@ template <typename T> ValueType Value_T::ValueTypeFromType() {
 }
 
 template <typename T> T *Value_T::Cast() {
-  if (ValueTypeFromType<T>() == GetType() && typeid(T) == typeid(*this)) {
+  if (ValueTypeFromType<T>() == GetPrimitiveType() && typeid(T) == typeid(*this)) {
     return static_cast<T*>(this);
   } 
   throw std::runtime_error(
@@ -362,7 +355,6 @@ template <typename T> T *Value_T::Cast() {
 }
 
 } // namespace Values
-
 
 struct Ctx {
   Ctx() = delete;

@@ -260,7 +260,8 @@ Token Lexer::LexOp() {
   throw std::runtime_error("failed to parse operator " + ch);
 }
 Lexer::Lexer() {
-  operators = {{"+", TType::Add},
+  operators = {{"->", TType::Arrow},
+               {"+", TType::Add},
                {"-", TType::Sub},
                {"*", TType::Mul},
                {"/", TType::Div},
@@ -299,21 +300,35 @@ Lexer::Lexer() {
 
   };
   keywords = {
-      {"delete", TType::Delete}, {"const", TType::Const},
-      {"mut", TType::Mut},       {"default", TType::Default},
-      {"match", TType::Match},   {"func", TType::Func},
-      {"for", TType::For},       {"continue", TType::Continue},
-      {"break", TType::Break},   {"return", TType::Return},
-      {"if", TType::If},         {"else", TType::Else},
-      {"false", TType::False},   {"true", TType::True},
-      {"null", TType::Null},     {"undefined", TType::Undefined},
-      {"using", TType::Using},   {"from", TType::From},
+      {"let", TType::Let},
+      {"delete", TType::Delete},
+      {"const", TType::Const},
+      {"mut", TType::Mut},
+      {"default", TType::Default},
+      {"match", TType::Match},
+      {"func", TType::Func},
+      {"for", TType::For},
+      {"continue", TType::Continue},
+      {"break", TType::Break},
+      {"return", TType::Return},
+      {"if", TType::If},
+      {"else", TType::Else},
+      {"false", TType::False},
+      {"true", TType::True},
+      {"null", TType::Null},
+      {"undefined", TType::Undefined},
+      {"using", TType::Using},
+      {"from", TType::From},
       {"import", TType::Import},
   };
   loc = 1;
 }
 string TTypeToString(const TType &type) {
   switch (type) {
+  case TType::Arrow:
+    return "Arrow";
+  case TType::Let:
+    return "Let";
   case TType::Identifier:
     return "Identifier";
   case TType::Int:

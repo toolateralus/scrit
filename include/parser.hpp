@@ -24,9 +24,11 @@ struct Parser {
   StatementPtr ParseAnonFuncInlineCall();
   StatementPtr ParseStatement();
   StatementPtr ParseKeyword(Token keyword);
-  
+
+  Type ParseType();
+
   StatementPtr ParseTupleDeconstruction(IdentifierPtr &&iden);
-  
+  StatementPtr ParseDeclaration();
   StatementPtr ParseCall(IdentifierPtr identifier);
   StatementPtr ParseAssignment(IdentifierPtr identifier, Mutability mutability = Mutability::Const);
   StatementPtr ParseLValuePostFix(ExpressionPtr &expr);
