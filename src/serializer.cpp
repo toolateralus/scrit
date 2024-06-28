@@ -62,6 +62,11 @@ void Writer::Write(const Value_T *val) {
   }
   string element_delimter = ", ";
   string container_delimiter;
+  
+  if (val == nullptr) {
+    return;
+  }
+  
   switch (val->GetPrimitiveType()) {
     case PrimitveType::Object: {
       auto obj = static_cast<const Object_T *>(val);

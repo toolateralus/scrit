@@ -1,5 +1,6 @@
 #include "ast.hpp"
 #include "value.hpp"
+#include <iostream>
 #include "type.hpp"
 
 Type TypeSystem::Any = make_shared<AnyType>();
@@ -46,4 +47,24 @@ auto TypeSystem::ArrayTypeFromInner(const Type &inner) -> Type {
   auto new_type = make_shared<ArrayType>(name, inner);
   types[name] = new_type;
   return new_type;
+}
+auto Values::TypeSystem::GetDefault(const Type &type) -> Value {
+  if (type->name == "bool") {
+    return Value_T::False;
+  } else if (type->name == "int") {
+    return Ctx::CreateInt();
+  } else if (type->name == "float") {
+    return Ctx::CreateFloat();
+  } else if (type->name == "array") {
+    return Ctx::CreateArray();
+  } else if (type->name == "string") {
+    return Ctx::CreateString();
+  } else if (type->name == "object") {
+    return Ctx::CreateObject();
+  } else if (type->name.starts_with("array") && type->name.contains("<")) {
+    auto array = Ctx::CreateArray();
+    array->type = type;
+    return array;
+  }
+  return Value_T::UNDEFINED;
 }

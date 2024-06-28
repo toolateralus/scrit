@@ -102,7 +102,7 @@ Array Array_T::New(vector<ExpressionPtr> &&init) {
   return make_shared<Array_T>(std::move(init));
 }
 Array Array_T::New() {
-  auto values = vector<Value>();
+  auto values = vector<Value> {};
   return make_shared<Array_T>(values);
 }
 
@@ -356,17 +356,6 @@ bool Null_T::Equals(Value value) {
   return value == Value_T::VNULL || value->GetPrimitiveType() == PrimitveType::Null;
 }
 
-Value Value_T::Subscript(Value) { return UNDEFINED; }
-Value String_T::Subscript(Value key) {
-  int index;
-  if (!Ctx::TryGetInt(key, index) || (size_t)index > value.length()) {
-    return UNDEFINED;
-  }
-  return Ctx::CreateString(std::string() + this->value[index]);
-}
-
-Value Value_T::SubscriptAssign(Value, Value) { return UNDEFINED; }
-
 Value String_T::SubscriptAssign(Value key, Value value) {
   int idx;
   string string;
@@ -379,10 +368,24 @@ Value String_T::SubscriptAssign(Value key, Value value) {
   }
   return UNDEFINED;
 }
+Value Value_T::Subscript(Value) { return UNDEFINED; }
+Value String_T::Subscript(Value key) {
+  int index;
+  if (!Ctx::TryGetInt(key, index) || (size_t)index > value.length()) {
+    return UNDEFINED;
+  }
+  return Ctx::CreateString(std::string() + this->value[index]);
+}
 
+Value Value_T::SubscriptAssign(Value, Value) { return UNDEFINED; }
 Value Array_T::Subscript(Value key) {
   int index;
-  if (!Ctx::TryGetInt(key, index) || (size_t)index >= values.size()) {
+  if (!Ctx::TryGetInt(key, index)) {
+    return UNDEFINED;
+  }
+  // TODO: fix the issue where a default constructed array is of insane size. 12391241792 type stuff.
+  const size_t size = values.size();
+  if ((size_t)index >= size) {
     return UNDEFINED;
   }
   return values[index];
@@ -584,7 +587,8 @@ Callable_T::Callable_T() : Value_T(TypeSystem::Get("native_callable")) {}
 Null_T::Null_T() : Value_T(TypeSystem::Get("null")) {}
 Undefined_T::Undefined_T() : Value_T(TypeSystem::Get("undefined")) {}
 Bool_T::Bool_T(bool value) : Value_T(TypeSystem::Get("bool")) { this->value = value; }
-Array_T::Array_T(vector<Value> init) : Value_T(nullptr)  { this->values = init; 
+Array_T::Array_T(vector<Value> init) : Value_T(nullptr)  { \
+  this->values = init; 
   if (init.size() != 0) {
     this->type = TypeSystem::ArrayTypeFromInner(init[0]->type);
   } else {
@@ -680,3 +684,5 @@ bool Ctx::TryGetString(Value value, string &result) {
 }
 bool Ctx::IsUndefined(Value value) { return value->Equals(Value_T::UNDEFINED); }
 bool Ctx::IsNull(Value value) { return value->Equals(Value_T::VNULL); }
+
+Values::Array Ctx::CreateArray() { return Array_T::New(); }

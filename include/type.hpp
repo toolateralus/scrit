@@ -113,6 +113,8 @@ struct TypeSystem {
   static auto Undefined() -> Type {
     return Get("undefined");
   }
+  
+  static auto GetDefault(const Type &type) -> Value;
   static auto ArrayTypeFromInner(const Type &inner) -> Type;
   static auto FromPrimitive(const PrimitveType &value) -> Type;
   static auto FromTuple(const vector<Type> &types) -> Type;

@@ -1,6 +1,7 @@
 #include "context.hpp"
 #include "ast.hpp"
 #include "value.hpp"
+#include "type.hpp"
 #include <stdexcept>
 
 
@@ -103,6 +104,11 @@ auto Scope_T::Set(const Scope_T::Key &key, Value value) -> void {
 }
   
 auto Scope_T::Set(const string &name, Value value, const Mutability &mutability) -> void {
+  
+  if (TypeSystem::Get(name)) {
+    throw std::runtime_error("cannot declare a variable of an existsing type: " + name);
+  }
+  
   auto it = Find(name);
   if (it == variables.end()) {
     variables[Key(name, mutability)] = value;

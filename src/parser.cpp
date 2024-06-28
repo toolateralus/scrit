@@ -139,7 +139,7 @@ StatementPtr Parser::ParseDeclaration() {
     }
     case TType::Identifier: {
       auto next = Expect(TType::Identifier);
-      auto iden = make_unique<Identifier>(info, next.value);
+      auto iden = make_unique<Identifier>(info, next.value); 
       return ParseAssignment(std::move(iden), Mutability::Const);
     }
     default: break;
@@ -211,6 +211,9 @@ StatementPtr Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
   case TType::NullCoalescingEq:
   case TType::Lambda:
   case TType::Assign: {
+    if (!ASTNode::context.Find(identifier->name))  {
+      throw std::runtime_error("cannot assign a non-existant identifier. use 'let ___ = ...' or let ___ : type = ...' syntax.");
+    }
     return ParseAssignment(std::move(identifier));
   }
   case TType::Comma: {
@@ -229,13 +232,36 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier,
                                      Mutability mutability) {
   Token next = Peek();
   
+  Type type = nullptr;
+  if (next.type == TType::Colon) {
+    Eat();
+    type = ParseType();
+    
+    if (tokens.empty() || Peek().type != TType::Assign) {
+      return std::make_unique<Assignment>(info, type, std::move(identifier), make_unique<Operand>(info, type, TypeSystem::GetDefault(type)), mutability);
+    }
+    next = Peek();
+  }
+  
   if (next.type == TType::Lambda) {
     auto lambda = ParseLambda();
-    return make_unique<Property>(info, std::move(identifier), std::move(lambda), mutability);
+    if (type && type != lambda->type) {
+      throw std::runtime_error("explicit type: " + type->name + " did not match the property's type: " + lambda->type->name);
+    }
+    return make_unique<Property>(info,  std::move(identifier), std::move(lambda), mutability);
   }
   if (next.type == TType::Assign) {
     Eat();
     auto value = ParseExpression();
+    
+    if (type && type != value->type) {
+      auto array_t = std::dynamic_pointer_cast<ArrayType>(type);
+      if (array_t && value->type->name == "array") {
+        value->type = type;
+      } else {
+        throw std::runtime_error("explicit type: " + type->name + " did not match the assignment's type: " + value->type->name);
+      }
+    }
     
     return make_unique<Assignment>(info, value->type, std::move(identifier),
                                    std::move(value), mutability);
@@ -243,16 +269,14 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier,
   } else if (IsCompoundAssignmentOperator(next.type)) {
     Eat();
     auto value = ParseExpression();
+    
+    if (type && type != value->type) {
+      throw std::runtime_error("explicit type: " + type->name + " did not match the expressions type: " + value->type->name);
+    }
+    
     return make_unique<CompoundAssignment>(
         info, make_unique<CompAssignExpr>(info,std::move(identifier),
                                           std::move(value), next.type));
-  } else if (next.type == TType::Lambda) {
-    // TODO: make it so lambda fields are treated like C# properties - evaluated
-    // on access, not just assignment.
-    auto expr = ParseLambda();
-    return make_unique<Assignment>(info, expr->type, std::move(identifier), std::move(expr),
-                                   mutability);
-
   } else {
     throw std::runtime_error("failed to parse assignment: invalid operator." +
                              TTypeToString(next.type));

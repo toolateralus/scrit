@@ -520,8 +520,9 @@ ExecutionResult For::Execute() {
 ExecutionResult Assignment::Execute() {
   auto result = expr->Evaluate();
   
-  ApplyCopySemantics(result);
+  result->type = type;
   
+  ApplyCopySemantics(result);
   
   context.Insert(iden->name, result, mutability);
   return ExecutionResult::None;

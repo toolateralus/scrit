@@ -267,7 +267,7 @@ struct Array_T : Value_T {
   Array_T(vector<ExpressionPtr> &&init);
   Array_T(vector<Value> init);
 
-  vector<Value> values;
+  vector<Value> values = {};
 
   Value At(Int index);
   void Assign(Int index, Value value);
@@ -366,7 +366,8 @@ struct Ctx {
   static Int CreateInt(const int value = 0);
   static Float CreateFloat(const float value = 0.0f);
   static Object CreateObject(shared_ptr<Scope_T> scope = nullptr);
-  static Array CreateArray(vector<Value> values = {});
+  static Array CreateArray(vector<Value> values);
+  static Array CreateArray();
 
   static Array FromFloatVector(vector<float> &values);
   static Array FromStringVector(vector<string> &values);

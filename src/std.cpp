@@ -1,6 +1,7 @@
 #include "ast.hpp"
 #include "context.hpp"
 #include "lexer.hpp"
+#include "type.hpp"
 #include "native.hpp"
 #include "serializer.hpp"
 #include "value.hpp"
@@ -85,16 +86,8 @@ REGISTER_FUNCTION(type) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
-  
-  if (auto obj = std::dynamic_pointer_cast<Object_T>(args[0])) {
-    if (obj->HasMember("type")) {
-      auto type = obj->GetMember("type");
-      return type;
-    }
-  }
-  
-  string typeName;
-  return Ctx::CreateString(TypeToString(args[0]->GetPrimitiveType()));
+  auto v = args[0]->type->name;
+  return Ctx::CreateString(v);
 }
 // Serializer
 REGISTER_FUNCTION(serialize) {
