@@ -9,7 +9,7 @@ namespace Values {
   struct Value_T;
   struct Object_T;
   struct NativeCallable_T;
-  enum struct PrimitveType;
+  enum struct PrimitiveType;
   typedef std::shared_ptr<NativeCallable_T> NativeCallable;
   typedef std::shared_ptr<Value_T> Value;
   typedef std::shared_ptr<Object_T> Object;

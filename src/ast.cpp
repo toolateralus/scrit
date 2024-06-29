@@ -272,21 +272,21 @@ ExecutionResult Return::Execute() {
 }
 void ApplyCopySemantics(Value &result) {
    switch (result->GetPrimitiveType()) {
-      case Values::PrimitveType::Invalid:
-      case Values::PrimitveType::Null:
-      case Values::PrimitveType::Undefined:
-      case Values::PrimitveType::Object:
-      case Values::PrimitveType::Array:
-      case Values::PrimitveType::Callable:
+      case Values::PrimitiveType::Invalid:
+      case Values::PrimitiveType::Null:
+      case Values::PrimitiveType::Undefined:
+      case Values::PrimitiveType::Object:
+      case Values::PrimitiveType::Array:
+      case Values::PrimitiveType::Callable:
         break;
-      case Values::PrimitveType::Tuple:
-      case Values::PrimitveType::Float:
-      case Values::PrimitveType::Int:
-      case Values::PrimitveType::Bool:
-      case Values::PrimitveType::String:
+      case Values::PrimitiveType::Tuple:
+      case Values::PrimitiveType::Float:
+      case Values::PrimitiveType::Int:
+      case Values::PrimitiveType::Bool:
+      case Values::PrimitiveType::String:
         result = result->Clone();
         break;
-      case Values::PrimitveType::Lambda: {
+      case Values::PrimitiveType::Lambda: {
         auto lambda = static_cast<Lambda_T *>(result.get());
         result = lambda->Evaluate();
         break;
@@ -296,21 +296,21 @@ void ApplyCopySemantics(Value &result) {
 
 void ApplyCopySemantics(ExecutionResult &result) {
    switch (result.value->GetPrimitiveType()) {
-      case Values::PrimitveType::Invalid:
-      case Values::PrimitveType::Null:
-      case Values::PrimitveType::Undefined:
-      case Values::PrimitveType::Object:
-      case Values::PrimitveType::Array:
-      case Values::PrimitveType::Callable:
+      case Values::PrimitiveType::Invalid:
+      case Values::PrimitiveType::Null:
+      case Values::PrimitiveType::Undefined:
+      case Values::PrimitiveType::Object:
+      case Values::PrimitiveType::Array:
+      case Values::PrimitiveType::Callable:
         break;
-      case Values::PrimitveType::Tuple:
-      case Values::PrimitveType::Float:
-      case Values::PrimitveType::Int:
-      case Values::PrimitveType::Bool:
-      case Values::PrimitveType::String:
+      case Values::PrimitiveType::Tuple:
+      case Values::PrimitiveType::Float:
+      case Values::PrimitiveType::Int:
+      case Values::PrimitiveType::Bool:
+      case Values::PrimitiveType::String:
         result.value = result.value->Clone();
         break;
-      case Values::PrimitveType::Lambda: {
+      case Values::PrimitiveType::Lambda: {
         auto lambda = static_cast<Lambda_T *>(result.value.get());
         result.value = lambda->Evaluate();
         break;
@@ -401,7 +401,7 @@ vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
 }
 Value Call::Evaluate() {
   auto lvalue = operand->Evaluate();
-  if (lvalue->GetPrimitiveType() == PrimitveType::Callable) {
+  if (lvalue->GetPrimitiveType() == PrimitiveType::Callable) {
     auto callable = std::static_pointer_cast<Callable_T>(lvalue);
     auto result = callable->Call(args);
     return result;
@@ -451,7 +451,7 @@ ExecutionResult For::Execute() {
     while (true) {
       auto conditionResult = condition->Evaluate();
 
-      if (conditionResult->GetPrimitiveType() != PrimitveType::Bool) {
+      if (conditionResult->GetPrimitiveType() != PrimitiveType::Bool) {
         return ExecutionResult::None;
       }
 
@@ -602,7 +602,7 @@ Value DotExpr::Evaluate() {
   }
   
   // Below is field accessors.
-  if (lvalue->GetPrimitiveType() != PrimitveType::Object) {
+  if (lvalue->GetPrimitiveType() != PrimitiveType::Object) {
     throw std::runtime_error("invalid lhs on dot operation : " +
                              TypeToString(lvalue->GetPrimitiveType()));
   }
@@ -619,7 +619,7 @@ Value DotExpr::Evaluate() {
 void DotExpr::Assign(Value value) {
   auto lvalue = left->Evaluate();
 
-  if (lvalue->GetPrimitiveType() != PrimitveType::Object) {
+  if (lvalue->GetPrimitiveType() != PrimitiveType::Object) {
     throw std::runtime_error("invalid lhs on dot operation : " +
                              TypeToString(lvalue->GetPrimitiveType()));
   }
@@ -688,8 +688,8 @@ Value BinExpr::Evaluate() {
   
   switch (op) {
   case TType::NullCoalescing: {
-    if (left->GetPrimitiveType() == PrimitveType::Null ||
-        left->GetPrimitiveType() == PrimitveType::Undefined) {
+    if (left->GetPrimitiveType() == PrimitiveType::Null ||
+        left->GetPrimitiveType() == PrimitiveType::Undefined) {
       return right;
     }
     return left;
@@ -917,8 +917,8 @@ Value CompAssignExpr::Evaluate() {
     return lvalue;
   }
   case TType::NullCoalescingEq: {
-    if (lvalue->GetPrimitiveType() == PrimitveType::Undefined ||
-        lvalue->GetPrimitiveType() == PrimitveType::Null) {
+    if (lvalue->GetPrimitiveType() == PrimitiveType::Undefined ||
+        lvalue->GetPrimitiveType() == PrimitiveType::Null) {
       auto result = rvalue;
       if (iden) {
         context.Insert(iden->name, rvalue, mut);

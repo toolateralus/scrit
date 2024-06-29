@@ -85,8 +85,8 @@ static Value setModelTexture(std::vector<Value> args) {
   int modelId, textureId;
   if (!Ctx::TryGetInt(args[0], modelId) || !Ctx::TryGetInt(args[1], textureId)) {
     return Ctx::CreateString("Invalid argument types., expected int, int got: " +
-                 TypeToString(args[0]->GetType()) + ", " +
-                 TypeToString(args[1]->GetType()));
+                 TypeToString(args[0]->GetPrimitiveType()) + ", " +
+                 TypeToString(args[1]->GetPrimitiveType()));
   }
   if (modelId < 0 || modelId >= loadedModels.size()) {
     return Ctx::CreateString("Invalid model ID");
@@ -241,10 +241,10 @@ static Value drawModel(std::vector<Value> args) {
       !Ctx::TryGetFloat(args[2], scale) ||
       !Ctx::TryGetObject(args[3], colorObj)) {
 
-    auto types = TypeToString(args[0]->GetType()) + ", " +
-                 TypeToString(args[1]->GetType()) + ", " +
-                 TypeToString(args[2]->GetType()) + ", " +
-                 TypeToString(args[3]->GetType());
+    auto types = TypeToString(args[0]->GetPrimitiveType()) + ", " +
+                 TypeToString(args[1]->GetPrimitiveType()) + ", " +
+                 TypeToString(args[2]->GetPrimitiveType()) + ", " +
+                 TypeToString(args[3]->GetPrimitiveType());
 
     return Ctx::CreateString(
         "Invalid argument types for drawModel.. expected "

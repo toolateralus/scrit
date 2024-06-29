@@ -25,10 +25,10 @@ function(remove) {
   }
 
   // Erase array element.
-  if (args[0]->GetType() == Values::ValueType::Array) {
+  if (args[0]->GetPrimitiveType() == Values::PrimitiveType::Array) {
     int i;
     Array_T *a = static_cast<Array_T *>(args[0].get());
-    if (args[1]->GetType() == Values::ValueType::Callable) {
+    if (args[1]->GetPrimitiveType() == Values::PrimitiveType::Callable) {
       // Predicate.
       auto callable = static_cast<Callable_T *>(args[1].get());
       const auto lambda = [callable](Value value) -> bool {
@@ -54,7 +54,7 @@ function(clear) {
     return Ctx::Undefined();
   }
 
-  if (args[0]->GetType() == ValueType::Array) {
+  if (args[0]->GetPrimitiveType() == PrimitiveType::Array) {
     auto array = dynamic_cast<Array_T *>(args[0].get());
     array->values.clear();
   }
@@ -67,14 +67,14 @@ function(expand) {
   }
 
   int value;
-  if (args[0]->GetType() == ValueType::Array &&
+  if (args[0]->GetPrimitiveType() == PrimitiveType::Array &&
       Ctx::TryGetInt(args[1], value)) {
     auto array = dynamic_cast<Array_T *>(args[0].get());
 
     auto default_value = args.size() > 2 ? args[2] : Value_T::UNDEFINED;
 
     Callable_T *callable = nullptr;
-    if (default_value->GetType() == ValueType::Callable) {
+    if (default_value->GetPrimitiveType() == PrimitiveType::Callable) {
       callable = static_cast<Callable_T *>(default_value.get());
     }
 
@@ -97,7 +97,7 @@ function(push) {
     return Ctx::Undefined();
   }
   
-  if (args[0]->GetType() != ValueType::Array) {
+  if (args[0]->GetPrimitiveType() != PrimitiveType::Array) {
     return Ctx::Undefined();
   }
   auto array = static_cast<Array_T *>(args[0].get());
@@ -110,7 +110,7 @@ function(push) {
 }
 
 function(front) {
-  if (args.size() == 0 || args[0]->GetType() != ValueType::Array) {
+  if (args.size() == 0 || args[0]->GetPrimitiveType() != PrimitiveType::Array) {
     return Ctx::Undefined();
   }
   auto array = static_cast<Array_T *>(args[0].get());
@@ -121,7 +121,7 @@ function(front) {
 }
 
 function(back) {
-  if (args.size() == 0 || args[0]->GetType() != ValueType::Array) {
+  if (args.size() == 0 || args[0]->GetPrimitiveType() != PrimitiveType::Array) {
     return Ctx::Undefined();
   }
   auto array = static_cast<Array_T *>(args[0].get());
@@ -136,7 +136,7 @@ function(pop) {
     return Ctx::Undefined();
   }
 
-  if (args[0]->GetType() != ValueType::Array) {
+  if (args[0]->GetPrimitiveType() != PrimitiveType::Array) {
     return Ctx::Undefined();
   }
   auto array = static_cast<Array_T *>(args[0].get());

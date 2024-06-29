@@ -10,8 +10,8 @@
 
 
 REGISTER_FUNCTION(where) {
-  if (args.size() < 2 || args[0]->GetPrimitiveType() != Values::PrimitveType::Array ||
-      args[1]->GetPrimitiveType() != Values::PrimitveType::Callable) {
+  if (args.size() < 2 || args[0]->GetPrimitiveType() != Values::PrimitiveType::Array ||
+      args[1]->GetPrimitiveType() != Values::PrimitiveType::Callable) {
     return undefined;
   }
   Array_T *a = static_cast<Array_T *>(args[0].get());

@@ -22,7 +22,7 @@ struct Context;
 namespace Values {
 struct Value_T;
 struct Type_T;
-enum class PrimitveType;
+enum class PrimitiveType;
 }
 
 using Type = std::shared_ptr<Values::Type_T>;

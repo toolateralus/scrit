@@ -18,7 +18,7 @@ static Value fexists(std::vector<Value> values) {
   }
   
   auto filename = values[0];
-  if (filename->GetType() != ValueType::String) {
+  if (filename->GetPrimitiveType() != PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto fname = static_cast<String_T *>(filename.get());
@@ -34,7 +34,7 @@ static Value fcreate(std::vector<Value> values) {
     return Ctx::Undefined();
   }
   auto filename = values[0];
-  if (filename->GetType()!= ValueType::String) {
+  if (filename->GetPrimitiveType()!= PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto fname = static_cast<String_T *>(filename.get());
@@ -55,7 +55,7 @@ static Value fwrite(std::vector<Value> values) {
   auto filename = values[0];
   auto content = values[1];
   
-  if (filename->GetType()!= ValueType::String) {
+  if (filename->GetPrimitiveType()!= PrimitiveType::String) {
     return Ctx::CreateString("invalid arguments to fwrite, filename must be a string.");
   }
   auto fname = static_cast<String_T *>(filename.get());
@@ -76,7 +76,7 @@ static Value fread(std::vector<Value> values) {
     return Ctx::Undefined();
   }
   auto filename = values[0];
-  if (filename->GetType()!= ValueType::String) {
+  if (filename->GetPrimitiveType()!= PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto fname = static_cast<String_T *>(filename.get());
@@ -96,7 +96,7 @@ static Value fdelete(std::vector<Value> values) {
     return Ctx::Undefined();
   }
   auto filename = values[0];
-  if (filename->GetType()!= ValueType::String) {
+  if (filename->GetPrimitiveType()!= PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto fname = static_cast<String_T *>(filename.get());
@@ -113,7 +113,7 @@ static Value dir_exists(std::vector<Value> values) {
     return Ctx::Undefined();
   }
   auto dirname = values[0];
-  if (dirname->GetType()!= ValueType::String) {
+  if (dirname->GetPrimitiveType()!= PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto dname = static_cast<String_T *>(dirname.get());
@@ -124,7 +124,7 @@ static Value dir_create(std::vector<Value> values) {
     return Ctx::Undefined();
   }
   auto dirname = values[0];
-  if (dirname->GetType()!= ValueType::String) {
+  if (dirname->GetPrimitiveType()!= PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto dname = static_cast<String_T *>(dirname.get());
@@ -144,7 +144,7 @@ static Value dir_getfiles(std::vector<Value> values) {
     return Ctx::Undefined();
   }
   auto dirname = values[0];
-  if (dirname->GetType()!= ValueType::String) {
+  if (dirname->GetPrimitiveType()!= PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto dname = static_cast<String_T *>(dirname.get());
@@ -161,7 +161,7 @@ static Value dir_delete(std::vector<Value> values) {
     return Ctx::Undefined();
   }
   auto dirname = values[0];
-  if (dirname->GetType()!= ValueType::String) {
+  if (dirname->GetPrimitiveType()!= PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto dname = static_cast<String_T *>(dirname.get());
@@ -200,7 +200,7 @@ static Value syscall(std::vector<Value> values) {
     return Ctx::Undefined();
   }
   auto cmd = values[0];
-  if (cmd->GetType()!= ValueType::String) {
+  if (cmd->GetPrimitiveType()!= PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto command = static_cast<String_T *>(cmd.get());

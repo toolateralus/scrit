@@ -16,7 +16,7 @@ std::unordered_map<string, Type> TypeSystem::types = {
   {"array", std::make_shared<ArrayType>("array", TypeSystem::Any)}
 };
 
-auto TypeSystem::FromPrimitive(const PrimitveType &t) -> Type {
+auto TypeSystem::FromPrimitive(const PrimitiveType &t) -> Type {
   auto id = TypeToString(t);
   for (const auto &[name, type] : types) {
     if (id == name) {

@@ -50,8 +50,8 @@ function(isalpha) {
   return Ctx::Undefined();
 }
 function(split) {
-  if (args.size() < 2 || args[0]->GetType() != Values::ValueType::String ||
-      args[1]->GetType() != Values::ValueType::String) {
+  if (args.size() < 2 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
+      args[1]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
 
@@ -82,7 +82,7 @@ function(split) {
 }
 function(substring) {
 #define undefined Ctx::Undefined()
-  if (args.size() < 3 || args[0]->GetType() != Values::ValueType::String) {
+  if (args.size() < 3 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return undefined;
   }
 
@@ -99,7 +99,7 @@ function(substring) {
 }
 function(indexOf) {
 #define undefined Ctx::Undefined()
-  if (args.size() < 2 || args[0]->GetType() != Values::ValueType::String) {
+  if (args.size() < 2 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return undefined;
   }
   auto str = args[0]->Cast<String_T>();
@@ -114,7 +114,7 @@ function(push) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
-  if (args[0]->GetType() == ValueType::String) {
+  if (args[0]->GetPrimitiveType() == PrimitiveType::String) {
     auto arg = static_cast<String_T *>(args[0].get());
     for (size_t i = 1; i < args.size(); i++) {
       arg->value += args[i]->ToString();
@@ -123,7 +123,7 @@ function(push) {
   return Ctx::Undefined();
 }
 function(front) {
-  if (args.size() == 0 || args[0]->GetType() != Values::ValueType::String) {
+  if (args.size() == 0 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
   string str;
@@ -133,7 +133,7 @@ function(front) {
   return Ctx::Undefined();
 }
 function(back) {
-  if (args.size() == 0 || args[0]->GetType() != Values::ValueType::String) {
+  if (args.size() == 0 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
   string str;
@@ -143,7 +143,7 @@ function(back) {
   return Ctx::Undefined();
 }
 function(pop) {
-  if (args.empty() || args[0]->GetType() != ValueType::String) {
+  if (args.empty() || args[0]->GetPrimitiveType() != PrimitiveType::String) {
     return Ctx::Undefined();
   }
 
@@ -157,7 +157,7 @@ function(pop) {
   return Ctx::CreateString(character);
 }
 function(len) {
-  if (args.empty() || args[0]->GetType() != Values::ValueType::String) {
+  if (args.empty() || args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
 
@@ -170,8 +170,8 @@ function(len) {
 }
 
 function(insert) {
-  if (args.size() < 3 || args[0]->GetType() != Values::ValueType::String ||
-      args[1]->GetType() != Values::ValueType::Int) {
+  if (args.size() < 3 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
+      args[1]->GetPrimitiveType() != Values::PrimitiveType::Int) {
     return undefined;
   }
   auto str = std::static_pointer_cast<String_T>(args[0]);
@@ -219,9 +219,9 @@ function(contains) {
 }
 
 function(replace) {
-  if (args.size() < 3 || args[0]->GetType() != Values::ValueType::String ||
-      args[1]->GetType() != Values::ValueType::String ||
-      args[2]->GetType() != Values::ValueType::String) {
+  if (args.size() < 3 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
+      args[1]->GetPrimitiveType() != Values::PrimitiveType::String ||
+      args[2]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
 
@@ -254,13 +254,13 @@ function(remove) {
     return Ctx::Undefined();
   }
 
-  if (args[0]->GetType() == Values::ValueType::String) {
+  if (args[0]->GetPrimitiveType() == Values::PrimitiveType::String) {
     string str;
     if (!Ctx::TryGetString(args[0], str)) {
       return Ctx::Undefined();
     }
 
-    if (args[1]->GetType() == Values::ValueType::String) {
+    if (args[1]->GetPrimitiveType() == Values::PrimitiveType::String) {
       string pattern;
       if (!Ctx::TryGetString(args[1], pattern)) {
         return Ctx::Undefined();
@@ -280,8 +280,8 @@ function(remove) {
 }
 
 function(without) {
-  if (args.empty() || args[0]->GetType() != Values::ValueType::String ||
-      args[1]->GetType() != Values::ValueType::String) {
+  if (args.empty() || args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
+      args[1]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
   

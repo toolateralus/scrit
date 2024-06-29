@@ -76,7 +76,7 @@ Value Object_T::CallOpOverload(Value &arg, const string &op_key) {
   }
   
   auto member = GetMember(op_key);
-  if (member == nullptr || member->GetPrimitiveType() != PrimitveType::Callable) {
+  if (member == nullptr || member->GetPrimitiveType() != PrimitiveType::Callable) {
     throw std::runtime_error("Operator overload was not a callable");
   }
   
@@ -106,7 +106,7 @@ Value Object_T::Divide(Value other) {
 Bool Object_T::Less(Value other) {
   static const string op_key = "less";
   auto result = CallOpOverload(other, op_key);
-  if (result->GetPrimitiveType() == PrimitveType::Bool) {
+  if (result->GetPrimitiveType() == PrimitiveType::Bool) {
     return std::dynamic_pointer_cast<Bool_T>(result);
   }
   return False;
@@ -114,7 +114,7 @@ Bool Object_T::Less(Value other) {
 Bool Object_T::Greater(Value other) {
   static const string op_key = "greater";
   auto result = CallOpOverload(other, op_key);
-  if (result->GetPrimitiveType() == PrimitveType::Bool) {
+  if (result->GetPrimitiveType() == PrimitiveType::Bool) {
     return std::dynamic_pointer_cast<Bool_T>(result);
   }
   return False;
