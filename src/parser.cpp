@@ -897,24 +897,23 @@ IfPtr Parser::ParseIf() {
 }
 StatementPtr Parser::ParseFor() {
   auto info = this->info;
-
+  
   auto scope = ASTNode::context.PushScope();
-
+  
   if (!tokens.empty() && Peek().type == TType::LParen) {
     Eat();
   }
   StatementPtr decl = nullptr;
   ExpressionPtr condition = nullptr;
   StatementPtr inc = nullptr;
-
+  
   // for {}
   if (Peek().type == TType::LCurly) {
     return make_unique<For>(info, nullptr, nullptr, nullptr, ParseBlock(),
                             ASTNode::context.PopScope());
   }
-
-  if ((tokens.size() > 1 && Peek(1).type == TType::Assign) ||
-      (tokens.size() > 2 && Peek(2).type == TType::Assign)) {
+  
+  if (Peek().type == TType::Let) {
     decl = ParseStatement();
     Expect(TType::Comma);
     condition = ParseExpression();
@@ -924,9 +923,9 @@ StatementPtr Parser::ParseFor() {
                             std::move(inc), ParseBlock(),
                             ASTNode::context.PopScope());
   }
-
+  
   auto expr = ParseExpression();
-
+  
   // for expr : array/obj {}
   if (Peek().type == TType::Colon) {
     Eat();
