@@ -963,7 +963,6 @@ Token Parser::Peek(size_t lookahead) {
     throw std::out_of_range("Lookahead is out of range");
   }
   auto &tkn = tokens[tokens.size() - 1 - lookahead];
-  info = tkn.info;
   return tkn;
 }
 Token Parser::Eat() {
