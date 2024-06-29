@@ -57,9 +57,9 @@ Arguments::Arguments(SourceInfo &info,  vector<ExpressionPtr> &&args)
     : Expression(info, TypeSystem::Current().Undefined()) {
   this->values = std::move(args);
 }
-Parameters::Parameters(SourceInfo &info, std::map<string, Param> &&params)
+Parameters::Parameters(SourceInfo &info, std::vector<Param> &&params)
     : Statement(info) {
-  this->map = std::move(params);
+  this->values = std::move(params);
 }
 Identifier::Identifier(SourceInfo &info, const Type &type, const string &name) : Expression(info, type), name(name) {}
 Operand::Operand(SourceInfo &info, const Type &type, Value value) : Expression(info, type) {

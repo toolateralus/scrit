@@ -6,7 +6,7 @@
 #include <functional>
 #include <memory>
 
-#include <map>
+#include <vector>
 
 using std::string;
 using std::vector;
@@ -142,19 +142,20 @@ struct Property : Statement {
 };
 struct Parameters : Statement {
   struct Param {
+    string name;
     Value value;
     Type type;
   };
-  std::map<string, Param> map;
+  std::vector<Param> values;
   
   auto ParamTypes() -> vector<Type> {
     vector<Type> types;
-    for (const auto &[_, p]: map) {
+    for (const auto& p : values) {
       types.push_back(p.type);
     }
     return types;
   }
-  Parameters(SourceInfo &info, std::map<string, Param> &&params);
+  Parameters(SourceInfo &info, std::vector<Param> &&params);
   ExecutionResult Execute() override;
 };
 struct Continue : Statement {

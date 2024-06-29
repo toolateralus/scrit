@@ -22,18 +22,18 @@ Value Callable_T::Call(ArgumentsPtr &args) {
   auto values = Call::GetArgsValueList(args);
   
   size_t i = 0;
-  for (const auto &[key, value] : params->map) {
+  for (const auto &param : params->values) {
     if (i >= values.size()) {
-      if (value.value != nullptr) {
-        scope->Set(key, value.value); 
+      if (param.value != nullptr) {
+        scope->Set(param.name, param.value); 
       }
       continue;
     }
     
-    if (value.type == values[i]->type) {
-      scope->Set(key, values[i]);
+    if (Type_T::equals(param.type.get(), values[i]->type.get())) {
+      scope->Set(param.name, values[i]);
     } else {
-      throw std::runtime_error("invalid type argument for function call. expected: " + value.type->name + " got: " + values[i]->type->name);
+      throw std::runtime_error("invalid type argument for function call. expected: " + param.type->name + " got: " + values[i]->type->name);
     }
     i++;
   }
@@ -282,9 +282,9 @@ string Callable_T::ToString() const {
   std::stringstream ss = {};
   ss << "callable(";
   size_t i = 0;
-  for (const auto &[name, value] : params->map) {
-    ss << name;
-    if (i != params->map.size()) {
+  for (const auto &param : params->values) {
+    ss << param.name;
+    if (i != params->values.size()) {
       ss << ", ";
     }
     i++;
@@ -544,11 +544,11 @@ Tuple_T::Tuple_T(vector<Value> values) : Value_T(nullptr), values(values) {
 Value Callable_T::Call(std::vector<Value> &values) {
   auto scope = ASTNode::context.PushScope();
   size_t i = 0;
-  for (const auto &[key, value] : params->map) {
+  for (const auto &param : params->values) {
     if (i < values.size()) {
-      scope->Set(key, values[i]);
-    } else if (value.value != nullptr) {
-      scope->Set(key, value.value);
+      scope->Set(param.name, values[i]);
+    } else if (param.value != nullptr) {
+      scope->Set(param.name, param.value);
     } else {
       break;
     }
