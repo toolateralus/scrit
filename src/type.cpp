@@ -1,20 +1,4 @@
-#include "ast.hpp"
-#include "value.hpp"
-#include <iostream>
 #include "type.hpp"
-
-Type TypeSystem::Any = make_shared<AnyType>();
-
-std::unordered_map<string, Type> TypeSystem::types = {
-  {"bool", std::make_shared<BoolType>()},
-  {"int", std::make_shared<IntType>()},
-  {"float", std::make_shared<FloatType>()},
-  {"string", std::make_shared<StringType>()},
-  {"null", std::make_shared<NullType>()},
-  {"undefined", std::make_shared<UndefinedType>()},
-  {"object", std::make_shared<ObjectType>()},
-  {"array", std::make_shared<ArrayType>("array", TypeSystem::Any)}
-};
 
 auto TypeSystem::FromPrimitive(const PrimitiveType &t) -> Type {
   auto id = TypeToString(t);
@@ -48,7 +32,7 @@ auto TypeSystem::ArrayTypeFromInner(const Type &inner) -> Type {
   types[name] = new_type;
   return new_type;
 }
-auto Values::TypeSystem::GetDefault(const Type &type) -> Value {
+auto TypeSystem::GetDefault(const Type &type) -> Value {
   if (type->name == "bool") {
     return Value_T::False;
   } else if (type->name == "int") {

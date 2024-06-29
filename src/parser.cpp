@@ -230,7 +230,7 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier,
     type = ParseType();
     
     if (tokens.empty() || Peek().type != TType::Assign) {
-      return std::make_unique<Assignment>(info, type, std::move(identifier), make_unique<Operand>(info, type, TypeSystem::GetDefault(type)), mutability);
+      return std::make_unique<Assignment>(info, type, std::move(identifier), make_unique<Operand>(info, type, TypeSystem::Current().GetDefault(type)), mutability);
     }
     next = Peek();
   }
@@ -459,7 +459,7 @@ StatementPtr Parser::ParseAnonFuncInlineCall() {
   auto body = ParseBlock();
   auto arguments = ParseArguments();
   
-  auto type = Values::TypeSystem::FromCallable(returnType, parameters->ParamTypes());
+  auto type = Values::TypeSystem::Current().FromCallable(returnType, parameters->ParamTypes());
   auto op = make_unique<Operand>(info, type, make_shared<Callable_T>(returnType, std::move(body), std::move(parameters)));
   return make_unique<Call>(info, std::move(op), std::move(arguments));
 }
@@ -479,7 +479,7 @@ ExpressionPtr Parser::ParseAnonFunc() {
   auto params = ParseParameters();
   Type returnType = nullptr;
   if (Peek().type == TType::LCurly) {
-    returnType = TypeSystem::Undefined();
+    returnType = TypeSystem::Current().Undefined();
   } else {
     Expect(TType::Arrow);
     returnType = ParseType();
@@ -487,7 +487,7 @@ ExpressionPtr Parser::ParseAnonFunc() {
   auto body = ParseBlock();
   auto types = params->ParamTypes();
   auto callable = make_shared<Callable_T>(returnType, std::move(body), std::move(params));
-  return make_unique<Operand>(info, TypeSystem::FromCallable(returnType, types), callable);
+  return make_unique<Operand>(info, TypeSystem::Current().FromCallable(returnType, types), callable);
 }
 
 ExpressionPtr Parser::ParseObjectInitializer() {
@@ -608,25 +608,25 @@ ExpressionPtr Parser::ParseOperand() {
   }
   case TType::String:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Get("string"), String_T::New(std::move(token.value)));
+    return make_unique<Operand>(info, TypeSystem::Current().Get("string"), String_T::New(std::move(token.value)));
   case TType::True:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Get("bool"), Value_T::True);
+    return make_unique<Operand>(info, TypeSystem::Current().Get("bool"), Value_T::True);
   case TType::False:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Get("bool"), Value_T::False);
+    return make_unique<Operand>(info, TypeSystem::Current().Get("bool"), Value_T::False);
   case TType::Undefined:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Get("undefined"), Value_T::UNDEFINED);
+    return make_unique<Operand>(info, TypeSystem::Current().Get("undefined"), Value_T::UNDEFINED);
   case TType::Null:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Get("null"), Value_T::VNULL);
+    return make_unique<Operand>(info, TypeSystem::Current().Get("null"), Value_T::VNULL);
   case TType::Float:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Get("float"), Float_T::New(stof(token.value)));
+    return make_unique<Operand>(info, TypeSystem::Current().Get("float"), Float_T::New(stof(token.value)));
   case TType::Int:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Get("int"),Int_T::New(stoi(token.value)));
+    return make_unique<Operand>(info, TypeSystem::Current().Get("int"),Int_T::New(stoi(token.value)));
   case TType::Identifier:
     Eat();
     return make_unique<Identifier>(info, token.value);
@@ -705,7 +705,7 @@ OperandPtr Parser::ParseArrayInitializer() {
   if (Peek().type == TType::SubscriptRight) {
     Eat();
     auto array = Array_T::New();
-    return make_unique<Operand>(info, TypeSystem::Get("array"), array);
+    return make_unique<Operand>(info, TypeSystem::Current().Get("array"), array);
   } else {
     vector<ExpressionPtr> values = {};
     
@@ -729,7 +729,7 @@ OperandPtr Parser::ParseArrayInitializer() {
     }
     Expect(TType::SubscriptRight);
     auto array = Array_T::New(std::move(values));
-    auto type = TypeSystem::ArrayTypeFromInner(inner_type);
+    auto type = TypeSystem::Current().ArrayTypeFromInner(inner_type);
     array->type = type;
     std::cout << "parsing array of type : " << type->name  << std::endl;
     return make_unique<Operand>(info, type, array);
@@ -1092,22 +1092,22 @@ Type Parser::ParseType() {
     }
     typeString.pop_back(); // remove the last comma
     typeString += ">";
-    auto t = TypeSystem::Get(typeString);
+    auto t = TypeSystem::Current().Get(typeString);
     
     if (t == nullptr) {
-      auto template_t = TypeSystem::Get(tname.value);
+      auto template_t = TypeSystem::Current().Get(tname.value);
       if (template_t == nullptr || template_t->name != "array") {
         throw std::runtime_error("right now generics are only supported for typed arrays.\ncannot make generic type of non existant type: " + tname.value);
       }
       auto n0 = names[0];
-      auto n0_t = TypeSystem::Get(n0);
+      auto n0_t = TypeSystem::Current().Get(n0);
       if (!n0_t) {
         throw std::runtime_error("cannot make generic type argument for non existant type: " + n0);
       }
-      return TypeSystem::ArrayTypeFromInner(n0_t);
+      return TypeSystem::Current().ArrayTypeFromInner(n0_t);
     }
     return t;
   }
   
-  return TypeSystem::Get(tname.value);
+  return TypeSystem::Current().Get(tname.value);
 }

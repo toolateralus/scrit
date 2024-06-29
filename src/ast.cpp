@@ -54,7 +54,7 @@ If::If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block)
   this->block = std::move(block);
 }
 Arguments::Arguments(SourceInfo &info,  vector<ExpressionPtr> &&args)
-    : Expression(info, TypeSystem::Undefined()) {
+    : Expression(info, TypeSystem::Current().Undefined()) {
   this->values = std::move(args);
 }
 Parameters::Parameters(SourceInfo &info, std::map<string, Param> &&params)
@@ -1068,5 +1068,5 @@ TupleInitializer::TupleInitializer(SourceInfo &info,
         for (const auto &v : values) {
           this->types.push_back(v->type);  
         }
-        this->type = TypeSystem::FromTuple(this->types);
+        this->type = TypeSystem::Current().FromTuple(this->types);
 }

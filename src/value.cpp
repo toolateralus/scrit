@@ -3,7 +3,6 @@
 #include "serializer.hpp"
 #include "type.hpp"
 #include "value.hpp"
-#include <unordered_map>
 
 #include <memory>
 #include <numeric>
@@ -531,14 +530,14 @@ Object Object_T::New(Scope scope) {
   return make_shared<Object_T>(scope);
 }
 
-Object_T::Object_T() : Value_T(TypeSystem::Get("object")) {}
+Object_T::Object_T() : Value_T(TypeSystem::Current().Get("object")) {}
 
 Tuple_T::Tuple_T(vector<Value> values) : Value_T(nullptr), values(values) {
   auto types = vector<Type>();
   for (const auto &v: values) {
     types.push_back(v->type);
   }
-  this->type = TypeSystem::FromTuple(types);
+  this->type = TypeSystem::Current().FromTuple(types);
 }
 
 Value Callable_T::Call(std::vector<Value> &values) {
@@ -567,8 +566,8 @@ Value Callable_T::Call(std::vector<Value> &values) {
     throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
   }
 }
-Float_T::Float_T(float value) : Value_T(TypeSystem::Get("float")) { this->value = value; }
-Array_T::Array_T(vector<ExpressionPtr> &&init) : Value_T(TypeSystem::Get("array"))  {
+Float_T::Float_T(float value) : Value_T(TypeSystem::Current().Get("float")) { this->value = value; }
+Array_T::Array_T(vector<ExpressionPtr> &&init) : Value_T(TypeSystem::Current().Get("array"))  {
   initializer = std::move(init);
   for (auto &arg : initializer) {
     auto value = arg->Evaluate();
@@ -577,22 +576,22 @@ Array_T::Array_T(vector<ExpressionPtr> &&init) : Value_T(TypeSystem::Get("array"
 }
 Callable_T::Callable_T(const Type &returnType, BlockPtr &&block, ParametersPtr &&params)
     : Value_T(nullptr), block(std::move(block)), params(std::move(params))  {
-      this->type = TypeSystem::FromCallable(returnType, this->params->ParamTypes());
+      this->type = TypeSystem::Current().FromCallable(returnType, this->params->ParamTypes());
     }
-String_T::String_T(const string &value) : Value_T(TypeSystem::Get("string")) { this->value = value; }
+String_T::String_T(const string &value) : Value_T(TypeSystem::Current().Get("string")) { this->value = value; }
 // this is only for native callables.
 // Todo: implement native callable type.
-Callable_T::Callable_T() : Value_T(TypeSystem::Get("native_callable")) {}
+Callable_T::Callable_T() : Value_T(TypeSystem::Current().Get("native_callable")) {}
 
-Null_T::Null_T() : Value_T(TypeSystem::Get("null")) {}
-Undefined_T::Undefined_T() : Value_T(TypeSystem::Get("undefined")) {}
-Bool_T::Bool_T(bool value) : Value_T(TypeSystem::Get("bool")) { this->value = value; }
+Null_T::Null_T() : Value_T(TypeSystem::Current().Get("null")) {}
+Undefined_T::Undefined_T() : Value_T(TypeSystem::Current().Get("undefined")) {}
+Bool_T::Bool_T(bool value) : Value_T(TypeSystem::Current().Get("bool")) { this->value = value; }
 Array_T::Array_T(vector<Value> init) : Value_T(nullptr)  { \
   this->values = init; 
   if (init.size() != 0) {
-    this->type = TypeSystem::ArrayTypeFromInner(init[0]->type);
+    this->type = TypeSystem::Current().ArrayTypeFromInner(init[0]->type);
   } else {
-    this->type = TypeSystem::Get("array");
+    this->type = TypeSystem::Current().Get("array");
   }
 }
 

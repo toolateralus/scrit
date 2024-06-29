@@ -13,7 +13,7 @@
 
 struct StringStream : Value_T {
   std::stringstream stream = std::stringstream("");
-  StringStream() : Value_T(TypeSystem::) {}
+  StringStream() : Value_T(TypeSystem::Current().Get("object")) {}
   string ToString() const override {
     return stream.str();
   }
