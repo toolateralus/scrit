@@ -2,13 +2,13 @@
 CXX := clang++
 
 # Compiler flags
-CXXFLAGS := -fPIC -std=c++2b -g -Iinclude -fsanitize=address -fsanitize=undefined -fsanitize=leak
+CXXFLAGS := -fPIC -std=c++2b -g -Iinclude -fsanitize=address -fsanitize=undefined
 DEBUGFLAGS := -g
 RELEASEFLAGS := -O3 
 TESTFLAGS := -g
 
 # Linker flags
-LDFLAGS := -fsanitize=address -fsanitize=undefined -fsanitize=leak
+LDFLAGS := -fsanitize=address -fsanitize=undefined 
 TESTLINKERFLAGS := -lgtest -lgtest_main
 
 # Directories

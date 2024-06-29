@@ -86,11 +86,8 @@ struct AnyType: Type_T {
 };
 
 struct TypeSystem {
-  static std::unordered_map<string, Type> types;
-  static Type Any;
   
-  static auto DefaultTypes() -> std::unordered_map<string, Type> {
-    return {
+  std::unordered_map<string, Type> types = {
       {"bool", std::make_shared<BoolType>()},
       {"int", std::make_shared<IntType>()},
       {"float", std::make_shared<FloatType>()},
@@ -98,27 +95,35 @@ struct TypeSystem {
       {"null", std::make_shared<NullType>()},
       {"undefined", std::make_shared<UndefinedType>()},
       {"object", std::make_shared<ObjectType>()},
-      {"array", std::make_shared<ArrayType>("array", TypeSystem::Any)}
-    };
+      {"array", std::make_shared<ArrayType>("array", make_shared<AnyType>())}
+  };
+  
+  const Type Any = make_shared<AnyType>();
+  
+  auto Get(const string &name) -> Type {
+    return types[name];
   }
   
-  static auto Get(const string &name) -> Type {
-    if (types.empty()) {
-      types = DefaultTypes();  
-    }
-    
-    return TypeSystem::types[name];
-  }
-  
-  static auto Undefined() -> Type {
+  auto Undefined() -> Type {
     return Get("undefined");
   }
   
-  static auto GetDefault(const Type &type) -> Value;
-  static auto ArrayTypeFromInner(const Type &inner) -> Type;
-  static auto FromPrimitive(const PrimitveType &value) -> Type;
-  static auto FromTuple(const vector<Type> &types) -> Type;
-  static auto FromCallable(const Type returnType,
+  auto GetDefault(const Type &type) -> Value;
+  auto ArrayTypeFromInner(const Type &inner) -> Type;
+  auto FromPrimitive(const PrimitveType &value) -> Type;
+  auto FromTuple(const vector<Type> &types) -> Type;
+  auto FromCallable(const Type returnType,
                            const vector<Type> paramTypes) -> Type;
-};
+
+  static TypeSystem& Current() {
+    static TypeSystem instance;
+    return instance;
+  }                           
+  private:
+  ~TypeSystem() {
+    types.clear();
+  }
+  TypeSystem(){}
+  
+  };
 } // namespace Values
