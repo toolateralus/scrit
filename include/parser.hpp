@@ -24,7 +24,7 @@ struct Parser {
   StatementPtr ParseAnonFuncInlineCall();
   StatementPtr ParseStatement();
   StatementPtr ParseKeyword(Token keyword);
-
+  
   Type ParseType();
 
   StatementPtr ParseTupleDeconstruction(IdentifierPtr &&iden);

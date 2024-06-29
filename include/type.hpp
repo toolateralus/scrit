@@ -97,14 +97,16 @@ struct AnyType: Type_T {
 struct TypeSystem {
   
   std::unordered_map<string, Type> types = {
-      {"bool", std::make_shared<BoolType>()},
-      {"int", std::make_shared<IntType>()},
-      {"float", std::make_shared<FloatType>()},
-      {"string", std::make_shared<StringType>()},
       {"null", std::make_shared<NullType>()},
       {"undefined", std::make_shared<UndefinedType>()},
+      
+      {"int", std::make_shared<IntType>()},
+      {"float", std::make_shared<FloatType>()},
+      {"bool", std::make_shared<BoolType>()},
+      {"string", std::make_shared<StringType>()},
+      
+      {"array", std::make_shared<ArrayType>("array", make_shared<AnyType>())},
       {"object", std::make_shared<ObjectType>()},
-      {"array", std::make_shared<ArrayType>("array", make_shared<AnyType>())}
   };
   
   const Type Any = make_shared<AnyType>();
@@ -123,7 +125,7 @@ struct TypeSystem {
   auto FromTuple(const vector<Type> &types) -> Type;
   auto FromCallable(const Type returnType,
                            const vector<Type> paramTypes) -> Type;
-
+  
   static TypeSystem& Current() {
     static TypeSystem instance;
     return instance;

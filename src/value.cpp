@@ -496,6 +496,7 @@ Value Tuple_T::Clone() {
   for (const auto &v : this->values) {
     values.push_back(v->Clone());
   }
+  
   return make_shared<Tuple_T>(values);
 }
 string Tuple_T::ToString() const {

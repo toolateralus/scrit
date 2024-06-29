@@ -59,7 +59,9 @@ Value Object_T::Clone() {
   for (const auto &[key, var] : this->scope->Members()) {
     scope->Set(key, var->Clone());
   }
-  return Ctx::CreateObject(scope);
+  auto clone = Ctx::CreateObject(scope);
+  clone->type = this->type;
+  return clone;
 }
 bool Object_T::operator==(Object_T *other) {
   return scope->Members() == other->scope->Members() && this == other;

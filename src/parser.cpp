@@ -555,7 +555,7 @@ endloop:
   Expect(TType::RCurly);
   
   // todo: redo the object system and type it.
-  return make_unique<ObjectInitializer>(info, nullptr, make_unique<Block>(info, std::move(statements)));
+  return make_unique<ObjectInitializer>(info, TypeSystem::Current().Get("object"), make_unique<Block>(info, std::move(statements)));
 }
 
 ExpressionPtr Parser::ParseTuple(ExpressionPtr &&expr) {
@@ -1063,6 +1063,7 @@ StatementPtr Parser::ParseTupleDeconstruction(IdentifierPtr &&iden) {
   
   return make_unique<TupleDeconstruction>(info, std::move(idens), std::move(tuple));
 }
+
 
 Type Parser::ParseType() {
   auto tname = Eat();
