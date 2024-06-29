@@ -352,6 +352,7 @@ struct BinExpr : Expression {
 };
 struct Using : Statement {
   static vector<string> activeModules;
+  void Load();
   Using(SourceInfo &info,  const string &name, const bool isWildcard);
   Using(SourceInfo &info,  const string &name, vector<string> &symbols);
   vector<string> symbols;

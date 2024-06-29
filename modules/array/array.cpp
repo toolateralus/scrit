@@ -72,14 +72,14 @@ function(expand) {
     auto array = dynamic_cast<Array_T *>(args[0].get());
 
     auto default_value = args.size() > 2 ? args[2] : Value_T::UNDEFINED;
-
+    
     Callable_T *callable = nullptr;
     if (default_value->GetPrimitiveType() == PrimitiveType::Callable) {
       callable = static_cast<Callable_T *>(default_value.get());
     }
 
     std::vector<Value> empty = {};
-
+    
     for (int i = 0; i < value; i++) {
       if (callable) {
         array->Push(callable->Call(empty));

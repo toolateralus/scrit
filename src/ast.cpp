@@ -1,4 +1,5 @@
 #include "ast.hpp"
+#include "lexer.hpp"
 #include "type.hpp"
 #include "context.hpp"
 #include "debug.hpp"
@@ -82,13 +83,15 @@ ObjectInitializer::ObjectInitializer(SourceInfo &info, const Type &type, BlockPt
 }
 Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
     : Expression(info, operand->type), Statement(info) {
+      
   auto value = operand->Evaluate();
+  
   if (!value) {
     throw std::runtime_error("couldnt find function... call at\n" + operand->srcInfo.ToString());
   }
   
   auto target = std::dynamic_pointer_cast<CallableType>(value->type);
-  
+ 
   if (target && target->returnType) {
     this->type = target->returnType;
   } else {
@@ -201,10 +204,12 @@ ElsePtr Else::NoIf(SourceInfo &info, BlockPtr &&block) {
 }
 Using::Using(SourceInfo &info, const string &name, const bool isWildcard)
     : Statement(info), symbols({}), moduleName(name), isWildcard(isWildcard){
-
+  Load();
                                                       };
 Using::Using(SourceInfo &info, const string &name, vector<string> &symbols)
-    : Statement(info), symbols(symbols), moduleName(name), isWildcard(false){};
+    : Statement(info), symbols(symbols), moduleName(name), isWildcard(false){
+  Load();      
+};
 
 UnaryStatement::UnaryStatement(SourceInfo &info, ExpressionPtr &&expr)
     : Statement(info), expr(std::move(expr)) {}
@@ -746,50 +751,6 @@ Value BinExpr::Evaluate() {
   }
 };
 ExecutionResult Using::Execute() {
-  for (const auto &mod : activeModules) {
-    if (moduleName == mod) {
-      return ExecutionResult::None;
-    }
-  }
-  
-  activeModules.push_back(moduleName);
-
-  auto path = moduleRoot + moduleName + ".dll";
-  
-  void *handle;
-  auto module = LoadScritModule(moduleName, path, handle);
-  
-  
-  // we do this even when we ignore the object becasue it registers the native
-  // callables.
-  auto object = ScritModDefAsObject(module);
-  
-  if (!isWildcard && symbols.empty()) {
-    ASTNode::context.Insert(moduleName, object, Mutability::Const);
-  } else {
-    vector<Value> values = {};
-    if (!symbols.empty()) {
-      for (const auto &name : symbols) {
-        auto value = module->context->Find(name);
-        if (value == Value_T::UNDEFINED) {
-          throw std::runtime_error("invalid using statement. could not find " +
-                                   name);
-        }
-        
-        ASTNode::context.Insert(name, value, Mutability::Const);
-      }
-    } else {
-      for (const auto &[key, var] : object->scope->Members()) {
-        ASTNode::context.Insert(key.value, var, key.mutability);
-        
-      }
-    }
-  }
-
-  free(module);
-  
-  ASTNode::context.RegisterModuleHandle(handle);
-  
   return ExecutionResult::None;
 }
 ExecutionResult RangeBasedFor::Execute() {
@@ -1103,4 +1064,47 @@ ExecutionResult Declaration::Execute() {
   ASTNode::context.Insert(name, value, mut);
   
   return ExecutionResult::None;
+}
+void Using::Load() {
+  for (const auto &mod : activeModules) {
+    if (moduleName == mod) {
+      return;
+    }
+  }
+  
+  activeModules.push_back(moduleName);
+  
+  auto path = moduleRoot + moduleName + ".dll";
+
+  void *handle;
+  auto module = LoadScritModule(moduleName, path, handle);
+
+  // we do this even when we ignore the object becasue it registers the native
+  // callables.
+  auto object = ScritModDefAsObject(module);
+
+  if (!isWildcard && symbols.empty()) {
+    ASTNode::context.Insert(moduleName, object, Mutability::Const);
+  } else {
+    vector<Value> values = {};
+    if (!symbols.empty()) {
+      for (const auto &name : symbols) {
+        auto value = module->context->Find(name);
+        if (value == Value_T::UNDEFINED) {
+          throw std::runtime_error("invalid using statement. could not find " +
+                                   name);
+        }
+
+        ASTNode::context.Insert(name, value, Mutability::Const);
+      }
+    } else {
+      for (const auto &[key, var] : object->scope->Members()) {
+        ASTNode::context.Insert(key.value, var, key.mutability);
+      }
+    }
+  }
+
+  free(module);
+
+  ASTNode::context.RegisterModuleHandle(handle);
 }
