@@ -46,9 +46,16 @@ Value Callable_T::Call(ArgumentsPtr &args) {
   switch (result.controlChange) {
   case ControlChange::None:
     return Value_T::VNULL;
-  case ControlChange::Return:
-
-    return result.value;
+  case ControlChange::Return: {
+    auto this_type = std::dynamic_pointer_cast<CallableType>(type);
+    if (this_type && Type_T::Equals(result.value->type.get(), this_type->returnType.get())) {
+      return result.value;
+    } else if (this_type) {
+      throw std::runtime_error("type error: function returned the wrong type.\nexpected: " + this_type->returnType->name + "\ngot: " + result.value->type->name);
+    } else {
+      throw std::runtime_error("interpreter error: function did not have a return type.");
+    }
+  }
   default:
     throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
   }
