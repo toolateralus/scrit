@@ -371,19 +371,19 @@ ExecutionResult Block::Execute() {
     try {
       auto result = statement->Execute();
       switch (result.controlChange) {
-      case ControlChange::Continue:
-      case ControlChange::Break:
-      case ControlChange::Return:
-        ASTNode::context.PopScope();
-        
-        if (result.value != nullptr) {
-          ApplyCopySemantics(result);
+        case ControlChange::Continue:
+        case ControlChange::Break:
+        case ControlChange::Return:
+          ASTNode::context.PopScope();
+          
+          if (result.value != nullptr) {
+            ApplyCopySemantics(result);
+            return result;
+          }
+          
           return result;
-        }
-        
-        return result;
-      case ControlChange::None:
-        continue;
+        case ControlChange::None:
+          continue;
       }
     } catch (std::runtime_error err) {
       std::cout << statement->srcInfo.ToString() << err.what() << std::endl;
@@ -1048,10 +1048,12 @@ TupleInitializer::TupleInitializer(SourceInfo &info,
         this->type = TypeSystem::Current().FromTuple(this->types);
 }
 ExecutionResult Declaration::Execute() {
-  if (ASTNode::context.Find(name)) {
+  
+  if (ASTNode::context.scopes.back()->Contains(name)) {
     throw std::runtime_error("cannot re-define an already existing variable.\noffending variable: " + name);
   }
   auto value = expr->Evaluate();
+  
   if (!Type_T::Equals(value->type.get(), this->type.get())) {
     throw std::runtime_error("invalid types in declaration:\ndeclaring type: " + type->name + "\nexpression type: " + value->type->name);
   }
@@ -1059,7 +1061,7 @@ ExecutionResult Declaration::Execute() {
   // copy where needed
   ApplyCopySemantics(value);
   
-  ASTNode::context.Insert(name, value, mut);
+  ASTNode::context.scopes.back()->Set(name, value, mut);
   
   return ExecutionResult::None;
 }

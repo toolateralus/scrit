@@ -16,7 +16,6 @@ Null Value_T::VNULL = make_shared<Null_T>();
 Undefined Value_T::UNDEFINED = make_shared<::Undefined_T>();
 
 Value Callable_T::Call(ArgumentsPtr &args) {
-
   auto scope = ASTNode::context.PushScope();
   auto values = Call::GetArgsValueList(args);
 
