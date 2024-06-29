@@ -94,9 +94,7 @@ Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
  
   if (target && target->returnType) {
     this->type = target->returnType;
-  } else {
-    throw std::runtime_error("invalid type in call\n" + value->ToString());
-  }
+  } 
   
   this->operand = std::move(operand);
   this->args = std::move(args);

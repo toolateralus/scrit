@@ -82,7 +82,12 @@ StatementPtr Parser::ParseStatement() {
     auto token = Peek();
 
     info = token.info;
-
+    
+    if (token.type == TType::Increment || token.type == TType::Decrement) {
+      auto inc_expr = ParseExpression();
+      return make_unique<UnaryStatement>(info, std::move(inc_expr));
+    }
+    
     switch (token.family) {
     case TFamily::Identifier: {
       auto operand = ParseExpression();
@@ -299,6 +304,16 @@ ExpressionPtr Parser::ParseExpression() {
   if (tokens.empty()) {
     throw std::runtime_error("Unexpected end of input");
   }
+  
+  auto next = Peek();
+  
+  // for ++i, --i etc.  
+  if (next.type == TType::Increment || next.type == TType::Decrement) {
+    Eat();
+    auto expr = ParseExpression();
+    return make_unique<UnaryExpr>(info, expr->type, std::move(expr), next.type);
+  }
+  
   return ParseCompoundAssignment();
 }
 ExpressionPtr Parser::ParseCompoundAssignment() {
@@ -426,7 +441,7 @@ ExpressionPtr Parser::ParsePostfix() {
       Eat();
       return make_unique<UnaryExpr>(info, expr->type, std::move(expr), next.type);
     }
-
+    
     if (next.type != TType::LParen && next.type != TType::SubscriptLeft &&
         next.type != TType::Dot) {
       break;
@@ -948,10 +963,13 @@ Token Parser::Peek(size_t lookahead) {
   if (lookahead >= tokens.size()) {
     throw std::out_of_range("Lookahead is out of range");
   }
-  return tokens[tokens.size() - 1 - lookahead];
+  auto &tkn = tokens[tokens.size() - 1 - lookahead];
+  info = tkn.info;
+  return tkn;
 }
 Token Parser::Eat() {
   auto tkn = tokens.back();
+  info = tkn.info;
   tokens.pop_back();
   return tkn;
 }
