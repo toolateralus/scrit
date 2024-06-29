@@ -84,6 +84,9 @@ struct Value_T : std::enable_shared_from_this<Value_T> {
     
   }
   
+  
+  
+  
   Value_T(const Type &type): type(type) {}
   
   virtual string ToString() const = 0;

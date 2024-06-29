@@ -682,8 +682,8 @@ Value BinExpr::Evaluate() {
   auto left = this->left->Evaluate();
   auto right = this->right->Evaluate();
   
-  if (left->type != right->type) {
-    throw std::runtime_error("invalid types in binary expression");
+  if (!Type_T::equals(left->type.get(), right->type.get())) {
+    throw std::runtime_error("invalid types in binary expression\nleft: " + left->type->name + "\nright: " + right->type->name);
   }
   
   switch (op) {

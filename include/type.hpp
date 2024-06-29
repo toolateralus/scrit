@@ -17,7 +17,16 @@ struct Type_T {
   Type_T(const std::string &name) : name(name) {}
   virtual ~Type_T(){};
   const string name;
-};
+  bool operator==(const Type_T& other) const {
+    return name == other.name;
+  }
+  static bool equals(const Type_T *t0, const Type_T *t1) {
+    if (t0 == nullptr || t1 == nullptr) {
+      return false;
+    }
+    return *t0 == *t1;
+  }
+};;
 
 
 using Type = shared_ptr<Type_T>;
