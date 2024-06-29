@@ -90,7 +90,7 @@ struct CallableType : Type_T {
 private:
   static auto GetName(const Type returnType, const std::vector<Type> paramTypes)
       -> string {
-    return "func" + returnType->name + TupleType::GetName(paramTypes);
+    return returnType->name + TupleType::GetName(paramTypes);
   }
 };
 
@@ -109,6 +109,7 @@ struct TypeSystem {
       {"int", std::make_shared<IntType>()},
       {"float", std::make_shared<FloatType>()},
       {"bool", std::make_shared<BoolType>()},
+      {"native_callable", std::make_shared<CallableType>(make_shared<AnyType>(), std::vector<Type>({make_shared<AnyType>()}))},
       {"array", make_shared<TemplateType>("array", make_shared<ArrayType>(), vector<Type>())},
       {"string", std::make_shared<StringType>()},
       {"object", std::make_shared<ObjectType>()},
