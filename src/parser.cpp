@@ -122,30 +122,7 @@ StatementPtr Parser::ParseStatement() {
   throw std::runtime_error("Unexpecrted end of input");
 }
 
-StatementPtr Parser::ParseDeclaration() {
-  auto next = Peek();
-  switch(next.type){
-    case TType::Mut: {
-      Expect(TType::Mut);
-      auto next = Expect(TType::Identifier);
-      auto iden = make_unique<Identifier>(info, next.value);
-      return ParseAssignment(std::move(iden), Mutability::Mut);
-    }
-    case TType::Const: {
-      Expect(TType::Const);
-      auto next = Expect(TType::Identifier);
-      auto iden = make_unique<Identifier>(info, next.value);
-      return ParseAssignment(std::move(iden), Mutability::Const);
-    }
-    case TType::Identifier: {
-      auto next = Expect(TType::Identifier);
-      auto iden = make_unique<Identifier>(info, next.value); 
-      return ParseAssignment(std::move(iden), Mutability::Const);
-    }
-    default: break;
-  }
-  throw std::runtime_error("Unable to parse declaration");
-}
+
 
 StatementPtr Parser::ParseKeyword(Token token) {
   switch (token.type) {
@@ -203,9 +180,7 @@ StatementPtr Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
   case TType::NullCoalescingEq:
   case TType::Lambda:
   case TType::Assign: {
-    if (!ASTNode::context.Find(identifier->name))  {
-      throw std::runtime_error("cannot assign a non-existant identifier. use 'let ___ = ...' or let ___ : type = ...' syntax.");
-    }
+   
     return ParseAssignment(std::move(identifier));
   }
   case TType::Comma: {
@@ -220,32 +195,72 @@ StatementPtr Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
         token.ToString());
   }
 }
-StatementPtr Parser::ParseAssignment(IdentifierPtr identifier,
-                                     Mutability mutability) {
+
+
+StatementPtr Parser::ParseDeclaration(SourceInfo &info, const string &iden, const Mutability &mut) {
+  Type type = nullptr;
+  auto next = Peek();
+  switch(next.type) {
+    case TType::Colon: {
+      Eat();
+      type = ParseType();
+      if (tokens.empty() || Peek().type != TType::Assign) {
+        auto _default =TypeSystem::Current().GetDefault(type);
+        auto op = make_unique<Operand>(info, type, _default);
+        return std::make_unique<Declaration>(info, iden, std::move(op), mut, type);
+      }
+      next = Peek();
+    }
+    case TType::Lambda: {
+        auto lambda = ParseLambda();
+        if (type && type != lambda->type) {
+          throw std::runtime_error("explicit type: " + type->name + " did not match the property's type: " + lambda->type->name);
+        }
+        return make_unique<Property>(info, iden, std::move(lambda), mut);
+    }
+    case TType::Assign: {
+      Eat();
+      auto expr = ParseExpression();
+      auto type = expr->type;
+      return make_unique<Declaration>(info, iden, std::move(expr), mut, type);
+    }
+    default: throw std::runtime_error("failed to parse declaration, got token: " + TTypeToString(next.type));
+  }
+}
+
+StatementPtr Parser::ParseDeclaration() {
+  auto next = Peek();
+  
+  switch(next.type){
+    case TType::Mut: {
+      Expect(TType::Mut);
+      auto next = Expect(TType::Identifier);
+      return ParseDeclaration(info, next.value, Mutability::Mut);
+    }
+    case TType::Const: {
+      Expect(TType::Const);
+      auto next = Expect(TType::Identifier);
+      return ParseDeclaration(info, next.value, Mutability::Const);
+    }
+    case TType::Identifier: {
+      auto next = Expect(TType::Identifier);
+      return ParseDeclaration(info, next.value, Mutability::Const);
+    }
+    
+    default: break;
+  }
+  throw std::runtime_error("Unable to parse declaration.. got :" + next.value);
+}
+
+StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
   Token next = Peek();
   
   Type type = nullptr;
-  if (next.type == TType::Colon) {
-    Eat();
-    type = ParseType();
-    
-    if (tokens.empty() || Peek().type != TType::Assign) {
-      return std::make_unique<Assignment>(info, type, std::move(identifier), make_unique<Operand>(info, type, TypeSystem::Current().GetDefault(type)), mutability);
-    }
-    next = Peek();
-  }
   
-  if (next.type == TType::Lambda) {
-    auto lambda = ParseLambda();
-    if (type && type != lambda->type) {
-      throw std::runtime_error("explicit type: " + type->name + " did not match the property's type: " + lambda->type->name);
-    }
-    return make_unique<Property>(info,  std::move(identifier), std::move(lambda), mutability);
-  }
+  
   if (next.type == TType::Assign) {
     Eat();
     auto value = ParseExpression();
-    
     if (type) {
       if (Type_T::Equals(type.get(), value->type.get())) {
         value->type = type;
@@ -253,9 +268,8 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier,
         throw std::runtime_error("invalid types expression in declaration:\n declared type: " + type->name + "\nexpression type: " + value->type->name);
       }
     }
-    
     return make_unique<Assignment>(info, value->type, std::move(identifier),
-                                   std::move(value), mutability);
+                                   std::move(value));
 
   } else if (IsCompoundAssignmentOperator(next.type)) {
     Eat();
@@ -517,8 +531,7 @@ ExpressionPtr Parser::ParseObjectInitializer() {
       auto mutability =
           Eat().type == TType::Mut ? Mutability::Mut : Mutability::Const;
       auto iden = Expect(TType::Identifier);
-      statements.push_back(ParseAssignment(
-          make_unique<Identifier>(info, iden.value), mutability));
+      statements.push_back(ParseDeclaration(info, iden.value, mutability));
       break;
     }
     case TType::Identifier: {
@@ -534,9 +547,8 @@ ExpressionPtr Parser::ParseObjectInitializer() {
         statements.push_back(std::move(assign));
         break;
       }
-      
-      statements.push_back(ParseAssignment(
-        make_unique<Identifier>(info, iden.value), Mutability::Const));
+      auto decl = ParseDeclaration(info, iden.value, Mutability::Const);
+      statements.push_back(std::move(decl));
       break;
     }
 

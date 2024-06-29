@@ -134,10 +134,10 @@ struct TupleInitializer : Expression {
   Value Evaluate() override;
 };
 struct Property : Statement {
-  const IdentifierPtr iden;
+  const string name;
   ExpressionPtr lambda;
   const Mutability mutability;
-  Property(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&lambda, const Mutability &mut);
+  Property(SourceInfo &info, const string &name, ExpressionPtr &&lambda, const Mutability &mut);
   ExecutionResult Execute() override;
 };
 struct Parameters : Statement {
@@ -245,10 +245,19 @@ struct RangeBasedFor : Statement {
 struct Assignment : Statement {
   const IdentifierPtr iden;
   const ExpressionPtr expr;
-  const Mutability mutability;
   const Type type;
-  Assignment(SourceInfo &info, const Type &type, IdentifierPtr &&iden, ExpressionPtr &&expr,
-             const Mutability &mutability);
+  Assignment(SourceInfo &info, const Type &type, IdentifierPtr &&iden, ExpressionPtr &&expr);
+  ExecutionResult Execute() override;
+};
+struct Declaration : Statement {
+  const string name;
+  const ExpressionPtr expr;
+  const Mutability mut;
+  const Type type;
+  Declaration(SourceInfo &info, const string &name, ExpressionPtr &&expr, const Mutability &mut, const Type &type) :
+  Statement(info), name(name), expr(std::move(expr)), mut(mut), type(type) { 
+    
+  }
   ExecutionResult Execute() override;
 };
 struct TupleDeconstruction : Statement {

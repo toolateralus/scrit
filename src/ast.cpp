@@ -95,8 +95,8 @@ For::For(SourceInfo &info, StatementPtr &&decl, ExpressionPtr &&condition,
   this->scope = scope;
 }
 Assignment::Assignment(SourceInfo &info, const Type &type, IdentifierPtr &&iden,
-                       ExpressionPtr &&expr, const Mutability &mutability)
-    : Statement(info) , iden(std::move(iden)), expr(std::move(expr)), mutability(mutability), type(type) {
+                       ExpressionPtr &&expr)
+    : Statement(info) , iden(std::move(iden)), expr(std::move(expr)), type(type) {
 }
 
 DotExpr::DotExpr(SourceInfo &info, const Type &type, ExpressionPtr &&left, ExpressionPtr &&right)
@@ -516,13 +516,18 @@ ExecutionResult For::Execute() {
   return ExecutionResult::None;
 }
 ExecutionResult Assignment::Execute() {
+  auto var = ASTNode::context.Find(iden->name);
+  if (!var)  {
+    throw std::runtime_error("cannot assign a non-existant identifier. use 'let ___ = ...' or let ___ : type = ...' syntax. \n offending variable: " + iden->name);
+  }
+  
   auto result = expr->Evaluate();
-  
   result->type = type;
-  
   ApplyCopySemantics(result);
   
-  context.Insert(iden->name, result, mutability);
+  // TODO: find a better way to query mutability of a variable.
+  auto iter = ASTNode::context.FindIter(iden->name);
+  context.Insert(iden->name, result, iter->first.mutability);
   return ExecutionResult::None;
 }
 Value TryCallMethods(unique_ptr<Expression> &right, Value &lvalue) {
@@ -1043,13 +1048,13 @@ ExecutionResult TupleDeconstruction::Execute() {
   
   return ExecutionResult::None;
 }
-Property::Property(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&lambda, const Mutability &mut)
-    : Statement(info), iden(std::move(iden)), lambda(std::move(lambda)), mutability(mut) {}
+Property::Property(SourceInfo &info, const string &name, ExpressionPtr &&lambda, const Mutability &mut)
+    : Statement(info), name(std::move(name)), lambda(std::move(lambda)), mutability(mut) {}
     
 ExecutionResult Property::Execute() {
   if (lambda) {
     Scope_T::Key key = Scope_T::Key(
-      iden->name,
+      name,
       mutability
     );
     context.Insert(key, make_shared<Lambda_T>(std::move(lambda)));
@@ -1069,4 +1074,20 @@ TupleInitializer::TupleInitializer(SourceInfo &info,
           this->types.push_back(v->type);  
         }
         this->type = TypeSystem::Current().FromTuple(this->types);
+}
+ExecutionResult Declaration::Execute() {
+  if (ASTNode::context.Find(name)) {
+    throw std::runtime_error("cannot re-define an already existing variable.\noffending variable: " + name);
+  }
+  auto value = expr->Evaluate();
+  if (!Type_T::Equals(value->type.get(), this->type.get())) {
+    throw std::runtime_error("invalid types in declaration:\ndeclaring type: " + type->name + "\nexpression type: " + value->type->name);
+  }
+  
+  // copy where needed
+  ApplyCopySemantics(value);
+  
+  ASTNode::context.Insert(name, value, mut);
+  
+  return ExecutionResult::None;
 }

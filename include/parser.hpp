@@ -29,9 +29,12 @@ struct Parser {
   Type ParseTemplateType(const Type &base_type);
   
   StatementPtr ParseTupleDeconstruction(IdentifierPtr &&iden);
+  
   StatementPtr ParseDeclaration();
+  StatementPtr ParseDeclaration(SourceInfo &info, const string &iden, const Mutability &mut);
+  
   StatementPtr ParseCall(IdentifierPtr identifier);
-  StatementPtr ParseAssignment(IdentifierPtr identifier, Mutability mutability = Mutability::Const);
+  StatementPtr ParseAssignment(IdentifierPtr identifier);
   StatementPtr ParseLValuePostFix(ExpressionPtr &expr);
   StatementPtr ParseIdentifierStatement(IdentifierPtr identifier);
   ExpressionPtr ParseTuple(ExpressionPtr &&expr);
