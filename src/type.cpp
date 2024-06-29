@@ -15,23 +15,10 @@ auto TypeSystem::FromTuple(const vector<Type> &types) -> Type {
 }
 
 auto TypeSystem::FromCallable(const Type returnType,
-                              const vector<Type> paramTypes) -> Type{
+                              const vector<Type> paramTypes) -> Type {
   return make_shared<CallableType>(returnType, paramTypes);
 }
 
-auto TypeSystem::ArrayTypeFromInner(const Type &inner) -> Type {
-  for (const auto &[n, t] : types) {
-    if (auto array = std::dynamic_pointer_cast<ArrayType>(t)) {
-      if (inner == array->inner) {
-        return t;
-      }
-    }
-  }
-  auto name ="array<" + inner->name + ">";
-  auto new_type = make_shared<ArrayType>(name, inner);
-  types[name] = new_type;
-  return new_type;
-}
 auto TypeSystem::GetDefault(const Type &type) -> Value {
   if (type->name == "bool") {
     return Value_T::False;
@@ -39,8 +26,6 @@ auto TypeSystem::GetDefault(const Type &type) -> Value {
     return Ctx::CreateInt();
   } else if (type->name == "float") {
     return Ctx::CreateFloat();
-  } else if (type->name == "array") {
-    return Ctx::CreateArray();
   } else if (type->name == "string") {
     return Ctx::CreateString();
   } else if (type->name == "object") {
@@ -51,4 +36,17 @@ auto TypeSystem::GetDefault(const Type &type) -> Value {
     return array;
   }
   return Value_T::UNDEFINED;
+}
+
+auto Values::TypeSystem::GetOrCreateTemplate(const string &name,
+                                             const Type &base,
+                                             const vector<Type> &types)
+    -> Type {
+  auto &current = Current();
+  if (current.types.contains(name)) {
+    return current.types[name];
+  }
+  auto type = make_shared<TemplateType>(name, base, types);
+  current.types[name] = type;
+  return type;
 }

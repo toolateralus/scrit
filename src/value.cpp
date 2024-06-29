@@ -1,8 +1,8 @@
+#include "value.hpp"
 #include "ast.hpp"
 #include "context.hpp"
 #include "serializer.hpp"
 #include "type.hpp"
-#include "value.hpp"
 
 #include <memory>
 #include <numeric>
@@ -15,25 +15,26 @@ Bool Value_T::False = Bool_T::New(false);
 Null Value_T::VNULL = make_shared<Null_T>();
 Undefined Value_T::UNDEFINED = make_shared<::Undefined_T>();
 
-
 Value Callable_T::Call(ArgumentsPtr &args) {
 
   auto scope = ASTNode::context.PushScope();
   auto values = Call::GetArgsValueList(args);
-  
+
   size_t i = 0;
   for (const auto &[key, value] : params->map) {
     if (i >= values.size()) {
       if (value.value != nullptr) {
-        scope->Set(key, value.value); 
+        scope->Set(key, value.value);
       }
       continue;
     }
-    
+
     if (value.type == values[i]->type) {
       scope->Set(key, values[i]);
     } else {
-      throw std::runtime_error("invalid type argument for function call. expected: " + value.type->name + " got: " + values[i]->type->name);
+      throw std::runtime_error(
+          "invalid type argument for function call. expected: " +
+          value.type->name + " got: " + values[i]->type->name);
     }
     i++;
   }
@@ -53,11 +54,12 @@ Value Callable_T::Call(ArgumentsPtr &args) {
   }
 }
 
-Value Array_T::At(Int index) { 
+Value Array_T::At(Int index) {
   if (values.size() <= (size_t)index->value) {
     throw std::runtime_error("Array access out of bounds");
   }
-  return values.at(index->value); }
+  return values.at(index->value);
+}
 void Array_T::Push(Value value) { values.push_back(value); }
 Value Array_T::Pop() {
   if (values.size() == 0) {
@@ -101,7 +103,7 @@ Array Array_T::New(vector<ExpressionPtr> &&init) {
   return make_shared<Array_T>(std::move(init));
 }
 Array Array_T::New() {
-  auto values = vector<Value> {};
+  auto values = vector<Value>{};
   return make_shared<Array_T>(values);
 }
 
@@ -110,7 +112,7 @@ Value NativeCallable_T::Call(std::vector<Value> &args) {
   Value result;
   if (function != nullptr)
     result = function(args);
-  
+
   ASTNode::context.PopScope();
   if (result == nullptr) {
     return UNDEFINED;
@@ -126,7 +128,7 @@ Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
 
   if (function != nullptr)
     result = function(values);
-  
+
   ASTNode::context.PopScope();
   if (result == nullptr) {
     return UNDEFINED;
@@ -277,7 +279,6 @@ void Bool_T::Set(Value newValue) {
   }
 }
 
-
 string Callable_T::ToString() const {
   std::stringstream ss = {};
   ss << "callable(";
@@ -317,7 +318,6 @@ string Null_T::ToString() const {
   return null;
 }
 
-
 bool String_T::Equals(Value value) {
   if (value->GetPrimitiveType() == PrimitiveType::String) {
     return static_cast<String_T *>(value.get())->value == this->value;
@@ -349,10 +349,12 @@ bool NativeCallable_T::Equals(Value value) { return value.get() == this; }
 bool Callable_T::Equals(Value value) { return value.get() == this; }
 
 bool Undefined_T::Equals(Value value) {
-  return value.get() == this || value->GetPrimitiveType() == PrimitiveType::Undefined;
+  return value.get() == this ||
+         value->GetPrimitiveType() == PrimitiveType::Undefined;
 }
 bool Null_T::Equals(Value value) {
-  return value == Value_T::VNULL || value->GetPrimitiveType() == PrimitiveType::Null;
+  return value == Value_T::VNULL ||
+         value->GetPrimitiveType() == PrimitiveType::Null;
 }
 
 Value String_T::SubscriptAssign(Value key, Value value) {
@@ -382,7 +384,8 @@ Value Array_T::Subscript(Value key) {
   if (!Ctx::TryGetInt(key, index)) {
     return UNDEFINED;
   }
-  // TODO: fix the issue where a default constructed array is of insane size. 12391241792 type stuff.
+  // TODO: fix the issue where a default constructed array is of insane size.
+  // 12391241792 type stuff.
   const size_t size = values.size();
   if ((size_t)index >= size) {
     return UNDEFINED;
@@ -400,7 +403,7 @@ Value Array_T::SubscriptAssign(Value key, Value value) {
 namespace Values {
 string TypeToString(PrimitiveType type) {
   switch (type) {
-    
+
   case PrimitiveType::Invalid:
     return "invalid";
   case PrimitiveType::Null:
@@ -442,9 +445,7 @@ Value Array_T::Clone() {
   }
   return array;
 }
-Value Callable_T::Clone() { 
-  return shared_from_this();
-}
+Value Callable_T::Clone() { return shared_from_this(); }
 
 Array_T::~Array_T() {}
 
@@ -452,14 +453,14 @@ auto Tuple_T::Deconstruct(vector<IdentifierPtr> &idens) const -> void {
   // produce the maximum number of values available given
   // both arrays are at least that size.
   size_t max = std::min(idens.size(), this->values.size());
-  
+
   // deconstruct the tuple into the fields.
   for (size_t i = 0; i < max; ++i) {
     auto &iden = idens[i];
     auto &value = values[i];
     ASTNode::context.Insert(iden->name, value, Mutability::Mut);
   }
-  
+
   for (size_t i = max; i < idens.size(); ++i) {
     auto &iden = idens[i];
     ASTNode::context.Insert(iden->name, Ctx::Undefined(), Mutability::Mut);
@@ -496,7 +497,7 @@ Value Tuple_T::Clone() {
   for (const auto &v : this->values) {
     values.push_back(v->Clone());
   }
-  
+
   return make_shared<Tuple_T>(values);
 }
 string Tuple_T::ToString() const {
@@ -535,7 +536,7 @@ Object_T::Object_T() : Value_T(TypeSystem::Current().Get("object")) {}
 
 Tuple_T::Tuple_T(vector<Value> values) : Value_T(nullptr), values(values) {
   auto types = vector<Type>();
-  for (const auto &v: values) {
+  for (const auto &v : values) {
     types.push_back(v->type);
   }
   this->type = TypeSystem::Current().FromTuple(types);
@@ -554,10 +555,10 @@ Value Callable_T::Call(std::vector<Value> &values) {
     }
     i++;
   }
-  
+
   auto result = block->Execute();
   ASTNode::context.PopScope();
-  
+
   switch (result.controlChange) {
   case ControlChange::None:
     return Value_T::VNULL;
@@ -567,30 +568,43 @@ Value Callable_T::Call(std::vector<Value> &values) {
     throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
   }
 }
-Float_T::Float_T(float value) : Value_T(TypeSystem::Current().Get("float")) { this->value = value; }
-Array_T::Array_T(vector<ExpressionPtr> &&init) : Value_T(TypeSystem::Current().Get("array"))  {
+Float_T::Float_T(float value) : Value_T(TypeSystem::Current().Get("float")) {
+  this->value = value;
+}
+Array_T::Array_T(vector<ExpressionPtr> &&init)
+    : Value_T(TypeSystem::Current().Get("array")) {
   initializer = std::move(init);
   for (auto &arg : initializer) {
     auto value = arg->Evaluate();
     Push(value);
   }
 }
-Callable_T::Callable_T(const Type &returnType, BlockPtr &&block, ParametersPtr &&params)
-    : Value_T(nullptr), block(std::move(block)), params(std::move(params))  {
-      this->type = TypeSystem::Current().FromCallable(returnType, this->params->ParamTypes());
-    }
-String_T::String_T(const string &value) : Value_T(TypeSystem::Current().Get("string")) { this->value = value; }
+Callable_T::Callable_T(const Type &returnType, BlockPtr &&block,
+                       ParametersPtr &&params)
+    : Value_T(nullptr), block(std::move(block)), params(std::move(params)) {
+  this->type = TypeSystem::Current().FromCallable(returnType,
+                                                  this->params->ParamTypes());
+}
+String_T::String_T(const string &value)
+    : Value_T(TypeSystem::Current().Get("string")) {
+  this->value = value;
+}
 // this is only for native callables.
 // Todo: implement native callable type.
-Callable_T::Callable_T() : Value_T(TypeSystem::Current().Get("native_callable")) {}
+Callable_T::Callable_T()
+    : Value_T(TypeSystem::Current().Get("native_callable")) {}
 
 Null_T::Null_T() : Value_T(TypeSystem::Current().Get("null")) {}
 Undefined_T::Undefined_T() : Value_T(TypeSystem::Current().Get("undefined")) {}
-Bool_T::Bool_T(bool value) : Value_T(TypeSystem::Current().Get("bool")) { this->value = value; }
-Array_T::Array_T(vector<Value> init) : Value_T(nullptr)  { \
-  this->values = init; 
+Bool_T::Bool_T(bool value) : Value_T(TypeSystem::Current().Get("bool")) {
+  this->value = value;
+}
+Array_T::Array_T(vector<Value> init) : Value_T(nullptr) {
+  this->values = init;
   if (init.size() != 0) {
-    this->type = TypeSystem::Current().ArrayTypeFromInner(init[0]->type);
+    this->type = TypeSystem::Current().GetOrCreateTemplate(
+        "array<" + init[0]->type->name + ">",
+        TypeSystem::Current().Get("array"), {init[0]->type});
   } else {
     this->type = TypeSystem::Current().Get("array");
   }
@@ -635,7 +649,7 @@ Values::Array Ctx::FromIntVector(vector<int> &values) {
   }
   return array;
 }
-Value Ctx::Undefined()  { return Value_T::UNDEFINED; }
+Value Ctx::Undefined() { return Value_T::UNDEFINED; }
 Value Ctx::Null() { return Value_T::VNULL; }
 
 Bool Ctx::CreateBool(const bool value) { return Bool_T::New(value); }

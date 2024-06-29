@@ -26,7 +26,8 @@ struct Parser {
   StatementPtr ParseKeyword(Token keyword);
   
   Type ParseType();
-
+  Type ParseTemplateType(const Type &base_type);
+  
   StatementPtr ParseTupleDeconstruction(IdentifierPtr &&iden);
   StatementPtr ParseDeclaration();
   StatementPtr ParseCall(IdentifierPtr identifier);
