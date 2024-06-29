@@ -247,12 +247,11 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier,
     Eat();
     auto value = ParseExpression();
     
-    if (type && type != value->type) {
-      auto array_t = std::dynamic_pointer_cast<ArrayType>(type);
-      if (array_t && value->type->name == "array") {
+    if (type) {
+      if (Type_T::Equals(type.get(), value->type.get())) {
         value->type = type;
       } else {
-        throw std::runtime_error("explicit type: " + type->name + " did not match the assignment's type: " + value->type->name);
+        throw std::runtime_error("invalid types expression in declaration:\n declared type: " + type->name + "\nexpression type: " + value->type->name);
       }
     }
     
@@ -718,7 +717,7 @@ OperandPtr Parser::ParseArrayInitializer() {
         inner_type = val->type;
       }
       
-      if (inner_type && !Type_T::equals(val->type.get(), inner_type.get())) {
+      if (inner_type && !Type_T::Equals(val->type.get(), inner_type.get())) {
         throw std::runtime_error("invalid type in array initializer\nexpected: " + inner_type->name + "\ngot: " + val->type->name);
       }
       
@@ -730,7 +729,7 @@ OperandPtr Parser::ParseArrayInitializer() {
     }
     Expect(TType::SubscriptRight);
     auto array = Array_T::New(std::move(values));
-    auto type = TypeSystem::Current().ArrayTypeFromInner(inner_type);
+    auto type = TypeSystem::Current().GetOrCreateTemplate("array<" + inner_type->name + ">", TypeSystem::Current().Get("array"), {inner_type});
     array->type = type;
     std::cout << "parsing array of type : " << type->name  << std::endl;
     return make_unique<Operand>(info, type, array);
@@ -1074,50 +1073,58 @@ StatementPtr Parser::ParseTupleDeconstruction(IdentifierPtr &&iden) {
 }
 
 
-Type Parser::ParseType() {
-  auto tname = Eat();
-  
-  if (Peek().type == TType::Less) {
-    Eat(); 
-    vector<string> names;
-    while (!tokens.empty()) {
-      auto next = Peek();
-      
-      if (next.type == TType::Greater) {
-        break;
-      }
-      
-      names.push_back(Expect(TType::Identifier).value);
-      
-      if (Peek().type == TType::Comma) {
-        Eat();
-      }
-      
-    }
-    Expect(TType::Greater);
+Type Parser::ParseTemplateType(const Type &base_type) {
+  Expect(TType::Less);
+  vector<Type> types;
+  while (!tokens.empty()) {
+    auto next = Peek();
     
-    std::string typeString = tname.value + "<";
-    for (const auto& name : names) {
-      typeString += name + ",";
+    // if the next token is > we are done.
+    if (next.type == TType::Greater) {
+      break;
     }
-    typeString.pop_back(); // remove the last comma
-    typeString += ">";
-    auto t = TypeSystem::Current().Get(typeString);
     
-    if (t == nullptr) {
-      auto template_t = TypeSystem::Current().Get(tname.value);
-      if (template_t == nullptr || template_t->name != "array") {
-        throw std::runtime_error("right now generics are only supported for typed arrays.\ncannot make generic type of non existant type: " + tname.value);
+    // get type name
+    auto ttok = Expect(TType::Identifier);
+    auto &tname = ttok.value;
+    
+    // recursively parse template types.
+    if (Peek().type == TType::Less) {
+      auto base = TypeSystem::Current().Get(tname);
+      if (!base) {
+        throw std::runtime_error("invalid type : " + tname + " in template");
       }
-      auto n0 = names[0];
-      auto n0_t = TypeSystem::Current().Get(n0);
-      if (!n0_t) {
-        throw std::runtime_error("cannot make generic type argument for non existant type: " + n0);
-      }
-      return TypeSystem::Current().ArrayTypeFromInner(n0_t);
+      types.push_back(Parser::ParseTemplateType(base));  
+    } else {
+      types.push_back(TypeSystem::Current().Get(tname));
     }
-    return t;
+    
+    // eat commas.
+    if (Peek().type == TType::Comma) {
+      Eat();
+    }
   }
   
-  return TypeSystem::Current().Get(tname.value);
+  Expect(TType::Greater);
+  
+  auto name = base_type->name + "<";
+  for (size_t i = 0; i < types.size(); ++i) {
+    name += types[i]->name;
+    if (i < types.size() - 1) { // Check if it's not the last element
+      name += ", ";
+    }
+  }
+  name += ">";
+  
+  return TypeSystem::Current().GetOrCreateTemplate(name, base_type, types);
+}
+
+Type Parser::ParseType() {
+  auto tname = Expect(TType::Identifier).value;
+  auto type = TypeSystem::Current().Get(tname);
+  // template types.
+  if (Peek().type == TType::Less) {
+    return Parser::ParseTemplateType(type);
+  }
+  return type;
 }
