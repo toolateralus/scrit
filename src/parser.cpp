@@ -67,15 +67,19 @@ StatementPtr Parser::ParseLValuePostFix(ExpressionPtr &expr) {
   throw std::runtime_error("Failed to parse LValue postfix statement:: " +
                            name);
 }
-FunctionDeclPtr Parser::ParseFunctionDeclaration() {
+unique_ptr<Noop> Parser::ParseFunctionDeclaration() {
   auto info = this->info;
   auto name = Expect(TType::Identifier).value;
   auto parameters = ParseParameters();
   Expect(TType::Arrow);
   auto returnType = ParseType();
+  
+  auto callable = make_shared<Callable_T>(returnType, nullptr,  std::move(parameters));
+  ASTNode::context.scopes.back()->Set(name, callable, Mutability::Mut);
   auto block = ParseBlock();
-  return make_unique<FunctionDecl>(info, name, std::move(block),
-                                   std::move(parameters), returnType);
+  callable->block = std::move(block);
+  
+  return std::make_unique<Noop>(info);
 }
 StatementPtr Parser::ParseStatement() {
   while (tokens.size() > 0) {
@@ -144,8 +148,6 @@ StatementPtr Parser::ParseKeyword(Token token) {
   }
   case TType::Func: {
     auto funcdecl = ParseFunctionDeclaration();
-    auto callable = make_shared<Callable_T>(funcdecl->returnType, std::move(funcdecl->block), std::move(funcdecl->parameters));
-    ASTNode::context.Insert(funcdecl->name, callable, Mutability::Const);
     return make_unique<Noop>(info);
   }
   case TType::If: {
