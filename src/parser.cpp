@@ -9,6 +9,7 @@
 #include "type.hpp"
 #include <memory>
 #include <stdexcept>
+#include <vector>
 
 StatementPtr Parser::ParseLValuePostFix(ExpressionPtr &expr) {
   if (DotExpr *dot = dynamic_cast<DotExpr *>(expr.get())) {
@@ -749,7 +750,7 @@ OperandPtr Parser::ParseArrayInitializer() {
 ParametersPtr Parser::ParseParameters() {
   Expect(TType::LParen);
   auto next = Peek();
-  std::map<string, Parameters::Param> params = {};
+  std::vector<Parameters::Param> params = {};
   while (tokens.size() > 0 && next.type != TType::RParen) {
     
     auto value = ParseOperand();
@@ -757,13 +758,21 @@ ParametersPtr Parser::ParseParameters() {
     auto tname = ParseType();
     
     if (auto iden = dynamic_cast<Identifier *>(value.get())) {
-      params[iden->name] = {  .value = nullptr, .type= tname, };
+      Parameters::Param param = {
+        .name = iden->name,
+        .value = nullptr,
+        .type = tname
+      };
       
       if (Peek().type == TType::Assign) {
         Eat();
         auto value = ParseExpression();
-        params[iden->name] = { .value = value->Evaluate(), .type =  value->type};
+        param.value = value->Evaluate();
+        // TODO type check here maybe?
+        param.type = value->type;
       }
+
+      params.push_back(param);
     }
     
     if (Peek().type == TType::Comma) {
