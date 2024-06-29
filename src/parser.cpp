@@ -743,7 +743,6 @@ OperandPtr Parser::ParseArrayInitializer() {
     auto array = Array_T::New(std::move(values));
     auto type = TypeSystem::Current().GetOrCreateTemplate("array<" + inner_type->name + ">", TypeSystem::Current().Get("array"), {inner_type});
     array->type = type;
-    std::cout << "parsing array of type : " << type->name  << std::endl;
     return make_unique<Operand>(info, type, array);
   }
 }
