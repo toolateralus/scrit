@@ -96,14 +96,16 @@ function(push) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
-
+  
   if (args[0]->GetType() != ValueType::Array) {
     return Ctx::Undefined();
   }
   auto array = static_cast<Array_T *>(args[0].get());
+  
   for (size_t i = 1; i < args.size(); i++) {
     array->Push(args[i]);
   }
+  
   return Ctx::Undefined();
 }
 

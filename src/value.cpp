@@ -598,9 +598,14 @@ Array_T::Array_T(vector<Value> init) : Value_T(nullptr)  { \
 
 Callable_T::~Callable_T() {}
 
-
-
-}
+Tuple_T::~Tuple_T() {}
+NativeCallable_T::~NativeCallable_T() {}
+Object_T::~Object_T() {}
+Bool_T::~Bool_T() {}
+Undefined_T::~Undefined_T() {}
+Null_T::~Null_T() {}
+Lambda_T::~Lambda_T() {}
+} // namespace Values
 
 Values::Array Ctx::FromFloatVector(vector<float> &values) {
   Array array = CreateArray();

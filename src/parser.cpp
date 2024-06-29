@@ -169,7 +169,7 @@ StatementPtr Parser::ParseKeyword(Token token) {
     return ParseIf();
   }
   case TType::Else: {
-    throw new std::runtime_error(
+    throw std::runtime_error(
         "An else must be preceeded by an if statement.");
   }
   case TType::For: {
@@ -181,14 +181,6 @@ StatementPtr Parser::ParseKeyword(Token token) {
   case TType::Return: {
     return ParseReturn();
   }
-    // TODO: implement these functionalities.
-  // case TType::Start: {
-  //   return new Coroutine(ParseStatement());
-  // }
-  // case TType::Module: {
-  //   Expect(TType::Identifier);
-  //   return new NoopStatement();
-  // }
   case TType::Using: {
     return ParseUsing();
   }
@@ -485,10 +477,17 @@ ExpressionPtr Parser::ParseAnonFunc() {
   auto info = this->info;
   Eat(); // eat the 'func' keyword.
   auto params = ParseParameters();
-  auto returnType = ParseType();
+  Type returnType = nullptr;
+  if (Peek().type == TType::LCurly) {
+    returnType = TypeSystem::Undefined();
+  } else {
+    Expect(TType::Arrow);
+    returnType = ParseType();
+  }
   auto body = ParseBlock();
+  auto types = params->ParamTypes();
   auto callable = make_shared<Callable_T>(returnType, std::move(body), std::move(params));
-  return make_unique<Operand>(info, TypeSystem::FromCallable(returnType, params->ParamTypes()), callable);
+  return make_unique<Operand>(info, TypeSystem::FromCallable(returnType, types), callable);
 }
 
 ExpressionPtr Parser::ParseObjectInitializer() {

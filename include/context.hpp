@@ -44,6 +44,7 @@ struct Scope_T {
     const std::string value;
     const Mutability mutability;
     
+    Key() = delete;
     Key(const std::string &value, const Mutability &mutability)
         : value(value), mutability(mutability) {}
         

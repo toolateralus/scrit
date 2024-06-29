@@ -396,4 +396,4 @@ Value EvaluateWithinObject(Scope &scope, Value object, ExpressionPtr &expr);
 Value EvaluateWithinObject(Scope &scope, Value object,
                            std::function<Value()> lambda);
 
-Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue);
+Value TryCallMethods(unique_ptr<Expression> &right, Value &lvalue);

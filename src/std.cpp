@@ -86,8 +86,12 @@ REGISTER_FUNCTION(type) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
-  auto v = args[0]->type->name;
-  return Ctx::CreateString(v);
+  
+  if (args[0]->type){
+    auto v = args[0]->type->name;
+    return Ctx::CreateString(v);
+  }
+  return Ctx::CreateString("undefined -- this is a language bug.");
 }
 // Serializer
 REGISTER_FUNCTION(serialize) {

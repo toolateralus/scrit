@@ -120,12 +120,14 @@ struct Value_T : std::enable_shared_from_this<Value_T> {
 struct Null_T : Value_T {
   PrimitveType GetPrimitiveType() const override { return PrimitveType::Null; }
   Null_T();
+  ~Null_T() override;
   string ToString() const override;
   bool Equals(Value value) override;
 };
 struct Undefined_T : Value_T {
   PrimitveType GetPrimitiveType() const override { return PrimitveType::Undefined; }
   Undefined_T();
+  ~Undefined_T() override;
   string ToString() const override;
   bool Equals(Value value) override;
 };
@@ -133,7 +135,7 @@ struct Undefined_T : Value_T {
 struct Int_T : Value_T {
   int value = 0;
   Int_T(int value);
-  ~Int_T() {}
+  ~Int_T() override {}
   Int_T() = delete;
 
   static Int New(int value = 0) { return make_shared<Int_T>(value); }
@@ -193,7 +195,7 @@ struct Bool_T : Value_T {
   Bool_T(bool value);
   Bool_T() = delete;
   static Bool New(bool value = false) { return make_shared<Bool_T>(value); }
-  ~Bool_T() {}
+  ~Bool_T() override;
   virtual bool Equals(Value value) override;
   virtual Bool Or(Value other) override;
   virtual Bool And(Value other) override;
@@ -206,9 +208,10 @@ struct Bool_T : Value_T {
 struct Object_T : Value_T {
   Object_T(Scope scope);
   Object_T();
+  ~Object_T() override;
   Scope scope;
   static Object New(Scope scope = nullptr);
-
+  
   bool operator==(Object_T *other);
   
   PrimitveType GetPrimitiveType() const override { return PrimitveType::Object; }
@@ -232,7 +235,7 @@ struct Object_T : Value_T {
 };
 
 struct Callable_T : Value_T {
-  ~Callable_T();
+  ~Callable_T() override;
   Callable_T(); // for native callables only.
   Callable_T(const Type &returnType, BlockPtr &&block, ParametersPtr &&params);
   BlockPtr block;
@@ -249,6 +252,7 @@ struct Callable_T : Value_T {
 struct NativeCallable_T : Callable_T {
   NativeCallable_T() = delete;
   NativeCallable_T(const NativeFunctionPtr &ptr);
+  ~NativeCallable_T() override;
   NativeFunctionPtr function;
   Value Call(ArgumentsPtr &args) override;
   Value Call(std::vector<Value> &args) override;
@@ -258,7 +262,7 @@ struct NativeCallable_T : Callable_T {
 };
 struct Array_T : Value_T {
   vector<ExpressionPtr> initializer;
-  ~Array_T();
+  ~Array_T() override;
 
   static Array New();
   static Array New(vector<ExpressionPtr> &&init);
@@ -298,6 +302,7 @@ struct Array_T : Value_T {
 };
 
 struct Tuple_T : Value_T {
+  ~Tuple_T() override;
   vector<Value> values = {};
   Tuple_T(vector<Value> values);
   auto Deconstruct(vector<IdentifierPtr> &idens) const -> void;
@@ -311,6 +316,7 @@ struct Tuple_T : Value_T {
 
 struct Lambda_T : Value_T {
   ExpressionPtr lambda;
+  ~Lambda_T() override;
   Lambda_T(ExpressionPtr &&lambda) : Value_T(lambda->type), lambda(std::move(lambda)) {}
   Value Evaluate() {
     return lambda->Evaluate();

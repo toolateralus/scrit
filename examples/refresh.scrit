@@ -2,20 +2,20 @@ using {file, directory} from system
 using {contains, remove} from string
 using sstream
 
-working_dir = directory.current()
+let working_dir = directory.current()
 
-info = file.read("info.md")
+let info = file.read("info.md")
 
-files = directory.getfiles(working_dir)
+let files = directory.getfiles(working_dir)
           .where(
-            func(f) {
+            func(f: string) {
               return f.contains(".scrit")
             }
           )
 
-stream = sstream.create(info)
+let stream = sstream.create(info)
 
-link => "[" + file.remove(".scrit") + "](" + file + ")\n"
+let link => "[" + file.remove(".scrit") + "](" + file + ")\n"
 
 for file : files {
   // For some insanely odd reason, 

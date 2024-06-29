@@ -135,9 +135,7 @@ UnaryExpr::UnaryExpr(SourceInfo &info, const Type &type, ExpressionPtr &&left, T
 BinExpr::BinExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right,
                  TType op)
     : Expression(info, nullptr) {
-  if (left->type != right->type) {
-    throw std::runtime_error("invalid types in binary expression");
-  }
+
   this->type = left->type;
   this->left = std::move(left);
   this->right = std::move(right);
@@ -412,7 +410,7 @@ Value Call::Evaluate() {
     // like a binary expression, it's its own binary expr node.
     auto obj = std::dynamic_pointer_cast<Object_T>(lvalue);
     if (obj && obj->HasMember("call")) {
-      auto fn = obj->GetMember("op_call");
+      auto fn = obj->GetMember("call");
       auto callable = std::dynamic_pointer_cast<Callable_T>(fn);
       if (callable) {
         auto args_values = GetArgsValueList(args);      
@@ -527,7 +525,7 @@ ExecutionResult Assignment::Execute() {
   context.Insert(iden->name, result, mutability);
   return ExecutionResult::None;
 }
-Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue) {
+Value TryCallMethods(unique_ptr<Expression> &right, Value &lvalue) {
   
   // recurse for bin expr.  
   if (auto binExpr = dynamic_cast<BinExpr*>(right.get())) {
@@ -542,21 +540,20 @@ Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue) {
   
   if (auto call = dynamic_cast<Call*>(right.get())) {
     if (auto name = dynamic_cast<Identifier*>(call->operand.get())) {
-        Callable_T* callable = nullptr;
-        auto obj = dynamic_cast<Object_T*>(lvalue.get());
-        
-        if (obj && obj->scope->Contains(name->name)) {
-          callable = dynamic_cast<Callable_T*>(obj->scope->Get(name->name).get());
+        shared_ptr<Callable_T> callable = nullptr;
+        auto obj = std::dynamic_pointer_cast<Object_T>(lvalue);
+        if (obj && obj->scope && obj->scope->Contains(name->name)) {
+          callable = std::dynamic_pointer_cast<Callable_T>(obj->scope->Get(name->name));
           // call the function from the object's scope.
           return EvaluateWithinObject(obj->scope, lvalue, [callable, call]() -> Value {
             return callable->Call(call->args);
           });
         }
         if (!callable) {
-          callable =  dynamic_cast<Callable_T*>(ASTNode::context.Find(name->name).get());
+          callable = std::dynamic_pointer_cast<Callable_T>(ASTNode::context.Find(name->name));
         } 
         if (!callable && NativeFunctions::Exists(name->name)) {
-          callable = NativeFunctions::GetCallable(name->name).get();
+          callable = NativeFunctions::GetCallable(name->name);
         }
         
         if (callable) {
@@ -564,9 +561,9 @@ Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue) {
           // insert self as arg 0.
           args.insert(args.begin(), lvalue);
         
-          if (auto nc = dynamic_cast<NativeCallable_T*>(callable)) {
+          if (auto nc = std::dynamic_pointer_cast<Callable_T>(callable)) {
             return nc->Call(args);
-          } else if (auto c = dynamic_cast<Callable_T*>(callable)) {
+          } else if (auto c = std::dynamic_pointer_cast<Callable_T>(callable)) {
             return c->Call(args);
           } else {
 			throw std::runtime_error("invalid method call: " + name->name);
@@ -684,7 +681,11 @@ Value UnaryExpr::Evaluate() {
 Value BinExpr::Evaluate() {
   auto left = this->left->Evaluate();
   auto right = this->right->Evaluate();
-
+  
+  if (left->type != right->type) {
+    throw std::runtime_error("invalid types in binary expression");
+  }
+  
   switch (op) {
   case TType::NullCoalescing: {
     if (left->GetPrimitiveType() == PrimitveType::Null ||
@@ -767,7 +768,7 @@ ExecutionResult Using::Execute() {
     }
   }
 
-  delete module;
+  free(module);
   
   ASTNode::context.RegisterModuleHandle(handle);
   

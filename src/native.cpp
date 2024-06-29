@@ -129,3 +129,8 @@ ScritModDef* LoadScritModule(const std::string& name, const std::string& path, v
 	void ScritModDef::AddVariable(const std::string & name, Value value, const Mutability &mutability) {
 		context->Insert(name, value, mutability);
 	}
+        ScritModDef::~ScritModDef() {
+          delete description;
+          delete context;
+          delete functions;
+        }

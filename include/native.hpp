@@ -30,6 +30,7 @@ extern "C" struct ScritModDef {
   std::unordered_map<std::string, NativeFunctionPtr> *functions;
   void AddFunction(const std::string &name, const NativeFunctionPtr func);
   void AddVariable(const std::string &name, Value value, const Mutability &mut);
+  ~ScritModDef();
 };
 
 ScritModDef* CreateModDef();
