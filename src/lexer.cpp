@@ -10,13 +10,16 @@
 #include <vector>
 
 Token::Token(const int &loc, const int &col, const string &value,
-             const TType type, const TFamily family) {
-  this->loc = loc;
-  this->col = col;
-  this->value = std::move(value);
-  this->type = type;
-  this->family = family;
-  this->info = {loc, col};
+             const TType type, const TFamily family)
+    : 
+    info(
+      SourceInfo(loc, col, value)
+    ), 
+    value(value),
+    loc(loc),
+    col(col),
+    type(type), family(family) {
+        
 }
 string Token::ToString() const {
   stringstream stream = {};

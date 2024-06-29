@@ -18,7 +18,7 @@ struct Parser {
   Token Peek(size_t lookahead = 0);
   Token Eat();
   Token Expect(const TType ttype);
-  SourceInfo info;
+  SourceInfo info = {0, 0, ""};
   unique_ptr<Program> Parse(vector<Token> &&tokens);
   BlockPtr ParseBlock();
   StatementPtr ParseAnonFuncInlineCall();

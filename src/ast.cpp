@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <string>
 
-auto programSourceInfo = SourceInfo{0, 0};
+auto programSourceInfo = SourceInfo{0, 0, ""};
 
 // Todo: add a scope that this was usinged in so when we
 // leave that scope we dlclose() the opened module.
