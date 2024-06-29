@@ -210,7 +210,9 @@ StatementPtr Parser::ParseDeclaration(SourceInfo &info, const string &iden, cons
         auto op = make_unique<Operand>(info, type, _default);
         return std::make_unique<Declaration>(info, iden, std::move(op), mut, type);
       }
-      next = Peek();
+      Eat();
+      auto expr = ParseExpression();
+      return std::make_unique<Declaration>(info, iden, std::move(expr), mut, type);
     }
     case TType::Lambda: {
         auto lambda = ParseLambda();
