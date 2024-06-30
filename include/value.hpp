@@ -250,16 +250,19 @@ struct Callable_T : Value_T {
   virtual Value Call(std::vector<Value> &args);
   string ToString() const override;
   bool Equals(Value value) override;
-  Value Clone() override;
-
+  Value Clone() override;  
   PrimitiveType GetPrimitiveType() const override { return PrimitiveType::Callable; }
 };
 
 struct NativeCallable_T : Callable_T {
   NativeCallable_T() = delete;
-  NativeCallable_T(const NativeFunctionPtr &ptr);
+  NativeCallable_T(const shared_ptr<NativeFunction> &ptr);
   ~NativeCallable_T() override;
-  NativeFunctionPtr function;
+  
+  shared_ptr<NativeFunction> function;
+
+  void CheckParameterTypes(vector<Value> &values);
+  void CheckReturnType(Value &result);
   Value Call(ArgumentsPtr &args) override;
   Value Call(std::vector<Value> &args) override;
   string ToString() const override;

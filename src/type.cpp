@@ -33,12 +33,23 @@ auto TypeSystem::FromPrimitive(const PrimitiveType &t) -> Type {
 }
 
 auto TypeSystem::FromTuple(const vector<Type> &types) -> Type {
-  return make_shared<TupleType>(types);
+  auto type = make_shared<TupleType>(types);
+  if (this->types.contains(type->name)) {
+    return this->types[type->name];
+  }
+  this->types[type->name] = type;
+  return type;
 }
 
 auto TypeSystem::FromCallable(const Type returnType,
                               const vector<Type> paramTypes) -> Type {
-  return make_shared<CallableType>(returnType, paramTypes);
+  // todo: make this more efficient.
+  auto type= make_shared<CallableType>(returnType, paramTypes);
+  if (types.contains(type->name)) {
+    return types[type->name];
+  }
+  types[type->name] = type;
+  return type;
 }
 
 auto TypeSystem::GetDefault(const Type &type) -> Value {

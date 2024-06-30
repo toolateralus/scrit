@@ -235,8 +235,8 @@ ExecutionResult Program::Execute() {
   auto global = Object_T::New(ASTNode::context.scopes.front());
   
   // include all of the native functions in this global object.
-  for(const auto &[name, _] : NativeFunctions::GetRegistry()) {
-    global->SetMember(name, NativeFunctions::GetCallable(name));
+  for(const auto &[name, _] : FunctionRegistry::GetRegistry()) {
+    global->SetMember(name, FunctionRegistry::GetCallable(name));
   }
   
   ASTNode::context.Insert("global", global, Mutability::Mut);
@@ -266,8 +266,8 @@ Value Identifier::Evaluate() {
       return lambda->Evaluate();
     }
     return value;
-  } else if (NativeFunctions::Exists(name)) {
-    return NativeFunctions::GetCallable(name);
+  } else if (FunctionRegistry::Exists(name)) {
+    return FunctionRegistry::GetCallable(name);
   }
   return Value_T::UNDEFINED;
 }
@@ -594,8 +594,8 @@ Value TryCallMethods(unique_ptr<Expression> &right, Value &lvalue) {
       
       // call native free functions.
       // This is a pretty unique case, so we're gonna do it after type associated functions
-      if (NativeFunctions::Exists(name->name)) {
-        callable = NativeFunctions::GetCallable(name->name);
+      if (FunctionRegistry::Exists(name->name)) {
+        callable = FunctionRegistry::GetCallable(name->name);
         goto call;
       }
       
@@ -1088,8 +1088,12 @@ ExecutionResult Declaration::Execute() {
   }
   auto value = expr->Evaluate();
   
+  
+  
   if (!Type_T::Equals(value->type.get(), this->type.get())) {
-    throw std::runtime_error("invalid types in declaration:\ndeclaring type: " + type->name + "\nexpression type: " + value->type->name);
+    if (value->type && this->type)
+      throw std::runtime_error("invalid types in declaration:\ndeclaring type: " + type->name + "\nexpression type: " + value->type->name);
+    throw std::runtime_error("invalid types in declaration. one or both types were null, this is a language bug");
   }
   
   // copy where needed

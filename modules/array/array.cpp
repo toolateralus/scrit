@@ -163,17 +163,17 @@ function(len) {
 extern "C" ScritModDef *InitScritModule_array() {
   ScritModDef *def = CreateModDef();
   *def->description = "provide functionality for the array type.";
-  
   auto array = make_shared<ArrayType>();
-  array->Set("remove",   NativeFunctions::MakeCallable(remove));
-  array->Set("contains", NativeFunctions::MakeCallable(contains));
-  array->Set("clear",    NativeFunctions::MakeCallable(clear));
-  array->Set("expand",   NativeFunctions::MakeCallable(expand));
-  array->Set("push",     NativeFunctions::MakeCallable(push));
-  array->Set("front",    NativeFunctions::MakeCallable(front));
-  array->Set("back",     NativeFunctions::MakeCallable(back));
-  array->Set("pop",      NativeFunctions::MakeCallable(pop));
-  array->Set("len",      NativeFunctions::MakeCallable(len));
+  
+  array->Set("remove",   CREATE_CALLABLE(remove, "undefined", {"array", "any"}));
+  array->Set("contains", CREATE_CALLABLE(contains, "bool", {"array", "any"}));
+  array->Set("clear",    CREATE_CALLABLE(clear, "undefined", {"array"}));
+  array->Set("expand",   CREATE_CALLABLE(expand, "undefined", {"array", "int", "any"}));
+  array->Set("push",     CREATE_CALLABLE(push, "undefined", {"any"}));
+  array->Set("front",    CREATE_CALLABLE(front, "any", {"array"}));
+  array->Set("back",     CREATE_CALLABLE(back, "any", {"array"}));
+  array->Set("pop",      CREATE_CALLABLE(pop, "any", {"array"}));
+  array->Set("len",      CREATE_CALLABLE(len, "int", {"array"}));
   def->AddType("array", array);
   
   return def;

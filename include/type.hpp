@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -39,6 +40,11 @@ struct Type_T {
     if (t0 == nullptr || t1 == nullptr) {
       return false;
     }
+    
+    if (t0->name == "any" || t1->name == "any") {
+      return true;
+    }
+    
     return *t0 == *t1;
   }
 };
@@ -146,6 +152,18 @@ struct TypeSystem {
   Type NativeCallable;
   Type String;
   Type Any;
+  
+  auto GetVector(const vector<string> &names) -> vector<Type> {
+    auto types = vector<Type>();
+    for (const auto &name: names) {
+      auto type = Get(name);
+      if (!type) {
+        throw std::runtime_error("invalid type in type group: " + name);
+      }
+      types.push_back(type);
+    }
+    return types;
+  }
   
   auto Get(const string &name) -> Type { return types[name]; }
   

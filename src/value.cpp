@@ -118,9 +118,14 @@ Array Array_T::New() {
 Value NativeCallable_T::Call(std::vector<Value> &args) {
   ASTNode::context.PushScope();
   Value result;
-  if (function != nullptr)
-    result = function(args);
-
+  
+  CheckParameterTypes(args);
+  
+  if (function->ptr)
+    result = function->ptr(args);
+  
+  CheckReturnType(result);
+  
   ASTNode::context.PopScope();
   if (result == nullptr) {
     return UNDEFINED;
@@ -129,13 +134,40 @@ Value NativeCallable_T::Call(std::vector<Value> &args) {
   }
 }
 
+void NativeCallable_T::CheckParameterTypes(vector<Value> &values) {
+  for (auto i = 0; i < values.size(); ++i) {
+    if (function->parameterTypes.size() < i) {
+      throw std::runtime_error(
+          "too few parameters provided to function. expected: " +
+          std::to_string(function->parameterTypes.size()) +
+          " got: " + std::to_string(values.size()));
+    }
+    auto value = values[i];
+    auto paramType = function->parameterTypes[i];
+    if (!Type_T::Equals(value->type.get(), paramType.get())) {
+      throw std::runtime_error("invalid parameter type: " + value->type->name +
+                               "\n expected: " + paramType->name);
+    }
+  }
+}
+void NativeCallable_T::CheckReturnType(Value &result) {
+  if (!Type_T::Equals(result->type.get(), function->returnType.get())) {
+    throw std::runtime_error("invalid return type from function " +
+                             function->name);
+  }
+}
 Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
   ASTNode::context.PushScope();
+  
   auto values = Call::GetArgsValueList(args);
   Value result;
+  
+  CheckParameterTypes(values);
 
-  if (function != nullptr)
-    result = function(values);
+  if (function->ptr)
+    result = function->ptr(values);
+
+  CheckReturnType(result);
 
   ASTNode::context.PopScope();
   if (result == nullptr) {
@@ -144,8 +176,10 @@ Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
     return result;
   }
 }
-NativeCallable_T::NativeCallable_T(const NativeFunctionPtr &function)
-    : function(function) {}
+NativeCallable_T::NativeCallable_T(const shared_ptr<NativeFunction> &function)
+    : function(function) {
+      type = TypeSystem::Current().FromCallable(function->returnType, function->parameterTypes);
+    }
 
 Value Float_T::Add(Value other) {
   if (other->GetPrimitiveType() == PrimitiveType::Float) {
@@ -304,7 +338,7 @@ string Callable_T::ToString() const {
 string Array_T::ToString() const { return Writer::ToString(this, {}); }
 string NativeCallable_T::ToString() const {
   stringstream ss = {};
-  ss << "native_callable()";
+  ss << TypeSystem::Current().FromCallable(function->returnType, function->parameterTypes)->name;
   return ss.str();
 }
 
@@ -457,6 +491,7 @@ Value Callable_T::Clone() { return shared_from_this(); }
 
 Array_T::~Array_T() {}
 
+// TODO: add typing to tuple deconstruction.
 auto Tuple_T::Deconstruct(vector<IdentifierPtr> &idens) const -> void {
   // produce the maximum number of values available given
   // both arrays are at least that size.

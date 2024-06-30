@@ -215,21 +215,21 @@ static Value exit(std::vector<Value>) {
 
 static Value file() {
   auto obj = Ctx::CreateObject();
-  obj->SetMember("read", NativeFunctions::MakeCallable(fread));
-  obj->SetMember("write", NativeFunctions::MakeCallable(fwrite));
-  obj->SetMember("create", NativeFunctions::MakeCallable(fcreate));
-  obj->SetMember("exists", NativeFunctions::MakeCallable(fexists));
-  obj->SetMember("delete", NativeFunctions::MakeCallable(fdelete));
+  obj->SetMember("read", FunctionRegistry::MakeCallable(fread));
+  obj->SetMember("write", FunctionRegistry::MakeCallable(fwrite));
+  obj->SetMember("create", FunctionRegistry::MakeCallable(fcreate));
+  obj->SetMember("exists", FunctionRegistry::MakeCallable(fexists));
+  obj->SetMember("delete", FunctionRegistry::MakeCallable(fdelete));
   return obj;
 }
 
 static Value directory() {
   auto obj = Ctx::CreateObject();
-  obj->SetMember("exists", NativeFunctions::MakeCallable(dir_exists));
-  obj->SetMember("create", NativeFunctions::MakeCallable(dir_create));
-  obj->SetMember("delete", NativeFunctions::MakeCallable(dir_delete));
-  obj->SetMember("getfiles", NativeFunctions::MakeCallable(dir_getfiles));
-  obj->SetMember("current", NativeFunctions::MakeCallable(cwd));
+  obj->SetMember("exists", FunctionRegistry::MakeCallable(dir_exists));
+  obj->SetMember("create", FunctionRegistry::MakeCallable(dir_create));
+  obj->SetMember("delete", FunctionRegistry::MakeCallable(dir_delete));
+  obj->SetMember("getfiles", FunctionRegistry::MakeCallable(dir_getfiles));
+  obj->SetMember("current", FunctionRegistry::MakeCallable(cwd));
   return obj;
 }
 
