@@ -159,6 +159,7 @@ function(len) {
   return Ctx::Undefined();
 }
 
+
 extern "C" ScritModDef *InitScritModule_array() {
   ScritModDef *def = CreateModDef();
   *def->description = "provide functionality for the array type.";

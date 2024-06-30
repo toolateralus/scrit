@@ -139,8 +139,8 @@ struct TypeSystem {
       {"int", std::make_shared<IntType>()},
       {"float", std::make_shared<FloatType>()},
       {"bool", std::make_shared<BoolType>()},
-      {"native_callable", std::make_shared<CallableType>(std::make_shared<AnyType>(), std::vector<Type>({make_shared<AnyType>()}))},
-      {"array", make_shared<TemplateType>("array", make_shared<ArrayType>(), vector<Type>())},
+      {"native_callable", std::make_shared<CallableType>(make_shared<AnyType>(), std::vector<Type>({}))},
+      {"array", make_shared<ArrayType>()},
       {"string", std::make_shared<StringType>()},
       {"object", std::make_shared<ObjectType>()},
       {"any", Any}
@@ -152,6 +152,7 @@ struct TypeSystem {
   
   auto GetOrCreateTemplate(const string &name, const Type &base,
                            const vector<Type> &types) -> Type;
+                           
   auto Undefined() -> Type { return Get("undefined"); }
   
   auto GetDefault(const Type &type) -> Value;
