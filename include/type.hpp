@@ -160,9 +160,9 @@ struct TypeSystem {
   
   auto FromCallable(const Type returnType, const vector<Type> paramTypes)
       -> Type;
-
-  auto RegisterType(const Type &type) -> void;
-
+  
+  auto RegisterType(const Type &type, const bool module_type = false) -> void;
+  
   auto DumpInfo() -> void;
 
   static TypeSystem &Current() {
@@ -187,6 +187,7 @@ private:
       {"bool", Bool},
       {"native_callable", NativeCallable},
       {"string", String},
+      {"array", make_shared<ArrayType>()},
       {"object", make_shared<ObjectType>()},
       {"any", Any}
     };

@@ -1111,7 +1111,7 @@ void Using::Load() {
   auto object = ScritModDefAsObject(module);
   
   for (const auto &[name, t]: *module->types) {
-    TypeSystem::Current().RegisterType(t);
+    TypeSystem::Current().RegisterType(t, true);
   }
   
   if (!isWildcard && symbols.empty()) {

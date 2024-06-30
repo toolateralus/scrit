@@ -76,7 +76,7 @@ ScritModDef *LoadScritModule(const std::string &name, const std::string &path,
   }
 
   auto mod = function();
-
+  
   return mod;
 #else
   HMODULE handle = LoadLibraryA(path.c_str());

@@ -9,12 +9,17 @@ using namespace Values;
 
 Type_T::Type_T(const std::string &name) : name(name) {}
 
-auto TypeSystem::RegisterType(const Type &type) -> void {
-  if (types.contains(type->name)) {
-    throw std::runtime_error("cannot register type: '" + type->name +
-                             "' twice.");
+auto TypeSystem::RegisterType(const Type &type, const bool module_type) -> void {
+  const auto exists = types.contains(type->name);
+  // if a type exists && this comes from a module, we supplement members.
+  if (exists && module_type) {
+    auto t = types[type->name];
+    for (const auto &[name, member] : type->Scope().Members()) {
+      t->Scope().Members()[name] = member;      
+    }
+  } else if (!exists) {
+    types[type->name] = type;
   }
-  types[type->name] = type;
 }
 
 auto TypeSystem::FromPrimitive(const PrimitiveType &t) -> Type {
