@@ -69,7 +69,6 @@ auto Values::TypeSystem::GetOrCreateTemplate(const string &name,
 }
 
 auto Values::Type_T::Get(const string &name) -> Value {
-  std::cout << "getting " << name << ". scope has " << Scope().Members().size() << " members." << std::endl;
   return this->Scope().Get(name);
 }
 auto Values::Type_T::Set(const string &name, Value value) -> void {
