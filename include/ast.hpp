@@ -1,6 +1,7 @@
 #pragma once
 #include "lexer.hpp"
 #include "native.hpp"
+#include "type.hpp"
 
 #include <cassert>
 #include <functional>
@@ -111,11 +112,25 @@ struct Expression : ASTNode {
   virtual ~Expression() {}
   virtual Value Evaluate() = 0;
 };
-struct Operand : Expression {
-  Operand(SourceInfo &info, const Type &type, Value value);
-  Value value;
+
+struct DefaultValue : Expression {
+  DefaultValue(SourceInfo &info, const Type &type) : Expression(info, type) {};
   Value Evaluate() override;
 };
+
+struct Literal : Expression {
+  Literal(SourceInfo &info, const Type &type, Value value) : Expression(info, type), expression(value) {}
+  Value expression;
+  Value Evaluate() override;
+};
+
+struct Operand : Expression {
+  Operand(SourceInfo &info, const Type &type, ExpressionPtr &&value);
+  ExpressionPtr expression;
+  Value Evaluate() override;
+};
+
+
 struct Identifier : Expression {
   const string name;
   Identifier(SourceInfo &info, const Type &type, const string &name);
@@ -193,7 +208,7 @@ struct ObjectInitializer : Expression {
   Value Evaluate() override;
 };
 
-struct ArrayInitializer : Operand {
+struct ArrayInitializer : Expression {
   vector<ExpressionPtr> init;
   ArrayInitializer(SourceInfo &info, const Type &type,
                    vector<ExpressionPtr> &&init);
@@ -223,6 +238,15 @@ struct If : Statement {
   ExecutionResult Execute() override;
   ~If();
 };
+
+
+struct AnonymousFunction : Expression {
+  Value callable;
+  AnonymousFunction(SourceInfo &info, Type &type, Value callable);
+  Value Evaluate() override;
+};
+
+
 struct Else : Statement {
   ~Else();
   IfPtr ifStmnt;

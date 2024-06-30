@@ -63,8 +63,7 @@ Parameters::Parameters(SourceInfo &info, std::vector<Param> &&params)
   this->values = std::move(params);
 }
 Identifier::Identifier(SourceInfo &info, const Type &type, const string &name) : Expression(info, type), name(name) {}
-Operand::Operand(SourceInfo &info, const Type &type, Value value) : Expression(info, type) {
-  this->value = value;
+Operand::Operand(SourceInfo &info, const Type &type, ExpressionPtr &&expr) : Expression(info, type), expression(std::move(expr)) {
 }
 Program::Program(vector<StatementPtr> &&statements)
     : Executable(programSourceInfo) {
@@ -259,7 +258,7 @@ ExecutionResult Program::Execute() {
   }
   return ExecutionResult::None;
 }
-Value Operand::Evaluate() { return value; }
+Value Operand::Evaluate() { return expression->Evaluate(); }
 Value Identifier::Evaluate() {  
   auto value = ASTNode::context.Find(name);
   if (value != nullptr) {
@@ -566,7 +565,8 @@ Value TryCallMethods(unique_ptr<Expression> &right, Value &lvalue) {
       return binExpr->Evaluate();
     }
     
-    auto expr = make_unique<Operand>(binExpr->srcInfo, binExpr->type, result);
+    // fold this expression and re-evaluate.
+    auto expr = make_unique<Literal>(binExpr->srcInfo, binExpr->type, result);
     binExpr->left = std::move(expr);
     return binExpr->Evaluate();
   }
@@ -1149,6 +1149,15 @@ void Using::Load() {
 
 ArrayInitializer::ArrayInitializer(SourceInfo &info, const Type &type,
                                    vector<ExpressionPtr> &&init)
-    : Operand(info, type, Ctx::Undefined()), init(std::move(init)) {
+    : Expression(info, type), init(std::move(init)) {
       
+}
+Value AnonymousFunction::Evaluate() { return callable; }
+
+AnonymousFunction::AnonymousFunction(SourceInfo &info, Type &type,
+                                     Value callable)
+    : Expression(info, type), callable(callable) {}
+Value Literal::Evaluate() { return expression->Clone(); }
+Value DefaultValue::Evaluate() {
+  return Values::TypeSystem::Current().GetDefault(type);
 }

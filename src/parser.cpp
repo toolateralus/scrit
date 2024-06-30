@@ -211,8 +211,7 @@ StatementPtr Parser::ParseDeclaration(SourceInfo &info, const string &iden, cons
       Eat();
       type = ParseType();
       if (tokens.empty() || Peek().type != TType::Assign) {
-        auto _default =TypeSystem::Current().GetDefault(type);
-        auto op = make_unique<Operand>(info, type, _default);
+        auto op = make_unique<Operand>(info, type, make_unique<DefaultValue>(info, type));
         return std::make_unique<Declaration>(info, iden, std::move(op), mut, type);
       }
       Eat();
@@ -486,12 +485,14 @@ ExpressionPtr Parser::ParsePostfix() {
 StatementPtr Parser::ParseAnonFuncInlineCall() {
   auto info = this->info;
   auto parameters = ParseParameters();
+  // todo: fix no implicit return type.
   auto returnType = ParseType();
   auto body = ParseBlock();
   auto arguments = ParseArguments();
   
   auto type = Values::TypeSystem::Current().FromCallable(returnType, parameters->ParamTypes());
-  auto op = make_unique<Operand>(info, type, make_shared<Callable_T>(returnType, std::move(body), std::move(parameters)));
+  auto callable = make_shared<Callable_T>(returnType, std::move(body), std::move(parameters));
+  auto op = make_unique<AnonymousFunction>(info, type, callable);
   return make_unique<Call>(info, std::move(op), std::move(arguments));
 }
 
@@ -518,7 +519,8 @@ ExpressionPtr Parser::ParseAnonFunc() {
   auto body = ParseBlock();
   auto types = params->ParamTypes();
   auto callable = make_shared<Callable_T>(returnType, std::move(body), std::move(params));
-  return make_unique<Operand>(info, TypeSystem::Current().FromCallable(returnType, types), callable);
+  auto type = TypeSystem::Current().FromCallable(returnType, types);
+  return make_unique<AnonymousFunction>(info, type, callable);
 }
 
 ExpressionPtr Parser::ParseObjectInitializer() {
@@ -637,25 +639,25 @@ ExpressionPtr Parser::ParseOperand() {
   }
   case TType::String:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Current().String, String_T::New(std::move(token.value)));
+    return make_unique<Literal>(info, TypeSystem::Current().String, String_T::New(std::move(token.value)));
   case TType::True:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Current().Bool, Value_T::True);
+    return make_unique<Literal>(info, TypeSystem::Current().Bool, Value_T::True);
   case TType::False:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Current().Bool, Value_T::False);
+    return make_unique<Literal>(info, TypeSystem::Current().Bool, Value_T::False);
   case TType::Undefined:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Current().Undefined, Value_T::UNDEFINED);
+    return make_unique<Literal>(info, TypeSystem::Current().Undefined, Value_T::UNDEFINED);
   case TType::Null:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Current().Null, Value_T::VNULL);
+    return make_unique<Literal>(info, TypeSystem::Current().Null, Value_T::VNULL);
   case TType::Float:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Current().Float, Float_T::New(stof(token.value)));
+    return make_unique<Literal>(info, TypeSystem::Current().Float, Float_T::New(stof(token.value)));
   case TType::Int:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Current().Int,Int_T::New(stoi(token.value)));
+    return make_unique<Literal>(info, TypeSystem::Current().Int,Int_T::New(stoi(token.value)));
   case TType::Identifier:
     Eat();
     return make_unique<Identifier>(info, token.value);
@@ -733,7 +735,8 @@ OperandPtr Parser::ParseArrayInitializer() {
   Eat();
   if (Peek().type == TType::SubscriptRight) {
     Eat();
-    return make_unique<ArrayInitializer>(info, TypeSystem::Current().Get("array"), std::vector<ExpressionPtr>());
+    auto type = TypeSystem::Current().Get("array");
+    return make_unique<Operand>(info, type, make_unique<ArrayInitializer>(info, type, std::vector<ExpressionPtr>()));
   } else {
     vector<ExpressionPtr> init_expressions = {};
     
@@ -757,7 +760,7 @@ OperandPtr Parser::ParseArrayInitializer() {
     }
     Expect(TType::SubscriptRight);
     auto type = TypeSystem::Current().GetOrCreateTemplate("array<" + inner_type->name + ">", TypeSystem::Current().Get("array"), {inner_type});
-    return make_unique<ArrayInitializer>(info, type, std::move(init_expressions));
+    return make_unique<Operand>(info, type, make_unique<ArrayInitializer>(info, type, std::move(init_expressions)));
   }
 }
 ParametersPtr Parser::ParseParameters() {
