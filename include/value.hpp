@@ -267,16 +267,12 @@ struct NativeCallable_T : Callable_T {
   PrimitiveType GetPrimitiveType() const override { return PrimitiveType::Callable; }
 };
 struct Array_T : Value_T {
-  vector<ExpressionPtr> initializer;
   ~Array_T() override;
-
   static Array New();
-  static Array New(vector<ExpressionPtr> &&init);
+  static Array New(vector<ExpressionPtr> &init);
   static Array New(std::vector<Value> &values);
   Array_T() = delete;
-  Array_T(vector<ExpressionPtr> &&init);
   Array_T(vector<Value> init);
-
   vector<Value> values = {};
 
   Value At(Int index);

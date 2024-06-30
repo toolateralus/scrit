@@ -733,10 +733,9 @@ OperandPtr Parser::ParseArrayInitializer() {
   Eat();
   if (Peek().type == TType::SubscriptRight) {
     Eat();
-    auto array = Array_T::New();
-    return make_unique<Operand>(info, TypeSystem::Current().Get("array"), array);
+    return make_unique<ArrayInitializer>(info, TypeSystem::Current().Get("array"), std::vector<ExpressionPtr>());
   } else {
-    vector<ExpressionPtr> values = {};
+    vector<ExpressionPtr> init_expressions = {};
     
     Type inner_type;
     while (Peek().type != TType::SubscriptRight) {
@@ -750,17 +749,15 @@ OperandPtr Parser::ParseArrayInitializer() {
         throw std::runtime_error("invalid type in array initializer\nexpected: " + inner_type->name + "\ngot: " + val->type->name);
       }
       
-      values.push_back(std::move(val));
+      init_expressions.push_back(std::move(val));
       
       if (Peek().type == TType::Comma) {
         Eat();
       }
     }
     Expect(TType::SubscriptRight);
-    auto array = Array_T::New(std::move(values));
     auto type = TypeSystem::Current().GetOrCreateTemplate("array<" + inner_type->name + ">", TypeSystem::Current().Get("array"), {inner_type});
-    array->type = type;
-    return make_unique<Operand>(info, type, array);
+    return make_unique<ArrayInitializer>(info, type, std::move(init_expressions));
   }
 }
 ParametersPtr Parser::ParseParameters() {
@@ -1013,7 +1010,7 @@ unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
 }
 StatementPtr Parser::ParseUsing() {
   auto next = Peek();
-
+  
   // using all * widlcard
   if (next.type == TType::Mul) {
     Eat();
@@ -1023,9 +1020,21 @@ StatementPtr Parser::ParseUsing() {
 
   }
   // plain 'using raylib' statement
+  // also parses 'using std.array'
   else if (next.type == TType::Identifier) {
+    string name;
     auto iden = Expect(TType::Identifier);
-    return make_unique<Using>(info, iden.value, false);
+    name = iden.value;
+    if (Peek().type == TType::Dot) {
+      name += Eat().value;
+      while (!tokens.empty()) {
+        name += Eat().value;
+        if (Peek().type != TType::Dot) {
+          break;
+        }
+      }
+    }
+    return make_unique<Using>(info, name, false);
   }
   // 'using {iden, iden} from raylib'
   else if (next.type == TType::LCurly) {
