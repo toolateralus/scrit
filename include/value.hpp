@@ -14,6 +14,7 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
+using namespace Values;
 
 // forward declare AST nodes.
 struct Identifier;
@@ -364,6 +365,7 @@ template <typename T> T *Value_T::Cast() {
       "invalid cast from : " + string(typeid(*this).name()) +
       "to : " + string(typeid(T).name()));
 }
+
 
 } // namespace Values
 

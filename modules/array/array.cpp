@@ -1,13 +1,16 @@
+#include <iostream>
+#include <scrit/native.hpp>
 #include <scrit/scritmod.hpp>
+#include <scrit/type.hpp>
 
-#define function(name) Value name (std::vector<Value> args) 
+#define function(name) Value name(std::vector<Value> args)
 #define undefined Ctx::Undefined()
 
 function(contains) {
   if (args.size() < 2) {
     return undefined;
   }
-  
+
   Array result;
   if (!Ctx::TryGetArray(args[0], result)) {
     throw std::runtime_error("contains may only be used on arrays.");
@@ -72,14 +75,14 @@ function(expand) {
     auto array = dynamic_cast<Array_T *>(args[0].get());
 
     auto default_value = args.size() > 2 ? args[2] : Value_T::UNDEFINED;
-    
+
     Callable_T *callable = nullptr;
     if (default_value->GetPrimitiveType() == PrimitiveType::Callable) {
       callable = static_cast<Callable_T *>(default_value.get());
     }
 
     std::vector<Value> empty = {};
-    
+
     for (int i = 0; i < value; i++) {
       if (callable) {
         array->Push(callable->Call(empty));
@@ -96,16 +99,16 @@ function(push) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
-  
+
   if (args[0]->GetPrimitiveType() != PrimitiveType::Array) {
     return Ctx::Undefined();
   }
   auto array = static_cast<Array_T *>(args[0].get());
-  
+
   for (size_t i = 1; i < args.size(); i++) {
     array->Push(args[i]);
   }
-  
+
   return Ctx::Undefined();
 }
 
@@ -156,18 +159,25 @@ function(len) {
   return Ctx::Undefined();
 }
 
-extern "C" ScritModDef* InitScritModule_array() {
+extern "C" ScritModDef *InitScritModule_array() {
   ScritModDef *def = CreateModDef();
-  *def->description = "your description here";
+  *def->description = "provide functionality for the array type.";
   
-  def->AddFunction("remove", remove);
-  def->AddFunction("contains", contains);
-  def->AddFunction("clear", clear);
-  def->AddFunction("expand", expand);
-  def->AddFunction("push", push);
-  def->AddFunction("front", front);
-  def->AddFunction("back", back);
-  def->AddFunction("pop", pop);
-  def->AddFunction("len", len);
+  auto array = TypeSystem::Current().Get("array");
+  
+  std::cout << "type: " << array->name << std::endl;
+  
+  array->Set("remove",   NativeFunctions::MakeCallable(remove));
+  array->Set("contains", NativeFunctions::MakeCallable(contains));
+  array->Set("clear",    NativeFunctions::MakeCallable(clear));
+  array->Set("expand",   NativeFunctions::MakeCallable(expand));
+  array->Set("push",     NativeFunctions::MakeCallable(push));
+  array->Set("front",    NativeFunctions::MakeCallable(front));
+  array->Set("back",     NativeFunctions::MakeCallable(back));
+  array->Set("pop",      NativeFunctions::MakeCallable(pop));
+  array->Set("len",      NativeFunctions::MakeCallable(len));
+  
+  std::cout << "new size: " <<  TypeSystem::Current().Get("array")->Scope().Members().size() << std::endl;
+  
   return def;
 }

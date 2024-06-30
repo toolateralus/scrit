@@ -132,8 +132,6 @@ StatementPtr Parser::ParseStatement() {
   throw std::runtime_error("Unexpecrted end of input");
 }
 
-
-
 StatementPtr Parser::ParseKeyword(Token token) {
   switch (token.type) {
   case TType::Delete: {
