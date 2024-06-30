@@ -73,7 +73,6 @@ auto Values::Type_T::Get(const string &name) -> Value {
   return this->Scope().Get(name);
 }
 auto Values::Type_T::Set(const string &name, Value value) -> void {
-  std::cout << "adding " << name << ": " << value->ToString() << std::endl;
   this->Scope().Set(name, value, Mutability::Const);
 }
 auto NullType::Scope() -> Scope_T & {
