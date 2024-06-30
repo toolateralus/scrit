@@ -561,49 +561,49 @@ Value TryCallMethods(unique_ptr<Expression> &right, Value &lvalue) {
   
   if (auto call = dynamic_cast<Call*>(right.get())) {
     if (auto name = dynamic_cast<Identifier*>(call->operand.get())) {
-        shared_ptr<Callable_T> callable = nullptr;
-        
-        
-        
-        auto obj = std::dynamic_pointer_cast<Object_T>(lvalue);
-        if (obj && obj->scope && obj->scope->Contains(name->name)) {
-          callable = std::dynamic_pointer_cast<Callable_T>(obj->scope->Get(name->name));
-          // call the function from the object's scope.
-          return EvaluateWithinObject(obj->scope, lvalue, [callable, call]() -> Value {
-            return callable->Call(call->args);
-          });
+      shared_ptr<Callable_T> callable = nullptr;
+      
+      
+      
+      auto obj = std::dynamic_pointer_cast<Object_T>(lvalue);
+      if (obj && obj->scope && obj->scope->Contains(name->name)) {
+        callable = std::dynamic_pointer_cast<Callable_T>(obj->scope->Get(name->name));
+        // call the function from the object's scope.
+        return EvaluateWithinObject(obj->scope, lvalue, [callable, call]() -> Value {
+          return callable->Call(call->args);
+        });
+      }
+      
+      if (!callable) {
+        callable = std::dynamic_pointer_cast<Callable_T>(ASTNode::context.Find(name->name));
+      } 
+      
+      if (!callable && NativeFunctions::Exists(name->name)) {
+        callable = NativeFunctions::GetCallable(name->name);
+      }
+      
+      if (!callable && lvalue->type->Get(name->name)) {
+        std::cout << "type " << lvalue->type->name << " contains " << lvalue->type->Scope().Members().size() << " members." << std::endl;
+        auto member = lvalue->type->Get(name->name);
+        auto member_callable = std::dynamic_pointer_cast<Callable_T>(member);
+        if (member_callable) {
+          callable = member_callable;
         }
-        
-        if (!callable) {
-          callable = std::dynamic_pointer_cast<Callable_T>(ASTNode::context.Find(name->name));
-        } 
-        
-        if (!callable && NativeFunctions::Exists(name->name)) {
-          callable = NativeFunctions::GetCallable(name->name);
+      }
+      
+      if (callable) {
+        auto args = call->GetArgsValueList(call->args);
+        // insert self as arg 0.
+        args.insert(args.begin(), lvalue);
+      
+        if (auto nc = std::dynamic_pointer_cast<Callable_T>(callable)) {
+          return nc->Call(args);
+        } else if (auto c = std::dynamic_pointer_cast<Callable_T>(callable)) {
+          return c->Call(args);
+        } else {
+          throw std::runtime_error("invalid method call: " + name->name);
         }
-        
-        if (!callable && lvalue->type->Get(name->name)) {
-          std::cout << "type " << lvalue->type->name << " contains " << lvalue->type->Scope().Members().size() << " members." << std::endl;
-          auto member = lvalue->type->Get(name->name);
-          auto member_callable = std::dynamic_pointer_cast<Callable_T>(member);
-          if (member_callable) {
-            callable = member_callable;
-          }
-        }
-        
-        if (callable) {
-          auto args = call->GetArgsValueList(call->args);
-          // insert self as arg 0.
-          args.insert(args.begin(), lvalue);
-        
-          if (auto nc = std::dynamic_pointer_cast<Callable_T>(callable)) {
-            return nc->Call(args);
-          } else if (auto c = std::dynamic_pointer_cast<Callable_T>(callable)) {
-            return c->Call(args);
-          } else {
-			throw std::runtime_error("invalid method call: " + name->name);
-		  }
-        } else throw std::runtime_error("invalid method call: " + name->name);
+      } else throw std::runtime_error("invalid method call: " + name->name);
     }
   }
   return nullptr;

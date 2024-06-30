@@ -126,12 +126,12 @@ auto IntType::Scope() -> Scope_T & {
 }
 auto TemplateType::Get(const string &name) -> Value {
   // specific implementations for this template.
-  if (auto result = scope->Get(name)) {
-    return result;
+  if (scope->Contains(name)) {
+    return scope->Get(name);
   }
   // generic functions from the base type.
-  if (auto result = base_type->Get(name)) {
-    return result;
+  if (base_type->Scope().Contains(name)) {
+    return base_type->Get(name);
   }
   return nullptr;
 }
