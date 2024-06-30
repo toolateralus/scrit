@@ -103,8 +103,12 @@ void Array_T::Assign(Int index, Value value) {
   values[idx] = value;
 }
 
-Array Array_T::New(vector<ExpressionPtr> &&init) {
-  return make_shared<Array_T>(std::move(init));
+Array Array_T::New(vector<ExpressionPtr> &init) {
+  vector<Value> values;
+  for (const auto &expr : init) {
+    values.push_back(expr->Evaluate());
+  }
+  return make_shared<Array_T>(values);
 }
 Array Array_T::New() {
   auto values = vector<Value>{};
@@ -575,14 +579,7 @@ Value Callable_T::Call(std::vector<Value> &values) {
 Float_T::Float_T(float value) : Value_T(TypeSystem::Current().Get("object")) {
   this->value = value;
 }
-Array_T::Array_T(vector<ExpressionPtr> &&init)
-    : Value_T(TypeSystem::Current().Get("array")) {
-  initializer = std::move(init);
-  for (auto &arg : initializer) {
-    auto value = arg->Evaluate();
-    Push(value);
-  }
-}
+
 Callable_T::Callable_T(const Type &returnType, BlockPtr &&block,
                        ParametersPtr &&params)
     : Value_T(nullptr), block(std::move(block)), params(std::move(params)) {

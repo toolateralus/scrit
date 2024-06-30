@@ -192,6 +192,14 @@ struct ObjectInitializer : Expression {
   ObjectInitializer(SourceInfo &info, const Type &type, BlockPtr &&block);
   Value Evaluate() override;
 };
+
+struct ArrayInitializer : Operand {
+  vector<ExpressionPtr> init;
+  ArrayInitializer(SourceInfo &info, const Type &type,
+                   vector<ExpressionPtr> &&init);
+  Value Evaluate() override;
+};
+
 struct Call : Expression, Statement {
   ExpressionPtr operand;
   ArgumentsPtr args;

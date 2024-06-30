@@ -418,6 +418,13 @@ vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
   }
   return values;
 }
+
+Value ArrayInitializer::Evaluate() {
+  auto array = Array_T::New(init);;
+  array->type = type;
+  return array;
+}
+
 Value Call::Evaluate() {
   auto lvalue = operand->Evaluate();
   if (lvalue->GetPrimitiveType() == PrimitiveType::Callable) {
@@ -1138,4 +1145,10 @@ void Using::Load() {
   free(module);
 
   ASTNode::context.RegisterModuleHandle(handle);
+}
+
+ArrayInitializer::ArrayInitializer(SourceInfo &info, const Type &type,
+                                   vector<ExpressionPtr> &&init)
+    : Operand(info, type, Ctx::Undefined()), init(std::move(init)) {
+      
 }
