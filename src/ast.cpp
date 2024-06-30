@@ -574,9 +574,9 @@ Value TryCallMethods(unique_ptr<Expression> &right, Value &lvalue) {
       if (callable)
         goto call;
       
-      if (lvalue->type->Scope().Contains(name->name)) {
+      if (auto member = lvalue->type->Get(name->name); !member->Equals(Ctx::Undefined())) {
         //std::cout << "type " << lvalue->type->name << " contains " << lvalue->type->Scope().Members().size() << " members." << std::endl;
-        auto member = lvalue->type->Get(name->name);
+        
         auto member_callable = std::dynamic_pointer_cast<Callable_T>(member);
         
         if (member_callable) {
