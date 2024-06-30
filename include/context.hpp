@@ -76,6 +76,11 @@ struct Scope_T {
     return std::make_shared<Scope_T>(scope);
   }
   auto end() { return variables.end(); }
+  
+  Scope_T(const Scope_T&) = delete;
+  Scope_T(Scope_T&&) = delete;
+  Scope_T& operator=(const Scope_T&) = delete;
+  Scope_T& operator=(Scope_T&&) = delete;
 
 private:
   std::vector<ScritModHandle> module_handles;

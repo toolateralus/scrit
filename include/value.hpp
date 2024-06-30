@@ -81,12 +81,7 @@ struct Value_T : std::enable_shared_from_this<Value_T> {
   Type type;
   
   virtual PrimitiveType GetPrimitiveType() const = 0;
-  virtual ~Value_T() {
-    
-  }
-  
-  
-  
+  virtual ~Value_T() {}
   
   Value_T(const Type &type): type(type) {}
   
@@ -121,6 +116,11 @@ struct Value_T : std::enable_shared_from_this<Value_T> {
   
   template <typename T> T *Cast();
   template <typename T> PrimitiveType ValueTypeFromType();
+  
+  Value_T(const Value_T&) = delete;
+  Value_T(Value_T&&) = delete;
+  Value_T& operator=(const Value_T&) = delete;
+  Value_T& operator=(Value_T&&) = delete;
 };
 
 struct Null_T : Value_T {
