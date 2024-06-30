@@ -9,7 +9,7 @@ using namespace Values;
 
 Type_T::Type_T(const std::string &name) : name(name) {}
 
-auto TypeSystem::RegisterType(const Type &type) {
+auto TypeSystem::RegisterType(const Type &type) -> void {
   if (types.contains(type->name)) {
     throw std::runtime_error("cannot register type: '" + type->name +
                              "' twice.");
@@ -124,6 +124,7 @@ auto IntType::Scope() -> Scope_T & {
   static Scope_T scope = Scope_T();
   return scope;
 }
+
 auto TemplateType::Get(const string &name) -> Value {
   // specific implementations for this template.
   if (scope->Contains(name)) {
@@ -140,3 +141,10 @@ TemplateType::TemplateType(const string &name, const Type &base_type,
                            const vector<Type> &typenames)
     : Type_T(name), typenames(typenames), base_type(base_type),
       scope(Scope_T::Create()) {}
+      
+auto Values::TypeSystem::DumpInfo() -> void {
+  for (const auto &[name, type] : types) {
+    std::cout << "type: " << name << "\ncontains '"
+              << type->Scope().Members().size() << "' members." << std::endl;
+  }
+}

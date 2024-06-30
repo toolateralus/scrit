@@ -572,7 +572,7 @@ Value Callable_T::Call(std::vector<Value> &values) {
     throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
   }
 }
-Float_T::Float_T(float value) : Value_T(TypeSystem::Current().Get("float")) {
+Float_T::Float_T(float value) : Value_T(TypeSystem::Current().Get("object")) {
   this->value = value;
 }
 Array_T::Array_T(vector<ExpressionPtr> &&init)
@@ -590,17 +590,17 @@ Callable_T::Callable_T(const Type &returnType, BlockPtr &&block,
                                                   this->params->ParamTypes());
 }
 String_T::String_T(const string &value)
-    : Value_T(TypeSystem::Current().Get("string")) {
+    : Value_T(TypeSystem::Current().String) {
   this->value = value;
 }
 // this is only for native callables.
 // Todo: implement native callable type.
 Callable_T::Callable_T()
-    : Value_T(TypeSystem::Current().Get("native_callable")) {}
+    : Value_T(TypeSystem::Current().NativeCallable) {}
 
-Null_T::Null_T() : Value_T(TypeSystem::Current().Get("null")) {}
-Undefined_T::Undefined_T() : Value_T(TypeSystem::Current().Get("undefined")) {}
-Bool_T::Bool_T(bool value) : Value_T(TypeSystem::Current().Get("bool")) {
+Null_T::Null_T() : Value_T(TypeSystem::Current().Null) {}
+Undefined_T::Undefined_T() : Value_T(TypeSystem::Current().Undefined) {}
+Bool_T::Bool_T(bool value) : Value_T(TypeSystem::Current().Bool) {
   this->value = value;
 }
 Array_T::Array_T(vector<Value> init) : Value_T(nullptr) {

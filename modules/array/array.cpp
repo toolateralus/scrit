@@ -164,10 +164,7 @@ extern "C" ScritModDef *InitScritModule_array() {
   ScritModDef *def = CreateModDef();
   *def->description = "provide functionality for the array type.";
   
-  auto array = TypeSystem::Current().Get("array");
-  
-  std::cout << "type: " << array->name << std::endl;
-  
+  auto array = make_shared<ArrayType>();
   array->Set("remove",   NativeFunctions::MakeCallable(remove));
   array->Set("contains", NativeFunctions::MakeCallable(contains));
   array->Set("clear",    NativeFunctions::MakeCallable(clear));
@@ -177,8 +174,7 @@ extern "C" ScritModDef *InitScritModule_array() {
   array->Set("back",     NativeFunctions::MakeCallable(back));
   array->Set("pop",      NativeFunctions::MakeCallable(pop));
   array->Set("len",      NativeFunctions::MakeCallable(len));
-  
-  std::cout << "new size: " <<  TypeSystem::Current().Get("array")->Scope().Members().size() << std::endl;
+  def->AddType("array", array);
   
   return def;
 }

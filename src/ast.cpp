@@ -1,6 +1,5 @@
 #include "ast.hpp"
 #include "lexer.hpp"
-#include "type.hpp"
 #include "context.hpp"
 #include "debug.hpp"
 #include "native.hpp"
@@ -10,6 +9,7 @@
 #include <iostream>
 #include <memory>
 #include <ranges>
+#include <type.hpp>
 #include <stdexcept>
 #include <string>
 
@@ -55,7 +55,7 @@ If::If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block)
   this->block = std::move(block);
 }
 Arguments::Arguments(SourceInfo &info,  vector<ExpressionPtr> &&args)
-    : Expression(info, TypeSystem::Current().Undefined()) {
+    : Expression(info, TypeSystem::Current().Undefined) {
   this->values = std::move(args);
 }
 Parameters::Parameters(SourceInfo &info, std::vector<Param> &&params)
@@ -200,10 +200,13 @@ ElsePtr Else::NoIf(SourceInfo &info, BlockPtr &&block) {
   elseStmnt->block = std::move(block);
   return elseStmnt;
 }
+
 Using::Using(SourceInfo &info, const string &name, const bool isWildcard)
     : Statement(info), symbols({}), moduleName(name), isWildcard(isWildcard){
   Load();
-                                                      };
+  
+};
+
 Using::Using(SourceInfo &info, const string &name, vector<string> &symbols)
     : Statement(info), symbols(symbols), moduleName(name), isWildcard(false){
   Load();      
@@ -551,59 +554,65 @@ Value TryCallMethods(unique_ptr<Expression> &right, Value &lvalue) {
   // recurse for bin expr.  
   if (auto binExpr = dynamic_cast<BinExpr*>(right.get())) {
     auto result = TryCallMethods(binExpr->left, lvalue);
-    if (result == nullptr) {
+    
+    if (!result) {
       return binExpr->Evaluate();
     }
+    
     auto expr = make_unique<Operand>(binExpr->srcInfo, binExpr->type, result);
     binExpr->left = std::move(expr);
     return binExpr->Evaluate();
   }
   
   if (auto call = dynamic_cast<Call*>(right.get())) {
+    
     if (auto name = dynamic_cast<Identifier*>(call->operand.get())) {
       shared_ptr<Callable_T> callable = nullptr;
       
+      callable = std::dynamic_pointer_cast<Callable_T>(ASTNode::context.Find(name->name));
       
+      if (callable)
+        goto call;
       
-      auto obj = std::dynamic_pointer_cast<Object_T>(lvalue);
-      if (obj && obj->scope && obj->scope->Contains(name->name)) {
-        callable = std::dynamic_pointer_cast<Callable_T>(obj->scope->Get(name->name));
-        // call the function from the object's scope.
-        return EvaluateWithinObject(obj->scope, lvalue, [callable, call]() -> Value {
-          return callable->Call(call->args);
-        });
-      }
-      
-      if (!callable) {
-        callable = std::dynamic_pointer_cast<Callable_T>(ASTNode::context.Find(name->name));
-      } 
-      
-      if (!callable && NativeFunctions::Exists(name->name)) {
-        callable = NativeFunctions::GetCallable(name->name);
-      }
-      
-      if (!callable && lvalue->type->Get(name->name)) {
-        std::cout << "type " << lvalue->type->name << " contains " << lvalue->type->Scope().Members().size() << " members." << std::endl;
+      if (lvalue->type->Scope().Contains(name->name)) {
+        //std::cout << "type " << lvalue->type->name << " contains " << lvalue->type->Scope().Members().size() << " members." << std::endl;
         auto member = lvalue->type->Get(name->name);
         auto member_callable = std::dynamic_pointer_cast<Callable_T>(member);
+        
         if (member_callable) {
           callable = member_callable;
+          goto call;
         }
       }
       
-      if (callable) {
-        auto args = call->GetArgsValueList(call->args);
-        // insert self as arg 0.
-        args.insert(args.begin(), lvalue);
+      // call native free functions.
+      // This is a pretty unique case, so we're gonna do it after type associated functions
+      if (NativeFunctions::Exists(name->name)) {
+        callable = NativeFunctions::GetCallable(name->name);
+        goto call;
+      }
       
-        if (auto nc = std::dynamic_pointer_cast<Callable_T>(callable)) {
-          return nc->Call(args);
-        } else if (auto c = std::dynamic_pointer_cast<Callable_T>(callable)) {
-          return c->Call(args);
-        } else {
-          throw std::runtime_error("invalid method call: " + name->name);
+      // Try call member methods on objects. This is the slowest call, so we do it last.
+      {
+        auto obj = std::dynamic_pointer_cast<Object_T>(lvalue);
+        if (obj && obj->scope && obj->scope->Contains(name->name)) {
+          callable = std::dynamic_pointer_cast<Callable_T>(obj->scope->Get(name->name));
+          // call the function from the object's scope.
+          return EvaluateWithinObject(obj->scope, lvalue, [callable, call]() -> Value {
+            return callable->Call(call->args);
+          });
         }
-      } else throw std::runtime_error("invalid method call: " + name->name);
+      }
+      
+      call:
+      if (!callable) { 
+        throw std::runtime_error("invalid method call: " + name->name);
+      }
+      
+      auto args = call->GetArgsValueList(call->args);
+      // insert self as arg 0.
+      args.insert(args.begin(), lvalue);
+      return callable->Call(args);
     }
   }
   return nullptr;
@@ -628,7 +637,11 @@ Value EvaluateWithinObject(Scope &scope, Value object, std::function<Value()> la
 
 Value DotExpr::Evaluate() {
   auto lvalue = left->Evaluate();
-  
+    
+  // Todo: remove this. It's slow and unneccesary now that we have types with members.
+  // in general, a lot of our interpretation can be optimized to take a minimal path to 
+  // execution, now that the lang is more expressive. Before, a lot of behavior was 
+  // undetermined until interpret time.
   
   // Try to call an ext method, or member method.
   auto ext_method_result = TryCallMethods(right, lvalue);
@@ -1096,7 +1109,11 @@ void Using::Load() {
   // we do this even when we ignore the object becasue it registers the native
   // callables.
   auto object = ScritModDefAsObject(module);
-
+  
+  for (const auto &[name, t]: *module->types) {
+    TypeSystem::Current().RegisterType(t);
+  }
+  
   if (!isWildcard && symbols.empty()) {
     ASTNode::context.Insert(moduleName, object, Mutability::Const);
   } else {

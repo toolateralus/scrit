@@ -510,7 +510,7 @@ ExpressionPtr Parser::ParseAnonFunc() {
   auto params = ParseParameters();
   Type returnType = nullptr;
   if (Peek().type == TType::LCurly) {
-    returnType = TypeSystem::Current().Undefined();
+    returnType = TypeSystem::Current().Undefined;
   } else {
     Expect(TType::Arrow);
     returnType = ParseType();
@@ -637,25 +637,25 @@ ExpressionPtr Parser::ParseOperand() {
   }
   case TType::String:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Current().Get("string"), String_T::New(std::move(token.value)));
+    return make_unique<Operand>(info, TypeSystem::Current().String, String_T::New(std::move(token.value)));
   case TType::True:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Current().Get("bool"), Value_T::True);
+    return make_unique<Operand>(info, TypeSystem::Current().Bool, Value_T::True);
   case TType::False:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Current().Get("bool"), Value_T::False);
+    return make_unique<Operand>(info, TypeSystem::Current().Bool, Value_T::False);
   case TType::Undefined:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Current().Get("undefined"), Value_T::UNDEFINED);
+    return make_unique<Operand>(info, TypeSystem::Current().Undefined, Value_T::UNDEFINED);
   case TType::Null:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Current().Get("null"), Value_T::VNULL);
+    return make_unique<Operand>(info, TypeSystem::Current().Null, Value_T::VNULL);
   case TType::Float:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Current().Get("float"), Float_T::New(stof(token.value)));
+    return make_unique<Operand>(info, TypeSystem::Current().Float, Float_T::New(stof(token.value)));
   case TType::Int:
     Eat();
-    return make_unique<Operand>(info, TypeSystem::Current().Get("int"),Int_T::New(stoi(token.value)));
+    return make_unique<Operand>(info, TypeSystem::Current().Int,Int_T::New(stoi(token.value)));
   case TType::Identifier:
     Eat();
     return make_unique<Identifier>(info, token.value);

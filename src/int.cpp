@@ -3,7 +3,7 @@
 #include "context.hpp"
 #include "type.hpp"
 
-Int_T::Int_T(int value) : Value_T(TypeSystem::Current().Get("int")) { this->value = value; }
+Int_T::Int_T(int value) : Value_T(TypeSystem::Current().Int) { this->value = value; }
 
 Value Int_T::Clone() { return Ctx::CreateInt(value); }
 

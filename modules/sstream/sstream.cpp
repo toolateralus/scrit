@@ -1,5 +1,4 @@
 #include <memory>
-#include <scrit/ast.hpp>
 #include <scrit/native.hpp>
 #include <scrit/scritmod.hpp>
 #include <scrit/value.hpp>
@@ -13,7 +12,7 @@
 
 struct StringStream : Value_T {
   std::stringstream stream = std::stringstream("");
-  StringStream() : Value_T(TypeSystem::Current().Get("object")) {}
+  StringStream() : Value_T(TypeSystem::Current().Get("array")) {}
   string ToString() const override {
     return stream.str();
   }

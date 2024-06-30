@@ -1,3 +1,4 @@
+#pragma once
 #include <memory>
 #include <sstream>
 #include <string>
@@ -134,28 +135,23 @@ struct AnyType : Type_T {
 };
 
 struct TypeSystem {
-  std::unordered_map<string, Type> types = {
-      {"null", std::make_shared<NullType>()},
-      {"undefined", std::make_shared<UndefinedType>()},
-      {"int", std::make_shared<IntType>()},
-      {"float", std::make_shared<FloatType>()},
-      {"bool", std::make_shared<BoolType>()},
-      {"native_callable", std::make_shared<CallableType>(make_shared<AnyType>(), std::vector<Type>({}))},
-      {"array", make_shared<ArrayType>()},
-      {"string", std::make_shared<StringType>()},
-      {"object", std::make_shared<ObjectType>()},
-      {"any", Any}
-  };
   
-  const Type Any = make_shared<AnyType>();
+  std::unordered_map<string, Type> types;
+  
+  Type Null;
+  Type Undefined;
+  Type Int;
+  Type Float;
+  Type Bool;
+  Type NativeCallable;
+  Type String;
+  Type Any;
   
   auto Get(const string &name) -> Type { return types[name]; }
   
   auto GetOrCreateTemplate(const string &name, const Type &base,
                            const vector<Type> &types) -> Type;
                            
-  auto Undefined() -> Type { return Get("undefined"); }
-  
   auto GetDefault(const Type &type) -> Value;
   
   auto FromPrimitive(const PrimitiveType &value) -> Type;
@@ -165,18 +161,43 @@ struct TypeSystem {
   auto FromCallable(const Type returnType, const vector<Type> paramTypes)
       -> Type;
 
-  auto RegisterType(const Type &type);
+  auto RegisterType(const Type &type) -> void;
+
+  auto DumpInfo() -> void;
 
   static TypeSystem &Current() {
     static TypeSystem instance;
     return instance;
   }
 private:
+  auto Initialize() -> void {
+    Null = std::make_shared<NullType>();
+    Undefined = std::make_shared<UndefinedType>();
+    Int = std::make_shared<IntType>();
+    Float = std::make_shared<FloatType>();
+    Bool = std::make_shared<BoolType>();
+    NativeCallable = std::make_shared<CallableType>(make_shared<AnyType>(), std::vector<Type>({}));
+    String = std::make_shared<StringType>();
+    Any = make_shared<AnyType>();
+    types = {
+      {"null", Null},
+      {"undefined", Undefined},
+      {"int", Int},
+      {"float", Float},
+      {"bool", Bool},
+      {"native_callable", NativeCallable},
+      {"string", String},
+      {"object", make_shared<ObjectType>()},
+      {"any", Any}
+    };
+  }
   TypeSystem(const TypeSystem&) = delete;
   TypeSystem(TypeSystem&&) = delete;
   TypeSystem& operator=(const TypeSystem&) = delete;
   TypeSystem& operator=(TypeSystem&&) = delete;
   ~TypeSystem() { types.clear(); }
-  TypeSystem() {}
+  TypeSystem() {
+    Initialize();
+  }
 };
 } // namespace Values

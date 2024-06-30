@@ -1,4 +1,6 @@
 #pragma once
+
+#include "type.hpp"
 #include "ast.hpp"
 #include <memory>
 #include <unordered_map>
@@ -27,9 +29,14 @@ enum struct Mutability;
 extern "C" struct ScritModDef {
   std::string *description;
   Context *context;
+  
   std::unordered_map<std::string, NativeFunctionPtr> *functions;
+  std::unordered_map<std::string, Type> *types;
+  
   void AddFunction(const std::string &name, const NativeFunctionPtr func);
   void AddVariable(const std::string &name, Value value, const Mutability &mut);
+  void AddType(const std::string &name, const Type type);
+  
   ~ScritModDef();
 };
 
