@@ -6,7 +6,8 @@
       "type": "shell",
       "command": "make",
       "args": [
-        "debug"
+        "debug",
+        "-j24"
       ],
       "group": {
         "kind": "build",
@@ -18,7 +19,8 @@
       "type": "shell",
       "command": "make",
       "args": [
-        "release"
+        "release",
+        "-j24"
       ],
       "group": {
         "kind": "build",
@@ -29,7 +31,8 @@
       "type": "shell",
       "command": "make",
       "args": [
-        "test-build"
+        "test-build",
+        "-j24"
       ],
       "group": {
         "kind": "build",
