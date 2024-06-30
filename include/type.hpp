@@ -33,6 +33,7 @@ struct Type_T {
   virtual auto Set(const string &name, Value value) -> void;
   
   bool operator==(const Type_T &other) const { return name == other.name; }
+  
   static bool Equals(const Type_T *t0, const Type_T *t1) {
     if (t0 == nullptr || t1 == nullptr) {
       return false;

@@ -32,7 +32,7 @@ struct ScritModHandle {
 
   ScritModHandle(const ScritModHandle &copy) noexcept = delete;
   ScritModHandle(ScritModHandle &&move) noexcept;
-
+  
   ScritModHandle &operator=(const ScritModHandle &) noexcept = delete;
   ScritModHandle &operator=(ScritModHandle &&other) noexcept;
   ~ScritModHandle() noexcept;
