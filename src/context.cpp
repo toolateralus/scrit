@@ -121,7 +121,10 @@ auto Scope_T::Set(const string &name, Value value, const Mutability &mutability)
     variables[Key(name, mutability)] = value;
   } else {
     if (it->first.mutability == Mutability::Mut || it->first.forward_declared) {
-      variables[it->first] = value;
+      auto new_key = Key(it->first);
+      new_key.forward_declared = false;
+      variables.erase(it->first);
+      variables[new_key] = value;
     } else {
       throw std::runtime_error("Cannot set a const value.. identifier: " + name);
     }

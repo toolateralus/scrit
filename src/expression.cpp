@@ -178,7 +178,7 @@ ExpressionPtr Parser::ParsePostfix() {
       expr = std::make_unique<DotExpr>(info, right->type, std::move(expr), std::move(right));
     }
   }
-
+  
   return expr;
 }
 ExpressionPtr Parser::ParseOperand() {
@@ -365,6 +365,10 @@ ExpressionPtr Parser::ParseLambda() {
       if (auto ret = dynamic_cast<Return *>(statement.get())) {
         t = ret->value->type;
       }
+    }
+    
+    if (!t) {
+      throw std::runtime_error("Lambda propertys must return a value.");
     }
     
     return make_unique<Lambda>(info, t, std::move(block));

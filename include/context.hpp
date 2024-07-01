@@ -42,7 +42,7 @@ struct ScritModHandle {
 struct Scope_T {
   
   struct Key {
-    const bool forward_declared;
+    bool forward_declared;
     const std::string value;
     const Mutability mutability;
     

@@ -235,7 +235,11 @@ Delete::~Delete() {}
 Property::Property(SourceInfo &info, const string &name, ExpressionPtr &&lambda,
                    const Mutability &mut)
     : Statement(info), name(std::move(name)), lambda(std::move(lambda)),
-      mutability(mut) {}
+      mutability(mut) {
+        ExpressionPtr v = make_unique<Literal>(info, TypeSystem::Current().Undefined, Ctx::Undefined());
+        auto dud = make_shared<Lambda_T>(std::move(v));
+        context.scopes.back()->ForwardDeclare(name, dud, mut);
+      }
 
 // TODO: fix this.
 Identifier::Identifier(SourceInfo &info, const string &name)
@@ -1153,6 +1157,9 @@ ExecutionResult Declaration::Execute() {
   }
   auto value = this->expr->Evaluate();
   
+  // TODO: remove this. This basically implies theres some guarantee of inaccuracy in the typing of 
+  // the expression node vs the returned value, which should be sought out to completely eliminated.
+  // This just incurs a somewhat cheap but unneccesary cost of double checking each type.
   if (!Type_T::Equals(value->type.get(), this->type.get())) {
     if (value->type && this->type)
       throw std::runtime_error(
