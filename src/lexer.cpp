@@ -162,6 +162,10 @@ Token Lexer::LexString() {
         stream << '\"';
         pos++;
         break;
+      case 'e':
+        stream << "\e";
+        pos++;
+        break;
       case 'n':
         stream << '\n';
         pos++;

@@ -5,13 +5,17 @@ let d = undefined
 let e = null
 let f = (0,)
 let g = (0,0)
-let h = func() {}
-let i = func() -> int {} // prints invalid signature.
+let h = func(j:int) {}
+let i = func() -> int {
+  let inner = 0
+}
+
+
 let j => { return 0 } // fails to get type info
 let k => 1
 let l = {}
 let m = []
-let n = { something : int = 0 }
+let n = { something : object = this }
 let o = [0, 1, 2]
 
 println(a)
@@ -28,5 +32,25 @@ println(k)
 println(l)
 println(m)
 println(n)
-println(o)
 println(n.something)
+println(o)
+
+println("\nbegin types\e[33m\n")
+
+println(a.type())
+println(b.type())
+println(c.type())
+println(d.type())
+println(e.type())
+println(f.type())
+println(g.type())
+println(h.type())
+println(i.type())
+println(j.type())
+println(k.type())
+println(l.type())
+println(m.type())
+println(n.type())
+println(n.something.type())
+println(o.type())
+println("\n\e[0mend types\n")
