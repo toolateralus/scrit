@@ -1,7 +1,7 @@
 #include "ast.hpp"
-#include "lexer.hpp"
 #include "context.hpp"
 #include "debug.hpp"
+#include "lexer.hpp"
 #include "native.hpp"
 #include "parser.hpp"
 #include "value.hpp"
@@ -9,9 +9,9 @@
 #include <iostream>
 #include <memory>
 #include <ranges>
-#include <type.hpp>
 #include <stdexcept>
 #include <string>
+#include <type.hpp>
 
 auto programSourceInfo = SourceInfo{0, 0, ""};
 
@@ -21,9 +21,12 @@ auto programSourceInfo = SourceInfo{0, 0, ""};
 std::vector<string> Using::activeModules = {};
 
 Context ASTNode::context = {};
-ExecutionResult ExecutionResult::None = ExecutionResult(ControlChange::None, Value_T::UNDEFINED);
-ExecutionResult ExecutionResult::Break = ExecutionResult(ControlChange::Break, Value_T::UNDEFINED);
-ExecutionResult ExecutionResult::Continue = ExecutionResult(ControlChange::Continue, Value_T::UNDEFINED);
+ExecutionResult ExecutionResult::None =
+    ExecutionResult(ControlChange::None, Value_T::UNDEFINED);
+ExecutionResult ExecutionResult::Break =
+    ExecutionResult(ControlChange::Break, Value_T::UNDEFINED);
+ExecutionResult ExecutionResult::Continue =
+    ExecutionResult(ControlChange::Continue, Value_T::UNDEFINED);
 
 string CC_ToString(ControlChange controlChange) {
   switch (controlChange) {
@@ -54,7 +57,7 @@ If::If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block)
   this->condition = std::move(condition);
   this->block = std::move(block);
 }
-Arguments::Arguments(SourceInfo &info,  vector<ExpressionPtr> &&args)
+Arguments::Arguments(SourceInfo &info, vector<ExpressionPtr> &&args)
     : Expression(info, TypeSystem::Current().Undefined) {
   this->values = std::move(args);
 }
@@ -62,9 +65,10 @@ Parameters::Parameters(SourceInfo &info, std::vector<Param> &&params)
     : Statement(info) {
   this->values = std::move(params);
 }
-Identifier::Identifier(SourceInfo &info, const Type &type, const string &name) : Expression(info, type), name(name) {}
-Operand::Operand(SourceInfo &info, const Type &type, ExpressionPtr &&expr) : Expression(info, type), expression(std::move(expr)) {
-}
+Identifier::Identifier(SourceInfo &info, const Type &type, const string &name)
+    : Expression(info, type), name(name) {}
+Operand::Operand(SourceInfo &info, const Type &type, ExpressionPtr &&expr)
+    : Expression(info, type), expression(std::move(expr)) {}
 Program::Program(vector<StatementPtr> &&statements)
     : Executable(programSourceInfo) {
   this->statements = std::move(statements);
@@ -76,25 +80,27 @@ Block::Block(SourceInfo &info, vector<StatementPtr> &&statements)
     : Statement(info) {
   this->statements = std::move(statements);
 }
-ObjectInitializer::ObjectInitializer(SourceInfo &info, const Type &type, BlockPtr &&block)
+ObjectInitializer::ObjectInitializer(SourceInfo &info, const Type &type,
+                                     BlockPtr &&block)
     : Expression(info, type) {
   this->block = std::move(block);
 }
 Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
     : Expression(info, operand->type), Statement(info) {
-      
+
   auto value = operand->Evaluate();
-  
+
   if (!value) {
-    throw std::runtime_error("couldnt find function... call at\n" + operand->srcInfo.ToString());
+    throw std::runtime_error("couldnt find function... call at\n" +
+                             operand->srcInfo.ToString());
   }
-  
+
   auto target = std::dynamic_pointer_cast<CallableType>(value->type);
- 
+
   if (target && target->returnType) {
     this->type = target->returnType;
-  } 
-  
+  }
+
   this->operand = std::move(operand);
   this->args = std::move(args);
 }
@@ -109,10 +115,11 @@ For::For(SourceInfo &info, StatementPtr &&decl, ExpressionPtr &&condition,
 }
 Assignment::Assignment(SourceInfo &info, const Type &type, IdentifierPtr &&iden,
                        ExpressionPtr &&expr)
-    : Statement(info) , iden(std::move(iden)), expr(std::move(expr)), type(type) {
-}
+    : Statement(info), iden(std::move(iden)), expr(std::move(expr)),
+      type(type) {}
 
-DotExpr::DotExpr(SourceInfo &info, const Type &type, ExpressionPtr &&left, ExpressionPtr &&right)
+DotExpr::DotExpr(SourceInfo &info, const Type &type, ExpressionPtr &&left,
+                 ExpressionPtr &&right)
     : Expression(info, type) {
   this->left = std::move(left);
   this->right = std::move(right);
@@ -140,7 +147,8 @@ SubscriptAssignStmnt::SubscriptAssignStmnt(SourceInfo &info,
   this->subscript = std::move(subscript);
   this->value = std::move(value);
 }
-UnaryExpr::UnaryExpr(SourceInfo &info, const Type &type, ExpressionPtr &&left, TType op)
+UnaryExpr::UnaryExpr(SourceInfo &info, const Type &type, ExpressionPtr &&left,
+                     TType op)
     : Expression(info, type) {
   this->operand = std::move(left);
   this->op = op;
@@ -201,14 +209,13 @@ ElsePtr Else::NoIf(SourceInfo &info, BlockPtr &&block) {
 }
 
 Using::Using(SourceInfo &info, const string &name, const bool isWildcard)
-    : Statement(info), symbols({}), moduleName(name), isWildcard(isWildcard){
+    : Statement(info), symbols({}), moduleName(name), isWildcard(isWildcard) {
   Load();
-  
 };
 
 Using::Using(SourceInfo &info, const string &name, vector<string> &symbols)
-    : Statement(info), symbols(symbols), moduleName(name), isWildcard(false){
-  Load();      
+    : Statement(info), symbols(symbols), moduleName(name), isWildcard(false) {
+  Load();
 };
 
 UnaryStatement::UnaryStatement(SourceInfo &info, ExpressionPtr &&expr)
@@ -217,30 +224,31 @@ UnaryStatement::UnaryStatement(SourceInfo &info, ExpressionPtr &&expr)
 CompoundAssignment::CompoundAssignment(SourceInfo &info,
                                        ExpressionPtr &&cmpAssignExpr)
     : Statement(info), expr(std::move(cmpAssignExpr)) {}
-    
+
 RangeBasedFor::RangeBasedFor(SourceInfo &info, ExpressionPtr &&lhs,
                              ExpressionPtr &&rhs, BlockPtr &&block)
     : Statement(info), lhs(std::move(lhs)), rhs(std::move(rhs)),
       block(std::move(block)) {}
-      
+
 CompAssignExpr::CompAssignExpr(SourceInfo &info, ExpressionPtr &&left,
                                ExpressionPtr &&right, TType op)
-    : Expression(info, nullptr), left(std::move(left)), right(std::move(right)), op(op) {
-      this->type = left->type;
+    : Expression(info, nullptr), left(std::move(left)), right(std::move(right)),
+      op(op) {
+  this->type = left->type;
 }
 
 ExecutionResult Program::Execute() {
-  
+
   // create an object called global, so we can bypass any shadowed variables.
   auto global = Object_T::New(ASTNode::context.scopes.front());
-  
+
   // include all of the native functions in this global object.
-  for(const auto &[name, _] : FunctionRegistry::GetRegistry()) {
+  for (const auto &[name, _] : FunctionRegistry::GetRegistry()) {
     global->SetMember(name, FunctionRegistry::GetCallable(name));
   }
-  
+
   ASTNode::context.Insert("global", global, Mutability::Mut);
-  
+
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
@@ -259,7 +267,7 @@ ExecutionResult Program::Execute() {
   return ExecutionResult::None;
 }
 Value Operand::Evaluate() { return expression->Evaluate(); }
-Value Identifier::Evaluate() {  
+Value Identifier::Evaluate() {
   auto value = ASTNode::context.Find(name);
   if (value != nullptr) {
     if (auto lambda = std::dynamic_pointer_cast<Lambda_T>(value)) {
@@ -273,7 +281,7 @@ Value Identifier::Evaluate() {
 }
 Value Arguments::Evaluate() {
   vector<Value> values;
-  for (const auto &v: this->values) {
+  for (const auto &v : this->values) {
     values.push_back(v->Evaluate());
   }
   return make_shared<Tuple_T>(values);
@@ -286,59 +294,60 @@ ExecutionResult Return::Execute() {
   if (value)
     return ExecutionResult(ControlChange::Return, value->Evaluate());
   // return undefined implicitly.
-  else return ExecutionResult(ControlChange::Return, Value_T::UNDEFINED);
+  else
+    return ExecutionResult(ControlChange::Return, Value_T::UNDEFINED);
 }
 void ApplyCopySemantics(Value &result) {
-   switch (result->GetPrimitiveType()) {
-      case Values::PrimitiveType::Invalid:
-      case Values::PrimitiveType::Null:
-      case Values::PrimitiveType::Undefined:
-      case Values::PrimitiveType::Object:
-      case Values::PrimitiveType::Array:
-      case Values::PrimitiveType::Callable:
-        break;
-      case Values::PrimitiveType::Tuple:
-      case Values::PrimitiveType::Float:
-      case Values::PrimitiveType::Int:
-      case Values::PrimitiveType::Bool:
-      case Values::PrimitiveType::String:
-        result = result->Clone();
-        break;
-      case Values::PrimitiveType::Lambda: {
-        auto lambda = static_cast<Lambda_T *>(result.get());
-        result = lambda->Evaluate();
-        break;
-      }
-    }
+  switch (result->GetPrimitiveType()) {
+  case Values::PrimitiveType::Invalid:
+  case Values::PrimitiveType::Null:
+  case Values::PrimitiveType::Undefined:
+  case Values::PrimitiveType::Object:
+  case Values::PrimitiveType::Array:
+  case Values::PrimitiveType::Callable:
+    break;
+  case Values::PrimitiveType::Tuple:
+  case Values::PrimitiveType::Float:
+  case Values::PrimitiveType::Int:
+  case Values::PrimitiveType::Bool:
+  case Values::PrimitiveType::String:
+    result = result->Clone();
+    break;
+  case Values::PrimitiveType::Lambda: {
+    auto lambda = static_cast<Lambda_T *>(result.get());
+    result = lambda->Evaluate();
+    break;
+  }
+  }
 }
 
 void ApplyCopySemantics(ExecutionResult &result) {
-   switch (result.value->GetPrimitiveType()) {
-      case Values::PrimitiveType::Invalid:
-      case Values::PrimitiveType::Null:
-      case Values::PrimitiveType::Undefined:
-      case Values::PrimitiveType::Object:
-      case Values::PrimitiveType::Array:
-      case Values::PrimitiveType::Callable:
-        break;
-      case Values::PrimitiveType::Tuple:
-      case Values::PrimitiveType::Float:
-      case Values::PrimitiveType::Int:
-      case Values::PrimitiveType::Bool:
-      case Values::PrimitiveType::String:
-        result.value = result.value->Clone();
-        break;
-      case Values::PrimitiveType::Lambda: {
-        auto lambda = static_cast<Lambda_T *>(result.value.get());
-        result.value = lambda->Evaluate();
-        break;
-      }
-    }
+  switch (result.value->GetPrimitiveType()) {
+  case Values::PrimitiveType::Invalid:
+  case Values::PrimitiveType::Null:
+  case Values::PrimitiveType::Undefined:
+  case Values::PrimitiveType::Object:
+  case Values::PrimitiveType::Array:
+  case Values::PrimitiveType::Callable:
+    break;
+  case Values::PrimitiveType::Tuple:
+  case Values::PrimitiveType::Float:
+  case Values::PrimitiveType::Int:
+  case Values::PrimitiveType::Bool:
+  case Values::PrimitiveType::String:
+    result.value = result.value->Clone();
+    break;
+  case Values::PrimitiveType::Lambda: {
+    auto lambda = static_cast<Lambda_T *>(result.value.get());
+    result.value = lambda->Evaluate();
+    break;
+  }
+  }
 }
 
 ExecutionResult Block::Execute(Scope scope) {
   ASTNode::context.PushScope(scope);
-  
+
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
@@ -348,12 +357,12 @@ ExecutionResult Block::Execute(Scope scope) {
       case ControlChange::Break:
       case ControlChange::Return:
         ASTNode::context.PopScope();
-        
+
         if (result.value != nullptr) {
           ApplyCopySemantics(result);
           return result;
         }
-        
+
         return result;
       case ControlChange::None:
         continue;
@@ -373,19 +382,19 @@ ExecutionResult Block::Execute() {
     try {
       auto result = statement->Execute();
       switch (result.controlChange) {
-        case ControlChange::Continue:
-        case ControlChange::Break:
-        case ControlChange::Return:
-          ASTNode::context.PopScope();
-          
-          if (result.value != nullptr) {
-            ApplyCopySemantics(result);
-            return result;
-          }
-          
+      case ControlChange::Continue:
+      case ControlChange::Break:
+      case ControlChange::Return:
+        ASTNode::context.PopScope();
+
+        if (result.value != nullptr) {
+          ApplyCopySemantics(result);
           return result;
-        case ControlChange::None:
-          continue;
+        }
+
+        return result;
+      case ControlChange::None:
+        continue;
       }
     } catch (std::runtime_error err) {
       std::cout << statement->srcInfo.ToString() << err.what() << std::endl;
@@ -396,16 +405,18 @@ ExecutionResult Block::Execute() {
 }
 Value ObjectInitializer::Evaluate() {
   static auto _this = Object_T::New();
-  
+
   _this->scope->Clear();
   _this->scope->Set("this", _this, Mutability::Mut);
-  
+
   const auto exec_result = block->Execute(_this->scope);
   const auto controlChange = exec_result.controlChange;
-  
+
   if (controlChange != ControlChange::None) {
-    throw std::runtime_error(CC_ToString(controlChange) +
-                             " not allowed in object initialization. did you mean to use a lambda? .. => { some body of code returning a value ..}");
+    throw std::runtime_error(
+        CC_ToString(controlChange) +
+        " not allowed in object initialization. did you mean to use a lambda? "
+        ".. => { some body of code returning a value ..}");
   }
   _this->scope->Erase("this");
   return Object_T::New(_this->scope);
@@ -419,7 +430,8 @@ vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
 }
 
 Value ArrayInitializer::Evaluate() {
-  auto array = Array_T::New(init);;
+  auto array = Array_T::New(init);
+  ;
   array->type = type;
   return array;
 }
@@ -431,14 +443,15 @@ Value Call::Evaluate() {
     auto result = callable->Call(args);
     return result;
   } else {
-    // Here we overload the () operator. this is done in a special case because we don't treat invocation of callables
-    // like a binary expression, it's its own binary expr node.
+    // Here we overload the () operator. this is done in a special case because
+    // we don't treat invocation of callables like a binary expression, it's its
+    // own binary expr node.
     auto obj = std::dynamic_pointer_cast<Object_T>(lvalue);
     if (obj && obj->HasMember("call")) {
       auto fn = obj->GetMember("call");
       auto callable = std::dynamic_pointer_cast<Callable_T>(fn);
       if (callable) {
-        auto args_values = GetArgsValueList(args);      
+        auto args_values = GetArgsValueList(args);
         args_values.insert(args_values.begin(), obj);
         return callable->Call(args_values);
       }
@@ -497,7 +510,7 @@ ExecutionResult For::Execute() {
         context.PopScope();
         return ExecutionResult::None;
       }
-      
+
       if (increment) {
         result = increment->Execute();
         switch (result.controlChange) {
@@ -507,7 +520,7 @@ ExecutionResult For::Execute() {
         case ControlChange::Return:
         case ControlChange::Break:
           throw std::runtime_error(CC_ToString(result.controlChange) +
-                                  " not allowed in for initialization.");
+                                   " not allowed in for initialization.");
         }
       }
     }
@@ -542,80 +555,90 @@ ExecutionResult For::Execute() {
 }
 ExecutionResult Assignment::Execute() {
   auto var = ASTNode::context.Find(iden->name);
-  if (!var)  {
-    throw std::runtime_error("cannot assign a non-existant identifier. use 'let ___ = ...' or let ___ : type = ...' syntax. \n offending variable: " + iden->name);
+  if (!var) {
+    throw std::runtime_error(
+        "cannot assign a non-existant identifier. use 'let ___ = ...' or let "
+        "___ : type = ...' syntax. \n offending variable: " +
+        iden->name);
   }
-  
+
   auto result = expr->Evaluate();
   result->type = type;
   ApplyCopySemantics(result);
-  
+
   // TODO: find a better way to query mutability of a variable.
   auto iter = ASTNode::context.FindIter(iden->name);
   context.Insert(iden->name, result, iter->first.mutability);
   return ExecutionResult::None;
 }
 Value TryCallMethods(unique_ptr<Expression> &right, Value &lvalue) {
-  
-  // recurse for bin expr.  
-  if (auto binExpr = dynamic_cast<BinExpr*>(right.get())) {
+
+  // recurse for bin expr.
+  if (auto binExpr = dynamic_cast<BinExpr *>(right.get())) {
     auto result = TryCallMethods(binExpr->left, lvalue);
-    
+
     if (!result) {
       return binExpr->Evaluate();
     }
-    
+
     // fold this expression and re-evaluate.
     auto expr = make_unique<Literal>(binExpr->srcInfo, binExpr->type, result);
     binExpr->left = std::move(expr);
     return binExpr->Evaluate();
   }
-  
-  if (auto call = dynamic_cast<Call*>(right.get())) {
-    
-    if (auto name = dynamic_cast<Identifier*>(call->operand.get())) {
+
+  if (auto call = dynamic_cast<Call *>(right.get())) {
+
+    if (auto name = dynamic_cast<Identifier *>(call->operand.get())) {
       shared_ptr<Callable_T> callable = nullptr;
-      
-      callable = std::dynamic_pointer_cast<Callable_T>(ASTNode::context.Find(name->name));
-      
+
+      callable = std::dynamic_pointer_cast<Callable_T>(
+          ASTNode::context.Find(name->name));
+
       if (callable)
         goto call;
-      
-      if (auto member = lvalue->type->Get(name->name); !member->Equals(Ctx::Undefined())) {
-        //std::cout << "type " << lvalue->type->name << " contains " << lvalue->type->Scope().Members().size() << " members." << std::endl;
-        
+
+      if (auto member = lvalue->type->Get(name->name);
+          !member->Equals(Ctx::Undefined())) {
+        // std::cout << "type " << lvalue->type->name << " contains " <<
+        // lvalue->type->Scope().Members().size() << " members." << std::endl;
+
         auto member_callable = std::dynamic_pointer_cast<Callable_T>(member);
-        
+
         if (member_callable) {
           callable = member_callable;
           goto call;
         }
       }
-      
+
       // call native free functions.
-      // This is a pretty unique case, so we're gonna do it after type associated functions
+      // This is a pretty unique case, so we're gonna do it after type
+      // associated functions
       if (FunctionRegistry::Exists(name->name)) {
         callable = FunctionRegistry::GetCallable(name->name);
         goto call;
       }
-      
-      // Try call member methods on objects. This is the slowest call, so we do it last.
+
+      // Try call member methods on objects. This is the slowest call, so we do
+      // it last.
       {
         auto obj = std::dynamic_pointer_cast<Object_T>(lvalue);
         if (obj && obj->scope && obj->scope->Contains(name->name)) {
-          callable = std::dynamic_pointer_cast<Callable_T>(obj->scope->Get(name->name));
+          callable = std::dynamic_pointer_cast<Callable_T>(
+              obj->scope->Get(name->name));
           // call the function from the object's scope.
-          return EvaluateWithinObject(obj->scope, lvalue, [callable, call]() -> Value {
-            return callable->Call(call->args);
-          });
+          return EvaluateWithinObject(obj->scope, lvalue,
+                                      [callable, call]() -> Value {
+                                        return callable->Call(call->args);
+                                      });
         }
       }
-      
-      call:
-      if (!callable) { 
+
+    call:
+      if (!callable) {
         throw std::runtime_error("invalid method call: " + name->name);
       }
-      
+
       auto args = call->GetArgsValueList(call->args);
       // insert self as arg 0.
       args.insert(args.begin(), lvalue);
@@ -633,7 +656,8 @@ Value EvaluateWithinObject(Scope &scope, Value object, ExpressionPtr &expr) {
   scope->Erase("this");
   return result;
 }
-Value EvaluateWithinObject(Scope &scope, Value object, std::function<Value()> lambda) {
+Value EvaluateWithinObject(Scope &scope, Value object,
+                           std::function<Value()> lambda) {
   scope->Set("this", object, Mutability::Mut);
   ASTNode::context.PushScope(scope);
   auto result = lambda();
@@ -644,31 +668,30 @@ Value EvaluateWithinObject(Scope &scope, Value object, std::function<Value()> la
 
 Value DotExpr::Evaluate() {
   auto lvalue = left->Evaluate();
-    
-  // Todo: remove this. It's slow and unneccesary now that we have types with members.
-  // in general, a lot of our interpretation can be optimized to take a minimal path to 
-  // execution, now that the lang is more expressive. Before, a lot of behavior was 
-  // undetermined until interpret time.
-  
+
+  // Todo: remove this. It's slow and unneccesary now that we have types with
+  // members. in general, a lot of our interpretation can be optimized to take a
+  // minimal path to execution, now that the lang is more expressive. Before, a
+  // lot of behavior was undetermined until interpret time.
+
   // Try to call an ext method, or member method.
   auto ext_method_result = TryCallMethods(right, lvalue);
   if (ext_method_result != nullptr) {
     return ext_method_result;
   }
-  
+
   // Below is field accessors.
   if (lvalue->GetPrimitiveType() != PrimitiveType::Object) {
     throw std::runtime_error("invalid lhs on dot operation : " +
                              TypeToString(lvalue->GetPrimitiveType()));
   }
-  
+
   auto object = static_cast<Object_T *>(lvalue.get());
-  
+
   auto scope = object->scope;
-  
+
   auto result = EvaluateWithinObject(scope, lvalue, right);
-  
-  
+
   return result;
 }
 void DotExpr::Assign(Value value) {
@@ -715,7 +738,7 @@ ExecutionResult SubscriptAssignStmnt::Execute() {
 }
 Value UnaryExpr::Evaluate() {
   auto v_operand = operand->Evaluate();
-  
+
   switch (op) {
   case TType::Sub:
     return v_operand->Negate();
@@ -736,11 +759,13 @@ Value UnaryExpr::Evaluate() {
 Value BinExpr::Evaluate() {
   auto left = this->left->Evaluate();
   auto right = this->right->Evaluate();
-  
+
   if (!Type_T::Equals(left->type.get(), right->type.get())) {
-    throw std::runtime_error("invalid types in binary expression\nleft: " + left->type->name + "\nright: " + right->type->name);
+    throw std::runtime_error(
+        "invalid types in binary expression\nleft: " + left->type->name +
+        "\nright: " + right->type->name);
   }
-  
+
   switch (op) {
   case TType::NullCoalescing: {
     if (left->GetPrimitiveType() == PrimitiveType::Null ||
@@ -766,9 +791,11 @@ Value BinExpr::Evaluate() {
   case TType::Less:
     return left->Less(right);
   case TType::GreaterEq:
-    return Ctx::CreateBool(left->Greater(right)->Equals(Value_T::True) || left->Equals(right));
+    return Ctx::CreateBool(left->Greater(right)->Equals(Value_T::True) ||
+                           left->Equals(right));
   case TType::LessEq:
-    return Ctx::CreateBool(left->Less(right)->Equals(Value_T::True) || left->Equals(right));
+    return Ctx::CreateBool(left->Less(right)->Equals(Value_T::True) ||
+                           left->Equals(right));
   case TType::Equals:
     return Bool_T::New(left->Equals(right));
   case TType::NotEquals: {
@@ -782,38 +809,38 @@ Value BinExpr::Evaluate() {
                              TTypeToString(op));
   }
 };
-ExecutionResult Using::Execute() {
-  return ExecutionResult::None;
-}
+ExecutionResult Using::Execute() { return ExecutionResult::None; }
 ExecutionResult RangeBasedFor::Execute() {
   auto lvalue = this->rhs->Evaluate();
-  
+
   auto lhs = dynamic_cast<Identifier *>(this->lhs.get());
-  
+
   if (!lhs) {
-    throw std::runtime_error("the left hand side of a range based for loop must be an identifier. example: for i : array/object/string {..}");
+    throw std::runtime_error(
+        "the left hand side of a range based for loop must be an identifier. "
+        "example: for i : array/object/string {..}");
   }
-  
+
   auto name = lhs->name;
   Array array = nullptr;
   Object obj = nullptr;
   string string;
   bool isString = Ctx::TryGetString(lvalue, string);
   bool isObject = Ctx::TryGetObject(lvalue, obj);
-  
+
   if (!isObject && !isString && !Ctx::TryGetArray(lvalue, array) &&
       !Ctx::TryGetObject(lvalue, obj)) {
     throw std::runtime_error("invalid range-based for loop: the target "
                              "container must be an array, object or string.");
   }
-  
+
   if (array) {
     for (auto &v : array->values) {
       auto scope = ASTNode::context.PushScope();
       scope->Set(name, v, Mutability::Const);
       auto result = block->Execute();
       ASTNode::context.PopScope();
-      
+
       switch (result.controlChange) {
       case ControlChange::None:
         break;
@@ -837,7 +864,7 @@ ExecutionResult RangeBasedFor::Execute() {
       scope->Set(name, kvp, Mutability::Const);
       auto result = block->Execute();
       ASTNode::context.PopScope();
-      
+
       switch (result.controlChange) {
       case ControlChange::None:
         break;
@@ -848,7 +875,6 @@ ExecutionResult RangeBasedFor::Execute() {
       case ControlChange::Break:
         goto breakLoops;
       }
-      
     }
   } else if (isString) {
     for (auto c : string) {
@@ -856,7 +882,7 @@ ExecutionResult RangeBasedFor::Execute() {
       scope->Set(name, Ctx::CreateString(std::string() + c), Mutability::Const);
       auto result = block->Execute();
       ASTNode::context.PopScope();
-      
+
       switch (result.controlChange) {
       case ControlChange::None:
         break;
@@ -878,18 +904,18 @@ ExecutionResult CompoundAssignment::Execute() {
 }
 Value CompAssignExpr::Evaluate() {
   auto lvalue = left->Evaluate();
-  
+
   auto iden = dynamic_cast<Identifier *>(left.get());
-  
+
   auto it = context.FindIter(iden->name);
-  
+
   if (it->second == nullptr) {
     throw std::runtime_error("variable did not exist: cannot compound assign");
   }
-  
+
   Mutability mut = it->first.mutability;
   auto rvalue = right->Evaluate();
-  
+
   switch (op) {
   case TType::AddEq: {
     auto result = lvalue->Add(rvalue);
@@ -952,15 +978,14 @@ Else::Else(SourceInfo &info, IfPtr &&ifPtr, BlockPtr &&block)
 If::~If() {}
 Else::~Else() {}
 
-
 Value Match::Evaluate() {
   auto val = expr->Evaluate();
   size_t i = 0;
-  
+
   // Check our expression's resulting value against the provided match cases.
-  for (const auto &expr: branch_lhs) {
+  for (const auto &expr : branch_lhs) {
     const auto branch_value = expr->Evaluate();
-    
+
     // TODO: add | operator for several matches. Just like rust.
     if (branch_value->Equals(val)) {
       return branch_rhs[i]->Evaluate();
@@ -978,7 +1003,8 @@ Value Match::Evaluate() {
 Value Lambda::Evaluate() {
   if (block) {
     auto result = block->Execute();
-    if (result.controlChange != ControlChange::Return || result.value == nullptr) {
+    if (result.controlChange != ControlChange::Return ||
+        result.value == nullptr) {
       return Value_T::UNDEFINED;
     }
     return result.value;
@@ -990,9 +1016,10 @@ Value Lambda::Evaluate() {
 }
 
 ExecutionResult FunctionDecl::Execute() {
-  ASTNode::context.Insert(
-      name, make_shared<Callable_T>(returnType, std::move(block), std::move(parameters)),
-      Mutability::Const);
+  ASTNode::context.Insert(name,
+                          make_shared<Callable_T>(returnType, std::move(block),
+                                                  std::move(parameters)),
+                          Mutability::Const);
   return ExecutionResult::None;
 }
 
@@ -1001,22 +1028,22 @@ ExecutionResult Delete::Execute() {
   if (iden) {
     context.Erase(iden->name);
     return ExecutionResult::None;
-  } 
-  
-  // delete an an object behind a dot expression. ^.^  
-  if (auto *dot = dynamic_cast<DotExpr*>(this->dot.get())) {
+  }
+
+  // delete an an object behind a dot expression. ^.^
+  if (auto *dot = dynamic_cast<DotExpr *>(this->dot.get())) {
     while (auto rdot = dynamic_cast<DotExpr *>(dot->right.get())) {
       dot = rdot;
     }
-    
+
     Value host = dot->left->Evaluate();
-    
+
     auto iden = dynamic_cast<Identifier *>(dot->right.get());
     if (!iden) {
       throw std::runtime_error("invalid dot expression in delete statement.");
     }
     auto &name = iden->name;
-    
+
     if (auto host_obj = std::dynamic_pointer_cast<Object_T>(host)) {
       host_obj->scope->Erase(name);
     } else {
@@ -1030,17 +1057,17 @@ ExecutionResult Delete::Execute() {
 
 Delete::Delete(SourceInfo &info, ExpressionPtr &&dot)
     : Statement(info), dot(std::move(dot)) {}
-    
+
 Delete::Delete(SourceInfo &info, IdentifierPtr &&iden)
     : Statement(info), iden(std::move(iden)) {}
-    
+
 Delete::~Delete() {}
 
 Value TupleInitializer::Evaluate() {
   vector<Value> values;
-  
-  for (const auto &v: this->values) {
-    values.push_back(v->Evaluate());
+  for (const auto &v : this->values) {
+    auto value = v->Evaluate();
+    values.push_back(value);
   }
   return make_shared<Tuple_T>(values);
 }
@@ -1048,59 +1075,70 @@ Value TupleInitializer::Evaluate() {
 ExecutionResult TupleDeconstruction::Execute() {
   auto tuple = this->tuple->Evaluate();
   auto value = std::dynamic_pointer_cast<Tuple_T>(tuple);
-  
+
   if (value)
     value->Deconstruct(this->idens);
-  
+
   return ExecutionResult::None;
 }
-Property::Property(SourceInfo &info, const string &name, ExpressionPtr &&lambda, const Mutability &mut)
-    : Statement(info), name(std::move(name)), lambda(std::move(lambda)), mutability(mut) {}
-    
+Property::Property(SourceInfo &info, const string &name, ExpressionPtr &&lambda,
+                   const Mutability &mut)
+    : Statement(info), name(std::move(name)), lambda(std::move(lambda)),
+      mutability(mut) {}
+
 ExecutionResult Property::Execute() {
   if (lambda) {
-    Scope_T::Key key = Scope_T::Key(
-      name,
-      mutability
-    );
+    Scope_T::Key key = Scope_T::Key(name, mutability);
     context.Insert(key, make_shared<Lambda_T>(std::move(lambda)));
   }
   return ExecutionResult::None;
 }
 // TODO: fix this.
-Identifier::Identifier(SourceInfo &info, const string &name) : Expression(info, nullptr), name(name) {
-  
-}
+Identifier::Identifier(SourceInfo &info, const string &name)
+    : Expression(info, nullptr), name(name) {}
 
 TupleInitializer::TupleInitializer(SourceInfo &info,
                                    vector<ExpressionPtr> &&values)
-    : Expression(info, nullptr),
-      values(std::move(values)) {
-        for (const auto &v : values) {
-          this->types.push_back(v->type);  
-        }
-        this->type = TypeSystem::Current().FromTuple(this->types);
+    : Expression(info, nullptr), values(std::move(values)) {
+  for (const auto &v : this->values) {
+    this->types.push_back(v->type);
+  }
+  
+  // If we failed to get a type for any of the expressions,
+  // we try again and evaluate the expressions. This is somewhat common for implicitly typed
+  // tuples of results of native functions or function pointers.
+  if (std::find(types.begin(), types.end(), nullptr) != types.end()) {
+    types.clear();
+    for (const auto &v : this->values) {
+      this->types.push_back(v->Evaluate()->type);
+    } 
+  }
+  
+  this->type = TypeSystem::Current().FromTuple(this->types);
 }
 ExecutionResult Declaration::Execute() {
-  
+
   if (ASTNode::context.scopes.back()->Contains(name)) {
-    throw std::runtime_error("cannot re-define an already existing variable.\noffending variable: " + name);
+    throw std::runtime_error(
+        "cannot re-define an already existing variable.\noffending variable: " +
+        name);
   }
   auto value = expr->Evaluate();
-  
-  
-  
+
   if (!Type_T::Equals(value->type.get(), this->type.get())) {
     if (value->type && this->type)
-      throw std::runtime_error("invalid types in declaration:\ndeclaring type: " + type->name + "\nexpression type: " + value->type->name);
-    throw std::runtime_error("invalid types in declaration. one or both types were null, this is a language bug");
+      throw std::runtime_error(
+          "invalid types in declaration:\ndeclaring type: " + type->name +
+          "\nexpression type: " + value->type->name);
+    throw std::runtime_error("invalid types in declaration. one or both types "
+                             "were null, this is a language bug");
   }
-  
+
   // copy where needed
   ApplyCopySemantics(value);
-  
+
   ASTNode::context.scopes.back()->Set(name, value, mut);
-  
+
   return ExecutionResult::None;
 }
 void Using::Load() {
@@ -1109,9 +1147,9 @@ void Using::Load() {
       return;
     }
   }
-  
+
   activeModules.push_back(moduleName);
-  
+
   auto path = moduleRoot + moduleName + ".dll";
 
   void *handle;
@@ -1120,11 +1158,11 @@ void Using::Load() {
   // we do this even when we ignore the object becasue it registers the native
   // callables.
   auto object = ScritModDefAsObject(module);
-  
-  for (const auto &[name, t]: *module->types) {
+
+  for (const auto &[name, t] : *module->types) {
     TypeSystem::Current().RegisterType(t, true);
   }
-  
+
   if (!isWildcard && symbols.empty()) {
     ASTNode::context.Insert(moduleName, object, Mutability::Const);
   } else {
@@ -1145,7 +1183,7 @@ void Using::Load() {
       }
     }
   }
-  
+
   free(module);
 
   ASTNode::context.RegisterModuleHandle(handle);
@@ -1153,9 +1191,7 @@ void Using::Load() {
 
 ArrayInitializer::ArrayInitializer(SourceInfo &info, const Type &type,
                                    vector<ExpressionPtr> &&init)
-    : Expression(info, type), init(std::move(init)) {
-      
-}
+    : Expression(info, type), init(std::move(init)) {}
 Value AnonymousFunction::Evaluate() { return callable; }
 
 AnonymousFunction::AnonymousFunction(SourceInfo &info, Type &type,

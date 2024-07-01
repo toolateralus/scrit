@@ -136,7 +136,7 @@ Value NativeCallable_T::Call(std::vector<Value> &args) {
 
 void NativeCallable_T::CheckParameterTypes(vector<Value> &values) {
   for (auto i = 0; i < values.size(); ++i) {
-    if (function->parameterTypes.size() < i) {
+    if (function->parameterTypes.size() <= i) {
       throw std::runtime_error(
           "too few parameters provided to function. expected: " +
           std::to_string(function->parameterTypes.size()) +
