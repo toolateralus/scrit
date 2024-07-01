@@ -350,6 +350,8 @@ template <typename T> PrimitiveType Value_T::ValueTypeFromType() {
     return PrimitiveType::Object;
   } else if (t == typeid(Array_T)) {
     return PrimitiveType::Array;
+  } else if (t == typeid(Tuple_T)) {
+    return PrimitiveType::Tuple;
   } else {
     throw std::runtime_error("Cannot deduce type for " + string(t.name()) + ". This function is used for extracting values, and type checking while doing so. Directly use GetType() for Callable, Undefined, and other immutable values.");
   }

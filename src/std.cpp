@@ -151,6 +151,27 @@ REGISTER_FUNCTION(atoi, "int", {"string"}) {
   return Ctx::CreateInt(std::atoi(str.c_str()));
 }
 
+REGISTER_FUNCTION(get, "any", {"any", "int"}) {
+  if (args[0]->GetPrimitiveType() == Values::PrimitiveType::Tuple) {
+    auto tuple = args[0]->Cast<Tuple_T>();
+    auto index= args[1]->Cast<Int_T>();
+    return tuple->values[index->value];
+  }
+  return Ctx::Undefined();
+}
+
+REGISTER_FUNCTION(cbrt, "float", {"any"}) {
+  float f;
+  int i;
+  if (Ctx::TryGetFloat(args[0], f)) {
+    return Ctx::CreateFloat(std::cbrt(f));
+  } else if (Ctx::TryGetInt(args[0], i)) {
+    return Ctx::CreateFloat(std::cbrt(i));
+  }
+  return Ctx::Undefined();
+}
+
+
 // terminal
 REGISTER_FUNCTION(println, "undefined", {"any"}) {
   for (const auto &arg : args) {
