@@ -1,6 +1,7 @@
 #include "ast.hpp"
 #include "context.hpp"
 #include "debug.hpp"
+#include "error.hpp"
 #include "lexer.hpp"
 #include "native.hpp"
 #include "parser.hpp"
@@ -358,7 +359,13 @@ ExecutionResult If::Execute() {
 }
 
 Value Operand::Evaluate() { return expression->Evaluate(); }
-Value Identifier::Evaluate() { return context.Find(name); }
+Value Identifier::Evaluate() { 
+  auto var = context.Find(name);
+  if (var == nullptr) {
+    var = Ctx::Undefined();
+  } 
+  return var;
+ }
 Value Arguments::Evaluate() {
   vector<Value> values;
   for (const auto &v : this->values) {
@@ -838,11 +845,9 @@ Value BinExpr::Evaluate() {
   auto right = this->right->Evaluate();
 
   if (!Type_T::Equals(left->type.get(), right->type.get())) {
-    throw std::runtime_error(
-        "invalid types in binary expression\nleft: " + left->type->name +
-        "\nright: " + right->type->name);
+    throw TypeError(left->type, right->type);
   }
-
+  
   switch (op) {
   case TType::NullCoalescing: {
     if (left->GetPrimitiveType() == PrimitiveType::Null ||

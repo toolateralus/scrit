@@ -323,15 +323,15 @@ void Bool_T::Set(Value newValue) {
 }
 
 string Callable_T::ToString() const {
-  std::stringstream ss = {};
-  ss << "callable(";
-  size_t i = 0;
-  for (const auto &param : params->values) {
-    ss << param.name;
-    if (i != params->values.size()) {
-      ss << ", ";
-    }
-    i++;
+  std::stringstream ss;
+  auto type = std::dynamic_pointer_cast<CallableType>(this->type);
+  auto returnType = type->returnType->name;
+  ss << returnType << "(";
+  for (size_t i = 0; i < params->values.size(); ++i) {
+      ss << params->values[i].type << " " << params->values[i].name;
+      if (i < params->values.size() - 1) {
+          ss << ", ";
+      }
   }
   ss << ")";
   return ss.str();
