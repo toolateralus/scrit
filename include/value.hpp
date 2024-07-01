@@ -318,7 +318,7 @@ struct Tuple_T : Value_T {
   ~Tuple_T() override;
   vector<Value> values = {};
   Tuple_T(vector<Value> values);
-  auto Deconstruct(vector<IdentifierPtr> &idens) const -> void;
+  auto Deconstruct(vector<string> &idens) const -> void;
   PrimitiveType GetPrimitiveType() const override {
     return PrimitiveType::Tuple;
   }

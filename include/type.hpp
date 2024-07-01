@@ -164,7 +164,9 @@ struct TypeSystem {
   auto FromPrimitive(const PrimitiveType &value) -> Type;
   
   auto FromTuple(const vector<Type> &types) -> Type;
-  
+
+  auto FromTuple(const vector<Value> &values) -> Type;
+
   auto FromCallable(const Type returnType, const vector<Type> paramTypes)
       -> Type;
   

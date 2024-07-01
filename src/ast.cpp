@@ -571,7 +571,7 @@ Value Call::Evaluate() {
       auto callable = std::dynamic_pointer_cast<Callable_T>(fn);
       if (callable) {
         ValidateArgumentSize(callable);
-
+        
         auto args_values = GetArgsValueList(args);
         args_values.insert(args_values.begin(), obj);
         return callable->Call(args_values);
@@ -929,35 +929,47 @@ Value BinExpr::Evaluate() {
 };
 ExecutionResult Using::Execute() { return ExecutionResult::None; }
 ExecutionResult RangeBasedFor::Execute() {
-  auto lvalue = this->rhs->Evaluate();
-
+  auto collection = this->rhs->Evaluate();
+  
   auto lhs = dynamic_cast<Identifier *>(this->lhs.get());
-
-  if (!lhs) {
+  
+  if (!lhs && names.empty()) {
     throw std::runtime_error(
-        "the left hand side of a range based for loop must be an identifier. "
-        "example: for i : array/object/string {..}");
+        "the left hand side of a range based for loop must be an identifier.\n"
+        "example: for i : array/object/string {..}\n"
+        "or a tuple deconstruction\n"
+        "example: for k,v : someObject/tupleArray {}");
   }
-
-  auto name = lhs->name;
+  
+  auto setter = [this, lhs](Value value) -> void {
+    if (lhs) {
+      context.scopes.back()->Set(lhs->name, value, Mutability::Const);
+    } else if (auto tuple = std::dynamic_pointer_cast<Tuple_T>(value); !names.empty()) {
+      tuple->Deconstruct(names);
+    }
+  };
+  
+  
   Array array = nullptr;
   Object obj = nullptr;
   string string;
-  bool isString = Ctx::TryGetString(lvalue, string);
-  bool isObject = Ctx::TryGetObject(lvalue, obj);
+  bool isString = Ctx::TryGetString(collection, string);
+  bool isObject = Ctx::TryGetObject(collection, obj);
 
-  if (!isObject && !isString && !Ctx::TryGetArray(lvalue, array) &&
-      !Ctx::TryGetObject(lvalue, obj)) {
+  if (!isObject && !isString && !Ctx::TryGetArray(collection, array) &&
+      !Ctx::TryGetObject(collection, obj)) {
     throw std::runtime_error("invalid range-based for loop: the target "
                              "container must be an array, object or string.");
   }
-
+  auto scope = ASTNode::context.PushScope();
+  
   if (array) {
     for (auto &v : array->values) {
-      auto scope = ASTNode::context.PushScope();
-      scope->Set(name, v, Mutability::Const);
+      scope->Clear();
+      
+      setter(v);
+      
       auto result = block->Execute();
-      ASTNode::context.PopScope();
 
       switch (result.controlChange) {
       case ControlChange::None:
@@ -972,17 +984,16 @@ ExecutionResult RangeBasedFor::Execute() {
       }
     }
   } else if (isObject) {
-    auto kvp = Ctx::CreateObject();
+    auto tuple = make_shared<Tuple_T>(std::vector<Value>());
     for (auto &[key, val] : obj->scope->Members()) {
-      kvp->scope->Erase("key");
-      kvp->scope->Erase("value");
-      kvp->scope->Set("key", Ctx::CreateString(key.value));
-      kvp->scope->Set("value", val);
-      auto scope = ASTNode::context.PushScope();
-      scope->Set(name, kvp, Mutability::Const);
+      tuple->values = {Ctx::CreateString(key.value), val};
+      tuple->type = TypeSystem::Current().FromTuple(tuple->values);
+      scope->Clear();
+      
+      setter(tuple);
+      
       auto result = block->Execute();
-      ASTNode::context.PopScope();
-
+      
       switch (result.controlChange) {
       case ControlChange::None:
         break;
@@ -996,10 +1007,9 @@ ExecutionResult RangeBasedFor::Execute() {
     }
   } else if (isString) {
     for (auto c : string) {
-      auto scope = ASTNode::context.PushScope();
-      scope->Set(name, Ctx::CreateString(std::string() + c), Mutability::Const);
+      scope->Clear();
+      setter(Ctx::CreateString(std::string() + c));
       auto result = block->Execute();
-      ASTNode::context.PopScope();
 
       switch (result.controlChange) {
       case ControlChange::None:
@@ -1014,6 +1024,7 @@ ExecutionResult RangeBasedFor::Execute() {
     }
   }
 breakLoops:
+  ASTNode::context.PopScope();
   return ExecutionResult::None;
 }
 ExecutionResult CompoundAssignment::Execute() {
@@ -1093,12 +1104,12 @@ Value Match::Evaluate() {
   size_t i = 0;
 
   // Check our expression's resulting value against the provided match cases.
-  for (const auto &expr : branch_lhs) {
+  for (const auto &expr : patterns) {
     const auto branch_value = expr->Evaluate();
 
     // TODO: add | operator for several matches. Just like rust.
     if (branch_value->Equals(val)) {
-      return branch_rhs[i]->Evaluate();
+      return expressions[i]->Evaluate();
     }
     i++;
   }

@@ -283,3 +283,10 @@ Type Parser::ParseType() {
   return type;
 }
 
+auto Values::TypeSystem::FromTuple(const vector<Value> &values) -> Type {
+  vector<Type> types;
+  for (const auto &value : values) {
+    types.push_back(value->type);
+  }
+  return FromTuple(types);
+}

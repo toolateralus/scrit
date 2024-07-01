@@ -1,0 +1,20 @@
+let colors = {
+  black: string = "\e[0;30m",
+  white: string = "\e[0;37m",
+  red: string = "\e[0;31m",
+  green: string = "\e[0;32m",
+  yellow: string = "\e[0;33m",
+  blue: string = "\e[0;34m",
+  magenta: string = "\e[0;35m",
+  cyan: string = "\e[0;36m",
+  reset: string = "\e[0m"
+}
+
+for i : colors {
+  // deconstruct the tuple the language returns. note: this will be available as
+  // for k, v : colors 
+  // in the future.
+  k, v = i 
+  print(v)
+  print(k)
+}

@@ -3,6 +3,7 @@
 
 struct ASTVisitor {
 	virtual ~ASTVisitor() = default;
+	virtual void visit(Literal *literal) = 0;
 	virtual void visit(ASTNode* node) = 0;
 	virtual void visit(Executable* node) = 0;
 	virtual void visit(Statement* node) = 0;

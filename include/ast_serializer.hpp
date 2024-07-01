@@ -2,18 +2,30 @@
 #include "ast_visitor.hpp"
 #include <sstream>
 
+
+
+struct ASTSerializer;
+
+// This struct uses RAII to provide scope-based indentation for the serializer.
+// Pretty Kool!
+struct Indenter {
+	ASTSerializer *serializer;
+	Indenter(ASTSerializer *serializer);
+	~Indenter();
+};
+
 struct ASTSerializer : ASTVisitor {
 	ASTSerializer(int indent_level = 0, int indent_size = 2);
 	int indent_level;
 	int indent_size;
 	
 	void Write(const std::string &str) {
-		stream << str << "\n";
+		stream << string(indent_level, ' ') + str << "\n";
 	}
 	std::string Indent() {
 		return std::string(indent_level, ' ');
 	}
-
+	
 	std::stringstream stream;
 	void visit(ASTNode *_) override;
 	void visit(Executable *_) override;
@@ -56,4 +68,5 @@ struct ASTSerializer : ASTVisitor {
 	void visit(Lambda *lambda) override;
 	void visit(Match *match) override;
 	void visit(MatchStatement *matchStmt) override;
+  void visit(Literal *literal) override;
 };

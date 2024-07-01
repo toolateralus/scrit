@@ -36,7 +36,7 @@ ExpressionPtr Parser::ParseCompoundAssignment() {
       return left;
     }
     // TODO: we need to make sure the LHS is not a literal.
-    if (dynamic_cast<Operand *>(left.get())) {
+    if (dynamic_cast<Literal *>(left.get())) {
       throw std::runtime_error("cannot use compound assignment on a literal");
     }
 

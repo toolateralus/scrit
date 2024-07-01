@@ -450,18 +450,18 @@ StatementPtr Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
 // let f, v = ...
 // let mut f, mut v = ...
 StatementPtr Parser::ParseTupleDeconstruction(IdentifierPtr &&iden) {
-  vector<IdentifierPtr> idens;
-  idens.push_back(std::move(iden));
+  vector<string> idens;
+  idens.push_back(std::move(iden->name));
   Expect(TType::Comma);
-
+  
   while (!tokens.empty()) {
     if (Peek().type == TType::Assign) {
       break;
     }
-
+    
     auto iden = Expect(TType::Identifier);
-    idens.push_back(make_unique<Identifier>(info, iden.value));
-
+    idens.push_back(iden.value);
+    
     if (Peek().type == TType::Comma) {
       Eat();
     }
@@ -646,22 +646,22 @@ ElsePtr Parser::ParseElse() {
 }
 StatementPtr Parser::ParseFor() {
   auto info = this->info;
-
+  
   auto scope = ASTNode::context.PushScope();
-
+  
   if (!tokens.empty() && Peek().type == TType::LParen) {
     Eat();
   }
   StatementPtr decl = nullptr;
   ExpressionPtr condition = nullptr;
   StatementPtr inc = nullptr;
-
+  
   // for {}
   if (Peek().type == TType::LCurly) {
     return make_unique<For>(info, nullptr, nullptr, nullptr, ParseBlock(),
                             ASTNode::context.PopScope());
   }
-
+  
   if (Peek().type == TType::Let) {
     decl = ParseStatement();
     Expect(TType::Comma);
@@ -672,15 +672,37 @@ StatementPtr Parser::ParseFor() {
                             std::move(inc), ParseBlock(),
                             ASTNode::context.PopScope());
   }
-
+  
   auto expr = ParseExpression();
-
+  
   // for expr : array/obj {}
   if (Peek().type == TType::Colon) {
     Eat();
     auto rhs = ParseExpression();
     return make_unique<RangeBasedFor>(info, std::move(expr), std::move(rhs),
                                       ParseBlock());
+  }
+  
+  if (Peek().type == TType::Comma) {
+    Eat();
+    auto name = dynamic_cast<Identifier*>(expr.get());
+    
+    if (!name) {
+      throw std::runtime_error("invalid tuple deconstruction in range based for loop");
+    }
+    
+    vector<string> names = {name->name};
+    while (!tokens.empty()) {
+      names.push_back(Expect(TType::Identifier).value);
+      if (Peek().type == TType::Colon) {
+        break;
+      }
+    }
+    Expect(TType::Colon);
+    
+    auto target = ParseExpression();
+    return make_unique<RangeBasedFor>(info, names, std::move(target), ParseBlock());
+    
   }
 
   // for CONDITION {}

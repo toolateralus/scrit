@@ -505,7 +505,7 @@ Value Callable_T::Clone() { return shared_from_this(); }
 Array_T::~Array_T() {}
 
 // TODO: add typing to tuple deconstruction.
-auto Tuple_T::Deconstruct(vector<IdentifierPtr> &idens) const -> void {
+auto Tuple_T::Deconstruct(vector<string> &idens) const -> void {
   // produce the maximum number of values available given
   // both arrays are at least that size.
   size_t max = std::min(idens.size(), this->values.size());
@@ -514,12 +514,12 @@ auto Tuple_T::Deconstruct(vector<IdentifierPtr> &idens) const -> void {
   for (size_t i = 0; i < max; ++i) {
     auto &iden = idens[i];
     auto &value = values[i];
-    ASTNode::context.Insert(iden->name, value, Mutability::Mut);
+    ASTNode::context.Insert(iden, value, Mutability::Mut);
   }
-
+  
   for (size_t i = max; i < idens.size(); ++i) {
     auto &iden = idens[i];
-    ASTNode::context.Insert(iden->name, Ctx::Undefined(), Mutability::Mut);
+    ASTNode::context.Insert(iden, Ctx::Undefined(), Mutability::Mut);
   }
 }
 
