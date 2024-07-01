@@ -277,7 +277,12 @@ struct Array_T : Value_T {
   Array_T() = delete;
   Array_T(vector<Value> init);
   vector<Value> values = {};
-
+  void BoundsCheck(int idx) {
+    if (idx >= values.size()) {
+      throw std::runtime_error("Index out of bounds.\nindex was: " + std::to_string(idx) + "\narray size was: " + std::to_string(values.size()));
+    }
+  }
+  
   Value At(Int index);
   void Assign(Int index, Value value);
   void Push(Value value);

@@ -18,8 +18,8 @@ struct SourceInfo {
     getInfos().push_back(this);
   }
   std::string ToString() const {
-    return string("\nsource_info: {\n\t") + "line: " + std::to_string(loc) +
-           "\n\tcol: " + std::to_string(col) + "\nsource: "+ source + "\n}";
+    return string("{\n   ") + "line: " + std::to_string(loc) +
+           "\n   col: " + std::to_string(col) + "\n   source: "+ source + "\n}\n";
   }
   int loc, col;
   string source;
@@ -107,7 +107,6 @@ enum class TType {
   Let,
   Arrow
 };
-struct SourceInfo;
 struct Token {
   Token(const int &loc, const int &col, const string &value, const TType type,
         const TFamily family);

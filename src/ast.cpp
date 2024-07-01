@@ -238,7 +238,7 @@ CompAssignExpr::CompAssignExpr(SourceInfo &info, ExpressionPtr &&left,
 }
 
 ExecutionResult Program::Execute() {
-
+  
   // create an object called global, so we can bypass any shadowed variables.
   auto global = Object_T::New(ASTNode::context.scopes.front());
 
@@ -261,7 +261,7 @@ ExecutionResult Program::Execute() {
                                  CC_ToString(result.controlChange));
       }
     } catch (std::runtime_error err) {
-      std::cout << statement->srcInfo.ToString() << err.what() << std::endl;
+      std::cout <<  err.what() << "\n" << statement->srcInfo.ToString() << std::endl;
     }
   }
   return ExecutionResult::None;

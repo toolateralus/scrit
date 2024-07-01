@@ -427,12 +427,7 @@ Value Array_T::Subscript(Value key) {
   if (!Ctx::TryGetInt(key, index)) {
     return UNDEFINED;
   }
-  // TODO: fix the issue where a default constructed array is of insane size.
-  // 12391241792 type stuff.
-  const size_t size = values.size();
-  if ((size_t)index >= size) {
-    return UNDEFINED;
-  }
+  BoundsCheck(index);
   return values[index];
 }
 Value Array_T::SubscriptAssign(Value key, Value value) {
@@ -454,6 +449,7 @@ Value Array_T::SubscriptAssign(Value key, Value value) {
   }
   
   if (Ctx::TryGetInt(key, idx)) {
+    BoundsCheck(idx);
     values[idx] = value;
   }
   return UNDEFINED;

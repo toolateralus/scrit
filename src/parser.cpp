@@ -124,12 +124,11 @@ StatementPtr Parser::ParseStatement() {
       return ParseKeyword(token);
     }
     default:
-      throw std::runtime_error(string("Failed to parse statement. ") +
-                               info.ToString() + "\ntoken " +
-                               TTypeToString(token.type));
+      
+      throw std::runtime_error("Failed to parse statement.\n");
     }
   }
-  throw std::runtime_error("Unexpecrted end of input");
+  throw std::runtime_error("Unexpected end of input");
 }
 
 StatementPtr Parser::ParseKeyword(Token token) {
@@ -988,14 +987,16 @@ unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
     try {
       auto statement = ParseStatement();
       statements.push_back(std::move(statement));
-    } catch (std::runtime_error e) {
-
+    } catch (std::exception e) {
+      
       auto what = string(e.what());
-
-      if (!what.contains("source_info:")) {
+      
+      // add source info if it doesn't already exist.
+      // This is pretty presumptuous and bad.
+      if (!what.contains("{")) {
         what += info.ToString();
       }
-
+      
       std::cout << "Parser exception! : " << what << std::endl;
       // try to eat a token. This will eventuallya llow the parser to continue
       // normally if any well formed code exists past this exception. However,
