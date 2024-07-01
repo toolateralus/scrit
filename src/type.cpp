@@ -162,3 +162,15 @@ auto Values::TypeSystem::DumpInfo() -> void {
               << type->Scope().Members().size() << "' members." << std::endl;
   }
 }
+auto Values::TypeSystem::GetVector(const vector<string> &names)
+    -> vector<Type> {
+  auto types = vector<Type>();
+  for (const auto &name : names) {
+    auto type = Get(name);
+    if (!type) {
+      throw std::runtime_error("invalid type in type group: " + name);
+    }
+    types.push_back(type);
+  }
+  return types;
+}

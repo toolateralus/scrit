@@ -1,7 +1,6 @@
 #pragma once
 #include <memory>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -152,19 +151,9 @@ struct TypeSystem {
   Type NativeCallable;
   Type String;
   Type Any;
-  
-  auto GetVector(const vector<string> &names) -> vector<Type> {
-    auto types = vector<Type>();
-    for (const auto &name: names) {
-      auto type = Get(name);
-      if (!type) {
-        throw std::runtime_error("invalid type in type group: " + name);
-      }
-      types.push_back(type);
-    }
-    return types;
-  }
-  
+
+  auto GetVector(const vector<string> &names) -> vector<Type>;
+
   auto Get(const string &name) -> Type { return types[name]; }
   
   auto GetOrCreateTemplate(const string &name, const Type &base,
