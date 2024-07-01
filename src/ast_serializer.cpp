@@ -1,95 +1,96 @@
 #include "ast_serializer.hpp"
-#include "serializer.hpp"
+#include "ast.hpp"
 
 ASTSerializer::ASTSerializer(int indent_level, int indent_size) {
 	this->indent_level = indent_level;
 	this->indent_size = indent_size;
 }
 void ASTSerializer::visit(ASTNode *_) {
-  stream << string(indent_level, ' ') << "ASTNode\n";
+  Write("ASTNode\n");
 }
 void ASTSerializer::visit(Executable *_) {
-  stream << string(indent_level, ' ') << "Executable\n";
+  Write("Executable\n");
 }
 void ASTSerializer::visit(Statement *_) {
-  stream << string(indent_level, ' ') << "Statement\n";
+  Write("Statement\n");
 }
 void ASTSerializer::visit(Program *program) {
-  stream << string(indent_level, ' ') << "Program: {\n";
+  Write("Program: {\n");
   indent_level += indent_size;
   for (auto &stmt : program->statements) {
     stmt->Accept(this);
   }
   indent_level -= indent_size;
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(Expression *_) {
-  stream << string(indent_level, ' ') << "Expression\n";
+  Write("Expression\n");
 }
 void ASTSerializer::visit(Operand *operand) {
-  stream << string(indent_level, ' ') << "Operand: {\n";
-  indent_level += indent_size;
-  WriterSettings settings = {
-    .StartingIndentLevel = indent_level,
-    .IndentSize = indent_size
-  };
-  auto operandString = Writer::ToString(operand->value.get(), settings);
-  stream << string(indent_level, ' ') << operandString << "\n";
-  indent_level -= indent_size;
-  stream << string(indent_level, ' ') << "}\n";
+  // TODO: fix this.
+  // Write("Operand: {\n");
+  // indent_level += indent_size;
+  // WriterSettings settings = {
+  //   .StartingIndentLevel = indent_level,
+  //   .IndentSize = indent_size
+  // };
+  // auto operandString = Writer::ToString(operand->value.get(), settings);
+  // stream << Indent() << operandString << "\n";
+  // indent_level -= indent_size;
+  // Write("}\n");
 }
 void ASTSerializer::visit(Identifier *identifier) {
-  stream << string(indent_level, ' ') << "Identifier: " << identifier->name << "\n";
+  Write("Identifier: " + identifier->name + "\n");
 }
 void ASTSerializer::visit(Arguments *arguments) {
-  stream << string(indent_level, ' ') << "Arguments: {\n";
+  Write("Arguments: {\n");
   indent_level += indent_size;
   for (auto &arg : arguments->values) {
     arg->Accept(this);
   }
   indent_level -= indent_size;
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(TupleInitializer *tupleInitializer) {
-  stream << string(indent_level, ' ') << "TupleInitializer: {\n";
+  Write("TupleInitializer: {\n");
   indent_level += indent_size;
   for (auto &arg : tupleInitializer->values) {
     arg->Accept(this);
   }
   indent_level -= indent_size;
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(Property *property) {
-  stream << string(indent_level, ' ') << "Property: {\n";
+  Write("Property: {\n");
   indent_level += indent_size;
   property->lambda->Accept(this);
   indent_level -= indent_size;
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(Parameters *parameters) {
-  stream << string(indent_level, ' ') << "Parameters: {\n";
+  Write("Parameters: {\n");
   indent_level += indent_size;
-  for (auto &[name, value] : parameters->map) {
-    stream << string(indent_level, ' ') << name << ": " << value << "\n";
+  for (auto &param : parameters->values) {
+    stream << Indent() << param.name << ": " << param.type->name << "\n";
   }
   indent_level -= indent_size;
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(Continue *_) {
-  stream << string(indent_level, ' ') << "Continue\n";
+  Write("Continue\n");
 }
 void ASTSerializer::visit(Break *_) {
-  stream << string(indent_level, ' ') << "Break\n";
+  Write("Break\n");
 }
 void ASTSerializer::visit(Return *ret) {
-  stream << string(indent_level, ' ') << "Return: {\n";
+  Write("Return: {\n");
   indent_level += indent_size;
   ret->value->Accept(this);
   indent_level -= indent_size;
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(Delete *del) {
-  stream << string(indent_level, ' ') << "Delete: {\n";
+  Write("Delete: {\n");
   indent_level += indent_size;
   if (del->iden != nullptr) {
     del->iden->Accept(this);
@@ -98,63 +99,63 @@ void ASTSerializer::visit(Delete *del) {
     del->dot->Accept(this);
   }
   indent_level -= indent_size;
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(Block *block) {
-  stream << string(indent_level, ' ') << "Block: {\n";
+  Write("Block: {\n");
   indent_level += indent_size;
   for (auto &stmt : block->statements) {
     stmt->Accept(this);
   }
   indent_level -= indent_size;
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(ObjectInitializer *objInit) {
-  stream << string(indent_level, ' ') << "ObjectInitializer: {\n";
+  Write("ObjectInitializer: {\n");
   indent_level += indent_size;
   for (auto &stmt : objInit->block->statements) {
     stmt->Accept(this);
   }
   indent_level -= indent_size;
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(Call *call) {
-  stream << string(indent_level, ' ') << "Call: {\n";
+  Write("Call: {\n");
   {
     indent_level += indent_size;
-    stream << string(indent_level, ' ') << "Operand: {\n";
+    Write("Operand: {\n");
     {
       indent_level += indent_size;
       call->operand->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
+    Write("}\n");
     call->args->Accept(this);
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(If *ifStmt) {
-  stream << string(indent_level, ' ') << "If: {\n";
+  Write("If: {\n");
   {
     indent_level += indent_size;
-    stream << string(indent_level, ' ') << "Condition: {\n";
+    Write("Condition: {\n");
     {
       indent_level += indent_size;
       ifStmt->condition->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
+    Write("}\n");
     ifStmt->block->Accept(this);
     if (ifStmt->elseStmnt != nullptr) {
       ifStmt->elseStmnt->Accept(this);
     }
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(Else *elseStmt) {
-  stream << string(indent_level, ' ') << "Else: {\n";
+  Write("Else: {\n");
   indent_level += indent_size;
   if (elseStmt->ifStmnt != nullptr) {
     elseStmt->ifStmnt->Accept(this);
@@ -163,79 +164,81 @@ void ASTSerializer::visit(Else *elseStmt) {
     elseStmt->block->Accept(this);
   }
   indent_level -= indent_size;
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(For *forStmt) {
-  stream << string(indent_level, ' ') << "For: {\n";
+  Write("For: {\n");
   {
     indent_level += indent_size;
-    stream << string(indent_level, ' ') << "Init: {\n";
+    Write("Init: {\n");
     {
       indent_level += indent_size;
       forStmt->decl->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
-    stream << string(indent_level, ' ') << "Condition: {\n";
+    Write("}\n");
+    Write("Condition: {\n");
     {
       indent_level += indent_size;
       forStmt->condition->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
-    stream << string(indent_level, ' ') << "Update: {\n";
+    Write("}\n");
+    Write("Update: {\n");
     {
       indent_level += indent_size;
       forStmt->increment->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
+    Write("}\n");
     forStmt->block->Accept(this);
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(RangeBasedFor *rangeFor) {
-  stream << string(indent_level, ' ') << "RangeBasedFor: {\n";
+  Write("RangeBasedFor: {\n");
   {
     indent_level += indent_size;
     rangeFor->lhs->Accept(this);
-    stream << string(indent_level, ' ') << "Range: {\n";
+    Write("Range: {\n");
     {
       indent_level += indent_size;
       rangeFor->rhs->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
+    Write("}\n");
     rangeFor->block->Accept(this);
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
-void ASTSerializer::visit(Assignment *assignment) {
-  stream << string(indent_level, ' ') << "Assignment: {\n";
+void ASTSerializer::visit(Declaration *del) {
+  Write("Assignment: {\n");
   {
     indent_level += indent_size;
-    assignment->iden->Accept(this);
-    stream << string(indent_level, ' ') << "Expression: {\n";
+    
+    
+    Write("Expression: {\n");
     {
       indent_level += indent_size;
-      assignment->expr->Accept(this);
+      del->expr->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
-    string mut =
-        assignment->mutability == Mutability::Mut ? "Mutable" : "Immutable";
-    stream << string(indent_level, ' ') << "Mutability: " << mut << "\n";
+    Write("}\n");
+    Write(string("Mutability: ") + (del->mut == Mutability::Mut ? "mut" : "const") + "\n");
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
+}
+void ASTSerializer::visit(Assignment *assignment) {
+  // TODO: implement
 }
 void ASTSerializer::visit(TupleDeconstruction *tupleDec) {
-  stream << string(indent_level, ' ') << "TupleDeconstruction: {\n";
+  Write("TupleDeconstruction: {\n");
   {
     indent_level += indent_size;
-    stream << string(indent_level, ' ') << "Identifiers: {\n";
+    Write("Identifiers: {\n");
     {
       indent_level += indent_size;
       for (auto &iden : tupleDec->idens) {
@@ -243,241 +246,241 @@ void ASTSerializer::visit(TupleDeconstruction *tupleDec) {
       }
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
-    stream << string(indent_level, ' ') << "TupleInitializer: {\n";
+    Write("}\n");
+    Write("TupleInitializer: {\n");
     {
       indent_level += indent_size;
       tupleDec->tuple->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
+    Write("}\n");
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(CompAssignExpr *compAssignExpr) {
-  stream << string(indent_level, ' ') << "CompAssignExpr: {\n";
+  Write("CompAssignExpr: {\n");
   {
     indent_level += indent_size;
-    stream << string(indent_level, ' ') << "Operand: {\n";
+    Write("Operand: {\n");
     {
       indent_level += indent_size;
       compAssignExpr->left->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
+    Write("}\n");
     stream
-           << string(indent_level, ' ')
+           << Indent()
            << "Operator: " << TTypeToString(compAssignExpr->op) << "\n";
-    stream << string(indent_level, ' ') << "Expression: {\n";
+    Write("Expression: {\n");
     {
       indent_level += indent_size;
       compAssignExpr->right->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
+    Write("}\n");
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(CompoundAssignment *compoundAssign) {
-  stream << string(indent_level, ' ') << "CompoundAssignment: {\n";
+  Write("CompoundAssignment: {\n");
   {
     indent_level += indent_size;
     compoundAssign->expr->Accept(this);
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(FunctionDecl *funcDecl) {
-  stream << string(indent_level, ' ') << "FunctionDecl: {\n";
+  Write("FunctionDecl: {\n");
   {
     indent_level += indent_size;
     stream
-           << string(indent_level, ' ') << "Identifier: " << funcDecl->name << "\n";
+           << Indent() << "Identifier: " << funcDecl->name << "\n";
     funcDecl->parameters->Accept(this);
     funcDecl->block->Accept(this);
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(Noop *_) {
-  stream << string(indent_level, ' ') << "Noop\n";
+  Write("Noop\n");
 }
 void ASTSerializer::visit(DotExpr *dotExpr) {
-  stream << string(indent_level, ' ') << "DotExpr: {\n";
+  Write("DotExpr: {\n");
   {
     indent_level += indent_size;
-    stream << string(indent_level, ' ') << "Operand: {\n";
+    Write("Operand: {\n");
     {
       indent_level += indent_size;
       dotExpr->left->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
-    stream << string(indent_level, ' ') << "Identifier: {\n";
+    Write("}\n");
+    Write("Identifier: {\n");
     {
       indent_level += indent_size;
       dotExpr->right->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
+    Write("}\n");
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(DotAssignment *dotAssign) {
-  stream << string(indent_level, ' ') << "DotAssignment: {\n";
+  Write("DotAssignment: {\n");
   {
     indent_level += indent_size;
-    stream << string(indent_level, ' ') << "DotExpr: {\n";
+    Write("DotExpr: {\n");
     {
       indent_level += indent_size;
       dotAssign->dot->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
-    stream << string(indent_level, ' ') << "Expression: {\n";
+    Write("}\n");
+    Write("Expression: {\n");
     {
       indent_level += indent_size;
       dotAssign->value->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
+    Write("}\n");
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(DotCallStmnt *dotCall) {
-  stream << string(indent_level, ' ') << "DotCallStmnt: {\n";
+  Write("DotCallStmnt: {\n");
   {
     indent_level += indent_size;
     dotCall->dot->Accept(this);
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(Subscript *subscript) {
-  stream << string(indent_level, ' ') << "Subscript: {\n";
+  Write("Subscript: {\n");
   {
     indent_level += indent_size;
-    stream << string(indent_level, ' ') << "Operand: {\n";
+    Write("Operand: {\n");
     {
       indent_level += indent_size;
       subscript->left->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
-    stream << string(indent_level, ' ') << "Index: {\n";
+    Write("}\n");
+    Write("Index: {\n");
     {
       indent_level += indent_size;
       subscript->index->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
+    Write("}\n");
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(SubscriptAssignStmnt *subscriptAssign) {
-  stream << string(indent_level, ' ') << "SubscriptAssignStmnt: {\n";
+  Write("SubscriptAssignStmnt: {\n");
   {
     indent_level += indent_size;
-    stream << string(indent_level, ' ') << "Subscript: {\n";
+    Write("Subscript: {\n");
     {
       indent_level += indent_size;
       subscriptAssign->subscript->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
-    stream << string(indent_level, ' ') << "Expression: {\n";
+    Write("}\n");
+    Write("Expression: {\n");
     {
       indent_level += indent_size;
       subscriptAssign->value->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
+    Write("}\n");
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(UnaryExpr *unaryExpr) {
-  stream << string(indent_level, ' ') << "UnaryExpr: {\n";
+  Write("UnaryExpr: {\n");
   {
     indent_level += indent_size;
     stream
-           << string(indent_level, ' ')
+           << Indent()
            << "Operator: " << TTypeToString(unaryExpr->op) << "\n";
-    stream << string(indent_level, ' ') << "Operand: {\n";
+    Write("Operand: {\n");
     {
       indent_level += indent_size;
       unaryExpr->operand->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
+    Write("}\n");
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(UnaryStatement *unaryStmt) {
-  stream << string(indent_level, ' ') << "UnaryStatement: {\n";
+  Write("UnaryStatement: {\n");
   {
     indent_level += indent_size;
     unaryStmt->expr->Accept(this);
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(BinExpr *binExpr) {
-  stream << string(indent_level, ' ') << "BinExpr: {\n";
+  Write("BinExpr: {\n");
   {
     indent_level += indent_size;
     stream
-           << string(indent_level, ' ')
+           << Indent()
            << "Operator: " << TTypeToString(binExpr->op) << "\n";
-    stream << string(indent_level, ' ') << "Left: {\n";
+    Write("Left: {\n");
     {
       indent_level += indent_size;
       binExpr->left->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
-    stream << string(indent_level, ' ') << "Right: {\n";
+    Write("}\n");
+    Write("Right: {\n");
     {
       indent_level += indent_size;
       binExpr->right->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
+    Write("}\n");
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(Using *usingStmt) {
-  stream << string(indent_level, ' ') << "Using: {\n";
+  Write("Using: {\n");
   {
     indent_level += indent_size;
     stream
-           << string(indent_level, ' ')
+           << Indent()
            << "IsWildcard: " << usingStmt->isWildcard << "\n";
     stream
-           << string(indent_level, ' ')
+           << Indent()
            << "Identifier: " << usingStmt->moduleName << "\n";
-    stream << string(indent_level, ' ') << "Symbols: {\n";
+    Write("Symbols: {\n");
     {
       indent_level += indent_size;
       for (auto &symbol : usingStmt->symbols) {
-        stream << string(indent_level, ' ') << symbol << "\n";
+        stream << Indent() << symbol << "\n";
       }
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
+    Write("}\n");
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(Lambda *lambda) {
-  stream << string(indent_level, ' ') << "Lambda: {\n";
+  Write("Lambda: {\n");
   {
     indent_level += indent_size;
     if (lambda->block != nullptr) {
@@ -488,50 +491,50 @@ void ASTSerializer::visit(Lambda *lambda) {
     }
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(Match *match) {
-  stream << string(indent_level, ' ') << "Match: {\n";
+  Write("Match: {\n");
   {
     indent_level += indent_size;
-    stream << string(indent_level, ' ') << "Expression: {\n";
+    Write("Expression: {\n");
     {
       indent_level += indent_size;
       match->expr->Accept(this);
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
-    stream << string(indent_level, ' ') << "Cases: {\n";
+    Write("}\n");
+    Write("Cases: {\n");
     {
       indent_level += indent_size;
       for (size_t i = 0; i < match->branch_lhs.size(); i++) {
         auto &lhs = match->branch_lhs[i];
         auto &rhs = match->branch_rhs[i];
-        stream << string(indent_level, ' ') << "Case: {\n";
+        Write("Case: {\n");
         {
           indent_level += indent_size;
-          stream << string(indent_level, ' ') << "Pattern: {\n";
+          Write("Pattern: {\n");
           {
             indent_level += indent_size;
             lhs->Accept(this);
             indent_level -= indent_size;
           }
-          stream << string(indent_level, ' ') << "}\n";
-          stream << string(indent_level, ' ') << "Expression: {\n";
+          Write("}\n");
+          Write("Expression: {\n");
           {
             indent_level += indent_size;
             rhs->Accept(this);
             indent_level -= indent_size;
           }
-          stream << string(indent_level, ' ') << "}\n";
+          Write("}\n");
           indent_level -= indent_size;
         }
-        stream << string(indent_level, ' ') << "}\n";
+        Write("}\n");
       }
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
-    stream << string(indent_level, ' ') << "Default: {\n";
+    Write("}\n");
+    Write("Default: {\n");
     {
       indent_level += indent_size;
       if (match->branch_default != nullptr) {
@@ -539,17 +542,17 @@ void ASTSerializer::visit(Match *match) {
       }
       indent_level -= indent_size;
     }
-    stream << string(indent_level, ' ') << "}\n";
+    Write("}\n");
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }
 void ASTSerializer::visit(MatchStatement *matchStmt) {
-  stream << string(indent_level, ' ') << "MatchStatement: {\n";
+  Write("MatchStatement: {\n");
   {
     indent_level += indent_size;
     matchStmt->match->Accept(this);
     indent_level -= indent_size;
   }
-  stream << string(indent_level, ' ') << "}\n";
+  Write("}\n");
 }

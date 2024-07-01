@@ -1260,6 +1260,7 @@ void If::Accept(ASTVisitor* visitor) { visitor->visit(this); }
 void Else::Accept(ASTVisitor* visitor) { visitor->visit(this); }
 void For::Accept(ASTVisitor* visitor) { visitor->visit(this); }
 void RangeBasedFor::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Declaration::Accept(ASTVisitor* visitor) {visitor->visit(this); }
 void Assignment::Accept(ASTVisitor* visitor) { visitor->visit(this); }
 void TupleDeconstruction::Accept(ASTVisitor* visitor) { visitor->visit(this); }
 void CompAssignExpr::Accept(ASTVisitor* visitor) { visitor->visit(this); }
@@ -1276,4 +1277,6 @@ void BinExpr::Accept(ASTVisitor* visitor) { visitor->visit(this); }
 void Using::Accept(ASTVisitor* visitor) { visitor->visit(this); }
 void Lambda::Accept(ASTVisitor* visitor) { visitor->visit(this); }
 void Match::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void MatchStatement::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void MatchStatement::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void DefaultValue::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Literal::Accept(ASTVisitor *visitor) { visitor->visit(this); }

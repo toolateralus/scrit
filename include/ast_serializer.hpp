@@ -1,3 +1,4 @@
+#include "ast.hpp"
 #include "ast_visitor.hpp"
 #include <sstream>
 
@@ -5,12 +6,21 @@ struct ASTSerializer : ASTVisitor {
 	ASTSerializer(int indent_level = 0, int indent_size = 2);
 	int indent_level;
 	int indent_size;
+	
+	void Write(const std::string &str) {
+		stream << str << "\n";
+	}
+	std::string Indent() {
+		return std::string(indent_level, ' ');
+	}
+
 	std::stringstream stream;
 	void visit(ASTNode *_) override;
 	void visit(Executable *_) override;
 	void visit(Statement *_) override;
 	void visit(Program *program) override;
 	void visit(Expression *_) override;
+	void visit(Declaration *_) override;
 	void visit(Operand *operand) override;
 	void visit(Identifier *identifier) override;
 	void visit(Arguments *arguments) override;

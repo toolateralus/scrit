@@ -123,18 +123,20 @@ struct Expression : ASTNode {
 struct DefaultValue : Expression {
   DefaultValue(SourceInfo &info, const Type &type) : Expression(info, type) {};
   Value Evaluate() override;
-  void Accept(ASTVisitor* visitor) override;
+  void Accept(ASTVisitor *visitor) override;
 };
 
 struct Literal : Expression {
   Literal(SourceInfo &info, const Type &type, Value value) : Expression(info, type), expression(value) {}
   Value expression;
+  void Accept(ASTVisitor *visitor) override;
   Value Evaluate() override;
 };
 
 struct Operand : Expression {
   Operand(SourceInfo &info, const Type &type, ExpressionPtr &&value);
   ExpressionPtr expression;
+  void Accept(ASTVisitor *visitor) override;
   Value Evaluate() override;
 };
 
@@ -304,6 +306,7 @@ struct Assignment : Statement {
   const ExpressionPtr expr;
   const Type type;
   Assignment(SourceInfo &info, const Type &type, IdentifierPtr &&iden, ExpressionPtr &&expr);
+  void Accept(ASTVisitor* visitor) override;
   ExecutionResult Execute() override;
 };
 struct Declaration : Statement {
