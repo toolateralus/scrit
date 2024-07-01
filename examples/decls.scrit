@@ -1,0 +1,32 @@
+let a = 0
+let b = 0.0
+let c = false
+let d = undefined
+let e = null
+let f = (0,)
+let g = (0,0)
+let h = func() {}
+let i = func() -> int {} // prints invalid signature.
+let j => { return 0 } // fails to get type info
+let k => 1
+let l = {}
+let m = []
+let n = { something : int = 0 }
+let o = [0, 1, 2]
+
+println(a)
+println(b)
+println(c)
+println(d)
+println(e)
+println(f)
+println(g)
+println(h)
+println(i)
+println(j)
+println(k)
+println(l)
+println(m)
+println(n)
+println(o)
+println(n.something)

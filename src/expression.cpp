@@ -21,16 +21,10 @@ ExpressionPtr Parser::ParseExpression() {
   if (next.type == TType::Increment || next.type == TType::Decrement) {
     Eat();
     auto expr = ParseExpression();
-    if (!expr->type) {
-     throw std::runtime_error("Failed to get type for expression");
-    }
     auto unary = make_unique<UnaryExpr>(info, expr->type, std::move(expr), next.type);
     return unary;
   }
   auto expr = ParseCompoundAssignment();
-  if (!expr->type) {
-    throw std::runtime_error("Failed to get type for expression");
-  }
   return expr;
 }
 ExpressionPtr Parser::ParseCompoundAssignment() {
@@ -263,6 +257,10 @@ ExpressionPtr Parser::ParseAnonFunc() {
   auto types = params->ParamTypes();
   auto callable = make_shared<Callable_T>(returnType, std::move(body), std::move(params));
   auto type = TypeSystem::Current().FromCallable(returnType, types);
+  
+  if (!type) {
+    throw std::runtime_error("unable to get type for anonymous function");
+  }
   return make_unique<AnonymousFunction>(info, type, callable);
 }
 ExpressionPtr Parser::ParseObjectInitializer() {
@@ -288,32 +286,16 @@ ExpressionPtr Parser::ParseObjectInitializer() {
       statements.push_back(ParseFunctionDeclaration());
       break;
     
+    // ignore let tokens.
+    case TType::Let:
+      Eat();
     case TType::Mut:
-    case TType::Const: {
-      auto mutability =
-          Eat().type == TType::Mut ? Mutability::Mut : Mutability::Const;
-      auto iden = Expect(TType::Identifier);
-      statements.push_back(ParseDeclaration(info, iden.value, mutability));
+    case TType::Const:
+    case TType::Identifier: { 
+      statements.push_back(ParseDeclaration());
       break;
     }
-    case TType::Identifier: {
-      auto iden = Eat();
-      
-      // this.something = blah
-      // dot assignment for aliases: 
-      // purely to prevent naming conflicts.
-      if (Peek().type == TType::Dot) {
-        tokens.push_back(iden);
-        auto dot = ParsePostfix();
-        auto assign = ParseLValuePostFix(dot);
-        statements.push_back(std::move(assign));
-        break;
-      }
-      auto decl = ParseDeclaration(info, iden.value, Mutability::Const);
-      statements.push_back(std::move(decl));
-      break;
-    }
-
+    
     default:
       throw std::runtime_error(
           "Invalid statement in object initalizer: " +

@@ -1,23 +1,16 @@
-
 // create our 'class' object. This just serves as a template.
-const Vec2 = {
-  // if we want the type() function to return our typename, we can declare this field.
-  // Note that it will return anything, not just a string.
-  // use this.type to avoid trying to set the type function itself, this is clunky and will likely be fixed.
-  this.type = "Vec2",
-  
-  // our actual fields for our vector.
-  mut x = 0,
-  mut y = 0,
+let Vec2 = {
+  mut x : int,
+  mut y : int,
   
   // declare a constructor
   // this just makes this base instance a functor that produces instances of it's self.
   // we declare this as mut since 
   // it will be removed from the object on instantiation.
   // this overrides the () operator.
-  mut call = func(self) {
+  let mut call = func(self: object) {
     // make a deep clone of this object.
-    mut def = self.clone()
+    let mut def = self.clone()
     // delete the constructor from the instance.
     delete def.call
     // return instance.
@@ -25,7 +18,7 @@ const Vec2 = {
   }
 }
 
-instance = Vec2()
+let instance = Vec2()
 
 println(instance)
 

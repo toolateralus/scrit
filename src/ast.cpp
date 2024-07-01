@@ -81,12 +81,17 @@ Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
     : Expression(info, operand->type), Statement(info) {
 
   auto value = operand->Evaluate();
-
-  if (!value) {
-    throw std::runtime_error("couldnt find function... call at\n" +
-                             operand->srcInfo.ToString());
+  
+  if (!value ) {
+    // a bit of specific code for functor objects.
+    if (auto object = std::dynamic_pointer_cast<Object_T>(value); object->HasMember("call")) {
+      value = object->GetMember("call");      
+    } else {
+      throw std::runtime_error("couldnt find function... call at\n" +
+                              operand->srcInfo.ToString());
+    }
   }
-
+  
   auto target = std::dynamic_pointer_cast<CallableType>(value->type);
 
   if (target && target->returnType) {
@@ -236,9 +241,7 @@ Property::Property(SourceInfo &info, const string &name, ExpressionPtr &&lambda,
                    const Mutability &mut)
     : Statement(info), name(std::move(name)), lambda(std::move(lambda)),
       mutability(mut) {
-        ExpressionPtr v = make_unique<Literal>(info, TypeSystem::Current().Undefined, Ctx::Undefined());
-        auto dud = make_shared<Lambda_T>(std::move(v));
-        context.scopes.back()->ForwardDeclare(name, dud, mut);
+        
       }
 
 // TODO: fix this.
@@ -246,9 +249,6 @@ Identifier::Identifier(SourceInfo &info, const string &name)
     : Expression(info, nullptr), name(name) {
   if (auto var = ASTNode::context.Find(name)) {
     type = var->type;
-  } else {
-    // this is somewhat expected i think.
-    std::cout << "untyped identifier:: " << name << std::endl;
   }
 }
 
@@ -292,10 +292,7 @@ Declaration::Declaration(SourceInfo &info, const string &name,
                          ExpressionPtr &&expr, const Mutability &mut,
                          const Type &type)
     : Statement(info), name(name), expr(std::move(expr)), mut(mut), type(type) {
-  // we fwd declare the variable as mutable. Later, it will be overwritten as
-  // its true mutability.
-  context.scopes.back()->ForwardDeclare(name, TypeSystem::Current().GetDefault(type),
-                             Mutability::Mut);
+  
 }
 
 // ##############################################
@@ -327,8 +324,9 @@ ExecutionResult Program::Execute() {
                                  CC_ToString(result.controlChange));
       }
     } catch (std::runtime_error err) {
-      std::cout << err.what() << "\n"
-                << statement->srcInfo.ToString() << std::endl;
+      std::cout << "\033[1;31m" << err.what() << "\n"
+        << statement->srcInfo.ToString() << std::endl;
+      std::cout << "\033[0m";
     }
   }
   return ExecutionResult::None;
@@ -1150,7 +1148,7 @@ ExecutionResult Declaration::Execute() {
   
   auto &scope = ASTNode::context.scopes.back();
   
-  if (scope->Contains(name) && !scope->IsForwardDeclared(name)) {
+  if (scope->Contains(name)) {
     throw std::runtime_error(
         "cannot re-define an already existing variable.\noffending variable: " +
         name);

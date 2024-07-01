@@ -23,8 +23,8 @@ Value Callable_T::Call(ArgumentsPtr &args) {
   size_t i = 0;
   for (const auto &param : params->values) {
     if (i >= values.size()) {
-      if (param.value != nullptr) {
-        scope->Set(param.name, param.value); 
+      if (param.default_value != nullptr) {
+        scope->Set(param.name, param.default_value); 
       }
       continue;
     }
@@ -38,7 +38,7 @@ Value Callable_T::Call(ArgumentsPtr &args) {
   }
 
   auto result = block->Execute();
-
+  
   ASTNode::context.PopScope();
 
   switch (result.controlChange) {
@@ -604,8 +604,8 @@ Value Callable_T::Call(std::vector<Value> &values) {
   for (const auto &param : params->values) {
     if (i < values.size()) {
       scope->Set(param.name, values[i]);
-    } else if (param.value != nullptr) {
-      scope->Set(param.name, param.value);
+    } else if (param.default_value != nullptr) {
+      scope->Set(param.name, param.default_value);
     } else {
       break;
     }
@@ -631,8 +631,10 @@ Float_T::Float_T(float value) : Value_T(TypeSystem::Current().Float) {
 Callable_T::Callable_T(const Type &returnType, BlockPtr &&block,
                        ParametersPtr &&params)
     : Value_T(nullptr), block(std::move(block)), params(std::move(params)) {
-  this->type = TypeSystem::Current().FromCallable(returnType,
-                                                  this->params->ParamTypes());
+  if (!this->type) {
+    this->type = TypeSystem::Current().FromCallable(returnType,
+                                                    this->params->ParamTypes());
+  }
 }
 String_T::String_T(const string &value)
     : Value_T(TypeSystem::Current().String) {

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ast.hpp"
-#include <stdexcept>
 #ifdef __linux__
 #include <dlfcn.h>
 #else
@@ -42,13 +41,12 @@ struct ScritModHandle {
 struct Scope_T {
   
   struct Key {
-    bool forward_declared;
     const std::string value;
     const Mutability mutability;
     
     Key() = delete;
-    Key(const std::string &value, const Mutability &mutability, const bool forward_declared = false)
-        : value(value), mutability(mutability), forward_declared(forward_declared) {}
+    Key(const std::string &value, const Mutability &mutability)
+        : value(value), mutability(mutability) {}
         
     bool operator<(const Key &other) const { return value < other.value; }
     bool operator==(const Key &other) const {
@@ -64,21 +62,6 @@ struct Scope_T {
   auto Get(const string &name) -> Value;
   
   auto Set(const Key &name, Value value) -> void;
-  
-  auto IsForwardDeclared(const string &name) -> bool {
-    if (!Contains(name)) {
-      return false;
-    }
-    auto var = Find(name);
-    return var->first.forward_declared;
-  } 
-  auto ForwardDeclare(const string &name, const Value &value, const Mutability &mut) -> void {
-    auto key = Scope_T::Key(name, mut, true);
-    if (variables.contains(key)) {
-        throw std::runtime_error("cannot re-define an already existing variable : " + name);
-    }
-    variables[key] = value;
-  }
   
   auto Set(const string &name, Value value,
            const Mutability &mutability = Mutability::Const) -> void;

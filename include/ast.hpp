@@ -158,7 +158,7 @@ struct Property : Statement {
 struct Parameters : Statement {
   struct Param {
     string name;
-    Value value;
+    Value default_value;
     Type type;
   };
   std::vector<Param> values;

@@ -41,24 +41,26 @@ unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
     try {
       auto statement = ParseStatement();
       statements.push_back(std::move(statement));
-    }  catch (std::out_of_range oor) {
-      std::cout << "unexpected end of input at \n" << info.ToString() << std::endl;
+    } catch (std::out_of_range oor) {
+      std::cout << "unexpected end of input at \n"
+                << info.ToString() << std::endl;
       std::exit(1);
     } catch (std::runtime_error e) {
-      
+
       auto what = string(e.what());
-      
+
       // add source info if it doesn't already exist.
       // This is pretty presumptuous and bad.
       if (!what.contains("{")) {
         what += " " + info.ToString();
       }
-      
-      std::cout << "Parser exception! : " << what << std::endl;
+
+      std::cout << "\033[1;31mParser exception! : " << what << "\033[0m"
+                << std::endl;
       // try to eat a token. This will eventuallya llow the parser to continue
       // normally if any well formed code exists past this exception. However,
       // this results in a bulk of unrelated errors.
-      
+
       // if there are none left, just stop.
       if (tokens.empty()) {
         break;
@@ -163,7 +165,6 @@ StatementPtr Parser::ParseKeyword(Token token) {
   }
 }
 
-
 // TODO: we need to refactor usings entirely for the way the type system mingles
 // with types. usings should be equivalent to a CSharp namespace.
 StatementPtr Parser::ParseUsing() {
@@ -247,6 +248,7 @@ StatementPtr Parser::ParseDeclaration(SourceInfo &info, const string &iden,
   Type type = nullptr;
   auto next = Peek();
   switch (next.type) {
+
   case TType::Colon: {
     Eat();
     type = ParseType();
@@ -354,7 +356,6 @@ unique_ptr<Noop> Parser::ParseFunctionDeclaration() {
   ASTNode::context.scopes.back()->Set(name, callable, Mutability::Mut);
   auto block = ParseBlock();
   callable->block = std::move(block);
-
   return std::make_unique<Noop>(info);
 }
 // for statements like
@@ -517,24 +518,25 @@ ParametersPtr Parser::ParseParameters() {
   std::vector<Parameters::Param> params = {};
   while (tokens.size() > 0 && next.type != TType::RParen) {
 
-    auto value = ParseOperand();
+    auto value = Expect(TType::Identifier).value;
     Expect(TType::Colon);
-    auto tname = ParseType();
-
-    if (auto iden = dynamic_cast<Identifier *>(value.get())) {
-      Parameters::Param param = {
-          .name = iden->name, .value = nullptr, .type = tname};
-
-      if (Peek().type == TType::Assign) {
-        Eat();
-        auto value = ParseExpression();
-        param.value = value->Evaluate();
-        // TODO type check here maybe?
-        param.type = value->type;
-      }
-
-      params.push_back(param);
+    auto type = ParseType();
+    
+    Parameters::Param param = {
+        .name = value, 
+        .default_value = nullptr,
+        .type = type
+    };
+    
+    // Default values for parameter.
+    if (Peek().type == TType::Assign) {
+      Eat();
+      auto value = ParseExpression();
+      param.default_value = value->Evaluate();
+      param.type = value->type;
     }
+    
+    params.push_back(param);
 
     if (Peek().type == TType::Comma) {
       Eat();
@@ -568,18 +570,18 @@ ArgumentsPtr Parser::ParseArguments() {
   Expect(TType::RParen);
   return make_unique<Arguments>(info, std::move(values));
 }
+
 BlockPtr Parser::ParseBlock() {
   auto info = this->info;
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};
   auto next = Peek();
-
+  
   // Empty block.
   if (next.type == TType::RCurly) {
     Eat();
     return make_unique<Block>(info, std::move(statements));
   }
-
   while (tokens.size() > 0) {
 
     // If the last line of a block is an identifier or a literal, we just create
@@ -618,7 +620,6 @@ BlockPtr Parser::ParseBlock() {
   Expect(TType::RCurly);
   return make_unique<Block>(info, std::move(statements));
 }
-
 
 // ########## Control flow ###############
 IfPtr Parser::ParseIf() {
