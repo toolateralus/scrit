@@ -96,15 +96,11 @@ REGISTER_FUNCTION(type, "string", {"any"}) {
   return Ctx::CreateString("undefined -- this is a language bug.");
 }
 // Serializer
-REGISTER_FUNCTION(serialize, "string", {"any"}) {
-  if (args.empty()) {
-    return Ctx::Undefined();
-  }
-
+REGISTER_FUNCTION(serialize, "string", {"any", "object"}) {
   auto val = args[0];
   WriterSettings settings = {};
   Object settingsObj;
-  if (args.size() > 1 && Ctx::TryGetObject(args[1], settingsObj)) {
+  if (Ctx::TryGetObject(args[1], settingsObj)) {
     int indentation = 0;
     int startingIndent;
     string refHandling;
@@ -185,4 +181,10 @@ REGISTER_FUNCTION(print, "undefined", {"any"}) {
     printf("%s", arg->ToString().c_str());
   }
   return Undefined_T::UNDEFINED;
+}
+
+REGISTER_FUNCTION(readln, "string", {}) {
+  string s;
+  std::cin >> s;
+  return Ctx::CreateString(s);
 }

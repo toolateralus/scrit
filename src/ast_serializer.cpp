@@ -162,30 +162,36 @@ void ASTSerializer::visit(Else *elseStmt) {
 void ASTSerializer::visit(For *forStmt) {
   Write("For: {");
   {
-    auto _ = Indenter(this);
-    Write("Init: {");
-    {
-      auto _ = Indenter(this);
-      forStmt->decl->Accept(this);
-      
-    }
-    Write("}");
-    Write("Condition: {");
-    {
-      auto _ = Indenter(this);
-      forStmt->condition->Accept(this);
-      
-    }
-    Write("}");
-    Write("Update: {");
-    {
-      auto _ = Indenter(this);
-      forStmt->increment->Accept(this);
-      
-    }
-    Write("}");
-    forStmt->block->Accept(this);
     
+    if (forStmt->decl) {
+      auto _ = Indenter(this);
+      Write("Init: {");
+      {
+        auto _ = Indenter(this);
+        forStmt->decl->Accept(this);
+      }
+      Write("}");
+    }
+    if (forStmt->condition) {
+      Write("Condition: {");
+      {
+        auto _ = Indenter(this);
+        forStmt->condition->Accept(this);
+        
+      }
+      Write("}");
+    }
+    if (forStmt->increment) {
+      Write("Update: {");
+      {
+        auto _ = Indenter(this);
+        forStmt->increment->Accept(this);
+        
+      }
+      Write("}");
+    }
+    
+    forStmt->block->Accept(this);
   }
   Write("}");
 }

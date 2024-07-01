@@ -489,7 +489,7 @@ ExecutionResult Block::Execute() {
 }
 Value ObjectInitializer::Evaluate() {
   static auto _this = Object_T::New();
-
+  
   _this->scope->Clear();
   _this->scope->Set("this", _this, Mutability::Mut);
 
@@ -503,8 +503,8 @@ Value ObjectInitializer::Evaluate() {
         ".. => { some body of code returning a value ..}");
   }
   _this->scope->Erase("this");
-
-  auto object = Object_T::New(_this->scope);
+  
+  auto object = Object_T::New(_this->scope->Clone());
   object->type = type;
   return object;
 }
@@ -682,11 +682,11 @@ ExecutionResult Assignment::Execute() {
         "___ : type = ...' syntax. \n offending variable: " +
         iden->name);
   }
-
+  
   auto result = expr->Evaluate();
   result->type = type;
   ApplyCopySemantics(result);
-
+  
   // TODO: find a better way to query mutability of a variable.
   auto iter = ASTNode::context.FindIter(iden->name);
   context.Insert(iden->name, result, iter->first.mutability);
