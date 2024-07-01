@@ -235,12 +235,15 @@ struct ArrayInitializer : Expression {
                    vector<ExpressionPtr> &&init);
   Value Evaluate() override;
 };
-
+namespace Values {
+  struct Callable_T;
+}
 struct Call : Expression, Statement {
   ExpressionPtr operand;
   ArgumentsPtr args;
   Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args);
   static vector<Value> GetArgsValueList(ArgumentsPtr &args);
+  void ValidateArgumentSize(shared_ptr<Callable_T> &callable);
   Value Evaluate() override;
   ExecutionResult Execute() override;
   void Accept(ASTVisitor* visitor) override;

@@ -7,13 +7,13 @@
 #include "parser.hpp"
 #include "value.hpp"
 
+#include "ast_visitor.hpp"
 #include <iostream>
 #include <memory>
 #include <ranges>
 #include <stdexcept>
 #include <string>
 #include <type.hpp>
-#include "ast_visitor.hpp"
 
 auto programSourceInfo = SourceInfo{0, 0, ""};
 
@@ -83,17 +83,18 @@ Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
     : Expression(info, operand->type), Statement(info) {
 
   auto value = operand->Evaluate();
-  
-  if (!value ) {
+
+  if (!value) {
     // a bit of specific code for functor objects.
-    if (auto object = std::dynamic_pointer_cast<Object_T>(value); object->HasMember("call")) {
-      value = object->GetMember("call");      
+    if (auto object = std::dynamic_pointer_cast<Object_T>(value);
+        object->HasMember("call")) {
+      value = object->GetMember("call");
     } else {
       throw std::runtime_error("couldnt find function... call at\n" +
-                              operand->srcInfo.ToString());
+                               operand->srcInfo.ToString());
     }
   }
-  
+
   auto target = std::dynamic_pointer_cast<CallableType>(value->type);
 
   if (target && target->returnType) {
@@ -242,9 +243,7 @@ Delete::~Delete() {}
 Property::Property(SourceInfo &info, const string &name, ExpressionPtr &&lambda,
                    const Mutability &mut)
     : Statement(info), name(std::move(name)), lambda(std::move(lambda)),
-      mutability(mut) {
-        
-      }
+      mutability(mut) {}
 
 // TODO: fix this.
 Identifier::Identifier(SourceInfo &info, const string &name)
@@ -294,7 +293,7 @@ Declaration::Declaration(SourceInfo &info, const string &name,
                          ExpressionPtr &&expr, const Mutability &mut,
                          const Type &type)
     : Statement(info), name(name), expr(std::move(expr)), mut(mut), type(type) {
-  
+
 }
 
 // ##############################################
@@ -327,7 +326,7 @@ ExecutionResult Program::Execute() {
       }
     } catch (std::runtime_error err) {
       std::cout << "\033[1;31m" << err.what() << "\n"
-        << statement->srcInfo.ToString() << std::endl;
+                << statement->srcInfo.ToString() << std::endl;
       std::cout << "\033[0m";
     }
   }
@@ -360,13 +359,13 @@ ExecutionResult If::Execute() {
 }
 
 Value Operand::Evaluate() { return expression->Evaluate(); }
-Value Identifier::Evaluate() { 
+Value Identifier::Evaluate() {
   auto var = context.Find(name);
   if (var == nullptr) {
     var = Ctx::Undefined();
-  } 
+  }
   return var;
- }
+}
 Value Arguments::Evaluate() {
   vector<Value> values;
   for (const auto &v : this->values) {
@@ -522,10 +521,44 @@ Value ArrayInitializer::Evaluate() {
   array->type = type;
   return array;
 }
+void Call::ValidateArgumentSize(shared_ptr<Callable_T> &callable) {
+  if (!callable) {
+    return;
+  }
+
+  if (!callable->params || !callable->block) {
+    auto native_callable =
+        std::dynamic_pointer_cast<NativeCallable_T>(callable);
+    if (native_callable->function->parameterTypes.size() !=
+        args->values.size()) {
+      auto delta = native_callable->function->parameterTypes.size() -
+                   args->values.size();
+      
+      if (delta > 0) {
+        throw std::runtime_error("Invalid function call: too many arguments");
+      } else {
+        throw std::runtime_error("Invalid function call: too few arguments");
+      }
+    }
+
+    return;
+  }
+
+  if (callable->params->values.size() != args->values.size()) {
+    auto delta = callable->params->values.size() - args->values.size();
+
+    if (delta > 0) {
+      throw std::runtime_error("Invalid function call: too many arguments");
+    } else {
+      throw std::runtime_error("Invalid function call: too few arguments");
+    }
+  }
+}
 Value Call::Evaluate() {
   auto lvalue = operand->Evaluate();
   if (lvalue->GetPrimitiveType() == PrimitiveType::Callable) {
     auto callable = std::static_pointer_cast<Callable_T>(lvalue);
+    ValidateArgumentSize(callable);
     auto result = callable->Call(args);
     return result;
   } else {
@@ -537,6 +570,8 @@ Value Call::Evaluate() {
       auto fn = obj->GetMember("call");
       auto callable = std::dynamic_pointer_cast<Callable_T>(fn);
       if (callable) {
+        ValidateArgumentSize(callable);
+
         auto args_values = GetArgsValueList(args);
         args_values.insert(args_values.begin(), obj);
         return callable->Call(args_values);
@@ -848,7 +883,7 @@ Value BinExpr::Evaluate() {
   if (!Type_T::Equals(left->type.get(), right->type.get())) {
     throw TypeError(left->type, right->type);
   }
-  
+
   switch (op) {
   case TType::NullCoalescing: {
     if (left->GetPrimitiveType() == PrimitiveType::Null ||
@@ -1151,19 +1186,20 @@ ExecutionResult Property::Execute() {
   return ExecutionResult::None;
 }
 ExecutionResult Declaration::Execute() {
-  
+
   auto &scope = ASTNode::context.scopes.back();
-  
+
   if (scope->Contains(name)) {
     throw std::runtime_error(
         "cannot re-define an already existing variable.\noffending variable: " +
         name);
   }
   auto value = this->expr->Evaluate();
-  
-  // TODO: remove this. This basically implies theres some guarantee of inaccuracy in the typing of 
-  // the expression node vs the returned value, which should be sought out to completely eliminated.
-  // This just incurs a somewhat cheap but unneccesary cost of double checking each type.
+
+  // TODO: remove this. This basically implies theres some guarantee of
+  // inaccuracy in the typing of the expression node vs the returned value,
+  // which should be sought out to completely eliminated. This just incurs a
+  // somewhat cheap but unneccesary cost of double checking each type.
   if (!Type_T::Equals(value->type.get(), this->type.get())) {
     if (value->type && this->type)
       throw std::runtime_error(
@@ -1175,7 +1211,7 @@ ExecutionResult Declaration::Execute() {
 
   // copy where needed
   ApplyCopySemantics(value);
-  
+
   ASTNode::context.scopes.back()->Set(name, value, mut);
 
   return ExecutionResult::None;
@@ -1237,46 +1273,46 @@ Value Literal::Evaluate() { return expression->Clone(); }
 Value DefaultValue::Evaluate() {
   return Values::TypeSystem::Current().GetDefault(type);
 }
-void ASTNode::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Executable::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Statement::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Program::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Expression::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Operand::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Identifier::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Arguments::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void TupleInitializer::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Property::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Parameters::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Continue::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Break::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Return::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void DotExpr::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Delete::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Block::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void ObjectInitializer::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Call::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void If::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Else::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void For::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void RangeBasedFor::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Declaration::Accept(ASTVisitor* visitor) {visitor->visit(this); }
-void Assignment::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void TupleDeconstruction::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void CompAssignExpr::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void CompoundAssignment::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void FunctionDecl::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Noop::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void DotAssignment::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void DotCallStmnt::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Subscript::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void SubscriptAssignStmnt::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void UnaryExpr::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void UnaryStatement::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void BinExpr::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Using::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Lambda::Accept(ASTVisitor* visitor) { visitor->visit(this); }
-void Match::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void ASTNode::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Executable::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Statement::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Program::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Expression::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Operand::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Identifier::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Arguments::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void TupleInitializer::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Property::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Parameters::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Continue::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Break::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Return::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void DotExpr::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Delete::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Block::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void ObjectInitializer::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Call::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void If::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Else::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void For::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void RangeBasedFor::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Declaration::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Assignment::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void TupleDeconstruction::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void CompAssignExpr::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void CompoundAssignment::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void FunctionDecl::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Noop::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void DotAssignment::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void DotCallStmnt::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Subscript::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void SubscriptAssignStmnt::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void UnaryExpr::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void UnaryStatement::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void BinExpr::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Using::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Lambda::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Match::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void MatchStatement::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void DefaultValue::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Literal::Accept(ASTVisitor *visitor) { visitor->visit(this); }
