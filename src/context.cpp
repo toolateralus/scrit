@@ -70,9 +70,17 @@ auto Context::Find(const string &name) const -> Value {
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     for (const auto &[key, var] : (*it)->Members()) {
       if (key.value == name) {
+        if (var->GetPrimitiveType() == PrimitiveType::Lambda) {
+            if (auto lambda = std::dynamic_pointer_cast<Lambda_T>(var)) {
+              return lambda->Evaluate();
+            }
+        }
         return var;
       }
     }
+  }
+  if (FunctionRegistry::Exists(name)) {
+    return FunctionRegistry::GetCallable(name);
   }
   return nullptr;
 }

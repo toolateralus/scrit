@@ -28,19 +28,11 @@ ExecutionResult ExecutionResult::Break =
 ExecutionResult ExecutionResult::Continue =
     ExecutionResult(ControlChange::Continue, Value_T::UNDEFINED);
 
-string CC_ToString(ControlChange controlChange) {
-  switch (controlChange) {
-  case ControlChange::None:
-    return "None";
-  case ControlChange::Return:
-    return "Return";
-  case ControlChange::Continue:
-    return "Continue";
-  case ControlChange::Break:
-    return "Break";
-  }
-  return "";
-}
+// ##############################################
+// ##### CONSTRUCTORS AND DECONSTRUCTORS ########
+// ##############################################
+// ##############################################
+
 ExecutionResult::ExecutionResult(ControlChange controlChange, Value value) {
   this->controlChange = controlChange;
   this->value = value;
@@ -89,14 +81,14 @@ Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
     : Expression(info, operand->type), Statement(info) {
 
   auto value = operand->Evaluate();
-  
+
   if (!value) {
     throw std::runtime_error("couldnt find function... call at\n" +
                              operand->srcInfo.ToString());
   }
-  
+
   auto target = std::dynamic_pointer_cast<CallableType>(value->type);
-  
+
   if (target && target->returnType) {
     this->type = target->returnType;
   }
@@ -162,51 +154,6 @@ BinExpr::BinExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right,
   this->right = std::move(right);
   this->op = op;
 }
-ExecutionResult If::Execute() {
-  auto condResult = condition->Evaluate();
-  if (condResult->Equals(Value_T::True)) {
-    auto result = block->Execute();
-    switch (result.controlChange) {
-    case ControlChange::None:
-      break;
-    case ControlChange::Return:
-    case ControlChange::Continue:
-    case ControlChange::Break:
-      return result;
-    }
-  } else if (elseStmnt) {
-    auto result = elseStmnt->Execute();
-    switch (result.controlChange) {
-    case ControlChange::None:
-      break;
-    case ControlChange::Return:
-    case ControlChange::Continue:
-    case ControlChange::Break:
-      return result;
-    }
-  }
-  return ExecutionResult::None;
-}
-IfPtr If::NoElse(SourceInfo &info, ExpressionPtr &&condition,
-                 BlockPtr &&block) {
-  return make_unique<If>(info, std::move(condition), std::move(block));
-}
-IfPtr If::WithElse(SourceInfo &info, ExpressionPtr &&condition,
-                   BlockPtr &&block, ElsePtr &&elseStmnt) {
-  return make_unique<If>(info, std::move(condition), std::move(block),
-                         std::move(elseStmnt));
-}
-ElsePtr Else::New(SourceInfo &info, IfPtr &&ifStmnt) {
-  auto elseStmnt = make_unique<Else>(info);
-  elseStmnt->ifStmnt = std::move(ifStmnt);
-  return elseStmnt;
-}
-ElsePtr Else::NoIf(SourceInfo &info, BlockPtr &&block) {
-  auto elseStmnt = make_unique<Else>(info);
-  ;
-  elseStmnt->block = std::move(block);
-  return elseStmnt;
-}
 
 Using::Using(SourceInfo &info, const string &name, const bool isWildcard)
     : Statement(info), symbols({}), moduleName(name), isWildcard(isWildcard) {
@@ -237,8 +184,123 @@ CompAssignExpr::CompAssignExpr(SourceInfo &info, ExpressionPtr &&left,
   this->type = left->type;
 }
 
+string CC_ToString(ControlChange controlChange) {
+  switch (controlChange) {
+  case ControlChange::None:
+    return "None";
+  case ControlChange::Return:
+    return "Return";
+  case ControlChange::Continue:
+    return "Continue";
+  case ControlChange::Break:
+    return "Break";
+  }
+  return "";
+}
+
+IfPtr If::NoElse(SourceInfo &info, ExpressionPtr &&condition,
+                 BlockPtr &&block) {
+  return make_unique<If>(info, std::move(condition), std::move(block));
+}
+IfPtr If::WithElse(SourceInfo &info, ExpressionPtr &&condition,
+                   BlockPtr &&block, ElsePtr &&elseStmnt) {
+  return make_unique<If>(info, std::move(condition), std::move(block),
+                         std::move(elseStmnt));
+}
+ElsePtr Else::New(SourceInfo &info, IfPtr &&ifStmnt) {
+  auto elseStmnt = make_unique<Else>(info);
+  elseStmnt->ifStmnt = std::move(ifStmnt);
+  return elseStmnt;
+}
+ElsePtr Else::NoIf(SourceInfo &info, BlockPtr &&block) {
+  auto elseStmnt = make_unique<Else>(info);
+  ;
+  elseStmnt->block = std::move(block);
+  return elseStmnt;
+}
+Else::Else(SourceInfo &info, IfPtr &&ifPtr, BlockPtr &&block)
+    : Statement(info) {
+  this->ifStmnt = std::move(ifPtr);
+  this->block = std::move(block);
+}
+If::~If() {}
+Else::~Else() {}
+Delete::Delete(SourceInfo &info, ExpressionPtr &&dot)
+    : Statement(info), dot(std::move(dot)) {}
+
+Delete::Delete(SourceInfo &info, IdentifierPtr &&iden)
+    : Statement(info), iden(std::move(iden)) {}
+
+Delete::~Delete() {}
+Property::Property(SourceInfo &info, const string &name, ExpressionPtr &&lambda,
+                   const Mutability &mut)
+    : Statement(info), name(std::move(name)), lambda(std::move(lambda)),
+      mutability(mut) {}
+
+// TODO: fix this.
+Identifier::Identifier(SourceInfo &info, const string &name)
+    : Expression(info, nullptr), name(name) {
+  if (auto var = ASTNode::context.Find(name)) {
+    type = var->type;
+  } else {
+    // this is somewhat expected i think.
+    std::cout << "untyped identifier:: " << name << std::endl;
+  }
+}
+
+TupleInitializer::TupleInitializer(SourceInfo &info,
+                                   vector<ExpressionPtr> &&values)
+    : Expression(info, nullptr), values(std::move(values)) {
+  for (const auto &v : this->values) {
+    this->types.push_back(v->type);
+  }
+
+  // If we failed to get a type for any of the expressions,
+  // we try again and evaluate the expressions. This is somewhat common for
+  // implicitly typed tuples of results of native functions or function
+  // pointers.
+  if (std::find(types.begin(), types.end(), nullptr) != types.end()) {
+    types.clear();
+    for (const auto &v : this->values) {
+      this->types.push_back(v->Evaluate()->type);
+    }
+  }
+
+  this->type = TypeSystem::Current().FromTuple(this->types);
+}
+ArrayInitializer::ArrayInitializer(SourceInfo &info, const Type &type,
+                                   vector<ExpressionPtr> &&init)
+    : Expression(info, type), init(std::move(init)) {}
+Value AnonymousFunction::Evaluate() { return callable; }
+
+AnonymousFunction::AnonymousFunction(SourceInfo &info, Type &type,
+                                     Value callable)
+    : Expression(info, type), callable(callable) {}
+// IDEA:
+// We should be inserting things into the context as we parse, so that
+// identifiers can be typed at 'parse time' However, declarations are almost
+// always the root of all execution. So this basically just offloads a ton of
+// 'interpret time' behaviour into happening during the construction of the ast.
+// We should seek a better design where we always have type information
+// available without having to actually evaluate anything here, just put dummy
+// data into the scope.
+Declaration::Declaration(SourceInfo &info, const string &name,
+                         ExpressionPtr &&expr, const Mutability &mut,
+                         const Type &type)
+    : Statement(info), name(name), expr(std::move(expr)), mut(mut), type(type) {
+  // we fwd declare the variable as mutable. Later, it will be overwritten as
+  // its true mutability.
+  context.scopes.back()->Set(name, TypeSystem::Current().GetDefault(type),
+                             Mutability::Mut);
+}
+
+// ##############################################
+// #######  EXECUTION AND EVALUATION ############
+// ##############################################
+// ##############################################
+
 ExecutionResult Program::Execute() {
-  
+
   // create an object called global, so we can bypass any shadowed variables.
   auto global = Object_T::New(ASTNode::context.scopes.front());
 
@@ -248,7 +310,7 @@ ExecutionResult Program::Execute() {
   }
 
   ASTNode::context.Insert("global", global, Mutability::Mut);
-  
+
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
@@ -261,24 +323,40 @@ ExecutionResult Program::Execute() {
                                  CC_ToString(result.controlChange));
       }
     } catch (std::runtime_error err) {
-      std::cout <<  err.what() << "\n" << statement->srcInfo.ToString() << std::endl;
+      std::cout << err.what() << "\n"
+                << statement->srcInfo.ToString() << std::endl;
     }
   }
   return ExecutionResult::None;
 }
-Value Operand::Evaluate() { return expression->Evaluate(); }
-Value Identifier::Evaluate() {
-  auto value = ASTNode::context.Find(name);
-  if (value != nullptr) {
-    if (auto lambda = std::dynamic_pointer_cast<Lambda_T>(value)) {
-      return lambda->Evaluate();
+ExecutionResult If::Execute() {
+  auto condResult = condition->Evaluate();
+  if (condResult->Equals(Value_T::True)) {
+    auto result = block->Execute();
+    switch (result.controlChange) {
+    case ControlChange::None:
+      break;
+    case ControlChange::Return:
+    case ControlChange::Continue:
+    case ControlChange::Break:
+      return result;
     }
-    return value;
-  } else if (FunctionRegistry::Exists(name)) {
-    return FunctionRegistry::GetCallable(name);
+  } else if (elseStmnt) {
+    auto result = elseStmnt->Execute();
+    switch (result.controlChange) {
+    case ControlChange::None:
+      break;
+    case ControlChange::Return:
+    case ControlChange::Continue:
+    case ControlChange::Break:
+      return result;
+    }
   }
-  return Value_T::UNDEFINED;
+  return ExecutionResult::None;
 }
+
+Value Operand::Evaluate() { return expression->Evaluate(); }
+Value Identifier::Evaluate() { return context.Find(name); }
 Value Arguments::Evaluate() {
   vector<Value> values;
   for (const auto &v : this->values) {
@@ -320,7 +398,6 @@ void ApplyCopySemantics(Value &result) {
   }
   }
 }
-
 void ApplyCopySemantics(ExecutionResult &result) {
   switch (result.value->GetPrimitiveType()) {
   case Values::PrimitiveType::Invalid:
@@ -344,7 +421,6 @@ void ApplyCopySemantics(ExecutionResult &result) {
   }
   }
 }
-
 ExecutionResult Block::Execute(Scope scope) {
   ASTNode::context.PushScope(scope);
 
@@ -374,7 +450,6 @@ ExecutionResult Block::Execute(Scope scope) {
   ASTNode::context.PopScope();
   return ExecutionResult::None;
 }
-
 ExecutionResult Block::Execute() {
   ASTNode::context.PushScope();
   for (auto &statement : statements) {
@@ -419,7 +494,10 @@ Value ObjectInitializer::Evaluate() {
         ".. => { some body of code returning a value ..}");
   }
   _this->scope->Erase("this");
-  return Object_T::New(_this->scope);
+
+  auto object = Object_T::New(_this->scope);
+  object->type = type;
+  return object;
 }
 vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
   vector<Value> values = {};
@@ -428,14 +506,12 @@ vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
   }
   return values;
 }
-
 Value ArrayInitializer::Evaluate() {
   auto array = Array_T::New(init);
   ;
   array->type = type;
   return array;
 }
-
 Value Call::Evaluate() {
   auto lvalue = operand->Evaluate();
   if (lvalue->GetPrimitiveType() == PrimitiveType::Callable) {
@@ -647,7 +723,6 @@ Value TryCallMethods(unique_ptr<Expression> &right, Value &lvalue) {
   }
   return nullptr;
 }
-
 Value EvaluateWithinObject(Scope &scope, Value object, ExpressionPtr &expr) {
   scope->Set("this", object, Mutability::Mut);
   ASTNode::context.PushScope(scope);
@@ -665,7 +740,6 @@ Value EvaluateWithinObject(Scope &scope, Value object,
   scope->Erase("this");
   return result;
 }
-
 Value DotExpr::Evaluate() {
   auto lvalue = left->Evaluate();
 
@@ -734,7 +808,7 @@ ExecutionResult SubscriptAssignStmnt::Execute() {
   auto lvalue = subscript->left->Evaluate();
   auto idx = subscript->index->Evaluate();
   lvalue->SubscriptAssign(idx, value->Evaluate());
-  
+
   return ExecutionResult::None;
 }
 Value UnaryExpr::Evaluate() {
@@ -971,14 +1045,6 @@ Value CompAssignExpr::Evaluate() {
                              " in compound assignment statement");
   }
 }
-Else::Else(SourceInfo &info, IfPtr &&ifPtr, BlockPtr &&block)
-    : Statement(info) {
-  this->ifStmnt = std::move(ifPtr);
-  this->block = std::move(block);
-}
-If::~If() {}
-Else::~Else() {}
-
 Value Match::Evaluate() {
   auto val = expr->Evaluate();
   size_t i = 0;
@@ -1000,7 +1066,6 @@ Value Match::Evaluate() {
   else
     return Value_T::UNDEFINED;
 }
-
 Value Lambda::Evaluate() {
   if (block) {
     auto result = block->Execute();
@@ -1015,7 +1080,6 @@ Value Lambda::Evaluate() {
     throw std::runtime_error("invalid lambda");
   }
 }
-
 ExecutionResult FunctionDecl::Execute() {
   ASTNode::context.Insert(name,
                           make_shared<Callable_T>(returnType, std::move(block),
@@ -1023,7 +1087,6 @@ ExecutionResult FunctionDecl::Execute() {
                           Mutability::Const);
   return ExecutionResult::None;
 }
-
 ExecutionResult Delete::Execute() {
   // delete a plain identifier. easy!
   if (iden) {
@@ -1055,15 +1118,6 @@ ExecutionResult Delete::Execute() {
   }
   return ExecutionResult::None;
 }
-
-Delete::Delete(SourceInfo &info, ExpressionPtr &&dot)
-    : Statement(info), dot(std::move(dot)) {}
-
-Delete::Delete(SourceInfo &info, IdentifierPtr &&iden)
-    : Statement(info), iden(std::move(iden)) {}
-
-Delete::~Delete() {}
-
 Value TupleInitializer::Evaluate() {
   vector<Value> values;
   for (const auto &v : this->values) {
@@ -1072,7 +1126,6 @@ Value TupleInitializer::Evaluate() {
   }
   return make_shared<Tuple_T>(values);
 }
-
 ExecutionResult TupleDeconstruction::Execute() {
   auto tuple = this->tuple->Evaluate();
   auto value = std::dynamic_pointer_cast<Tuple_T>(tuple);
@@ -1082,11 +1135,6 @@ ExecutionResult TupleDeconstruction::Execute() {
 
   return ExecutionResult::None;
 }
-Property::Property(SourceInfo &info, const string &name, ExpressionPtr &&lambda,
-                   const Mutability &mut)
-    : Statement(info), name(std::move(name)), lambda(std::move(lambda)),
-      mutability(mut) {}
-
 ExecutionResult Property::Execute() {
   if (lambda) {
     Scope_T::Key key = Scope_T::Key(name, mutability);
@@ -1094,38 +1142,14 @@ ExecutionResult Property::Execute() {
   }
   return ExecutionResult::None;
 }
-// TODO: fix this.
-Identifier::Identifier(SourceInfo &info, const string &name)
-    : Expression(info, nullptr), name(name) {}
-
-TupleInitializer::TupleInitializer(SourceInfo &info,
-                                   vector<ExpressionPtr> &&values)
-    : Expression(info, nullptr), values(std::move(values)) {
-  for (const auto &v : this->values) {
-    this->types.push_back(v->type);
-  }
-  
-  // If we failed to get a type for any of the expressions,
-  // we try again and evaluate the expressions. This is somewhat common for implicitly typed
-  // tuples of results of native functions or function pointers.
-  if (std::find(types.begin(), types.end(), nullptr) != types.end()) {
-    types.clear();
-    for (const auto &v : this->values) {
-      this->types.push_back(v->Evaluate()->type);
-    } 
-  }
-  
-  this->type = TypeSystem::Current().FromTuple(this->types);
-}
 ExecutionResult Declaration::Execute() {
-
   if (ASTNode::context.scopes.back()->Contains(name)) {
     throw std::runtime_error(
         "cannot re-define an already existing variable.\noffending variable: " +
         name);
   }
-  auto value = expr->Evaluate();
-  
+  auto value = this->expr->Evaluate();
+
   if (!Type_T::Equals(value->type.get(), this->type.get())) {
     if (value->type && this->type)
       throw std::runtime_error(
@@ -1142,6 +1166,10 @@ ExecutionResult Declaration::Execute() {
 
   return ExecutionResult::None;
 }
+
+// Ideally this would be done when the node is interpreted.
+// However, we have a problem where we do all of our symbol lookup during
+// parsing.
 void Using::Load() {
   for (const auto &mod : activeModules) {
     if (moduleName == mod) {
@@ -1190,15 +1218,8 @@ void Using::Load() {
   ASTNode::context.RegisterModuleHandle(handle);
 }
 
-ArrayInitializer::ArrayInitializer(SourceInfo &info, const Type &type,
-                                   vector<ExpressionPtr> &&init)
-    : Expression(info, type), init(std::move(init)) {}
-Value AnonymousFunction::Evaluate() { return callable; }
-
-AnonymousFunction::AnonymousFunction(SourceInfo &info, Type &type,
-                                     Value callable)
-    : Expression(info, type), callable(callable) {}
 Value Literal::Evaluate() { return expression->Clone(); }
+
 Value DefaultValue::Evaluate() {
   return Values::TypeSystem::Current().GetDefault(type);
 }

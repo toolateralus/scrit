@@ -287,10 +287,8 @@ struct Declaration : Statement {
   const ExpressionPtr expr;
   const Mutability mut;
   const Type type;
-  Declaration(SourceInfo &info, const string &name, ExpressionPtr &&expr, const Mutability &mut, const Type &type) :
-  Statement(info), name(name), expr(std::move(expr)), mut(mut), type(type) { 
-    
-  }
+  Declaration(SourceInfo &info, const string &name, ExpressionPtr &&expr,
+              const Mutability &mut, const Type &type);
   ExecutionResult Execute() override;
 };
 struct TupleDeconstruction : Statement {
@@ -399,9 +397,11 @@ struct Lambda : Expression {
   BlockPtr block = nullptr;
   ExpressionPtr expr = nullptr;
   Lambda(SourceInfo &info, const Type &type, ExpressionPtr &&expr)
-      : Expression(info, type), expr(std::move(expr)) {}
+      : Expression(info, type), expr(std::move(expr)) {
+      }
   Lambda(SourceInfo &info, const Type &type, BlockPtr &&block)
-      : Expression(info, type), block(std::move(block)) {}
+      : Expression(info, type), block(std::move(block)) {
+      }
   Value Evaluate() override;
 };
 // TODO: make a match expression that calls into this and just returns the

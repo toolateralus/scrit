@@ -1,3 +1,4 @@
+#include "error.hpp"
 #include "parser.hpp"
 #include "ast.hpp"
 #include "context.hpp"
@@ -15,22 +16,21 @@ ExpressionPtr Parser::ParseExpression() {
   if (tokens.empty()) {
     throw std::runtime_error("Unexpected end of input");
   }
-  
   auto next = Peek();
-  
   // for ++i, --i etc.  
   if (next.type == TType::Increment || next.type == TType::Decrement) {
     Eat();
     auto expr = ParseExpression();
-    return make_unique<UnaryExpr>(info, expr->type, std::move(expr), next.type);
+    if (!expr->type) {
+     throw std::runtime_error("Failed to get type for expression");
+    }
+    auto unary = make_unique<UnaryExpr>(info, expr->type, std::move(expr), next.type);
+    return unary;
   }
-  
   auto expr = ParseCompoundAssignment();
-  
-  if (expr->type == nullptr) {
-    throw std::runtime_error("failed to get type for expression");
+  if (!expr->type) {
+    throw std::runtime_error("Failed to get type for expression");
   }
-  
   return expr;
 }
 ExpressionPtr Parser::ParseCompoundAssignment() {
@@ -228,9 +228,10 @@ ExpressionPtr Parser::ParseOperand() {
   case TType::Int:
     Eat();
     return make_unique<Literal>(info, TypeSystem::Current().Int, Int_T::New(stoi(token.value)));
-  case TType::Identifier:
+  case TType::Identifier: {
     Eat();
     return make_unique<Identifier>(info, token.value);
+  }
   case TType::LParen: {
     Eat();
     auto expr = ParseExpression();
@@ -327,7 +328,8 @@ endloop:
   Expect(TType::RCurly);
   
   // todo: redo the object system and type it.
-  return make_unique<ObjectInitializer>(info, TypeSystem::Current().Get("object"), make_unique<Block>(info, std::move(statements)));
+  auto type = TypeSystem::Current().Get("object");
+  return make_unique<ObjectInitializer>(info, type, make_unique<Block>(info, std::move(statements)));
 }
 ExpressionPtr Parser::ParseTuple(ExpressionPtr &&expr) {
   Eat(); // eat first comma.
@@ -368,7 +370,7 @@ ExpressionPtr Parser::ParseLambda() {
     return make_unique<Lambda>(info, t, std::move(block));
   }
   // here we use lambda as basically an implicit return.
-  // => some_expression
+  // let .. => some_expression
   else {
     auto expr = ParseExpression();
     return make_unique<Lambda>(info, expr->type, std::move(expr));
