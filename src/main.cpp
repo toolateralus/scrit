@@ -10,6 +10,10 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "ast_serializer.hpp"
+#include <filesystem>
+
+std::string logDir = "log";
 
 void InsertCmdLineArgs(int argc, char **argv) {
   // create an 'args' array in language.
@@ -88,6 +92,20 @@ int main(int argc, char **argv) {
       InsertCmdLineArgs(argc, argv);
 
       if (ast) {
+        auto serializer = ASTSerializer();
+        ast->Accept(&serializer);
+
+        // Check if the log directory exists, create it if it doesn't
+        if (!std::filesystem::exists(logDir)) {
+          std::filesystem::create_directory(logDir);
+        }
+        std::fstream out("log/ast.txt", std::ios::out);
+        if (out.is_open()) {
+          out << serializer.stream.str();
+          out.close();
+        } else {
+          std::cout << "Failed to open file: ast.txt\n";
+        }
         ast->Execute();
       } else {
         std::cout << "Parsing failed\n";

@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include <string>
 #include <type.hpp>
+#include "ast_visitor.hpp"
 
 auto programSourceInfo = SourceInfo{0, 0, ""};
 
@@ -1236,3 +1237,43 @@ Value Literal::Evaluate() { return expression->Clone(); }
 Value DefaultValue::Evaluate() {
   return Values::TypeSystem::Current().GetDefault(type);
 }
+void ASTNode::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Executable::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Statement::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Program::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Expression::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Operand::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Identifier::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Arguments::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void TupleInitializer::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Property::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Parameters::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Continue::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Break::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Return::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void DotExpr::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Delete::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Block::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void ObjectInitializer::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Call::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void If::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Else::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void For::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void RangeBasedFor::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Assignment::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void TupleDeconstruction::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void CompAssignExpr::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void CompoundAssignment::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void FunctionDecl::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Noop::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void DotAssignment::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void DotCallStmnt::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Subscript::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void SubscriptAssignStmnt::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void UnaryExpr::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void UnaryStatement::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void BinExpr::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Using::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Lambda::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void Match::Accept(ASTVisitor* visitor) { visitor->visit(this); }
+void MatchStatement::Accept(ASTVisitor* visitor) { visitor->visit(this); }
