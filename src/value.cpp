@@ -624,7 +624,7 @@ Value Callable_T::Call(std::vector<Value> &values) {
     throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
   }
 }
-Float_T::Float_T(float value) : Value_T(TypeSystem::Current().Get("object")) {
+Float_T::Float_T(float value) : Value_T(TypeSystem::Current().Float) {
   this->value = value;
 }
 

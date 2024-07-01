@@ -656,7 +656,7 @@ ExpressionPtr Parser::ParseOperand() {
     return make_unique<Literal>(info, TypeSystem::Current().Float, Float_T::New(stof(token.value)));
   case TType::Int:
     Eat();
-    return make_unique<Literal>(info, TypeSystem::Current().Int,Int_T::New(stoi(token.value)));
+    return make_unique<Literal>(info, TypeSystem::Current().Int, Int_T::New(stoi(token.value)));
   case TType::Identifier:
     Eat();
     return make_unique<Identifier>(info, token.value);

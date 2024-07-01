@@ -248,7 +248,7 @@ ExecutionResult Program::Execute() {
   }
 
   ASTNode::context.Insert("global", global, Mutability::Mut);
-
+  
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
@@ -1125,7 +1125,7 @@ ExecutionResult Declaration::Execute() {
         name);
   }
   auto value = expr->Evaluate();
-
+  
   if (!Type_T::Equals(value->type.get(), this->type.get())) {
     if (value->type && this->type)
       throw std::runtime_error(
