@@ -1,11 +1,13 @@
 #pragma once
 #include "lexer.hpp"
+#include "native.hpp"
+#include "type.hpp"
 
 #include <cassert>
 #include <functional>
 #include <memory>
 
-#include <map>
+#include <vector>
 
 class ASTVisitor;
 
@@ -22,8 +24,14 @@ struct Context;
 
 namespace Values {
 struct Value_T;
+struct Type_T;
+enum class PrimitiveType;
 }
+
+using Type = std::shared_ptr<Values::Type_T>;
+
 struct Scope_T;
+
 typedef std::shared_ptr<Values::Value_T> Value;
 typedef std::shared_ptr<Scope_T> Scope;
 
@@ -45,20 +53,26 @@ struct Lambda;
 struct FunctionDecl;
 struct Delete;
 
+namespace Values {
+  struct Type_T;
+};
+
+using Type = std::shared_ptr<Values::Type_T>;
+
 // typedefs
-typedef unique_ptr<Delete> DeletePtr;
-typedef unique_ptr<Lambda> LambdaPtr;
-typedef unique_ptr<Using> UsingPtr;
-typedef unique_ptr<Statement> StatementPtr;
-typedef unique_ptr<Expression> ExpressionPtr;
-typedef unique_ptr<Block> BlockPtr;
-typedef unique_ptr<Arguments> ArgumentsPtr;
-typedef unique_ptr<If> IfPtr;
-typedef unique_ptr<Else> ElsePtr;
-typedef unique_ptr<Identifier> IdentifierPtr;
-typedef unique_ptr<Parameters> ParametersPtr;
-typedef unique_ptr<Operand> OperandPtr;
-typedef unique_ptr<FunctionDecl> FunctionDeclPtr;
+using DeletePtr = std::unique_ptr<Delete>;
+using LambdaPtr = std::unique_ptr<Lambda>;
+using UsingPtr = std::unique_ptr<Using>;
+using StatementPtr = std::unique_ptr<Statement>;
+using ExpressionPtr = std::unique_ptr<Expression>;
+using BlockPtr = std::unique_ptr<Block>;
+using ArgumentsPtr = std::unique_ptr<Arguments>;
+using IfPtr = std::unique_ptr<If>;
+using ElsePtr = std::unique_ptr<Else>;
+using IdentifierPtr = std::unique_ptr<Identifier>;
+using ParametersPtr = std::unique_ptr<Parameters>;
+using OperandPtr = std::unique_ptr<Operand>;
+using FunctionDeclPtr = std::unique_ptr<FunctionDecl>;
 
 enum struct ControlChange {
   None,
@@ -66,7 +80,6 @@ enum struct ControlChange {
   Continue,
   Break,
 };
-
 struct ExecutionResult {
   ExecutionResult(ControlChange controlChange, Value value);
   static ExecutionResult None;
@@ -75,7 +88,6 @@ struct ExecutionResult {
   ControlChange controlChange;
   Value value;
 };
-
 struct ASTNode {
   SourceInfo srcInfo;
   ASTNode(SourceInfo &info) : srcInfo(info) {}
@@ -84,7 +96,6 @@ struct ASTNode {
   virtual ~ASTNode() {}
   virtual void Accept(ASTVisitor* visitor) = 0;
 };
-
 struct Executable : ASTNode {
   virtual ~Executable() {}
   virtual ExecutionResult Execute() = 0;
@@ -102,20 +113,38 @@ struct Program : Executable {
   void Accept(ASTVisitor* visitor) override;
 };
 struct Expression : ASTNode {
-  Expression(SourceInfo &info) : ASTNode(info) {}
+  Type type;
+  Expression(SourceInfo &info, const Type &type) : ASTNode(info), type(type) {}
   virtual ~Expression() {}
   virtual Value Evaluate() = 0;
   void Accept(ASTVisitor* visitor) override;
 };
-struct Operand : Expression {
-  Operand(SourceInfo &info, Value value);
-  Value value;
+
+struct DefaultValue : Expression {
+  DefaultValue(SourceInfo &info, const Type &type) : Expression(info, type) {};
   Value Evaluate() override;
-  void Accept(ASTVisitor* visitor) override;
+  void Accept(ASTVisitor *visitor) override;
 };
+
+struct Literal : Expression {
+  Literal(SourceInfo &info, const Type &type, Value value) : Expression(info, type), expression(value) {}
+  Value expression;
+  void Accept(ASTVisitor *visitor) override;
+  Value Evaluate() override;
+};
+
+struct Operand : Expression {
+  Operand(SourceInfo &info, const Type &type, ExpressionPtr &&value);
+  ExpressionPtr expression;
+  void Accept(ASTVisitor *visitor) override;
+  Value Evaluate() override;
+};
+
+
 struct Identifier : Expression {
-  Identifier(SourceInfo &info, string &name);
-  string name;
+  const string name;
+  Identifier(SourceInfo &info, const Type &type, const string &name);
+  Identifier(SourceInfo &info, const string &name);
   Value Evaluate() override;
   void Accept(ASTVisitor* visitor) override;
 };
@@ -127,21 +156,35 @@ struct Arguments : Expression {
 };
 struct TupleInitializer : Expression {
   vector<ExpressionPtr> values;
-  TupleInitializer(SourceInfo &info, vector<ExpressionPtr> &&values)
-      : Expression(info), values(std::move(values)) {}
+  vector<Type> types;
+  TupleInitializer(SourceInfo &info, vector<ExpressionPtr> &&values);
   Value Evaluate() override;
   void Accept(ASTVisitor* visitor) override;
 };
 struct Property : Statement {
-  const IdentifierPtr iden;
+  const string name;
   ExpressionPtr lambda;
-  Property(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&lambda);
+  const Mutability mutability;
+  Property(SourceInfo &info, const string &name, ExpressionPtr &&lambda, const Mutability &mut);
   ExecutionResult Execute() override;
   void Accept(ASTVisitor* visitor) override;
 };
 struct Parameters : Statement {
-  std::map<string, Value> map;
-  Parameters(SourceInfo &info, std::map<string, Value> &&params);
+  struct Param {
+    string name;
+    Value default_value;
+    Type type;
+  };
+  std::vector<Param> values;
+  
+  auto ParamTypes() -> vector<Type> {
+    vector<Type> types;
+    for (const auto& p : values) {
+      types.push_back(p.type);
+    }
+    return types;
+  }
+  Parameters(SourceInfo &info, std::vector<Param> &&params);
   ExecutionResult Execute() override;
   void Accept(ASTVisitor* visitor) override;
 };
@@ -159,11 +202,9 @@ struct Return : Statement {
   Return(SourceInfo &info) : Statement(info) {}
   Return(SourceInfo &info, ExpressionPtr &&value);
   ExpressionPtr value;
-
   ExecutionResult Execute() override;
   void Accept(ASTVisitor* visitor) override;
 };
-
 struct DotExpr;
 struct Delete : Statement {
   IdentifierPtr iden;
@@ -174,7 +215,6 @@ struct Delete : Statement {
   ExecutionResult Execute() override;
   void Accept(ASTVisitor* visitor) override;
 };
-
 struct Block : Statement {
   Block(SourceInfo &info, vector<StatementPtr> &&statements);
   vector<StatementPtr> statements;
@@ -184,10 +224,18 @@ struct Block : Statement {
 };
 struct ObjectInitializer : Expression {
   BlockPtr block;
-  ObjectInitializer(SourceInfo &info, BlockPtr &&block);
+  ObjectInitializer(SourceInfo &info, const Type &type, BlockPtr &&block);
   Value Evaluate() override;
   void Accept(ASTVisitor* visitor) override;
 };
+
+struct ArrayInitializer : Expression {
+  vector<ExpressionPtr> init;
+  ArrayInitializer(SourceInfo &info, const Type &type,
+                   vector<ExpressionPtr> &&init);
+  Value Evaluate() override;
+};
+
 struct Call : Expression, Statement {
   ExpressionPtr operand;
   ArgumentsPtr args;
@@ -197,15 +245,14 @@ struct Call : Expression, Statement {
   ExecutionResult Execute() override;
   void Accept(ASTVisitor* visitor) override;
 };
-
 struct If : Statement {
   If() = delete;
   static IfPtr NoElse(SourceInfo &info, ExpressionPtr &&condition,
                       BlockPtr &&block);
-  static IfPtr WithElse(SourceInfo &info, ExpressionPtr &&condition,
+  static IfPtr WithElse(SourceInfo &info,  ExpressionPtr &&condition,
                         BlockPtr &&block, ElsePtr &&elseStmnt);
-  If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block);
-  If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block,
+  If(SourceInfo &info,  ExpressionPtr &&condition, BlockPtr &&block);
+  If(SourceInfo &info,  ExpressionPtr &&condition, BlockPtr &&block,
      ElsePtr &&elseStmnt);
   ExpressionPtr condition;
   BlockPtr block;
@@ -214,14 +261,23 @@ struct If : Statement {
   void Accept(ASTVisitor* visitor) override;
   ~If();
 };
+
+
+struct AnonymousFunction : Expression {
+  Value callable;
+  AnonymousFunction(SourceInfo &info, Type &type, Value callable);
+  Value Evaluate() override;
+};
+
+
 struct Else : Statement {
   ~Else();
   IfPtr ifStmnt;
   BlockPtr block;
   Else(SourceInfo &info) : Statement(info) {}
-  Else(SourceInfo &info, IfPtr &&ifPtr, BlockPtr &&block);
-  static ElsePtr NoIf(SourceInfo &info, BlockPtr &&block);
-  static ElsePtr New(SourceInfo &info, IfPtr &&ifStmnt);
+  Else(SourceInfo &info,  IfPtr &&ifPtr, BlockPtr &&block);
+  static ElsePtr NoIf(SourceInfo &info,  BlockPtr &&block);
+  static ElsePtr New(SourceInfo &info,  IfPtr &&ifStmnt);
   ExecutionResult Execute() override;
   void Accept(ASTVisitor* visitor) override;
 };
@@ -231,14 +287,13 @@ struct For : Statement {
   StatementPtr increment;
   BlockPtr block;
   Scope scope;
-  For(SourceInfo &info, StatementPtr &&decl, ExpressionPtr &&condition,
+  For(SourceInfo &info,  StatementPtr &&decl, ExpressionPtr &&condition,
       StatementPtr &&inc, BlockPtr &&block, Scope scope);
   ExecutionResult Execute() override;
   void Accept(ASTVisitor* visitor) override;
 };
-
 struct RangeBasedFor : Statement {
-  RangeBasedFor(SourceInfo &info, ExpressionPtr &&lhs, ExpressionPtr &&rhs,
+  RangeBasedFor(SourceInfo &info,  ExpressionPtr &&lhs, ExpressionPtr &&rhs,
                 BlockPtr &&block);
   ExpressionPtr lhs;
   ExpressionPtr rhs;
@@ -246,17 +301,24 @@ struct RangeBasedFor : Statement {
   ExecutionResult Execute() override;
   void Accept(ASTVisitor* visitor) override;
 };
-
 struct Assignment : Statement {
   const IdentifierPtr iden;
   const ExpressionPtr expr;
-  const Mutability mutability;
-  Assignment(SourceInfo &info, IdentifierPtr &&iden, ExpressionPtr &&expr,
-             const Mutability &mutability);
+  const Type type;
+  Assignment(SourceInfo &info, const Type &type, IdentifierPtr &&iden, ExpressionPtr &&expr);
+  void Accept(ASTVisitor* visitor) override;
+  ExecutionResult Execute() override;
+};
+struct Declaration : Statement {
+  const string name;
+  const ExpressionPtr expr;
+  const Mutability mut;
+  const Type type;
+  Declaration(SourceInfo &info, const string &name, ExpressionPtr &&expr,
+              const Mutability &mut, const Type &type);
   ExecutionResult Execute() override;
   void Accept(ASTVisitor* visitor) override;
 };
-
 struct TupleDeconstruction : Statement {
   TupleDeconstruction(SourceInfo &info, vector<IdentifierPtr> &&idens,
                       ExpressionPtr &&tuple)
@@ -266,7 +328,6 @@ struct TupleDeconstruction : Statement {
   ExecutionResult Execute() override;
   void Accept(ASTVisitor* visitor) override;
 };
-
 struct CompAssignExpr : Expression {
   ExpressionPtr left, right;
   TType op;
@@ -275,33 +336,31 @@ struct CompAssignExpr : Expression {
   Value Evaluate() override;
   void Accept(ASTVisitor* visitor) override;
 };
-
 struct CompoundAssignment : Statement {
   ExpressionPtr expr;
   CompoundAssignment(SourceInfo &info, ExpressionPtr &&expr);
   ExecutionResult Execute() override;
   void Accept(ASTVisitor* visitor) override;
 };
-
 struct FunctionDecl : Statement {
   BlockPtr block;
   ParametersPtr parameters;
   const string name;
+  const Type returnType;
   FunctionDecl(SourceInfo &info, string &name, BlockPtr &&block,
-               ParametersPtr &&parameters)
+               ParametersPtr &&parameters, const Type &returnType)
       : Statement(info), block(std::move(block)),
-        parameters(std::move(parameters)), name(name) {}
+        parameters(std::move(parameters)), name(name), returnType(returnType) {}
   ExecutionResult Execute() override;
   void Accept(ASTVisitor* visitor) override;
 };
-
 struct Noop : Statement {
   Noop(SourceInfo &info) : Statement(info) {}
   ExecutionResult Execute() override { return ExecutionResult::None; }
   void Accept(ASTVisitor* visitor) override;
 };
 struct DotExpr : Expression {
-  DotExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right);
+  DotExpr(SourceInfo &info, const Type &type, ExpressionPtr &&left, ExpressionPtr &&right);
   ExpressionPtr left;
   ExpressionPtr right;
   Value Evaluate() override;
@@ -322,7 +381,7 @@ struct DotCallStmnt : Statement {
   void Accept(ASTVisitor* visitor) override;
 };
 struct Subscript : Expression {
-  Subscript(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&idx);
+  Subscript(SourceInfo &info, const Type &type, ExpressionPtr &&left, ExpressionPtr &&idx);
   ExpressionPtr left;
   ExpressionPtr index;
   Value Evaluate() override;
@@ -337,13 +396,12 @@ struct SubscriptAssignStmnt : Statement {
   void Accept(ASTVisitor* visitor) override;
 };
 struct UnaryExpr : Expression {
-  UnaryExpr(SourceInfo &info, ExpressionPtr &&left, TType op);
+  UnaryExpr(SourceInfo &info, const Type &type, ExpressionPtr &&left, TType op);
   ExpressionPtr operand;
   TType op;
   Value Evaluate() override;
   void Accept(ASTVisitor* visitor) override;
 };
-
 // this is basically only for decrement / increment right now
 struct UnaryStatement : Statement {
   ExpressionPtr expr;
@@ -354,7 +412,6 @@ struct UnaryStatement : Statement {
   }
   void Accept(ASTVisitor* visitor) override;
 };
-
 struct BinExpr : Expression {
   ExpressionPtr left;
   ExpressionPtr right;
@@ -364,11 +421,11 @@ struct BinExpr : Expression {
   Value Evaluate() override;
   void Accept(ASTVisitor* visitor) override;
 };
-
 struct Using : Statement {
   static vector<string> activeModules;
-  Using(SourceInfo &info, const string &name, const bool isWildcard);
-  Using(SourceInfo &info, const string &name, vector<string> &symbols);
+  void Load();
+  Using(SourceInfo &info,  const string &name, const bool isWildcard);
+  Using(SourceInfo &info,  const string &name, vector<string> &symbols);
   vector<string> symbols;
   string moduleName;
   bool isWildcard;
@@ -378,18 +435,18 @@ struct Using : Statement {
   ExecutionResult Execute() override;
   void Accept(ASTVisitor* visitor) override;
 };
-
 struct Lambda : Expression {
   BlockPtr block = nullptr;
   ExpressionPtr expr = nullptr;
-  Lambda(SourceInfo &info, ExpressionPtr &&expr)
-      : Expression(info), expr(std::move(expr)) {}
-  Lambda(SourceInfo &info, BlockPtr &&block)
-      : Expression(info), block(std::move(block)) {}
+  Lambda(SourceInfo &info, const Type &type, ExpressionPtr &&expr)
+      : Expression(info, type), expr(std::move(expr)) {
+      }
+  Lambda(SourceInfo &info, const Type &type, BlockPtr &&block)
+      : Expression(info, type), block(std::move(block)) {
+      }
   Value Evaluate() override;
   void Accept(ASTVisitor* visitor) override;
 };
-
 // TODO: make a match expression that calls into this and just returns the
 // control flow change result.
 struct Match : Expression {
@@ -398,11 +455,11 @@ struct Match : Expression {
   std::vector<ExpressionPtr> branch_rhs = {};
   ExpressionPtr branch_default;
 
-  Match(SourceInfo &info, ExpressionPtr &&expr,
+  Match(SourceInfo &info, const Type &type, ExpressionPtr &&expr,
         std::vector<ExpressionPtr> &&branch_lhs,
         std::vector<ExpressionPtr> &&branch_rhs,
         ExpressionPtr &&branch_default = nullptr)
-      : Expression(info), expr(std::move(expr)),
+      : Expression(info, type), expr(std::move(expr)),
         branch_lhs(std::move(branch_lhs)), branch_rhs(std::move(branch_rhs)),
         branch_default(std::move(branch_default)) {
     assert(branch_lhs.size() == branch_rhs.size());
@@ -411,7 +468,6 @@ struct Match : Expression {
   Value Evaluate() override;
   void Accept(ASTVisitor* visitor) override;
 };
-
 struct MatchStatement : Statement {
   ExpressionPtr match;
   MatchStatement(SourceInfo &info, ExpressionPtr &&match)
@@ -423,11 +479,9 @@ struct MatchStatement : Statement {
   }
   void Accept(ASTVisitor* visitor) override;
 };
-
 string CC_ToString(ControlChange controlChange);
-
 Value EvaluateWithinObject(Scope &scope, Value object, ExpressionPtr &expr);
 Value EvaluateWithinObject(Scope &scope, Value object,
                            std::function<Value()> lambda);
 
-Value TryCallMethods(unique_ptr<Expression> &right, Value lvalue);
+Value TryCallMethods(unique_ptr<Expression> &right, Value &lvalue);

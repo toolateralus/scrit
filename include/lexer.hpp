@@ -10,25 +10,19 @@ using std::stringstream;
 using std::vector;
 
 struct SourceInfo {
-  static vector<SourceInfo*> &getInfos() {
-    static vector<SourceInfo*> all_info;
+  static vector<SourceInfo *> &getInfos() {
+    static vector<SourceInfo *> all_info;
     return all_info;
   }
-  
-  SourceInfo(const int loc, const int col) : SourceInfo() {
-    this->loc = loc;
-    this->col = col;
-  }
-  
-  std::string ToString() const {
-    return string("\nsource_info: {\n\t")
-        + "line: " + std::to_string(loc) + "\n\tcol: " + std::to_string(col) + "\n}\n";
-  }
-  
-  SourceInfo() {
+  SourceInfo(const int loc, const int col, const std::string &source) : loc(loc), col(col), source(source) {
     getInfos().push_back(this);
   }
+  std::string ToString() const {
+    return string("{\n   ") + "line: " + std::to_string(loc) +
+           "\n   col: " + std::to_string(col) + "\n   source: "+ source + "\n}\n";
+  }
   int loc, col;
+  string source;
 };
 
 enum class TFamily {
@@ -64,7 +58,7 @@ enum class TType {
   LessEq,
   Equals,
   NotEquals,
-  
+
   //
   AddEq,
   SubEq,
@@ -72,17 +66,17 @@ enum class TType {
   DivEq,
   NullCoalescing,
   NullCoalescingEq,
-  
+
   Increment,
   Decrement,
-  
+
   Assign,
   Comma,
   Colon,
-  
+
   // Keywords.
   Func,
-  
+
   For,
   If,
   Else,
@@ -92,17 +86,17 @@ enum class TType {
   Null,
   Undefined,
   // TODO: add try & catch.
-  
+
   Match,
-  // => used for implicit return and block expressions: returning a value from a block opposed to 
-  // creating an object.
+  // => used for implicit return and block expressions: returning a value from a
+  // block opposed to creating an object.
   Lambda,
   // default keyword. used right now for match statements.
   Default,
-  
-  Const, 
+
+  Const,
   Mut,
-  
+
   Break,
   Continue,
   Return,
@@ -110,8 +104,9 @@ enum class TType {
   From,
   Import,
   Delete,
+  Let,
+  Arrow
 };
-struct SourceInfo;
 struct Token {
   Token(const int &loc, const int &col, const string &value, const TType type,
         const TFamily family);
@@ -120,7 +115,7 @@ struct Token {
   int loc = 0, col = 0;
   TType type;
   TFamily family;
-  
+
   string ToString() const;
 };
 struct Lexer {
@@ -141,3 +136,4 @@ string TokensToString(const vector<Token> &tokens);
 string TTypeToString(const TType &type);
 string TFamilyToString(const TFamily &family);
 bool IsCompoundAssignmentOperator(const TType &type);
+

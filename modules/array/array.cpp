@@ -1,13 +1,16 @@
+#include <iostream>
+#include <scrit/native.hpp>
 #include <scrit/scritmod.hpp>
+#include <scrit/type.hpp>
 
-#define function(name) Value name (std::vector<Value> args) 
+#define function(name) Value name(std::vector<Value> args)
 #define undefined Ctx::Undefined()
 
 function(contains) {
   if (args.size() < 2) {
     return undefined;
   }
-  
+
   Array result;
   if (!Ctx::TryGetArray(args[0], result)) {
     throw std::runtime_error("contains may only be used on arrays.");
@@ -25,10 +28,10 @@ function(remove) {
   }
 
   // Erase array element.
-  if (args[0]->GetType() == Values::ValueType::Array) {
+  if (args[0]->GetPrimitiveType() == Values::PrimitiveType::Array) {
     int i;
     Array_T *a = static_cast<Array_T *>(args[0].get());
-    if (args[1]->GetType() == Values::ValueType::Callable) {
+    if (args[1]->GetPrimitiveType() == Values::PrimitiveType::Callable) {
       // Predicate.
       auto callable = static_cast<Callable_T *>(args[1].get());
       const auto lambda = [callable](Value value) -> bool {
@@ -54,7 +57,7 @@ function(clear) {
     return Ctx::Undefined();
   }
 
-  if (args[0]->GetType() == ValueType::Array) {
+  if (args[0]->GetPrimitiveType() == PrimitiveType::Array) {
     auto array = dynamic_cast<Array_T *>(args[0].get());
     array->values.clear();
   }
@@ -67,14 +70,14 @@ function(expand) {
   }
 
   int value;
-  if (args[0]->GetType() == ValueType::Array &&
+  if (args[0]->GetPrimitiveType() == PrimitiveType::Array &&
       Ctx::TryGetInt(args[1], value)) {
     auto array = dynamic_cast<Array_T *>(args[0].get());
 
     auto default_value = args.size() > 2 ? args[2] : Value_T::UNDEFINED;
 
     Callable_T *callable = nullptr;
-    if (default_value->GetType() == ValueType::Callable) {
+    if (default_value->GetPrimitiveType() == PrimitiveType::Callable) {
       callable = static_cast<Callable_T *>(default_value.get());
     }
 
@@ -97,18 +100,20 @@ function(push) {
     return Ctx::Undefined();
   }
 
-  if (args[0]->GetType() != ValueType::Array) {
+  if (args[0]->GetPrimitiveType() != PrimitiveType::Array) {
     return Ctx::Undefined();
   }
   auto array = static_cast<Array_T *>(args[0].get());
+
   for (size_t i = 1; i < args.size(); i++) {
     array->Push(args[i]);
   }
+
   return Ctx::Undefined();
 }
 
 function(front) {
-  if (args.size() == 0 || args[0]->GetType() != ValueType::Array) {
+  if (args.size() == 0 || args[0]->GetPrimitiveType() != PrimitiveType::Array) {
     return Ctx::Undefined();
   }
   auto array = static_cast<Array_T *>(args[0].get());
@@ -119,7 +124,7 @@ function(front) {
 }
 
 function(back) {
-  if (args.size() == 0 || args[0]->GetType() != ValueType::Array) {
+  if (args.size() == 0 || args[0]->GetPrimitiveType() != PrimitiveType::Array) {
     return Ctx::Undefined();
   }
   auto array = static_cast<Array_T *>(args[0].get());
@@ -134,7 +139,7 @@ function(pop) {
     return Ctx::Undefined();
   }
 
-  if (args[0]->GetType() != ValueType::Array) {
+  if (args[0]->GetPrimitiveType() != PrimitiveType::Array) {
     return Ctx::Undefined();
   }
   auto array = static_cast<Array_T *>(args[0].get());
@@ -154,18 +159,22 @@ function(len) {
   return Ctx::Undefined();
 }
 
-extern "C" ScritModDef* InitScritModule_array() {
+
+extern "C" ScritModDef *InitScritModule_array() {
   ScritModDef *def = CreateModDef();
-  *def->description = "your description here";
+  *def->description = "provide functionality for the array type.";
+  auto array = make_shared<ArrayType>();
   
-  def->AddFunction("remove", remove);
-  def->AddFunction("contains", contains);
-  def->AddFunction("clear", clear);
-  def->AddFunction("expand", expand);
-  def->AddFunction("push", push);
-  def->AddFunction("front", front);
-  def->AddFunction("back", back);
-  def->AddFunction("pop", pop);
-  def->AddFunction("len", len);
+  array->Set("remove",   CREATE_CALLABLE(remove, "undefined", {"array", "any"}));
+  array->Set("contains", CREATE_CALLABLE(contains, "bool", {"array", "any"}));
+  array->Set("clear",    CREATE_CALLABLE(clear, "undefined", {"array"}));
+  array->Set("expand",   CREATE_CALLABLE(expand, "undefined", {"array", "int", "any"}));
+  array->Set("push",     CREATE_CALLABLE(push, "undefined", {"any"}));
+  array->Set("front",    CREATE_CALLABLE(front, "any", {"array"}));
+  array->Set("back",     CREATE_CALLABLE(back, "any", {"array"}));
+  array->Set("pop",      CREATE_CALLABLE(pop, "any", {"array"}));
+  array->Set("len",      CREATE_CALLABLE(len, "int", {"array"}));
+  def->AddType("array", array);
+  
   return def;
 }

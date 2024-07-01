@@ -3,7 +3,7 @@
 
 #pragma clang diagnostic ignored "-Wunused-parameter"
 
-#define function(name) Value name (std::vector<Value> args) 
+#define function(name) Value name(std::vector<Value> args)
 
 function(isalnum) {
   auto arg = args[0];
@@ -50,45 +50,45 @@ function(isalpha) {
   return Ctx::Undefined();
 }
 function(split) {
-  if (args.size() < 2 || args[0]->GetType() != Values::ValueType::String ||
-      args[1]->GetType() != Values::ValueType::String) {
+  if (args.size() < 2 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
+      args[1]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
-  
+
   string s;
   if (!Ctx::TryGetString(args[0], s)) {
     return Ctx::Undefined();
   }
-  
+
   string delim;
   if (!Ctx::TryGetString(args[1], delim)) {
     return Ctx::Undefined();
   }
-  
+
   if (!s.contains(delim)) {
     return Ctx::CreateArray();
   }
-  
+
   char delimiter = delim.at(0);
   std::vector<std::string> tokens;
   std::string token;
   std::istringstream tokenStream(s);
-  
+
   while (std::getline(tokenStream, token, delimiter)) {
     tokens.push_back(token);
   }
-  
+
   return Ctx::FromStringVector(tokens);
 }
 function(substring) {
-  #define undefined Ctx::Undefined()
-  if (args.size() < 3 || args[0]->GetType() != Values::ValueType::String) {
+#define undefined Ctx::Undefined()
+  if (args.size() < 3 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return undefined;
   }
-  
+
   auto str = args[0]->Cast<String_T>();
   std::pair<int, int> indices;
-  
+
   if (!Ctx::TryGetInt(args[1], indices.first)) {
     return undefined;
   }
@@ -98,10 +98,10 @@ function(substring) {
   return Ctx::CreateString(str->value.substr(indices.first, indices.second));
 }
 function(indexOf) {
-  #define undefined Ctx::Undefined()
-  if (args.size() < 2 || args[0]->GetType() != Values::ValueType::String) {
+#define undefined Ctx::Undefined()
+  if (args.size() < 2 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return undefined;
-  } 
+  }
   auto str = args[0]->Cast<String_T>();
   auto srch_c = args[1]->Cast<String_T>();
   size_t found = str->value.find(srch_c->value);
@@ -114,7 +114,7 @@ function(push) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
-  if (args[0]->GetType() == ValueType::String) {
+  if (args[0]->GetPrimitiveType() == PrimitiveType::String) {
     auto arg = static_cast<String_T *>(args[0].get());
     for (size_t i = 1; i < args.size(); i++) {
       arg->value += args[i]->ToString();
@@ -123,7 +123,7 @@ function(push) {
   return Ctx::Undefined();
 }
 function(front) {
-  if (args.size() == 0 || args[0]->GetType() != Values::ValueType::String) {
+  if (args.size() == 0 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
   string str;
@@ -133,7 +133,7 @@ function(front) {
   return Ctx::Undefined();
 }
 function(back) {
-  if (args.size() == 0 || args[0]->GetType() != Values::ValueType::String) {
+  if (args.size() == 0 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
   string str;
@@ -143,7 +143,7 @@ function(back) {
   return Ctx::Undefined();
 }
 function(pop) {
-  if (args.empty() || args[0]->GetType() != ValueType::String) {
+  if (args.empty() || args[0]->GetPrimitiveType() != PrimitiveType::String) {
     return Ctx::Undefined();
   }
 
@@ -157,7 +157,7 @@ function(pop) {
   return Ctx::CreateString(character);
 }
 function(len) {
-  if (args.empty() || args[0]->GetType() != Values::ValueType::String) {
+  if (args.empty() || args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
 
@@ -170,28 +170,29 @@ function(len) {
 }
 
 function(insert) {
-  if (args.size() < 3 || args[0]->GetType() != Values::ValueType::String || args[1]->GetType() != Values::ValueType::Int) {
+  if (args.size() < 3 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
+      args[1]->GetPrimitiveType() != Values::PrimitiveType::Int) {
     return undefined;
   }
   auto str = std::static_pointer_cast<String_T>(args[0]);
-  auto &value = str->value;  
-  
-  int index; 
+  auto &value = str->value;
+
+  int index;
   if (!Ctx::TryGetInt(args[1], index)) {
     return undefined;
   }
-  
+
   string insertion;
   if (!Ctx::TryGetString(args[2], insertion)) {
     return undefined;
   }
-  
+
   if (index < 0 || (size_t)index > value.size()) {
     return undefined;
   }
 
   value.insert(index, insertion);
-  
+
   return Ctx::CreateString(value);
 }
 
@@ -202,51 +203,49 @@ function(contains) {
 
   string result;
   if (!Ctx::TryGetString(args[0], result)) {
-    throw std::runtime_error(
-        "contains may only be used on strings");
+    throw std::runtime_error("contains may only be used on strings");
   }
-  
+
   string comparison;
   if (!Ctx::TryGetString(args[1], comparison)) {
-    throw std::runtime_error(
-        "contains may only be used on strings");
+    throw std::runtime_error("contains may only be used on strings");
   }
-  
+
   if (result.find(comparison) != std::string::npos) {
     return Ctx::CreateBool(true);
   }
-  
+
   return Ctx::CreateBool(false);
 }
 
 function(replace) {
-  if (args.size() < 3 || args[0]->GetType() != Values::ValueType::String ||
-      args[1]->GetType() != Values::ValueType::String ||
-      args[2]->GetType() != Values::ValueType::String) {
+  if (args.size() < 3 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
+      args[1]->GetPrimitiveType() != Values::PrimitiveType::String ||
+      args[2]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
-  
+
   string str;
   if (!Ctx::TryGetString(args[0], str)) {
     return Ctx::Undefined();
   }
-  
+
   string pattern;
   if (!Ctx::TryGetString(args[1], pattern)) {
     return Ctx::Undefined();
   }
-  
+
   string replacement;
   if (!Ctx::TryGetString(args[2], replacement)) {
     return Ctx::Undefined();
   }
-  
+
   size_t pos = 0;
   while ((pos = str.find(pattern, pos)) != std::string::npos) {
     str.replace(pos, pattern.length(), replacement);
     pos += replacement.length();
   }
-  
+
   return Ctx::CreateString(str);
 }
 
@@ -255,33 +254,34 @@ function(remove) {
     return Ctx::Undefined();
   }
 
-  if (args[0]->GetType() == Values::ValueType::String) {
+  if (args[0]->GetPrimitiveType() == Values::PrimitiveType::String) {
     string str;
     if (!Ctx::TryGetString(args[0], str)) {
       return Ctx::Undefined();
     }
-    
-    if (args[1]->GetType() == Values::ValueType::String) {
+
+    if (args[1]->GetPrimitiveType() == Values::PrimitiveType::String) {
       string pattern;
       if (!Ctx::TryGetString(args[1], pattern)) {
         return Ctx::Undefined();
       }
-      
+
       size_t pos = 0;
       while ((pos = str.find(pattern, pos)) != std::string::npos) {
         str.replace(pos, pattern.length(), "");
         pos += pattern.length();
       }
     }
-    
+
     return Ctx::CreateString(str);
   }
-  
+
   return Ctx::Undefined();
 }
 
 function(without) {
-  if (args.empty() || args[0]->GetType() != Values::ValueType::String || args[1]->GetType() != Values::ValueType::String) {
+  if (args.empty() || args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
+      args[1]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
   
@@ -289,27 +289,25 @@ function(without) {
   if (!Ctx::TryGetString(args[0], target)) {
     return Ctx::Undefined();
   }
-  
+
   string pattern;
   if (!Ctx::TryGetString(args[1], pattern)) {
     return Ctx::Undefined();
   }
-  
+
   size_t pos = 0;
   while ((pos = target.find(pattern, pos)) != std::string::npos) {
     target.replace(pos, pattern.length(), "");
     pos += pattern.length();
   }
-  
+
   return Ctx::CreateString(target);
 }
 
-
-
-extern "C" ScritModDef* InitScritModule_string() {
+extern "C" ScritModDef *InitScritModule_string() {
   ScritModDef *def = CreateModDef();
   *def->description = "your description here";
-  
+
   def->AddFunction("isalpha", isalpha);
   def->AddFunction("ispunct", ispunct);
   def->AddFunction("isdigit", isdigit);
@@ -319,7 +317,7 @@ extern "C" ScritModDef* InitScritModule_string() {
   def->AddFunction("indexOf", indexOf);
   def->AddFunction("front", front);
   def->AddFunction("back", back);
-  
+
   def->AddFunction("pop", pop);
   def->AddFunction("push", push);
   def->AddFunction("len", len);
@@ -328,7 +326,6 @@ extern "C" ScritModDef* InitScritModule_string() {
   def->AddFunction("replace", replace);
   def->AddFunction("remove", remove);
   def->AddFunction("without", without);
-  
-  
+
   return def;
 }

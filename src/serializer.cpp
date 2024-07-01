@@ -6,11 +6,11 @@
 void Writer::BuildMap(const Value_T * value) {
   foundObjs.clear();
   references.clear();
-  switch (value->GetType()) {
-  case ValueType::Object:
+  switch (value->GetPrimitiveType()) {
+  case PrimitiveType::Object:
     Map(static_cast<const Object_T *>(value));
     break;
-  case ValueType::Array:
+  case PrimitiveType::Array:
     Map(static_cast<const Array_T *>(value));
     break;
   default:
@@ -28,15 +28,15 @@ void Writer::Map(const Value_T *val) {
     }
     foundObjs.insert(val);
   }
-  switch (val->GetType()) {
-    case ValueType::Object: {
+  switch (val->GetPrimitiveType()) {
+    case PrimitiveType::Object: {
       auto obj = static_cast<const Object_T *>(val);
       for (const auto &[key, var] : obj->scope->Members()) {
         Map(var.get());
       }
       break;
     }
-    case ValueType::Array:{
+    case PrimitiveType::Array:{
       auto array = static_cast<const Array_T *>(val);
       for (const auto &value : array->values) {
         Map(value.get());
@@ -62,8 +62,13 @@ void Writer::Write(const Value_T *val) {
   }
   string element_delimter = ", ";
   string container_delimiter;
-  switch (val->GetType()) {
-    case ValueType::Object: {
+  
+  if (val == nullptr) {
+    return;
+  }
+  
+  switch (val->GetPrimitiveType()) {
+    case PrimitiveType::Object: {
       auto obj = static_cast<const Object_T *>(val);
       stream << "{";
       container_delimiter = "}";
@@ -101,7 +106,7 @@ void Writer::Write(const Value_T *val) {
       }
       break;
     }
-    case ValueType::Array: {
+    case PrimitiveType::Array: {
       auto array = static_cast<const Array_T *>(val);
       stream << "[";
       container_delimiter = "]";

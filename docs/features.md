@@ -318,6 +318,44 @@ So, each time a default is defined, it's overwriting the old one, however, the p
 evaluate to the same value have been defined. beware!
 
 
+## Property fields
+declaring a variable like
+`f => ..some expression..`
+will result in a `property` which is calculated each time it is used. properties are read only
+
+this syntax produces the same effect
+``` go
+f => {
+  ... some lambda body...
+}
+```
+
+example:
+
+```go
+vec2 = {
+  x = 0,
+  y = 0,
+  mag => sqrt(x*x + y*y)
+}
+
+vec2.x = 10
+vec2.y = 10
+
+println(vec2.mag)
+// prints 14.142136
+
+```
+
+
+## Tuples
+
+simple tuples are supported with `(v, v1, ...)` syntax.
+currently, the only way to access a tuple element is to destructure it into fields, with
+`v, v1, v2 = (0, 1, 2)` syntax. note the rhs of the destructure does not need to be a literal,
+it can be any tuple identifier or return value.
+
+
 ## Lambdas
 
 we have a `=> expression` and `=> { block returning some value}` syntax for 'lambda's.

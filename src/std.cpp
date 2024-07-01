@@ -1,6 +1,7 @@
 #include "ast.hpp"
 #include "context.hpp"
 #include "lexer.hpp"
+#include "type.hpp"
 #include "native.hpp"
 #include "serializer.hpp"
 #include "value.hpp"
@@ -21,7 +22,7 @@
 #define undefined Ctx::Undefined()
 #define null Ctx::Null()
 
-REGISTER_FUNCTION(mod) {
+REGISTER_FUNCTION(mod, "int", {"int", "int"}) {
   int v;
   int mod;
   
@@ -31,7 +32,9 @@ REGISTER_FUNCTION(mod) {
   }
   return Ctx::CreateInt(v % mod);
 }
-REGISTER_FUNCTION(fmod) {
+
+
+REGISTER_FUNCTION(fmod, "float", {"float", "float"}) {
   float v;
   float mod;
   if (args.empty() || !Ctx::TryGetFloat(args[0], v) ||
@@ -42,14 +45,14 @@ REGISTER_FUNCTION(fmod) {
 }
 
 // Create a deep clone of any value.
-REGISTER_FUNCTION(clone) {
+REGISTER_FUNCTION(clone, "any", {"any"}) {
   if (args.size() == 0) {
     return Ctx::Undefined();
   }
   return args[0]->Clone();
 }
 
-REGISTER_FUNCTION(nameof) {
+REGISTER_FUNCTION(nameof, "string", {"any"}) {
   if (args.empty()) {
     return undefined;
   }
@@ -66,7 +69,7 @@ REGISTER_FUNCTION(nameof) {
 
 // have to do this obnoxiously since it just auto-conflicts.
 #undef assert
-REGISTER_FUNCTION(assert) {
+REGISTER_FUNCTION(assert, "bool", {}) {
   if (args.empty()) {
     return Bool_T::False;
   }
@@ -81,23 +84,19 @@ REGISTER_FUNCTION(assert) {
 
 
 // typeof
-REGISTER_FUNCTION(type) {
+REGISTER_FUNCTION(type, "string", {"any"}) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
   
-  if (auto obj = std::dynamic_pointer_cast<Object_T>(args[0])) {
-    if (obj->HasMember("type")) {
-      auto type = obj->GetMember("type");
-      return type;
-    }
+  if (args[0]->type){
+    auto v = args[0]->type->name;
+    return Ctx::CreateString(v);
   }
-  
-  string typeName;
-  return Ctx::CreateString(TypeToString(args[0]->GetType()));
+  return Ctx::CreateString("undefined -- this is a language bug.");
 }
 // Serializer
-REGISTER_FUNCTION(serialize) {
+REGISTER_FUNCTION(serialize, "string", {"any"}) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
@@ -135,13 +134,13 @@ REGISTER_FUNCTION(serialize) {
   return Ctx::CreateString(writer.stream.str());
 }
 // strings & chars
-REGISTER_FUNCTION(tostr) {
+REGISTER_FUNCTION(tostr, "string", {"any"}) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
   return Ctx::CreateString(args[0]->ToString());
 }
-REGISTER_FUNCTION(atoi) {
+REGISTER_FUNCTION(atoi, "int", {"string"}) {
   if (args.size() == 0) {
     return Ctx::Undefined();
   }
@@ -152,77 +151,38 @@ REGISTER_FUNCTION(atoi) {
   return Ctx::CreateInt(std::atoi(str.c_str()));
 }
 
+REGISTER_FUNCTION(get, "any", {"any", "int"}) {
+  if (args[0]->GetPrimitiveType() == Values::PrimitiveType::Tuple) {
+    auto tuple = args[0]->Cast<Tuple_T>();
+    auto index= args[1]->Cast<Int_T>();
+    return tuple->values[index->value];
+  }
+  return Ctx::Undefined();
+}
+
+REGISTER_FUNCTION(cbrt, "float", {"any"}) {
+  float f;
+  int i;
+  if (Ctx::TryGetFloat(args[0], f)) {
+    return Ctx::CreateFloat(std::cbrt(f));
+  } else if (Ctx::TryGetInt(args[0], i)) {
+    return Ctx::CreateFloat(std::cbrt(i));
+  }
+  return Ctx::Undefined();
+}
 
 
 // terminal
-REGISTER_FUNCTION(println) {
+REGISTER_FUNCTION(println, "undefined", {"any"}) {
   for (const auto &arg : args) {
     printf("%s\n", arg->ToString().c_str());
     ;
   }
   return Ctx::Undefined();
 }
-REGISTER_FUNCTION(print) {
+REGISTER_FUNCTION(print, "undefined", {"any"}) {
   for (const auto &arg : args) {
     printf("%s", arg->ToString().c_str());
   }
   return Undefined_T::UNDEFINED;
-}
-REGISTER_FUNCTION(cls) {
-  printf("\033[23");
-  return Ctx::Undefined();
-}
-REGISTER_FUNCTION(set_cursor) {
-  if (args.size() != 2) {
-    return Ctx::Undefined();
-  }
-  
-  int x, y;
-  if (Ctx::TryGetInt(args[0], x) && Ctx::TryGetInt(args[1], y)) {
-    printf("\033[%d;%dH", x, y);
-  }
-  
-  return Ctx::Undefined();
-}
-REGISTER_FUNCTION(get_cursor) {
-  // Query the terminal for the cursor position
-  printf("\033[6n");
-  
-  // Read the response from the terminal
-  int x, y;
-  if (scanf("\033[%d;%dR", &x, &y) == 2) {
-    std::vector<int> pos = {x, y};
-    return Ctx::FromIntVector(pos);
-  }
-
-  return Ctx::Undefined();
-}
-
-REGISTER_FUNCTION(readln) {
-  std::string input;
-  std::getline(std::cin, input);
-  return String_T::New(input);
-}
-REGISTER_FUNCTION(readch) {
-char ch = 0;
-#ifdef _WIN32
-    DWORD mode, cc;
-    HANDLE h = GetStdHandle(STD_INPUT_HANDLE);
-    if (h == NULL) {
-      return undefined;
-    }
-    GetConsoleMode(h, &mode);
-    SetConsoleMode(h, mode & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT));
-    ReadConsole(h, &ch, 1, &cc, NULL);
-    SetConsoleMode(h, mode);
-#else
-    struct termios old_tio, new_tio;
-    tcgetattr(STDIN_FILENO, &old_tio);
-    new_tio = old_tio;
-    new_tio.c_lflag &= (~ICANON & ~ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
-    read(STDIN_FILENO, &ch, 1);
-    tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);
-#endif
-  return Ctx::CreateString(std::string(1, ch));
 }

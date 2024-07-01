@@ -4,6 +4,7 @@
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "value.hpp"
+#include "type.hpp"
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -113,4 +114,11 @@ int main(int argc, char **argv) {
       std::cout << "Failed to open file: " << filename << "\n";
     }
   }
+  
+  
+  Value_T::False.reset();
+  Value_T::True.reset();
+  Value_T::UNDEFINED.reset();
+  Value_T::VNULL.reset();
+  TypeSystem::Current().types.clear();
 }

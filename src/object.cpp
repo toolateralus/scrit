@@ -2,8 +2,9 @@
 #include "ast.hpp"
 #include "context.hpp"
 #include "serializer.hpp"
+#include "type.hpp"
+
 #include <memory>
-#include <stdexcept>
 
 Value Object_T::GetMember(const string &name) {
   if (scope->Contains(name))
@@ -58,7 +59,9 @@ Value Object_T::Clone() {
   for (const auto &[key, var] : this->scope->Members()) {
     scope->Set(key, var->Clone());
   }
-  return Ctx::CreateObject(scope);
+  auto clone = Ctx::CreateObject(scope);
+  clone->type = this->type;
+  return clone;
 }
 bool Object_T::operator==(Object_T *other) {
   return scope->Members() == other->scope->Members() && this == other;
@@ -67,7 +70,7 @@ bool Object_T::HasMember(const string &name)
 { 
   return scope->Contains(name); 
 }
-Object_T::Object_T(Scope scope) { this->scope = scope; }
+Object_T::Object_T(Scope scope) : Value_T(TypeSystem::Current().Get("object")) { this->scope = scope; }
 
 Value Object_T::CallOpOverload(Value &arg, const string &op_key) {
   if (!scope->Contains(op_key)) {
@@ -75,7 +78,7 @@ Value Object_T::CallOpOverload(Value &arg, const string &op_key) {
   }
   
   auto member = GetMember(op_key);
-  if (member == nullptr || member->GetType() != ValueType::Callable) {
+  if (member == nullptr || member->GetPrimitiveType() != PrimitiveType::Callable) {
     throw std::runtime_error("Operator overload was not a callable");
   }
   
@@ -105,7 +108,7 @@ Value Object_T::Divide(Value other) {
 Bool Object_T::Less(Value other) {
   static const string op_key = "less";
   auto result = CallOpOverload(other, op_key);
-  if (result->GetType() == ValueType::Bool) {
+  if (result->GetPrimitiveType() == PrimitiveType::Bool) {
     return std::dynamic_pointer_cast<Bool_T>(result);
   }
   return False;
@@ -113,7 +116,7 @@ Bool Object_T::Less(Value other) {
 Bool Object_T::Greater(Value other) {
   static const string op_key = "greater";
   auto result = CallOpOverload(other, op_key);
-  if (result->GetType() == ValueType::Bool) {
+  if (result->GetPrimitiveType() == PrimitiveType::Bool) {
     return std::dynamic_pointer_cast<Bool_T>(result);
   }
   return False;

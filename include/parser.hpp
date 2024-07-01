@@ -12,23 +12,29 @@ using std::make_unique;
 using std::vector;
 
 
-
 struct Parser {
   vector<Token> tokens;
   Token Peek(size_t lookahead = 0);
   Token Eat();
   Token Expect(const TType ttype);
-  SourceInfo info;
+  SourceInfo info = {0, 0, ""};
   unique_ptr<Program> Parse(vector<Token> &&tokens);
   BlockPtr ParseBlock();
   StatementPtr ParseAnonFuncInlineCall();
   StatementPtr ParseStatement();
   StatementPtr ParseKeyword(Token keyword);
-
+  Type ParseFunctionType(const Type &type);
+  Type ParseTupleType();
+  Type ParseType();
+  Type ParseTemplateType(const Type &base_type);
+  
   StatementPtr ParseTupleDeconstruction(IdentifierPtr &&iden);
-
+  
+  StatementPtr ParseDeclaration();
+  StatementPtr ParseDeclaration(SourceInfo &info, const string &iden, const Mutability &mut);
+  
   StatementPtr ParseCall(IdentifierPtr identifier);
-  StatementPtr ParseAssignment(IdentifierPtr identifier, Mutability mutability = Mutability::Const);
+  StatementPtr ParseAssignment(IdentifierPtr identifier);
   StatementPtr ParseLValuePostFix(ExpressionPtr &expr);
   StatementPtr ParseIdentifierStatement(IdentifierPtr identifier);
   ExpressionPtr ParseTuple(ExpressionPtr &&expr);
@@ -47,6 +53,20 @@ struct Parser {
   ArgumentsPtr ParseArguments();
   
   DeletePtr ParseDelete();
+  
+    // This riduculous function is to check if the next token is a part of an
+  // expression. this is how we judge whether to parse a return expression or
+  // not. We should probably make a better way to do this, just don't know how.
+  static bool IsReturnValue(const Token &next) {
+      return (next.family == TFamily::Keyword && next.type != TType::Null &&
+              next.type != TType::Undefined && next.type != TType::False &&
+              next.type != TType::True && next.type != TType::Match) ||
+              (next.family == TFamily::Operator && next.type != TType::LParen &&
+              next.type != TType::LCurly &&
+              (next.type != TType::Sub && next.type != TType::Not));
+  }
+
+  Type ParseReturnType();
 
   ExpressionPtr ParseExpression();
   ExpressionPtr ParseCompoundAssignment();
@@ -60,8 +80,7 @@ struct Parser {
   ExpressionPtr ParseUnary();
   ExpressionPtr ParseOperand();
   
-  
-  FunctionDeclPtr ParseFunctionDeclaration();
+  unique_ptr<Noop>  ParseFunctionDeclaration();
   
   ExpressionPtr ParseAnonFunc();
   ExpressionPtr ParseObjectInitializer();

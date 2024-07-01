@@ -1,6 +1,7 @@
 #include "context.hpp"
 #include "ast.hpp"
 #include "value.hpp"
+#include "type.hpp"
 #include <stdexcept>
 
 
@@ -69,9 +70,17 @@ auto Context::Find(const string &name) const -> Value {
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     for (const auto &[key, var] : (*it)->Members()) {
       if (key.value == name) {
+        if (var->GetPrimitiveType() == PrimitiveType::Lambda) {
+            if (auto lambda = std::dynamic_pointer_cast<Lambda_T>(var)) {
+              return lambda->Evaluate();
+            }
+        }
         return var;
       }
     }
+  }
+  if (FunctionRegistry::Exists(name)) {
+    return FunctionRegistry::GetCallable(name);
   }
   return nullptr;
 }
@@ -99,21 +108,22 @@ auto Scope_T::Get(const string &name) -> Value {
 }
 
 auto Scope_T::Set(const Scope_T::Key &key, Value value) -> void {
-  if (!variables.contains(key) && key.mode == VariableMode::Property) {
-    variables[key] = value;
-  } else if (key.mode != VariableMode::Property)  {
-    variables[key] = value;
-  }
+  variables[key] = value;
 }
   
 auto Scope_T::Set(const string &name, Value value, const Mutability &mutability) -> void {
+  if (TypeSystem::Current().Get(name)) {
+    throw std::runtime_error("cannot declare a variable of an existing type: " + name);
+  }
+  
   auto it = Find(name);
+  auto &[key, var] = *it;
   
   if (it == variables.end()) {
     variables[Key(name, mutability)] = value;
   } else {
-    if (it->first.mode == VariableMode::Variable && it->first.mutability == Mutability::Mut) {
-      variables[it->first] = value;
+    if (key.mutability == Mutability::Mut) {
+      variables[key] = value;
     } else {
       throw std::runtime_error("Cannot set a const value.. identifier: " + name);
     }

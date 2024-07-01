@@ -7,6 +7,7 @@ struct ASTVisitor {
 	virtual void visit(Executable* node) = 0;
 	virtual void visit(Statement* node) = 0;
 	virtual void visit(Program* program) = 0;
+	virtual void visit(Declaration *) = 0;
 	virtual void visit(Expression* expression) = 0;
 	virtual void visit(Operand* operand) = 0;
 	virtual void visit(Identifier* identifier) = 0;

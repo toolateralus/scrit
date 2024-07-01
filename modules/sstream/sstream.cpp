@@ -1,9 +1,9 @@
 #include <memory>
-#include <scrit/ast.hpp>
 #include <scrit/native.hpp>
 #include <scrit/scritmod.hpp>
 #include <scrit/value.hpp>
 #include <sstream>
+#include "scrit/type.hpp"
 
 #define undefined Ctx::Undefined()
 #define __args__ std::vector<Value> args
@@ -12,14 +12,14 @@
 
 struct StringStream : Value_T {
   std::stringstream stream = std::stringstream("");
-  StringStream() : Value_T() {}
+  StringStream() : Value_T(TypeSystem::Current().Get("array")) {}
   string ToString() const override {
     return stream.str();
   }
-  ValueType GetType() const override {
+  PrimitiveType GetPrimitiveType() const override {
     // Todo: add a less janky way to do this.
     // It seems silly to convince the interpreter we're an object when we don't use any of that.
-    return ValueType::Object;
+    return PrimitiveType::Object;
   }
   bool Equals(Value v) override {
     // compare pointers? hard to say here. We're basically abusing the interpreter by saying this is not an object (with inheritance).

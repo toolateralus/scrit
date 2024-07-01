@@ -32,27 +32,21 @@ struct ScritModHandle {
 
   ScritModHandle(const ScritModHandle &copy) noexcept = delete;
   ScritModHandle(ScritModHandle &&move) noexcept;
-
+  
   ScritModHandle &operator=(const ScritModHandle &) noexcept = delete;
   ScritModHandle &operator=(ScritModHandle &&other) noexcept;
   ~ScritModHandle() noexcept;
 };
 
 struct Scope_T {
-
-  enum struct VariableMode {
-    Variable,
-    Property,
-  };
-
+  
   struct Key {
     const std::string value;
     const Mutability mutability;
-    const VariableMode mode = VariableMode::Variable;
     
-    Key(const std::string &value, const Mutability &mutability,
-        const VariableMode &mode = VariableMode::Variable)
-        : value(value), mutability(mutability), mode(mode) {}
+    Key() = delete;
+    Key(const std::string &value, const Mutability &mutability)
+        : value(value), mutability(mutability) {}
         
     bool operator<(const Key &other) const { return value < other.value; }
     bool operator==(const Key &other) const {
@@ -82,6 +76,11 @@ struct Scope_T {
     return std::make_shared<Scope_T>(scope);
   }
   auto end() { return variables.end(); }
+  
+  Scope_T(const Scope_T&) = delete;
+  Scope_T(Scope_T&&) = delete;
+  Scope_T& operator=(const Scope_T&) = delete;
+  Scope_T& operator=(Scope_T&&) = delete;
 
 private:
   std::vector<ScritModHandle> module_handles;
