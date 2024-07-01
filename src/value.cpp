@@ -327,10 +327,8 @@ string Callable_T::ToString() const {
   auto type = std::dynamic_pointer_cast<CallableType>(this->type);
   auto returnType = type->returnType->name;
   ss << returnType << "(";
-  
   for (const auto &param : params->values) {
     ss << param.name << ": " << param.type->name;
-    
     if (&param != &params->values.back()) {
         ss << ", ";
     }
