@@ -668,6 +668,10 @@ Bool_T::~Bool_T() {}
 Undefined_T::~Undefined_T() {}
 Null_T::~Null_T() {}
 Lambda_T::~Lambda_T() {}
+
+Value Undefined_T::Clone() { return Ctx::Undefined(); }
+Value Null_T::Clone() { return Ctx::Null(); }
+
 } // namespace Values
 
 Values::Array Ctx::FromFloatVector(vector<float> &values) {

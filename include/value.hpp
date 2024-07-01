@@ -129,6 +129,7 @@ struct Null_T : Value_T {
   ~Null_T() override;
   string ToString() const override;
   bool Equals(Value value) override;
+  Value Clone() override;
 };
 struct Undefined_T : Value_T {
   PrimitiveType GetPrimitiveType() const override { return PrimitiveType::Undefined; }
@@ -136,6 +137,7 @@ struct Undefined_T : Value_T {
   ~Undefined_T() override;
   string ToString() const override;
   bool Equals(Value value) override;
+  Value Clone() override;
 };
 
 struct Int_T : Value_T {
