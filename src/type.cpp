@@ -1,4 +1,5 @@
 #include "type.hpp"
+#include "parser.hpp"
 #include "ast.hpp"
 #include "context.hpp"
 #include "value.hpp"
@@ -174,3 +175,111 @@ auto Values::TypeSystem::GetVector(const vector<string> &names)
   }
   return types;
 }
+
+// Type parsing
+Type Parser::ParseReturnType() {
+  Type returnType = nullptr;
+  if (Peek().type == TType::LCurly) {
+    returnType = TypeSystem::Current().Undefined;
+  } else {
+    Expect(TType::Arrow);
+    returnType = ParseType();
+  }
+  return returnType;
+}
+Type Parser::ParseTemplateType(const Type &base_type) {
+  Expect(TType::Less);
+  vector<Type> types;
+  while (!tokens.empty()) {
+    auto next = Peek();
+    
+    // if the next token is > we are done.
+    if (next.type == TType::Greater) {
+      break;
+    }
+    
+    // get type name
+    auto ttok = Expect(TType::Identifier);
+    auto &tname = ttok.value;
+    
+    // recursively parse template types.
+    if (Peek().type == TType::Less) {
+      auto base = TypeSystem::Current().Get(tname);
+      if (!base) {
+        throw std::runtime_error("invalid type : " + tname + " in template");
+      }
+      types.push_back(Parser::ParseTemplateType(base));  
+    } else {
+      types.push_back(TypeSystem::Current().Get(tname));
+    }
+    
+    // eat commas.
+    if (Peek().type == TType::Comma) {
+      Eat();
+    }
+  }
+  
+  Expect(TType::Greater);
+  
+  auto name = base_type->name + "<";
+  for (size_t i = 0; i < types.size(); ++i) {
+    name += types[i]->name;
+    if (i < types.size() - 1) { // Check if it's not the last element
+      name += ", ";
+    }
+  }
+  name += ">";
+  
+  return TypeSystem::Current().GetOrCreateTemplate(name, base_type, types);
+}
+Type Parser::ParseFunctionType(const Type &returnType) {
+  Expect(TType::LParen);
+  std::vector<Type> types;
+  while (!tokens.empty()) {
+    if (Peek().type == TType::RParen) {
+      break;
+    } 
+    auto type = ParseType();
+    types.push_back(type);
+    if (Peek().type == TType::Comma) {
+      Eat();
+    }
+  }
+  Expect(TType::RParen);
+  return TypeSystem::Current().FromCallable(returnType, types);
+}
+Type Parser::ParseTupleType() {
+  Expect(TType::LParen);
+  std::vector<Type> types;
+  while (!tokens.empty()) {
+    types.push_back(ParseType());
+    
+    if (Peek().type == TType::Comma) {
+      Eat();
+    }
+    if (Peek().type == TType::RParen) {
+      break;
+    }
+  }
+  Expect(TType::RParen);
+  return TypeSystem::Current().FromTuple(types);
+}
+Type Parser::ParseType() {
+  if (Peek().type == TType::LParen) {
+    return ParseTupleType();
+  }
+  
+  
+  auto tname = Expect(TType::Identifier).value;
+  auto type = TypeSystem::Current().Get(tname);
+  // template types.
+  if (Peek().type == TType::Less) {
+    return Parser::ParseTemplateType(type);
+  }
+  if (Peek().type == TType::LParen) {
+    return Parser::ParseFunctionType(type);
+  }
+  
+  return type;
+}
+

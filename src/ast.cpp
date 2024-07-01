@@ -89,14 +89,14 @@ Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
     : Expression(info, operand->type), Statement(info) {
 
   auto value = operand->Evaluate();
-
+  
   if (!value) {
     throw std::runtime_error("couldnt find function... call at\n" +
                              operand->srcInfo.ToString());
   }
-
+  
   auto target = std::dynamic_pointer_cast<CallableType>(value->type);
-
+  
   if (target && target->returnType) {
     this->type = target->returnType;
   }

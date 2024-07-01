@@ -326,6 +326,8 @@ Lexer::Lexer() {
   };
   loc = 1;
 }
+
+
 string TTypeToString(const TType &type) {
   switch (type) {
   case TType::Arrow:

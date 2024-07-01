@@ -12,7 +12,6 @@ using std::make_unique;
 using std::vector;
 
 
-
 struct Parser {
   vector<Token> tokens;
   Token Peek(size_t lookahead = 0);
@@ -54,6 +53,20 @@ struct Parser {
   ArgumentsPtr ParseArguments();
   
   DeletePtr ParseDelete();
+  
+    // This riduculous function is to check if the next token is a part of an
+  // expression. this is how we judge whether to parse a return expression or
+  // not. We should probably make a better way to do this, just don't know how.
+  static bool IsReturnValue(const Token &next) {
+      return (next.family == TFamily::Keyword && next.type != TType::Null &&
+              next.type != TType::Undefined && next.type != TType::False &&
+              next.type != TType::True && next.type != TType::Match) ||
+              (next.family == TFamily::Operator && next.type != TType::LParen &&
+              next.type != TType::LCurly &&
+              (next.type != TType::Sub && next.type != TType::Not));
+  }
+
+  Type ParseReturnType();
 
   ExpressionPtr ParseExpression();
   ExpressionPtr ParseCompoundAssignment();
