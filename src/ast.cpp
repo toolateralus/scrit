@@ -290,7 +290,7 @@ Declaration::Declaration(SourceInfo &info, const string &name,
     : Statement(info), name(name), expr(std::move(expr)), mut(mut), type(type) {
   // we fwd declare the variable as mutable. Later, it will be overwritten as
   // its true mutability.
-  context.scopes.back()->Set(name, TypeSystem::Current().GetDefault(type),
+  context.scopes.back()->ForwardDeclare(name, TypeSystem::Current().GetDefault(type),
                              Mutability::Mut);
 }
 
@@ -1143,13 +1143,16 @@ ExecutionResult Property::Execute() {
   return ExecutionResult::None;
 }
 ExecutionResult Declaration::Execute() {
-  if (ASTNode::context.scopes.back()->Contains(name)) {
+  
+  auto &scope = ASTNode::context.scopes.back();
+  
+  if (scope->Contains(name) && !scope->IsForwardDeclared(name)) {
     throw std::runtime_error(
         "cannot re-define an already existing variable.\noffending variable: " +
         name);
   }
   auto value = this->expr->Evaluate();
-
+  
   if (!Type_T::Equals(value->type.get(), this->type.get())) {
     if (value->type && this->type)
       throw std::runtime_error(
@@ -1161,7 +1164,7 @@ ExecutionResult Declaration::Execute() {
 
   // copy where needed
   ApplyCopySemantics(value);
-
+  
   ASTNode::context.scopes.back()->Set(name, value, mut);
 
   return ExecutionResult::None;
