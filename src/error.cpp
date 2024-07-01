@@ -13,7 +13,7 @@ ParseError::ParseError(const SourceInfo &info)
     : std::runtime_error("LexError: " + info.ToString()) {}
     
     
-TypeError::TypeError(const Type &type, std::string &message)
+TypeError::TypeError(const Type &type, const std::string message)
     : std::runtime_error("Type Error: " + message +
                          "\noffending type: " + type->name) {}
                          

@@ -1,6 +1,7 @@
 #include "value.hpp"
 #include "ast.hpp"
 #include "context.hpp"
+#include "error.hpp"
 #include "serializer.hpp"
 #include "type.hpp"
 
@@ -436,6 +437,22 @@ Value Array_T::Subscript(Value key) {
 }
 Value Array_T::SubscriptAssign(Value key, Value value) {
   int idx;
+  
+  Type element_type;
+  
+  // if this is a templated array, like array<int>
+  // and the template is well formed (has typeargs)
+  if (auto template_t = std::dynamic_pointer_cast<TemplateType>(type); !template_t->typenames.empty()) {
+    auto array_t = template_t->typenames[0];
+    if (!Type_T::Equals(value->type.get(), array_t.get())) {
+      throw TypeError(value->type, array_t);
+    }
+  // if not a template, this a generic array
+  // But, we have to make sure that it's got a valid generic array type.
+  } else if (!std::dynamic_pointer_cast<ArrayType>(type)) {
+    throw TypeError(type, "invalid type for array. Array_T Value does not have a valid array type. This is basically impossible and is a language bug.");
+  }
+  
   if (Ctx::TryGetInt(key, idx)) {
     values[idx] = value;
   }

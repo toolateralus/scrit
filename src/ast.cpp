@@ -734,6 +734,7 @@ ExecutionResult SubscriptAssignStmnt::Execute() {
   auto lvalue = subscript->left->Evaluate();
   auto idx = subscript->index->Evaluate();
   lvalue->SubscriptAssign(idx, value->Evaluate());
+  
   return ExecutionResult::None;
 }
 Value UnaryExpr::Evaluate() {
