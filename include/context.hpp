@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ast.hpp"
+#include <stdexcept>
 #ifdef __linux__
 #include <dlfcn.h>
 #else
@@ -59,12 +60,29 @@ struct Scope_T {
   auto Contains(const string &name) -> bool;
   auto Erase(const string &name) -> size_t;
   auto Members() -> std::map<Key, Value> &;
+  
+  
+  auto InsertType(const string &name, const Type &type) {
+    if (TypeExists(name)) {
+      throw std::runtime_error("re-definition of type: " + name);
+    }
+    types[name] = type;
+  }
+  auto FindType(const string &name) -> Type {
+    if (types.contains(name)) {
+      return types[name];
+    }
+    throw std::runtime_error("couldn't find type: " + name + " in this scope");
+  }
+  auto TypeExists(const string &name) -> bool {
+    return types.contains(name); 
+  }
+  
   auto Get(const string &name) -> Value;
-  
   auto Set(const Key &name, Value value) -> void;
-  
   auto Set(const string &name, Value value,
            const Mutability &mutability = Mutability::Const) -> void;
+           
   auto Clear() -> void { variables.clear(); }
   auto Clone() -> Scope;
   auto PushModule(ScritModHandle &&handle) {
@@ -84,6 +102,7 @@ struct Scope_T {
 
 private:
   std::vector<ScritModHandle> module_handles;
+  std::map<string, Type> types = {};
   std::map<Key, Value> variables = {};
 };
 

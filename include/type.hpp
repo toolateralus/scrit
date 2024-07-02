@@ -144,7 +144,7 @@ struct AnyType : Type_T {
 
 struct TypeSystem {
   
-  std::unordered_map<string, Type> types;
+  std::unordered_map<string, Type> global_types;
   
   Type Null;
   Type Undefined;
@@ -156,33 +156,10 @@ struct TypeSystem {
   Type Any;
   
   auto GetVector(const vector<string> &names) -> vector<Type>;
-  
-  auto Find(const string &name) -> Type { 
-    // Return a type if it exists normally in the hash map.
-    if (types.contains(name)) {
-      return types[name];
-    }
-   
-    
-    // // search for aliased types.
-    // auto it = std::find_if(types.begin(), types.end(), [name](auto pair) {
-    //   auto &[name, search_type] = pair;
-    //   // does an alias exist?
-    //   auto alias_it = std::find(search_type->aliases.begin(), search_type->aliases.end(), name);
-    //   return alias_it != search_type->aliases.end();
-    // });
-    
-    // if (it != types.end()) {
-    //   return it->second;
-    // }
-    
-    
-    throw std::runtime_error("use of undeclared type: " + name);
-  }
-  
-  auto Exists(const string &name) -> bool {
-    return types.contains(name);
-  }
+
+  auto Find(const string &name) -> Type;
+
+  auto Exists(const string &name) -> bool;
   
   auto FindOrCreateTemplate(const string &name, const Type &base,
                            const vector<Type> &types) -> Type;
@@ -216,7 +193,7 @@ private:
     NativeCallable = std::make_shared<CallableType>(make_shared<AnyType>(), std::vector<Type>({}));
     String = std::make_shared<StringType>();
     Any = make_shared<AnyType>();
-    types = {
+    global_types = {
       {"null", Null},
       {"undefined", Undefined},
       {"int", Int},
@@ -233,7 +210,7 @@ private:
   TypeSystem(TypeSystem&&) = delete;
   TypeSystem& operator=(const TypeSystem&) = delete;
   TypeSystem& operator=(TypeSystem&&) = delete;
-  ~TypeSystem() { types.clear(); }
+  ~TypeSystem() { global_types.clear(); }
   TypeSystem() {
     Initialize();
   }

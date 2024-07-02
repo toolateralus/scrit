@@ -84,7 +84,7 @@ REGISTER_FUNCTION(assert, "undefined", {"bool", "any"}) {
 
 
 // typeof
-REGISTER_FUNCTION(type, "string", {"any"}) {
+REGISTER_FUNCTION(get_type, "string", {"any"}) {
   if (args.empty()) {
     return Ctx::Undefined();
   }

@@ -11,21 +11,21 @@ using namespace Values;
 Type_T::Type_T(const std::string &name) : name(name) {}
 
 auto TypeSystem::RegisterType(const Type &type, const bool module_type) -> void {
-  const auto exists = types.contains(type->name);
+  const auto exists = global_types.contains(type->name);
   // if a type exists && this comes from a module, we supplement members.
   if (exists && module_type) {
-    auto t = types[type->name];
+    auto t = global_types[type->name];
     for (const auto &[name, member] : type->Scope().Members()) {
       t->Scope().Members()[name] = member;      
     }
   } else if (!exists) {
-    types[type->name] = type;
+    global_types[type->name] = type;
   }
 }
 
 auto TypeSystem::FromPrimitive(const PrimitiveType &t) -> Type {
   auto id = TypeToString(t);
-  for (const auto &[name, type] : types) {
+  for (const auto &[name, type] : global_types) {
     if (id == name) {
       return type;
     }
@@ -35,10 +35,10 @@ auto TypeSystem::FromPrimitive(const PrimitiveType &t) -> Type {
 
 auto TypeSystem::FromTuple(const vector<Type> &types) -> Type {
   auto type = make_shared<TupleType>(types);
-  if (this->types.contains(type->name)) {
-    return this->types[type->name];
+  if (this->global_types.contains(type->name)) {
+    return this->global_types[type->name];
   }
-  this->types[type->name] = type;
+  this->global_types[type->name] = type;
   return type;
 }
 
@@ -46,10 +46,10 @@ auto TypeSystem::FromCallable(const Type returnType,
                               const vector<Type> paramTypes) -> Type {
   // todo: make this more efficient.
   auto type= make_shared<CallableType>(returnType, paramTypes);
-  if (types.contains(type->name)) {
-    return types[type->name];
+  if (global_types.contains(type->name)) {
+    return global_types[type->name];
   }
-  types[type->name] = type;
+  global_types[type->name] = type;
   return type;
 }
 
@@ -77,11 +77,11 @@ auto Values::TypeSystem::FindOrCreateTemplate(const string &name,
                                              const vector<Type> &types)
     -> Type {
   auto &current = Current();
-  if (current.types.contains(name)) {
-    return current.types[name];
+  if (current.global_types.contains(name)) {
+    return current.global_types[name];
   }
   auto type = make_shared<TemplateType>(name, base, types);
-  current.types[name] = type;
+  current.global_types[name] = type;
   return type;
 }
 
@@ -158,7 +158,7 @@ TemplateType::TemplateType(const string &name, const Type &base_type,
       scope(Scope_T::Create()) {}
       
 auto Values::TypeSystem::DumpInfo() -> void {
-  for (const auto &[name, type] : types) {
+  for (const auto &[name, type] : global_types) {
     std::cout << "type: " << name << "\ncontains '"
               << type->Scope().Members().size() << "' members." << std::endl;
   }
@@ -276,4 +276,23 @@ auto Values::TypeSystem::FromTuple(const vector<Value> &values) -> Type {
     types.push_back(value->type);
   }
   return FromTuple(types);
+}
+auto Values::TypeSystem::Exists(const string &name) -> bool {
+  auto exists = global_types.contains(name);
+  if (exists) {
+    return exists;
+  }
+  return ASTNode::context.scopes.back()->TypeExists(name);
+}
+auto Values::TypeSystem::Find(const string &name) -> Type {
+  // Return a type if it exists normally in the hash map.
+  if (global_types.contains(name)) {
+    return global_types[name];
+  }
+  
+  if (ASTNode::context.scopes.back()->TypeExists(name)) {
+    return ASTNode::context.scopes.back()->FindType(name);
+  }
+  
+  throw std::runtime_error("use of undeclared type: " + name);
 }

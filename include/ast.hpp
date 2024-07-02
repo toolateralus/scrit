@@ -233,13 +233,7 @@ struct ObjectInitializer : Expression {
 struct TypeAlias : Statement {
   const Type type;
   const string alias;
-  ~TypeAlias() {
-    
-  }
-  TypeAlias(SourceInfo &info, const string &alias, const Type &type)
-      : Statement(info), type(type), alias(alias) {
-    
-  }
+  TypeAlias(SourceInfo &info, const string &alias, const Type &type);
   ExecutionResult Execute() override { return ExecutionResult::None; }
 };
 
@@ -257,7 +251,7 @@ struct Call : Expression, Statement {
   ArgumentsPtr args;
   Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args);
   static vector<Value> GetArgsValueList(ArgumentsPtr &args);
-  void ValidateArgumentSize(shared_ptr<Values::Callable_T> &callable);
+  void ValidateArgumentSize(std::shared_ptr<Values::Callable_T> &callable);
   Value Evaluate() override;
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;

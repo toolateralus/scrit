@@ -1327,3 +1327,8 @@ void Match::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void MatchStatement::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void DefaultValue::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Literal::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+
+TypeAlias::TypeAlias(SourceInfo &info, const string &alias, const Type &type)
+    : Statement(info), type(type), alias(alias) {
+  context.scopes.back()->InsertType(alias, type);
+}
