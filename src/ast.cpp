@@ -701,8 +701,26 @@ Value TryCallMethods(unique_ptr<Expression> &right, Value &lvalue) {
     if (!result) {
       return binExpr->Evaluate();
     }
-
+    
     // fold this expression and re-evaluate.
+    
+    // THIS IS AWFUL: 
+    // This causes a bug where complex expressions with calls to functions in them
+    // end up being folded to a single literal value that is stored on any proceding exectuions
+    
+    // So for example
+      //     let x = ["file.scrit", "fart.scrit", "poop.scrit"]
+      
+      // for file : x {
+      //   let value = "[" +  file.remove(".scrit") + "](" + file + ")"
+      //   println(value)
+      // }
+      
+    // Value always = "file"
+    // because the first time it's executed, it gets folded to a string literal.
+    // Then, on following iterations of the loop, it's just a constant, So it never actually calls
+    // into remove again nor does it use the file variable.
+    
     auto expr = make_unique<Literal>(binExpr->srcInfo, binExpr->type, result);
     binExpr->left = std::move(expr);
     return binExpr->Evaluate();
