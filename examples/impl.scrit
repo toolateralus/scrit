@@ -1,0 +1,67 @@
+// ##############################################################
+// #### THIS IS PROPOSED SYNTAX, NOT FUNCTION OR IMPLEMENTED ####
+// ##############################################################
+
+
+// This type alias syntax is implemented and working
+type Vec2 = (float, float)
+type Matrix3x2 = (Vec2, Vec2, Vec2)
+
+
+// This is the proposed syntax, extension methods & properties.
+impl for Matrix3x2 {
+  m0 => {
+    get { return this.get(0) }
+    set { return this.set(0, value) }
+  }
+  m1 => {
+    set { return this.get(1) }
+    set { return this.set(1, value) }
+  }
+  m2 => {
+    set { return this.get(2) }
+    set { return this.set(2, value) }
+  }
+  m3 => {
+    set { return this.get(3) }
+    set { return this.set(3, value) }
+  }
+  m4 => {
+    set { return this.get(4) }
+    set { return this.set(4, value) }
+  }
+  m5 => {
+    get { return this.get(5) }
+    set { this.set(5, value)}
+  }
+  m6 => {
+    get { return this.get(6) }
+    set { this.set(6, value) }
+  }
+  m7 => {
+    get { return this.get(7) }
+    set { this.set(7, value) }
+  }
+  m8 => {
+    get { return this.get(8) }
+    set { this.set(8, value) }
+  }
+  m9 => {
+    get { return this.get(9) }
+    set { this.set(9, value) }
+  }
+  
+  func Identity() -> Self {
+    return (
+      (1.0, 0.0),
+      (0.0, 1.0),
+      (0.0, 0.0)
+    )
+  }
+}
+
+let x : Matrix3x2
+
+x.m3 = 10
+
+println(x.m3)
