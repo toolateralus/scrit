@@ -38,6 +38,9 @@ struct Reader {
       case TType::SubscriptLeft:
         return ReadArray();
       default:
+        if (next.family == TFamily::Literal) {
+          return parser.ParseExpression()->Evaluate();
+        }
         throw std::runtime_error("Deserialization error: invalid token:\n\t'" + TTypeToString(next.type) + "'");
     }
     
