@@ -59,11 +59,11 @@ void Writer::HandleRefs(const string &element_delimter, Value_T *&value, const s
     case ReferenceHandling::Remove:
       break;
     case ReferenceHandling::Mark:
-      stream << indent << key << ref_key << foundObjs.size() << ">\n";
+      stream << indent << key << ref_key << foundObjs.size() << ">" << newline;
       break;
     case ReferenceHandling::Preserve: {
       if (references.contains(value)) 
-        stream << indent << key << ref_key << references[value] << ">\n";
+        stream << indent << key << ref_key << references[value] << ">" << newline;
     }
   }
 }
