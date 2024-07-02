@@ -166,7 +166,11 @@ void Writer::Write(const Value_T *val) {
       break;
     }
     default: {
-      stream << val->ToString();
+      if (val->GetPrimitiveType() == Values::PrimitiveType::String) {
+        stream << '\"' << val->ToString() << '\"';
+      } else {
+        stream << val->ToString();
+      }
       break;
     }
   }

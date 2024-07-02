@@ -714,7 +714,7 @@ StatementPtr Parser::ParseContinue() { return make_unique<Continue>(info); }
 
 StatementPtr Parser::ParseReturn() {
   auto next = Peek();
-  if (tokens.empty() || IsReturnValue(next)) {
+  if (tokens.empty() || IsLiteralOrExpression(next)) {
     return make_unique<Return>(info);
   }
   return make_unique<Return>(info, ParseExpression());

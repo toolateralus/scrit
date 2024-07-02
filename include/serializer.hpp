@@ -1,7 +1,12 @@
 #pragma once
+#include "error.hpp"
+#include "lexer.hpp"
 #include "native.hpp"
+#include "parser.hpp"
+#include "type.hpp"
 #include "value.hpp"
 #include <set>
+#include <stdexcept>
 #include <unordered_set>
 #include <map>
 
@@ -12,6 +17,71 @@ enum struct ReferenceHandling {
 };
 
 
+
+
+struct Reader {
+  vector<Token> tokens;
+  Parser parser;
+  Reader(const string &input) {
+    auto lexer = Lexer();
+    auto tokens = lexer.Lex(input);
+    std::reverse(tokens.begin(), tokens.end());
+    parser = Parser(tokens);
+  }
+  
+  Value Read() {
+    auto next = parser.Peek();
+    
+    switch(next.type) {
+      case TType::LCurly:
+        return ReadObject();
+      case TType::SubscriptLeft:
+        return ReadArray();
+      default:
+        throw std::runtime_error("Deserialization error: invalid token:\n\t'" + TTypeToString(next.type) + "'");
+    }
+    
+  }
+  
+  Value ReadArray() {
+    parser.Expect(TType::SubscriptLeft);
+    vector<Value> values;
+    while (!tokens.empty()) {
+      if (parser.Peek().type == TType::LCurly) {
+        values.push_back(ReadObject());
+        continue;
+      }
+      values.push_back(parser.ParseExpression()->Evaluate());
+    }
+    return Ctx::CreateArray(values);
+  }
+  
+  Value ReadObject() {
+    auto object = Ctx::CreateObject();
+    parser.Expect(TType::LCurly);
+    while (!parser.tokens.empty()) {
+      if (parser.Peek().type == TType::RCurly) {
+        break;
+      }
+      auto key = parser.Expect(TType::String);            
+      parser.Expect(TType::Colon);
+      auto value = parser.ParseExpression();
+      object->SetMember(key.value, value->Evaluate());
+      if (parser.Peek().type == TType::Comma) {
+        parser.Eat();
+      }
+    }
+    parser.Expect(TType::RCurly);
+    return object;
+  }
+  
+};
+
+
+static REGISTER_FUNCTION(deserialize, "any", {"string"}) {
+  Reader reader(args[0]->ToString());  
+  return reader.Read();
+}
 
 struct Writer {
   

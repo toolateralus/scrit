@@ -57,7 +57,7 @@ struct Parser {
     // This riduculous function is to check if the next token is a part of an
   // expression. this is how we judge whether to parse a return expression or
   // not. We should probably make a better way to do this, just don't know how.
-  static bool IsReturnValue(const Token &next) {
+  static bool IsLiteralOrExpression(const Token &next) {
       return (next.family == TFamily::Keyword && next.type != TType::Null &&
               next.type != TType::Undefined && next.type != TType::False &&
               next.type != TType::True && next.type != TType::Match) ||
