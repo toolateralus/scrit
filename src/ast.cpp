@@ -1270,8 +1270,22 @@ shared_ptr<Callable_T> MethodCall::FindCallable() {
                              "object was not in the argument list");
   }
   
-  auto caller = args[0]->Evaluate();
-  if (auto method = caller->type->Get(identifier->name);
+  
+  // This causes a double evaulation if we do
+  // obj.somemethod().println()
+  // or something to that effect.
+  
+  
+  Type type;
+  auto &caller = args[0];
+  
+  if (!caller->type) {
+    type = caller->Evaluate()->type;    
+  } else {
+    type = caller->type;
+  }
+  
+  if (auto method = type->Get(identifier->name);
       auto callable = std::dynamic_pointer_cast<Callable_T>(method)) {
     if (callable != nullptr) {
       return callable;
