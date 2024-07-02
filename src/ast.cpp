@@ -1269,6 +1269,7 @@ shared_ptr<Callable_T> MethodCall::FindCallable() {
     throw std::runtime_error("Too few arguments for a method call: the caller "
                              "object was not in the argument list");
   }
+  
   auto caller = args[0]->Evaluate();
   if (auto method = caller->type->Get(identifier->name);
       auto callable = std::dynamic_pointer_cast<Callable_T>(method)) {
@@ -1285,25 +1286,6 @@ shared_ptr<Callable_T> MethodCall::FindCallable() {
   if (auto callable = FunctionRegistry::GetCallable(identifier->name)) {
     return callable; 
   }
-  
-  auto lvalue = operand->Evaluate();
-  
-  if (lvalue->GetPrimitiveType() != PrimitiveType::Object) {
-    throw std::runtime_error("invalid lhs on dot operation : " +
-                             TypeToString(lvalue->GetPrimitiveType()));
-  }
-  
-  auto object = static_cast<Object_T *>(lvalue.get());
-  
-  auto scope = object->scope;
-  
-  auto result = EvaluateWithinObject(scope, lvalue, [identifier, object, this]() {
-    auto variable = object->scope->Get(identifier->name);
-    if (auto callable = std::dynamic_pointer_cast<Callable_T>(variable)) {
-      return callable->Call(this->args);
-    }
-    throw std::runtime_error("invalid method call: couldn't find method : " + identifier->name);
-  });
   
   throw std::runtime_error("invalid method call: couldn't find method : " + identifier->name);
 }
