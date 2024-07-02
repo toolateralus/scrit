@@ -1,11 +1,9 @@
 #pragma once
 #include <memory>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <algorithm>
 
 using std::make_shared;
 using std::vector;
@@ -33,6 +31,8 @@ struct Type_T {
   
   virtual auto Scope() -> Scope_T& = 0;
   
+  virtual auto Default() -> Value = 0;
+  
   virtual auto Get(const string &name) -> Value;
   virtual auto Set(const string &name, Value value) -> void;
   
@@ -56,25 +56,25 @@ using Type = shared_ptr<Type_T>;
 struct NullType : Type_T {
   NullType() : Type_T("null") {}
   auto Scope() -> Scope_T& override;
+  Value Default() override;
 };
 struct UndefinedType : Type_T {
   UndefinedType() : Type_T("undefined") {}
   auto Scope() -> Scope_T & override;
-};
-struct LambdaType : Type_T {
-  LambdaType() : Type_T("property") {}
-  auto Scope() -> Scope_T & override;
+  Value Default() override;
 };
 struct StringType : Type_T {
   StringType() : Type_T("string") {}
   auto Scope() -> Scope_T & override;
+  Value Default() override;
 };
 struct IntType : Type_T {
   IntType() : Type_T("int") {}
   auto Scope() -> Scope_T & override;
+  Value Default() override;
 };
 
-struct TemplateType : Type_T {
+struct TemplateType : Type_T, std::enable_shared_from_this<TemplateType> {
   const vector<Type> typenames;
   const Type base_type;
   const shared_ptr<Scope_T> scope;
@@ -85,25 +85,33 @@ struct TemplateType : Type_T {
     return *scope;
   }
   auto Get(const string &name) -> Value override;
+
+  Value Default() override;
 };
 
 struct ObjectType : Type_T {
   ObjectType() : Type_T("object") {}
   auto Scope() -> Scope_T & override;
+  Value Default() override;
 };
 struct FloatType : Type_T {
   FloatType() : Type_T("float") {}
   auto Scope() -> Scope_T & override;
+  Value Default() override;
 };
 struct BoolType : Type_T {
   BoolType() : Type_T("bool") {}
   auto Scope() -> Scope_T & override;
+  Value Default() override;
 };
 struct TupleType : Type_T {
   const std::vector<Type> subtypes;
   TupleType(const std::vector<Type> &in_subtypes)
       : Type_T(GetName(in_subtypes)), subtypes(in_subtypes) {}
   auto Scope() -> Scope_T & override;
+
+  Value Default() override;
+  
   static auto GetName(const std::vector<Type> &subtypes) -> string {
     std::stringstream ss;
     ss << "(";
@@ -125,6 +133,8 @@ struct CallableType : Type_T {
       : Type_T(CallableType::GetName(returnType, paramTypes)),
         returnType(returnType), paramTypes(paramTypes) {}
 
+  Value Default() override;
+
 private:
   static auto GetName(const Type returnType, const std::vector<Type> paramTypes)
       -> string {
@@ -135,11 +145,14 @@ private:
 struct ArrayType : Type_T {
   ArrayType() : Type_T("array") {}
   auto Scope() -> Scope_T & override;
+
+  Value Default() override;
 };
 
 struct AnyType : Type_T {
   AnyType() : Type_T("any") {}
   auto Scope() -> Scope_T & override;
+  Value Default() override;
 };
 
 struct TypeSystem {
@@ -164,7 +177,6 @@ struct TypeSystem {
   auto FindOrCreateTemplate(const string &name, const Type &base,
                            const vector<Type> &types) -> Type;
                            
-  auto GetDefault(const Type &type) -> Value;
   
   auto FromPrimitive(const PrimitiveType &value) -> Type;
   

@@ -1282,7 +1282,7 @@ void Using::Load() {
 Value Literal::Evaluate() { return expression->Clone(); }
 
 Value DefaultValue::Evaluate() {
-  return Values::TypeSystem::Current().GetDefault(type);
+  return type->Default();
 }
 void ASTNode::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Executable::Accept(ASTVisitor *visitor) { visitor->visit(this); }

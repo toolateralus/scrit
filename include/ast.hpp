@@ -3,7 +3,6 @@
 #include "native.hpp"
 #include "type.hpp"
 
-#include <algorithm>
 #include <cassert>
 #include <functional>
 #include <memory>
