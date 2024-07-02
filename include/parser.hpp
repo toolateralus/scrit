@@ -15,13 +15,11 @@ using std::vector;
 struct Parser {
   Parser() {}
   explicit Parser(vector<Token> tokens) : tokens(tokens) {}
-  
   vector<Token> tokens;
-
+  SourceInfo info = {0, 0, ""};
   Token Peek(size_t lookahead = 0);
   Token Eat();
   Token Expect(const TType ttype);
-  SourceInfo info = {0, 0, ""};
   unique_ptr<Program> Parse(vector<Token> &&tokens);
   BlockPtr ParseBlock();
   StatementPtr ParseAnonFuncInlineCall();

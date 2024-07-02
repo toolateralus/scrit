@@ -1,0 +1,50 @@
+using * from array
+
+
+global.global = global
+
+let const colors  = {
+  mut black: string = "\e[0;30m",
+  mut white: string = "\e[0;37m",
+  mut red: string = "\e[0;31m",
+  mut green: string = "\e[0;32m",
+  mut yellow: string = "\e[0;33m",
+  mut blue: string = "\e[0;34m",
+  mut magenta: string = "\e[0;35m",
+  mut cyan: string = "\e[0;36m",
+  mut reset: string = "\e[0m"
+}
+
+for {
+  let serializer_options: object = {indentSize = 0}
+  
+  let mut available_colors: array<string> 
+  
+  for k, v : colors {
+    available_colors.push(k)
+  }
+  
+  println("enter a color. options are: ")
+  
+  let ser = serialize(available_colors, serializer_options)
+  
+  available_colors = deserialize(ser)
+  
+  println(ser)
+  
+  let input = readln()
+  
+  if input == "exit" {
+    break
+  }
+  
+  for k, v : colors {
+    if k == input {
+      print(v)
+      break
+    }
+  }
+  
+  println("this is " + input + "!")
+
+}

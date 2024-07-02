@@ -198,20 +198,7 @@ Type Parser::ParseTemplateType(const Type &base_type) {
       break;
     }
     
-    // get type name
-    auto ttok = Expect(TType::Identifier);
-    auto &tname = ttok.value;
-    
-    // recursively parse template types.
-    if (Peek().type == TType::Less) {
-      auto base = TypeSystem::Current().Get(tname);
-      if (!base) {
-        throw std::runtime_error("invalid type : " + tname + " in template");
-      }
-      types.push_back(Parser::ParseTemplateType(base));  
-    } else {
-      types.push_back(TypeSystem::Current().Get(tname));
-    }
+    types.push_back(ParseType());
     
     // eat commas.
     if (Peek().type == TType::Comma) {

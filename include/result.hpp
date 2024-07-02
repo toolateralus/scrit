@@ -1,7 +1,9 @@
 
 #pragma once
 
+#include <cstdio>
 #include <functional>
+#include <string>
 
 struct None {};
 
@@ -23,18 +25,21 @@ struct Result {
   }
   auto is_ok() -> bool { return ok != nullptr; }
   auto is_err() -> bool { return err != nullptr; }
-  auto match(std::function<void(_Err)> &err, std::function<void(_Ok)> &ok) {
+  
+  auto match(std::function<void(_Err)> err, std::function<void(_Ok)> ok) -> void {
     if (is_ok()) {
-      ok(this->ok);
+      ok(*this->ok);
     } else {
-      err(this->err);
+      err(*this->err);
     }
   }
-  auto get_ok_unsafe() -> _Ok {
-    return *ok;
+  
+  auto get_ok_unsafe() -> _Ok* {
+    return ok;
   }
-  auto get_err_unsafe() -> _Err {
-    return *err;
+  
+  auto get_err_unsafe() -> _Err* {
+    return err;
   }
   ~Result() {
     if (is_err()) {
@@ -49,4 +54,23 @@ struct Result {
 };
 
 
+
+auto f() {
+  using Result = Result<None, std::string>;
+  
+  auto result= Result::Ok("something");
+  
+  result.match(
+    [](None) {
+      printf("%s", "none");
+    },
+    [](std::string s){
+      printf("%s", s.c_str());
+    }
+  );
+
+  
+  
+  
+}
 

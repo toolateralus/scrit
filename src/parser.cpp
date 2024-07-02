@@ -697,6 +697,9 @@ StatementPtr Parser::ParseFor() {
       if (Peek().type == TType::Colon) {
         break;
       }
+      if (Peek().type == TType::Comma) {
+        Eat();
+      }
     }
     Expect(TType::Colon);
     

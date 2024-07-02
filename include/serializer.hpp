@@ -17,11 +17,11 @@ enum struct ReferenceHandling {
 };
 
 
-
-
 struct Reader {
   vector<Token> tokens;
   Parser parser;
+  
+  Reader() = delete;
   Reader(const string &input) {
     auto lexer = Lexer();
     auto tokens = lexer.Lex(input);
