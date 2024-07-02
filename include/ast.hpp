@@ -245,7 +245,7 @@ struct ArrayInitializer : Expression {
 namespace Values {
 struct Callable_T;
 }
-struct Call : Expression, Statement {
+struct Call : virtual Expression, virtual Statement {
   ExpressionPtr operand;
   ArgumentsPtr args;
   Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args);
@@ -255,6 +255,21 @@ struct Call : Expression, Statement {
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;
 };
+struct MethodCall : virtual Expression, virtual Statement {
+  ExpressionPtr operand;
+  ArgumentsPtr args;
+  shared_ptr<Values::Callable_T> callable;
+  shared_ptr<Values::Callable_T> FindCallable();
+  MethodCall(SourceInfo &info, const Type &type, ExpressionPtr &&operand,
+             ArgumentsPtr &&args);
+  ExecutionResult Execute() override {
+    Evaluate();
+    return ExecutionResult::None;
+  }
+  Value Evaluate() override;
+  void Accept(ASTVisitor *visitor) override;
+};
+
 struct If : Statement {
   If() = delete;
   static IfPtr NoElse(SourceInfo &info, ExpressionPtr &&condition,
@@ -495,8 +510,7 @@ struct MatchStatement : Statement {
   void Accept(ASTVisitor *visitor) override;
 };
 string CC_ToString(ControlChange controlChange);
+
 Value EvaluateWithinObject(Scope &scope, Value object, ExpressionPtr &expr);
 Value EvaluateWithinObject(Scope &scope, Value object,
                            std::function<Value()> lambda);
-
-Value TryCallMethods(unique_ptr<Expression> &right, Value &lvalue);

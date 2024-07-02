@@ -45,4 +45,5 @@ struct ASTVisitor {
 	virtual void visit(Lambda* lambda) = 0;
 	virtual void visit(Match* match) = 0;
 	virtual void visit(MatchStatement* matchStmt) = 0;
+	virtual void visit(MethodCall *method) = 0;
 };

@@ -1,5 +1,6 @@
 #include "ast_serializer.hpp"
 #include "ast.hpp"
+#include "type.hpp"
 #include "value.hpp"
 
 ASTSerializer::ASTSerializer(int indent_level, int indent_size) {
@@ -26,14 +27,17 @@ void ASTSerializer::visit(Program *program) {
 }
 void ASTSerializer::visit(Expression *_) {
   Write("Expression");
+  Write("type: " + _->type->name);
 }
 void ASTSerializer::visit(Operand *operand) {
   auto _ = Indenter(this);
-  Write("Operand: {\n" + operand->Evaluate()->ToString() + "\n type" + operand->type->name  + "\n}");
+  Write("Operand: {\n" + operand->Evaluate()->ToString() + " type: " + operand->type->name  + "\n}");
   
 }
 void ASTSerializer::visit(Identifier *identifier) {
-  Write("Identifier: " + identifier->name + "");
+  if (identifier->type)
+    Write("Identifier: " + identifier->name + " type: " + identifier->type->name);
+  else Write("Identifier: " + identifier->name + " type: unknown" );
 }
 void ASTSerializer::visit(Arguments *arguments) {
   Write("Arguments: {");
@@ -45,7 +49,7 @@ void ASTSerializer::visit(Arguments *arguments) {
   Write("}");
 }
 void ASTSerializer::visit(TupleInitializer *tupleInitializer) {
-  Write("TupleInitializer: {");
+  Write("TupleInitializer: " + tupleInitializer->type->name + "{");
   auto _ = Indenter(this);
   for (auto &arg : tupleInitializer->values) {
     arg->Accept(this);
@@ -54,7 +58,7 @@ void ASTSerializer::visit(TupleInitializer *tupleInitializer) {
   Write("}");
 }
 void ASTSerializer::visit(Property *property) {
-  Write("Property: {");
+  Write("Property: " + property->lambda->type->name + "{");
   auto _ = Indenter(this);
   property->lambda->Accept(this);
   
@@ -79,7 +83,6 @@ void ASTSerializer::visit(Return *ret) {
   Write("Return: {");
   auto _ = Indenter(this);
   ret->value->Accept(this);
-  
   Write("}");
 }
 void ASTSerializer::visit(Delete *del) {
@@ -113,7 +116,7 @@ void ASTSerializer::visit(ObjectInitializer *objInit) {
   Write("}");
 }
 void ASTSerializer::visit(Call *call) {
-  Write("Call: {");
+  Write("Call: " + call->type->name + " {");
   {
     auto _ = Indenter(this);
     Write("Operand: {");
@@ -230,7 +233,7 @@ void ASTSerializer::visit(RangeBasedFor *rangeFor) {
   Write("}");
 }
 void ASTSerializer::visit(Declaration *del) {
-  Write("Declaration: {");
+  Write("Declaration: " +  del->type->name + " {");
   {
     auto _ = Indenter(this);
     
@@ -263,7 +266,7 @@ void ASTSerializer::visit(TupleDeconstruction *tupleDec) {
       
     }
     Write("}");
-    Write("TupleInitializer: {");
+    Write("Tuple: {");
     {
       auto _ = Indenter(this);
       tupleDec->tuple->Accept(this);
@@ -275,7 +278,7 @@ void ASTSerializer::visit(TupleDeconstruction *tupleDec) {
   Write("}");
 }
 void ASTSerializer::visit(CompAssignExpr *compAssignExpr) {
-  Write("CompAssignExpr: {");
+  Write("CompAssignExpr: " + compAssignExpr->type->name + " {");
   {
     auto _ = Indenter(this);
     Write("Operand: {");
@@ -306,7 +309,7 @@ void ASTSerializer::visit(CompoundAssignment *compoundAssign) {
   Write("}");
 }
 void ASTSerializer::visit(FunctionDecl *funcDecl) {
-  Write("FunctionDecl: {");
+  Write("FunctionDecl: " + TypeSystem::Current().FromCallable(funcDecl->returnType, funcDecl->parameters->ParamTypes())->name + " {");
   {
     auto _ = Indenter(this);
     Write("Identifier: " + funcDecl->name);
@@ -317,10 +320,10 @@ void ASTSerializer::visit(FunctionDecl *funcDecl) {
   Write("}");
 }
 void ASTSerializer::visit(Noop *_) {
-  Write("Noop");
+  Write("Noop -- this is a function declaration. TODO: don't omit function declarations from the ast");
 }
 void ASTSerializer::visit(DotExpr *dotExpr) {
-  Write("DotExpr: {");
+  Write("DotExpr: " + dotExpr->type->name + " {");
   {
     auto _ = Indenter(this);
     Write("Operand: {");
@@ -544,10 +547,18 @@ void ASTSerializer::visit(Literal *literal) {
   }
 }
 
-
+void ASTSerializer::visit(MethodCall *method) {
+  auto _ = Indenter(this);
+  Write("Method Call: ");
+  method->operand->Accept(this);
+  method->args->Accept(this);
+}
 
 // The auto indenter.
 Indenter::Indenter(ASTSerializer *serializer) : serializer(serializer) {
   serializer->indent_level += serializer->indent_size;
 }
-Indenter::~Indenter() { serializer->indent_level -= serializer->indent_size; }
+Indenter::~Indenter() { 
+  serializer->indent_level -= serializer->indent_size;
+}
+

@@ -81,7 +81,7 @@ ObjectInitializer::ObjectInitializer(SourceInfo &info, const Type &type,
 }
 Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
     : Expression(info, operand->type), Statement(info) {
-
+  
   auto value = operand->Evaluate();
 
   if (!value) {
@@ -94,9 +94,9 @@ Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
                                operand->srcInfo.ToString());
     }
   }
-
+  
   auto target = std::dynamic_pointer_cast<CallableType>(value->type);
-
+  
   if (target && target->returnType) {
     this->type = target->returnType;
   }
@@ -489,7 +489,7 @@ ExecutionResult Block::Execute() {
 }
 Value ObjectInitializer::Evaluate() {
   static auto _this = Object_T::New();
-  
+
   _this->scope->Clear();
   _this->scope->Set("this", _this, Mutability::Mut);
 
@@ -503,7 +503,7 @@ Value ObjectInitializer::Evaluate() {
         ".. => { some body of code returning a value ..}");
   }
   _this->scope->Erase("this");
-  
+
   auto object = Object_T::New(_this->scope->Clone());
   object->type = type;
   return object;
@@ -533,7 +533,7 @@ void Call::ValidateArgumentSize(shared_ptr<Callable_T> &callable) {
         args->values.size()) {
       auto delta = native_callable->function->parameterTypes.size() -
                    args->values.size();
-      
+
       if (delta > 0) {
         throw std::runtime_error("Invalid function call: too many arguments");
       } else {
@@ -571,7 +571,7 @@ Value Call::Evaluate() {
       auto callable = std::dynamic_pointer_cast<Callable_T>(fn);
       if (callable) {
         ValidateArgumentSize(callable);
-        
+
         auto args_values = GetArgsValueList(args);
         args_values.insert(args_values.begin(), obj);
         return callable->Call(args_values);
@@ -682,109 +682,15 @@ ExecutionResult Assignment::Execute() {
         "___ : type = ...' syntax. \n offending variable: " +
         iden->name);
   }
-  
+
   auto result = expr->Evaluate();
   result->type = type;
   ApplyCopySemantics(result);
-  
+
   // TODO: find a better way to query mutability of a variable.
   auto iter = ASTNode::context.FindIter(iden->name);
   context.Insert(iden->name, result, iter->first.mutability);
   return ExecutionResult::None;
-}
-Value TryCallMethods(unique_ptr<Expression> &right, Value &lvalue) {
-
-  // recurse for bin expr.
-  if (auto binExpr = dynamic_cast<BinExpr *>(right.get())) {
-    auto result = TryCallMethods(binExpr->left, lvalue);
-
-    if (!result) {
-      return binExpr->Evaluate();
-    }
-    
-    // fold this expression and re-evaluate.
-    
-    // THIS IS AWFUL: 
-    // This causes a bug where complex expressions with calls to functions in them
-    // end up being folded to a single literal value that is stored on any proceding exectuions
-    
-    // So for example
-      //     let x = ["file.scrit", "fart.scrit", "poop.scrit"]
-      
-      // for file : x {
-      //   let value = "[" +  file.remove(".scrit") + "](" + file + ")"
-      //   println(value)
-      // }
-      
-    // Value always = "file"
-    // because the first time it's executed, it gets folded to a string literal.
-    // Then, on following iterations of the loop, it's just a constant, So it never actually calls
-    // into remove again nor does it use the file variable.
-    
-    auto expr = make_unique<Literal>(binExpr->srcInfo, binExpr->type, result);
-    binExpr->left = std::move(expr);
-    return binExpr->Evaluate();
-  }
-
-  if (auto call = dynamic_cast<Call *>(right.get())) {
-
-    if (auto name = dynamic_cast<Identifier *>(call->operand.get())) {
-      shared_ptr<Callable_T> callable = nullptr;
-
-      callable = std::dynamic_pointer_cast<Callable_T>(
-          ASTNode::context.Find(name->name));
-
-      if (callable)
-        goto call;
-
-      if (auto member = lvalue->type->Get(name->name);
-          !member->Equals(Ctx::Undefined())) {
-        // std::cout << "type " << lvalue->type->name << " contains " <<
-        // lvalue->type->Scope().Members().size() << " members." << std::endl;
-
-        auto member_callable = std::dynamic_pointer_cast<Callable_T>(member);
-
-        if (member_callable) {
-          callable = member_callable;
-          goto call;
-        }
-      }
-
-      // call native free functions.
-      // This is a pretty unique case, so we're gonna do it after type
-      // associated functions
-      if (FunctionRegistry::Exists(name->name)) {
-        callable = FunctionRegistry::GetCallable(name->name);
-        goto call;
-      }
-
-      // Try call member methods on objects. This is the slowest call, so we do
-      // it last.
-      {
-        auto obj = std::dynamic_pointer_cast<Object_T>(lvalue);
-        if (obj && obj->scope && obj->scope->Contains(name->name)) {
-          callable = std::dynamic_pointer_cast<Callable_T>(
-              obj->scope->Get(name->name));
-          // call the function from the object's scope.
-          return EvaluateWithinObject(obj->scope, lvalue,
-                                      [callable, call]() -> Value {
-                                        return callable->Call(call->args);
-                                      });
-        }
-      }
-
-    call:
-      if (!callable) {
-        throw std::runtime_error("invalid method call: " + name->name);
-      }
-
-      auto args = call->GetArgsValueList(call->args);
-      // insert self as arg 0.
-      args.insert(args.begin(), lvalue);
-      return callable->Call(args);
-    }
-  }
-  return nullptr;
 }
 Value EvaluateWithinObject(Scope &scope, Value object, ExpressionPtr &expr) {
   scope->Set("this", object, Mutability::Mut);
@@ -805,28 +711,16 @@ Value EvaluateWithinObject(Scope &scope, Value object,
 }
 Value DotExpr::Evaluate() {
   auto lvalue = left->Evaluate();
-
-  // Todo: remove this. It's slow and unneccesary now that we have types with
-  // members. in general, a lot of our interpretation can be optimized to take a
-  // minimal path to execution, now that the lang is more expressive. Before, a
-  // lot of behavior was undetermined until interpret time.
-
-  // Try to call an ext method, or member method.
-  auto ext_method_result = TryCallMethods(right, lvalue);
-  if (ext_method_result != nullptr) {
-    return ext_method_result;
-  }
-
-  // Below is field accessors.
+  
   if (lvalue->GetPrimitiveType() != PrimitiveType::Object) {
     throw std::runtime_error("invalid lhs on dot operation : " +
                              TypeToString(lvalue->GetPrimitiveType()));
   }
-
+  
   auto object = static_cast<Object_T *>(lvalue.get());
-
+  
   auto scope = object->scope;
-
+  
   auto result = EvaluateWithinObject(scope, lvalue, right);
 
   return result;
@@ -901,7 +795,7 @@ Value BinExpr::Evaluate() {
   if (!Type_T::Equals(left->type.get(), right->type.get())) {
     throw TypeError(left->type, right->type);
   }
-
+  
   switch (op) {
   case TType::NullCoalescing: {
     if (left->GetPrimitiveType() == PrimitiveType::Null ||
@@ -948,9 +842,9 @@ Value BinExpr::Evaluate() {
 ExecutionResult Using::Execute() { return ExecutionResult::None; }
 ExecutionResult RangeBasedFor::Execute() {
   auto collection = this->rhs->Evaluate();
-  
+
   auto lhs = dynamic_cast<Identifier *>(this->lhs.get());
-  
+
   if (!lhs && names.empty()) {
     throw std::runtime_error(
         "the left hand side of a range based for loop must be an identifier.\n"
@@ -958,16 +852,16 @@ ExecutionResult RangeBasedFor::Execute() {
         "or a tuple deconstruction\n"
         "example: for k,v : someObject/tupleArray {}");
   }
-  
+
   auto setter = [this, lhs](Value value) -> void {
     if (lhs) {
       context.scopes.back()->Set(lhs->name, value, Mutability::Const);
-    } else if (auto tuple = std::dynamic_pointer_cast<Tuple_T>(value); !names.empty()) {
+    } else if (auto tuple = std::dynamic_pointer_cast<Tuple_T>(value);
+               !names.empty()) {
       tuple->Deconstruct(names);
     }
   };
-  
-  
+
   Array array = nullptr;
   Object obj = nullptr;
   string string;
@@ -980,13 +874,13 @@ ExecutionResult RangeBasedFor::Execute() {
                              "container must be an array, object or string.");
   }
   auto scope = ASTNode::context.PushScope();
-  
+
   if (array) {
     for (auto &v : array->values) {
       scope->Clear();
-      
+
       setter(v);
-      
+
       auto result = block->Execute();
 
       switch (result.controlChange) {
@@ -1007,11 +901,11 @@ ExecutionResult RangeBasedFor::Execute() {
       tuple->values = {Ctx::CreateString(key.value), val};
       tuple->type = TypeSystem::Current().FromTuple(tuple->values);
       scope->Clear();
-      
+
       setter(tuple);
-      
+
       auto result = block->Execute();
-      
+
       switch (result.controlChange) {
       case ControlChange::None:
         break;
@@ -1299,14 +1193,14 @@ void Using::Load() {
 
 Value Literal::Evaluate() { return expression->Clone(); }
 
-Value DefaultValue::Evaluate() {
-  return type->Default();
-}
+Value DefaultValue::Evaluate() { return type->Default(); }
 void ASTNode::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Executable::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Statement::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Program::Accept(ASTVisitor *visitor) { visitor->visit(this); }
-void Expression::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void Expression::Accept(ASTVisitor *visitor) { 
+  visitor->visit(this); 
+}
 void Operand::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Identifier::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Arguments::Accept(ASTVisitor *visitor) { visitor->visit(this); }
@@ -1350,3 +1244,67 @@ TypeAlias::TypeAlias(SourceInfo &info, const string &alias, const Type &type)
     : Statement(info), type(type), alias(alias) {
   context.scopes.back()->InsertType(alias, type);
 }
+
+Value MethodCall::Evaluate() {
+  return callable->Call(this->args);
+}
+
+MethodCall::MethodCall(SourceInfo &info, const Type &type,
+                       ExpressionPtr &&operand, ArgumentsPtr &&args)
+    : Statement(info), Expression(info, type), args(std::move(args)),
+      operand(std::move(operand)) {
+      callable = FindCallable();
+      auto t = std::dynamic_pointer_cast<CallableType>(callable->type); 
+      this->type = t->returnType;
+}
+
+shared_ptr<Callable_T> MethodCall::FindCallable() {
+  auto identifier = dynamic_cast<Identifier *>(operand.get());
+  if (!identifier) {
+    throw std::runtime_error(
+        "failed to call method: operand did not resolve to an identifier");
+  }
+  auto &args = this->args->values;
+  if (args.empty()) {
+    throw std::runtime_error("Too few arguments for a method call: the caller "
+                             "object was not in the argument list");
+  }
+  auto caller = args[0]->Evaluate();
+  if (auto method = caller->type->Get(identifier->name);
+      auto callable = std::dynamic_pointer_cast<Callable_T>(method)) {
+    if (callable != nullptr) {
+      return callable;
+    }
+  }
+  
+  if (auto obj = ASTNode::context.Find(identifier->name); 
+      auto callable = std::dynamic_pointer_cast<Callable_T>(obj)) {
+    return callable;
+  }
+  
+  if (auto callable = FunctionRegistry::GetCallable(identifier->name)) {
+    return callable; 
+  }
+  
+  auto lvalue = operand->Evaluate();
+  
+  if (lvalue->GetPrimitiveType() != PrimitiveType::Object) {
+    throw std::runtime_error("invalid lhs on dot operation : " +
+                             TypeToString(lvalue->GetPrimitiveType()));
+  }
+  
+  auto object = static_cast<Object_T *>(lvalue.get());
+  
+  auto scope = object->scope;
+  
+  auto result = EvaluateWithinObject(scope, lvalue, [identifier, object, this]() {
+    auto variable = object->scope->Get(identifier->name);
+    if (auto callable = std::dynamic_pointer_cast<Callable_T>(variable)) {
+      return callable->Call(this->args);
+    }
+    throw std::runtime_error("invalid method call: couldn't find method : " + identifier->name);
+  });
+  
+  throw std::runtime_error("invalid method call: couldn't find method : " + identifier->name);
+}
+void MethodCall::Accept(ASTVisitor *visitor) { visitor->visit(this); }

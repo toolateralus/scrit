@@ -397,8 +397,8 @@ StatementPtr Parser::ParseLValuePostFix(ExpressionPtr &expr) {
       return make_unique<DotAssignment>(info, std::move(expr),
                                         std::move(value));
     }
-
-    if (dynamic_cast<Call *>(dotRight->right.get())) {
+    
+    if (dynamic_cast<MethodCall *>(dotRight->right.get())) {
       return make_unique<DotCallStmnt>(info, std::move(expr));
     }
 
@@ -419,6 +419,11 @@ StatementPtr Parser::ParseLValuePostFix(ExpressionPtr &expr) {
     return make_unique<Call>(info, std::move(call->operand),
                              std::move(call->args));
   }
+  
+  if (auto call = dynamic_cast<MethodCall *>(expr.get())) {
+    return make_unique<DotCallStmnt>(info, std::move(expr));
+  }
+  
   if (dynamic_cast<CompAssignExpr *>(expr.get())) {
     return make_unique<CompoundAssignment>(info, std::move(expr));
   }
@@ -515,7 +520,7 @@ StatementPtr Parser::ParseAnonFuncInlineCall() {
   return make_unique<Call>(info, std::move(op), std::move(arguments));
 }
 // Call statement.
-StatementPtr Parser::ParseCall(IdentifierPtr identifier) {
+unique_ptr<Call> Parser::ParseCall(IdentifierPtr identifier) {
   auto info = this->info;
   auto args = ParseArguments();
   return make_unique<Call>(info, std::move(identifier), std::move(args));
