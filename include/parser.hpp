@@ -14,7 +14,7 @@ using std::vector;
 
 struct Parser {
   Parser() {}
-  Parser(vector<Token> tokens) : tokens(tokens) {}
+  explicit Parser(vector<Token> tokens) : tokens(tokens) {}
   
   vector<Token> tokens;
 
