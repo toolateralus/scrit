@@ -96,7 +96,6 @@ struct ASTNode {
   virtual void Accept(ASTVisitor *visitor) = 0;
 };
 
-
 struct Executable : ASTNode {
   virtual ~Executable() {}
   virtual ExecutionResult Execute() = 0;
@@ -122,7 +121,7 @@ struct Expression : ASTNode {
 };
 
 struct DefaultValue : Expression {
-  DefaultValue(SourceInfo &info, const Type &type) : Expression(info, type){};
+  DefaultValue(SourceInfo &info, const Type &type) : Expression(info, type) {};
   Value Evaluate() override;
   void Accept(ASTVisitor *visitor) override;
 };
@@ -383,9 +382,7 @@ struct FunctionDecl : Statement {
   FunctionDecl(SourceInfo &info, string &name, BlockPtr &&block,
                ParametersPtr &&parameters, const Type &returnType)
       : Statement(info), block(std::move(block)),
-        parameters(std::move(parameters)), name(name), returnType(returnType) {
-          
-        }
+        parameters(std::move(parameters)), name(name), returnType(returnType) {}
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;
 };
@@ -509,7 +506,7 @@ struct StructDeclaration : Statement {
   string name;
   StructDeclaration(SourceInfo &info, const string &name,
                     unique_ptr<ObjectInitializer> &&ctor_obj);
-                    
+
   ExecutionResult Execute() override;
 };
 
@@ -518,7 +515,6 @@ struct Constructor : Expression {
   Constructor(SourceInfo &info, const Type &type, ArgumentsPtr &&args);
   Value Evaluate() override;
 };
-
 
 struct MatchStatement : Statement {
   ExpressionPtr match;

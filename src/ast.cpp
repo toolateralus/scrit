@@ -1,4 +1,5 @@
 #include "ast.hpp"
+#include "ast_visitor.hpp"
 #include "context.hpp"
 #include "debug.hpp"
 #include "error.hpp"
@@ -7,7 +8,6 @@
 #include "parser.hpp"
 #include "value.hpp"
 #include <algorithm>
-#include "ast_visitor.hpp"
 #include <iostream>
 #include <memory>
 #include <ranges>
@@ -71,8 +71,7 @@ Return::Return(SourceInfo &info, ExpressionPtr &&value) : Statement(info) {
   this->value = std::move(value);
 }
 Block::Block(SourceInfo &info, vector<StatementPtr> &&statements, Scope scope)
-    : Statement(info), scope(scope), statements(std::move(statements)) {
-}
+    : Statement(info), scope(scope), statements(std::move(statements)) {}
 ObjectInitializer::ObjectInitializer(SourceInfo &info, const Type &type,
                                      BlockPtr &&block)
     : Expression(info, type) {
@@ -80,9 +79,9 @@ ObjectInitializer::ObjectInitializer(SourceInfo &info, const Type &type,
 }
 Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
     : Expression(info, operand->type), Statement(info) {
-  
+
   auto value = operand->Evaluate();
-  
+
   if (!value) {
     // a bit of specific code for functor objects.
     if (auto object = std::dynamic_pointer_cast<Object_T>(value);
@@ -93,13 +92,13 @@ Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
                                operand->srcInfo.ToString());
     }
   }
-  
+
   auto callable_type = std::dynamic_pointer_cast<CallableType>(value->type);
-  
+
   if (callable_type && callable_type->returnType) {
     this->type = callable_type->returnType;
   }
-  
+
   this->operand = std::move(operand);
   this->args = std::move(args);
 }
@@ -292,7 +291,7 @@ Declaration::Declaration(SourceInfo &info, const string &name,
                          ExpressionPtr &&expr, const Mutability &mut,
                          const Type &type)
     : Statement(info), name(name), expr(std::move(expr)), mut(mut), type(type) {
-      
+
   context.scopes.back()->ForwardDeclare(name, type, mut);
 }
 
@@ -484,7 +483,7 @@ ExecutionResult Block::Execute(Scope scope) {
   return ExecutionResult::None;
 }
 ExecutionResult Block::Execute() {
-  scope->ClearVariables();  
+  scope->ClearVariables();
   ASTNode::context.PushScope(scope);
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
@@ -495,7 +494,7 @@ ExecutionResult Block::Execute() {
       case ControlChange::Break:
       case ControlChange::Return:
         ASTNode::context.PopScope();
-        
+
         if (result.value != nullptr) {
           ApplyCopySemantics(result);
           return result;
@@ -703,15 +702,15 @@ ExecutionResult Assignment::Execute() {
   auto var = ASTNode::context.Find(iden->name);
   if (!var) {
     throw std::runtime_error(
-        "cannot assign a non-existant identifier. use 'let ___ = ...' or let "
+        "cannot assign a non-existant identifier.\nuse 'let ___ = ...' or let "
         "___ : type = ...' syntax. \n offending variable: " +
         iden->name);
   }
-  
+
   auto result = expr->Evaluate();
   result->type = type;
   ApplyCopySemantics(result);
-  
+
   // TODO: find a better way to query mutability of a variable.
   auto iter = ASTNode::context.FindIter(iden->name);
   context.Insert(iden->name, result, iter->first.mutability);
@@ -1324,15 +1323,13 @@ void MethodCall::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
                                      unique_ptr<ObjectInitializer> &&ctor_obj)
     : Statement(info), name(name), ctor_obj(std::move(ctor_obj)) {
-  context.scopes.back()->OverwriteType(name, make_shared<StructType>(name, std::move(this->ctor_obj)));
+  context.scopes.back()->OverwriteType(
+      name, make_shared<StructType>(name, std::move(this->ctor_obj)));
 }
-ExecutionResult StructDeclaration::Execute() {  
-  return ExecutionResult::None;
-}
-Constructor::Constructor(SourceInfo &info, const Type &type, ArgumentsPtr &&args)
-    : Expression(info, type), args(std::move(args)) {
-      
-}
+ExecutionResult StructDeclaration::Execute() { return ExecutionResult::None; }
+Constructor::Constructor(SourceInfo &info, const Type &type,
+                         ArgumentsPtr &&args)
+    : Expression(info, type), args(std::move(args)) {}
 Value Constructor::Evaluate() {
 
   auto structType = std::dynamic_pointer_cast<StructType>(type);

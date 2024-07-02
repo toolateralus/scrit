@@ -159,22 +159,22 @@ function(len) {
   return Ctx::Undefined();
 }
 
-
 extern "C" ScritModDef *InitScritModule_array() {
   ScritModDef *def = CreateModDef();
   *def->description = "provide functionality for the array type.";
   auto array = make_shared<ArrayType>();
-  
-  array->Set("remove",   CREATE_CALLABLE(remove, "undefined", {"array", "any"}));
+
+  array->Set("remove", CREATE_CALLABLE(remove, "undefined", {"array", "any"}));
   array->Set("contains", CREATE_CALLABLE(contains, "bool", {"array", "any"}));
-  array->Set("clear",    CREATE_CALLABLE(clear, "undefined", {"array"}));
-  array->Set("expand",   CREATE_CALLABLE(expand, "undefined", {"array", "int", "any"}));
-  array->Set("push",     CREATE_CALLABLE(push, "undefined", {"any"}));
-  array->Set("front",    CREATE_CALLABLE(front, "any", {"array"}));
-  array->Set("back",     CREATE_CALLABLE(back, "any", {"array"}));
-  array->Set("pop",      CREATE_CALLABLE(pop, "any", {"array"}));
-  array->Set("len",      CREATE_CALLABLE(len, "int", {"array"}));
+  array->Set("clear", CREATE_CALLABLE(clear, "undefined", {"array"}));
+  array->Set("expand",
+             CREATE_CALLABLE(expand, "undefined", {"array", "int", "any"}));
+  array->Set("push", CREATE_CALLABLE(push, "undefined", {"any"}));
+  array->Set("front", CREATE_CALLABLE(front, "any", {"array"}));
+  array->Set("back", CREATE_CALLABLE(back, "any", {"array"}));
+  array->Set("pop", CREATE_CALLABLE(pop, "any", {"array"}));
+  array->Set("len", CREATE_CALLABLE(len, "int", {"array"}));
   def->AddType("array", array);
-  
+
   return def;
 }

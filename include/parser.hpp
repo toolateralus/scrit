@@ -1,16 +1,15 @@
 #pragma once
 
-#include <memory>
-#include <vector>
 #include "ast.hpp"
 #include "lexer.hpp"
+#include <memory>
+#include <vector>
 
 struct Token;
 
-using std::unique_ptr;
 using std::make_unique;
+using std::unique_ptr;
 using std::vector;
-
 
 struct Parser {
   Parser() {}
@@ -29,12 +28,13 @@ struct Parser {
   Type ParseTupleType();
   Type ParseType();
   Type ParseTemplateType(const Type &base_type);
-  
+
   StatementPtr ParseTupleDeconstruction(IdentifierPtr &&iden);
-  
+
   StatementPtr ParseDeclaration();
-  StatementPtr ParseDeclaration(SourceInfo &info, const string &iden, const Mutability &mut);
-  
+  StatementPtr ParseDeclaration(SourceInfo &info, const string &iden,
+                                const Mutability &mut);
+
   unique_ptr<Call> ParseCall(IdentifierPtr identifier);
   StatementPtr ParseAssignment(IdentifierPtr identifier);
   StatementPtr ParseLValuePostFix(ExpressionPtr &expr);
@@ -53,19 +53,19 @@ struct Parser {
 
   ParametersPtr ParseParameters();
   ArgumentsPtr ParseArguments();
-  
+
   DeletePtr ParseDelete();
-  
-    // This riduculous function is to check if the next token is a part of an
+
+  // This riduculous function is to check if the next token is a part of an
   // expression. this is how we judge whether to parse a return expression or
   // not. We should probably make a better way to do this, just don't know how.
   static bool IsLiteralOrExpression(const Token &next) {
-      return (next.family == TFamily::Keyword && next.type != TType::Null &&
-              next.type != TType::Undefined && next.type != TType::False &&
-              next.type != TType::True && next.type != TType::Match) ||
-              (next.family == TFamily::Operator && next.type != TType::LParen &&
-              next.type != TType::LCurly &&
-              (next.type != TType::Sub && next.type != TType::Not));
+    return (next.family == TFamily::Keyword && next.type != TType::Null &&
+            next.type != TType::Undefined && next.type != TType::False &&
+            next.type != TType::True && next.type != TType::Match) ||
+           (next.family == TFamily::Operator && next.type != TType::LParen &&
+            next.type != TType::LCurly &&
+            (next.type != TType::Sub && next.type != TType::Not));
   }
 
   Type ParseReturnType();
@@ -81,9 +81,9 @@ struct Parser {
   ExpressionPtr ParsePostfix();
   ExpressionPtr ParseUnary();
   ExpressionPtr ParseOperand();
-  
-  unique_ptr<Noop>  ParseFunctionDeclaration();
-  
+
+  unique_ptr<Noop> ParseFunctionDeclaration();
+
   ExpressionPtr ParseAnonFunc();
   unique_ptr<ObjectInitializer> ParseObjectInitializer();
   OperandPtr ParseArrayInitializer();

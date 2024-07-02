@@ -32,7 +32,8 @@ void m_InstantiateCallables(ScritModDef *module) {
   }
 }
 
-NativeCallable FunctionRegistry::MakeCallable(const shared_ptr<NativeFunction> &fn) {
+NativeCallable
+FunctionRegistry::MakeCallable(const shared_ptr<NativeFunction> &fn) {
   return make_shared<NativeCallable_T>(fn);
 }
 
@@ -76,7 +77,7 @@ ScritModDef *LoadScritModule(const std::string &name, const std::string &path,
   }
 
   auto mod = function();
-  
+
   return mod;
 #else
   HMODULE handle = LoadLibraryA(path.c_str());
@@ -107,7 +108,8 @@ ScritModDef *CreateModDef() {
   ScritModDef *mod = (ScritModDef *)malloc(sizeof(ScritModDef));
   mod->context = new Context();
   mod->description = new string();
-  mod->functions = new std::unordered_map<std::string, shared_ptr<NativeFunction>>();
+  mod->functions =
+      new std::unordered_map<std::string, shared_ptr<NativeFunction>>();
   mod->types = new std::unordered_map<std::string, Type>();
   return mod;
 }
@@ -135,7 +137,7 @@ void ScritModDef::AddVariable(const std::string &name, Value value,
 ScritModDef::~ScritModDef() {
   delete description;
   delete context;
-	delete types;
+  delete types;
   delete functions;
 }
 void ScritModDef::AddType(const std::string &name, const Type type) {

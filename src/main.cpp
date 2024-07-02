@@ -1,17 +1,17 @@
 #include "ast.hpp"
+#include "ast_serializer.hpp"
 #include "context.hpp"
 #include "debug.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
-#include "value.hpp"
 #include "type.hpp"
+#include "value.hpp"
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
-#include "ast_serializer.hpp"
-#include <filesystem>
 
 std::string logDir = "log";
 
@@ -37,7 +37,6 @@ void InsertCmdLineArgs(int argc, char **argv) {
   }
   ASTNode::context.Insert("args", args, Mutability::Const);
 }
-  
 
 std::vector<Token> &PreProcessUseStatements(std::vector<Token> &tokens) {
   size_t i = 0;
@@ -45,9 +44,9 @@ std::vector<Token> &PreProcessUseStatements(std::vector<Token> &tokens) {
     const auto &tok = tokens[i];
     if (tok.type == TType::Import) {
       if ((size_t)i + 1 < tokens.size()) {
-        tokens.erase(tokens.begin() + i); // remove 'use' token
+        tokens.erase(tokens.begin() + i);       // remove 'use' token
         std::string filePath = tokens[i].value; // get file path token
-        tokens.erase(tokens.begin() + i); // remove file path token
+        tokens.erase(tokens.begin() + i);       // remove file path token
         std::ifstream file(filePath);
         if (file.is_open()) {
           std::stringstream buffer;
@@ -58,7 +57,8 @@ std::vector<Token> &PreProcessUseStatements(std::vector<Token> &tokens) {
           Parser parser = {};
           auto includedTokens = lexer.Lex(code);
           includedTokens = PreProcessUseStatements(includedTokens);
-          tokens.insert(tokens.begin() + i, includedTokens.begin(), includedTokens.end());
+          tokens.insert(tokens.begin() + i, includedTokens.begin(),
+                        includedTokens.end());
         } else {
           std::cout << "Failed to open file: " << filePath << "\n";
         }
@@ -73,7 +73,7 @@ std::vector<Token> &PreProcessUseStatements(std::vector<Token> &tokens) {
 int main(int argc, char **argv) {
   Lexer lexer = {};
   Parser parser = {};
-  
+
   if (argc > 1) {
     std::string filename = argv[1];
     std::ifstream file(filename);
@@ -82,11 +82,11 @@ int main(int argc, char **argv) {
       buffer << file.rdbuf();
       std::string code = buffer.str();
       file.close();
-      
+
       auto tokens = lexer.Lex(code);
-      
+
       tokens = PreProcessUseStatements(tokens);
-      
+
       auto ast = parser.Parse(std::move(tokens));
 
       InsertCmdLineArgs(argc, argv);
@@ -114,8 +114,7 @@ int main(int argc, char **argv) {
       std::cout << "Failed to open file: " << filename << "\n";
     }
   }
-  
-  
+
   Value_T::False.reset();
   Value_T::True.reset();
   Value_T::UNDEFINED.reset();

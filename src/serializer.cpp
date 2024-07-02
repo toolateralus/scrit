@@ -22,7 +22,7 @@ void Writer::BuildMap(const Value_T *value) {
   foundObjs.clear();
 }
 // Maps an object inside of the initial value passed to BuildMap
-// Should only be caled by BuildMap 
+// Should only be caled by BuildMap
 void Writer::Map(const Value_T *val) {
   if (dynamic_cast<const Object_T *>(val) ||
       dynamic_cast<const Array_T *>(val)) {
@@ -54,17 +54,18 @@ void Writer::Map(const Value_T *val) {
   }
 }
 // Writes a value to the writer's stream based on it's settings.
-// Call BuildMap once before you start calling this if you want to preserve references. 
+// Call BuildMap once before you start calling this if you want to preserve
+// references.
 void Writer::Write(const Value_T *val) {
   if (val == nullptr) {
-    throw new std::runtime_error("nullptr contained in value passed to serializer");
+    throw new std::runtime_error(
+        "nullptr contained in value passed to serializer");
   }
 
   auto type = val->GetPrimitiveType();
-  
-  if (type == PrimitiveType::Array |
-      type == PrimitiveType::Object) {
-    
+
+  if (type == PrimitiveType::Array | type == PrimitiveType::Object) {
+
     // hanlde found objects
     if (foundObjs.contains(val)) {
       switch (settings.ref_handling) {
@@ -78,7 +79,7 @@ void Writer::Write(const Value_T *val) {
         break;
       }
       return;
-    }     
+    }
     foundObjs.insert(val);
 
     // handle preserved references
@@ -107,7 +108,7 @@ void Writer::Write(const Value_T *val) {
     // depending on if object (key and value) or array (just values)
 
     // just put identifier in if to check for cast
-    if (const Object_T *object;
+    if (const Object_T * object;
         type == PrimitiveType::Object &&
         (object = dynamic_cast<const Object_T *>(val))) {
       stream << "{";
@@ -139,8 +140,9 @@ void Writer::Write(const Value_T *val) {
       }
     } else {
       // obviously something really went wrong if GetPrimitiveType() retuns
-      // a type mismatched from what dynamic_cast thinks it is 
-      throw new std::runtime_error("Value failed to cast as marked type in serializer, this is a language bug.");
+      // a type mismatched from what dynamic_cast thinks it is
+      throw new std::runtime_error("Value failed to cast as marked type in "
+                                   "serializer, this is a language bug.");
     }
 
     // finish indenting
@@ -148,7 +150,7 @@ void Writer::Write(const Value_T *val) {
       indentLevel -= settings.IndentSize;
       indent = "\n" + string(indentLevel, ' ');
     }
-    
+
     // finish delimiting
     stream << indent << container_delimiter;
 
@@ -162,8 +164,8 @@ void Writer::Write(const Value_T *val) {
 // Serializes value and builds a string based on the passed in settings.
 string Writer::ToString(const Value_T *value, Settings settings) {
   Writer writer(settings);
-  
-  // only build reference map if we need to, only used to preserve references 
+
+  // only build reference map if we need to, only used to preserve references
   if (settings.ref_handling == ReferenceHandling::Preserve) {
     writer.BuildMap(value);
   }

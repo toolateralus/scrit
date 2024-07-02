@@ -1,8 +1,8 @@
-#include "value.hpp"
 #include "ast.hpp"
 #include "context.hpp"
 #include "serializer.hpp"
 #include "type.hpp"
+#include "value.hpp"
 
 #include <memory>
 
@@ -13,20 +13,21 @@ Value Object_T::GetMember(const string &name) {
     return Value_T::UNDEFINED;
 }
 
-void Object_T::SetMember(const string &name, Value value, Mutability mutability) {
+void Object_T::SetMember(const string &name, Value value,
+                         Mutability mutability) {
   scope->Set(name, value, mutability);
 }
 
 string Object_T::ToString() const { return Writer::ToString(this, {}); }
 
-bool Object_T::Equals(Value value) { 
+bool Object_T::Equals(Value value) {
   static string op_key = "equals";
   if (!HasMember(op_key)) {
-    return value == shared_from_this();  
+    return value == shared_from_this();
   }
-  
+
   auto result = CallOpOverload(value, op_key);
-  
+
   return result && result->Equals(True);
 }
 Value Object_T::Subscript(Value key) {
@@ -66,22 +67,23 @@ Value Object_T::Clone() {
 bool Object_T::operator==(Object_T *other) {
   return scope->Members() == other->scope->Members() && this == other;
 }
-bool Object_T::HasMember(const string &name) 
-{ 
-  return scope->Contains(name); 
+bool Object_T::HasMember(const string &name) { return scope->Contains(name); }
+Object_T::Object_T(Scope scope)
+    : Value_T(TypeSystem::Current().Find("object")) {
+  this->scope = scope;
 }
-Object_T::Object_T(Scope scope) : Value_T(TypeSystem::Current().Find("object")) { this->scope = scope; }
 
 Value Object_T::CallOpOverload(Value &arg, const string &op_key) {
   if (!scope->Contains(op_key)) {
     throw std::runtime_error("Couldn't find operator overload: " + op_key);
   }
-  
+
   auto member = GetMember(op_key);
-  if (member == nullptr || member->GetPrimitiveType() != PrimitiveType::Callable) {
+  if (member == nullptr ||
+      member->GetPrimitiveType() != PrimitiveType::Callable) {
     throw std::runtime_error("Operator overload was not a callable");
   }
-  
+
   ASTNode::context.PushScope(scope);
   auto callable = static_cast<Callable_T *>(member.get());
   auto args = std::vector<Value>{shared_from_this(), arg};

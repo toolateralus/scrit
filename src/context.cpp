@@ -1,10 +1,8 @@
 #include "context.hpp"
 #include "ast.hpp"
-#include "value.hpp"
 #include "type.hpp"
+#include "value.hpp"
 #include <stdexcept>
-
-
 
 Context::Context() {
   scopes = {
@@ -46,7 +44,8 @@ void Context::Insert(const Scope_T::Key &key, Value value) {
   scopes.back()->Set(key, value);
 }
 
-void Context::Insert(const string &name, Value value, const Mutability &mutability) {
+void Context::Insert(const string &name, Value value,
+                     const Mutability &mutability) {
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     if ((*it)->Contains(name)) {
       (*it)->Set(name, value, mutability);
@@ -56,8 +55,7 @@ void Context::Insert(const string &name, Value value, const Mutability &mutabili
   scopes.back()->Set(name, value, mutability);
 }
 
-auto Context::FindIter(const string &name) const -> VarIter
-{
+auto Context::FindIter(const string &name) const -> VarIter {
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     if ((*it)->Contains(name)) {
       return (*it)->Find(name);
@@ -71,9 +69,9 @@ auto Context::Find(const string &name) const -> Value {
     for (const auto &[key, var] : (*it)->Members()) {
       if (key.value == name) {
         if (var->GetPrimitiveType() == PrimitiveType::Lambda) {
-            if (auto lambda = std::dynamic_pointer_cast<Lambda_T>(var)) {
-              return lambda->Evaluate();
-            }
+          if (auto lambda = std::dynamic_pointer_cast<Lambda_T>(var)) {
+            return lambda->Evaluate();
+          }
         }
         return var;
       }
@@ -90,12 +88,12 @@ void Context::Reset() {
 }
 auto Scope_T::Clone() -> Scope {
   std::map<Key, Value> variables = {};
-  
+
   for (const auto &[k, v] : this->variables) {
     variables[k] = v->Clone();
   }
-  
-  auto scope=make_shared<Scope_T>();
+
+  auto scope = make_shared<Scope_T>();
   scope->variables = variables;
   return scope;
 }
@@ -110,34 +108,36 @@ auto Scope_T::Get(const string &name) -> Value {
 auto Scope_T::Set(const Scope_T::Key &key, Value value) -> void {
   variables[key] = value;
 }
-  
-auto Scope_T::Set(const string &name, Value value, const Mutability &mutability) -> void {
+
+auto Scope_T::Set(const string &name, Value value,
+                  const Mutability &mutability) -> void {
   if (TypeSystem::Current().Exists(name)) {
-    throw std::runtime_error("cannot declare a variable of an existing type: " + name);
+    throw std::runtime_error("cannot declare a variable of an existing type: " +
+                             name);
   }
-  
+
   auto it = Find(name);
   auto &[key, var] = *it;
-  
+
   // variable didn't exist, we freely declare it.
   if (it == variables.end()) {
     variables[Key(name, mutability, false)] = value;
     return;
-  } 
-  
+  }
+
   // a forward declaration is being fulfilled.
   if (key.forward_declared) {
     auto new_key = Key(key.value, key.mutability, false);
     variables[new_key] = value;
     return;
   }
-  
+
   // the variable is being assigned,
   if (key.mutability == Mutability::Mut) {
     variables[key] = value;
     return;
   }
-  
+
   throw std::runtime_error("Cannot set a const value.. identifier: " + name);
 }
 auto Scope_T::Contains(const string &name) -> bool {
@@ -153,7 +153,6 @@ auto Scope_T::Erase(const string &name) -> size_t {
 }
 auto Scope_T::Members() -> std::map<Key, Value> & { return variables; }
 
-
 ScritModHandle::~ScritModHandle() noexcept {
   // was moved or already disposed.
   if (handle == nullptr) {
@@ -162,7 +161,7 @@ ScritModHandle::~ScritModHandle() noexcept {
   dlclose(handle);
   handle = nullptr;
 }
-ScritModHandle::ScritModHandle(void *handle) noexcept : handle(handle)  {}
+ScritModHandle::ScritModHandle(void *handle) noexcept : handle(handle) {}
 
 void Context::RegisterModuleHandle(void *handle) {
   scopes.back()->PushModule(ScritModHandle(handle));
@@ -173,10 +172,10 @@ ScritModHandle::ScritModHandle(ScritModHandle &&move) noexcept {
 }
 
 auto Scope_T::Find(const std::string &name) -> VarIter {
-  auto it = std::find_if(
-          variables.begin(), variables.end(),
-          [&](const auto &pair) { return name == pair.first.value; });
-          
+  auto it =
+      std::find_if(variables.begin(), variables.end(),
+                   [&](const auto &pair) { return name == pair.first.value; });
+
   return it;
 }
 

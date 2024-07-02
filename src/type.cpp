@@ -12,8 +12,8 @@ using namespace Values;
 
 Type_T::Type_T(const std::string &name) : name(name) {}
 
-auto TypeSystem::RegisterType(const Type &type, const bool module_type)
-    -> void {
+auto TypeSystem::RegisterType(const Type &type,
+                              const bool module_type) -> void {
   const auto exists = global_types.contains(type->name);
   // if a type exists && this comes from a module, we supplement members.
   if (exists && module_type) {
@@ -56,10 +56,8 @@ auto TypeSystem::FromCallable(const Type returnType,
   return type;
 }
 
-auto TypeSystem::FindOrCreateTemplate(const string &name,
-                                              const Type &base,
-                                              const vector<Type> &types)
-    -> Type {
+auto TypeSystem::FindOrCreateTemplate(const string &name, const Type &base,
+                                      const vector<Type> &types) -> Type {
   auto &current = Current();
   if (current.global_types.contains(name)) {
     return current.global_types[name];
@@ -143,8 +141,7 @@ auto TypeSystem::DumpInfo() -> void {
               << type->Scope().Members().size() << "' members." << std::endl;
   }
 }
-auto TypeSystem::GetVector(const vector<string> &names)
-    -> vector<Type> {
+auto TypeSystem::GetVector(const vector<string> &names) -> vector<Type> {
   auto types = vector<Type>();
   for (const auto &name : names) {
     auto type = Find(name);
@@ -245,7 +242,7 @@ Type Parser::ParseType() {
   if (Peek().type == TType::LParen) {
     return Parser::ParseFunctionType(type);
   }
-  
+
   return type;
 }
 
@@ -261,14 +258,14 @@ auto TypeSystem::Exists(const string &name) -> bool {
   if (exists) {
     return exists;
   }
-  return  ASTNode::context.TypeExists(name);
+  return ASTNode::context.TypeExists(name);
 }
 auto TypeSystem::Find(const string &name) -> Type {
   // Return a type if it exists normally in the hash map.
   if (global_types.contains(name)) {
     return global_types[name];
   }
-  
+
   if (ASTNode::context.TypeExists(name)) {
     return ASTNode::context.FindType(name);
   }
@@ -303,24 +300,25 @@ Value CallableType::Default() { return Ctx::Undefined(); }
 Value ArrayType::Default() { return Ctx::CreateArray(); }
 Value AnyType::Default() { return Ctx::Undefined(); }
 StructType::StructType(const string &name,
-                               std::unique_ptr<ObjectInitializer> &&ctor_obj)
+                       std::unique_ptr<ObjectInitializer> &&ctor_obj)
     : Type_T(name), ctor_obj(std::move(ctor_obj)) {
-      // this happens during forward declaration during parsing of struct so they can reference their own type.
-      if (this->ctor_obj == nullptr) {
-        return;
-      }
-      
-      for (const auto &statement: this->ctor_obj->block->statements) {
-        if (auto decl = dynamic_cast<Declaration *>(statement.get())) {
-          names.push_back(decl->name); 
-        }
-      }
-    }
+  // this happens during forward declaration during parsing of struct so they
+  // can reference their own type.
+  if (this->ctor_obj == nullptr) {
+    return;
+  }
 
-Value StructType::Default() { 
+  for (const auto &statement : this->ctor_obj->block->statements) {
+    if (auto decl = dynamic_cast<Declaration *>(statement.get())) {
+      names.push_back(decl->name);
+    }
+  }
+}
+
+Value StructType::Default() {
   auto object = ctor_obj->Evaluate()->Clone();
   object->type = shared_from_this();
-  return object;  
+  return object;
 }
 
 bool StructType::Equals(const Type_T *other) {
@@ -333,23 +331,23 @@ Scope_T &StructType::Scope() {
 StructType::~StructType() {}
 
 Value StructType::Construct(ArgumentsPtr &args) {
-  auto object = std::dynamic_pointer_cast<Object_T>(Default());  
-  
+  auto object = std::dynamic_pointer_cast<Object_T>(Default());
+
   std::cout << object->ToString() << std::endl;
-  
+
   size_t i = 0;
-  for (const auto &arg: args->values) {
+  for (const auto &arg : args->values) {
     auto value = arg->Evaluate();
     if (i < names.size()) {
       auto name = names[i];
       auto field_type = object->GetMember(name)->type;
-      
+
       if (!field_type->Equals(arg->type.get())) {
         throw TypeError(field_type, arg->type);
       }
       object->SetMember(name, value);
     }
-    ++i;  
+    ++i;
   }
   return object;
 }

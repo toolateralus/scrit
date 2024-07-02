@@ -11,9 +11,9 @@ enum struct StepKind {
 };
 
 enum class DebugControlFlow {
-    None,
-    Continue,
-    Break,
+  None,
+  Continue,
+  Break,
 };
 
 struct Breakpoint {
@@ -29,20 +29,22 @@ struct Debug {
   static ASTNode *lastNode;
   static int stepOutIndex;
 
-  static DebugControlFlow HandleInput(std::string& line);
+  static DebugControlFlow HandleInput(std::string &line);
   static void InsertBreakpoint(const int &loc, const bool isTemporary);
   static void Continue() { requestedStep = StepKind::None; }
   static void StepOver() { requestedStep = StepKind::Over; }
-  static void StepIn()   { requestedStep = StepKind::In;   }
-  static void StepOut()  { requestedStep = StepKind::Out;  }
+  static void StepIn() { requestedStep = StepKind::In; }
+  static void StepOut() { requestedStep = StepKind::Out; }
   static void RemoveBreakpoint(const int &loc, const bool isTemporary);
-  
+
   static void m_hangUpOnBreakpoint(ASTNode *owner, ASTNode *node);
-  private:
+
+private:
   static void m_printScope();
   static void m_stepOut();
   static void m_getInfo(ASTNode *&owner, ASTNode *&node);
   static void m_stepOver(ASTNode *&owner, ASTNode *&node);
   static void m_stepIn(ASTNode *&owner, ASTNode *&node);
-  static void m_setBreakpoint(std::string &line, const std::string &breakpointKey);
+  static void m_setBreakpoint(std::string &line,
+                              const std::string &breakpointKey);
 };

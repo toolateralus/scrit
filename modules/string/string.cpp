@@ -51,7 +51,8 @@ function(isalpha) {
   return Ctx::Undefined();
 }
 function(split) {
-  if (args.size() < 2 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
+  if (args.size() < 2 ||
+      args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
       args[1]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
@@ -83,7 +84,8 @@ function(split) {
 }
 function(substring) {
 #define undefined Ctx::Undefined()
-  if (args.size() < 3 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
+  if (args.size() < 3 ||
+      args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return undefined;
   }
 
@@ -100,7 +102,8 @@ function(substring) {
 }
 function(indexOf) {
 #define undefined Ctx::Undefined()
-  if (args.size() < 2 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
+  if (args.size() < 2 ||
+      args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return undefined;
   }
   auto str = args[0]->Cast<String_T>();
@@ -124,7 +127,8 @@ function(push) {
   return Ctx::Undefined();
 }
 function(front) {
-  if (args.size() == 0 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
+  if (args.size() == 0 ||
+      args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
   string str;
@@ -134,7 +138,8 @@ function(front) {
   return Ctx::Undefined();
 }
 function(back) {
-  if (args.size() == 0 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
+  if (args.size() == 0 ||
+      args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
   string str;
@@ -158,7 +163,8 @@ function(pop) {
   return Ctx::CreateString(character);
 }
 function(len) {
-  if (args.empty() || args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
+  if (args.empty() ||
+      args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
 
@@ -171,7 +177,8 @@ function(len) {
 }
 
 function(insert) {
-  if (args.size() < 3 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
+  if (args.size() < 3 ||
+      args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
       args[1]->GetPrimitiveType() != Values::PrimitiveType::Int) {
     return undefined;
   }
@@ -220,7 +227,8 @@ function(contains) {
 }
 
 function(replace) {
-  if (args.size() < 3 || args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
+  if (args.size() < 3 ||
+      args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
       args[1]->GetPrimitiveType() != Values::PrimitiveType::String ||
       args[2]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
@@ -279,11 +287,12 @@ function(remove) {
 }
 
 function(without) {
-  if (args.empty() || args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
+  if (args.empty() ||
+      args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
       args[1]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return Ctx::Undefined();
   }
-  
+
   string target;
   if (!Ctx::TryGetString(args[0], target)) {
     return Ctx::Undefined();
@@ -312,18 +321,23 @@ extern "C" ScritModDef *InitScritModule_string() {
   type->Set("isdigit", CREATE_CALLABLE(isdigit, "bool", {"string"}));
   type->Set("isalnum", CREATE_CALLABLE(isalnum, "bool", {"string"}));
   type->Set("split", CREATE_CALLABLE(split, "array", {"string", "string"}));
-  type->Set("substring", CREATE_CALLABLE(substring, "string", {"string", "int", "int"}));
+  type->Set("substring",
+            CREATE_CALLABLE(substring, "string", {"string", "int", "int"}));
   type->Set("indexOf", CREATE_CALLABLE(indexOf, "int", {"string", "string"}));
   type->Set("front", CREATE_CALLABLE(front, "string", {"string"}));
   type->Set("back", CREATE_CALLABLE(back, "string", {"string"}));
   type->Set("pop", CREATE_CALLABLE(pop, "string", {"string"}));
   type->Set("push", CREATE_CALLABLE(push, "undefined", {"string", "string"}));
   type->Set("len", CREATE_CALLABLE(len, "int", {"string"}));
-  type->Set("insert", CREATE_CALLABLE(insert, "string", {"string", "int", "string"}));
-  type->Set("contains", CREATE_CALLABLE(contains, "bool", {"string", "string"}));
-  type->Set("replace", CREATE_CALLABLE(replace, "string", {"string", "string", "string"}));
+  type->Set("insert",
+            CREATE_CALLABLE(insert, "string", {"string", "int", "string"}));
+  type->Set("contains",
+            CREATE_CALLABLE(contains, "bool", {"string", "string"}));
+  type->Set("replace",
+            CREATE_CALLABLE(replace, "string", {"string", "string", "string"}));
   type->Set("remove", CREATE_CALLABLE(remove, "string", {"string", "string"}));
-  type->Set("without", CREATE_CALLABLE(without, "string", {"string", "string"}));
+  type->Set("without",
+            CREATE_CALLABLE(without, "string", {"string", "string"}));
   def->AddType("string", type);
   return def;
 }

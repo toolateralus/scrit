@@ -14,12 +14,14 @@ struct SourceInfo {
     static vector<SourceInfo *> all_info;
     return all_info;
   }
-  SourceInfo(const int loc, const int col, const std::string &source) : loc(loc), col(col), source(source) {
+  SourceInfo(const int loc, const int col, const std::string &source)
+      : loc(loc), col(col), source(source) {
     getInfos().push_back(this);
   }
   std::string ToString() const {
     return string("{\n   ") + "line: " + std::to_string(loc) +
-           "\n   col: " + std::to_string(col) + "\n   source: "+ source + "\n}\n";
+           "\n   col: " + std::to_string(col) + "\n   source: " + source +
+           "\n}\n";
   }
   int loc, col;
   string source;
@@ -138,4 +140,3 @@ string TokensToString(const vector<Token> &tokens);
 string TTypeToString(const TType &type);
 string TFamilyToString(const TFamily &family);
 bool IsCompoundAssignmentOperator(const TType &type);
-

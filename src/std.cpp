@@ -1,21 +1,20 @@
 #include "ast.hpp"
 #include "context.hpp"
 #include "lexer.hpp"
-#include "type.hpp"
 #include "native.hpp"
 #include "serializer.hpp"
+#include "type.hpp"
 #include "value.hpp"
 #include <cmath>
 #include <iostream>
 #include <vector>
 
-
-#ifdef __linux__ 
-  #include <termios.h>
-  #include <unistd.h>
-#elif _WIN32 
-  #include <windows.h>
-#endif 
+#ifdef __linux__
+#include <termios.h>
+#include <unistd.h>
+#elif _WIN32
+#include <windows.h>
+#endif
 
 #pragma clang diagnostic ignored "-Wunused-parameter"
 
@@ -25,14 +24,13 @@
 REGISTER_FUNCTION(mod, "int", {"int", "int"}) {
   int v;
   int mod;
-  
+
   if (args.empty() || !Ctx::TryGetInt(args[0], v) ||
       !Ctx::TryGetInt(args[1], mod)) {
     return undefined;
   }
   return Ctx::CreateInt(v % mod);
 }
-
 
 REGISTER_FUNCTION(fmod, "float", {"float", "float"}) {
   float v;
@@ -58,11 +56,11 @@ REGISTER_FUNCTION(nameof, "string", {"any"}) {
   }
   const auto &ctx = ASTNode::context;
   for (const auto &scope : ctx.scopes) {
-    for (const auto &member: scope->Members()) {
+    for (const auto &member : scope->Members()) {
       if (args[0]->Equals(member.second)) {
         return Ctx::CreateString(member.first.value);
       }
-    }    
+    }
   }
   return undefined;
 }
@@ -80,16 +78,15 @@ REGISTER_FUNCTION(assert, "undefined", {"bool", "any"}) {
     throw std::runtime_error("assertion failed: " + args[0]->ToString());
   }
   return Ctx::Undefined();
-}  
-
+}
 
 // typeof
 REGISTER_FUNCTION(get_type, "string", {"any"}) {
   if (args.empty()) {
     return Ctx::Undefined();
   }
-  
-  if (args[0]->type){
+
+  if (args[0]->type) {
     auto v = args[0]->type->name;
     return Ctx::CreateString(v);
   }
@@ -150,7 +147,7 @@ REGISTER_FUNCTION(atoi, "int", {"string"}) {
 REGISTER_FUNCTION(get, "any", {"any", "int"}) {
   if (args[0]->GetPrimitiveType() == Values::PrimitiveType::Tuple) {
     auto tuple = args[0]->Cast<Tuple_T>();
-    auto index= args[1]->Cast<Int_T>();
+    auto index = args[1]->Cast<Int_T>();
     return tuple->values[index->value];
   }
   return Ctx::Undefined();
@@ -166,7 +163,6 @@ REGISTER_FUNCTION(cbrt, "float", {"any"}) {
   }
   return Ctx::Undefined();
 }
-
 
 // terminal
 REGISTER_FUNCTION(println, "undefined", {"any"}) {

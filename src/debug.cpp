@@ -3,9 +3,8 @@
 #include "context.hpp"
 #include "value.hpp"
 #include <algorithm>
-#include <stdexcept>
 #include <iostream>
-
+#include <stdexcept>
 
 std::vector<Breakpoint> Debug::breakpoints = {};
 StepKind Debug::requestedStep = StepKind::None;
@@ -13,41 +12,36 @@ ASTNode *Debug::lastNode = nullptr;
 int Debug::stepOutIndex = -1;
 std::string Debug::breakpointKey = "br:";
 
-DebugControlFlow Debug::HandleInput(std::string& line) {
-    if (line == "over" || line == "ov") {
-        StepOver();
-        return DebugControlFlow::Break;
-    }
-    else if (line == "in" || line == "i") {
-        StepIn();
-        return DebugControlFlow::Break;
-    }
-    else if (line == "out" || line == "o") {
-        StepOut();
-        return DebugControlFlow::Break;
-    }
-    else if (line.length() > Debug::breakpointKey.length() &&
-        line.substr(0, Debug::breakpointKey.length()) == Debug::breakpointKey) {
-        m_setBreakpoint(line, Debug::breakpointKey);
-        return DebugControlFlow::Continue;
-    }
-    else if (line == "continue" || line == "c") {
-        Continue();
-        return DebugControlFlow::Break;
-    }
-    else if (line == "inspect" || line == "s") {
-        m_printScope();
-    }
-    return DebugControlFlow::None;
-
+DebugControlFlow Debug::HandleInput(std::string &line) {
+  if (line == "over" || line == "ov") {
+    StepOver();
+    return DebugControlFlow::Break;
+  } else if (line == "in" || line == "i") {
+    StepIn();
+    return DebugControlFlow::Break;
+  } else if (line == "out" || line == "o") {
+    StepOut();
+    return DebugControlFlow::Break;
+  } else if (line.length() > Debug::breakpointKey.length() &&
+             line.substr(0, Debug::breakpointKey.length()) ==
+                 Debug::breakpointKey) {
+    m_setBreakpoint(line, Debug::breakpointKey);
+    return DebugControlFlow::Continue;
+  } else if (line == "continue" || line == "c") {
+    Continue();
+    return DebugControlFlow::Break;
+  } else if (line == "inspect" || line == "s") {
+    m_printScope();
+  }
+  return DebugControlFlow::None;
 }
 
 void Debug::m_hangUpOnBreakpoint(ASTNode *owner, ASTNode *node) {
   if (lastNode == nullptr)
     m_getInfo(owner, node);
-  
+
   requestedStep = StepKind::None;
-  
+
   bool match = false;
   Breakpoint breakpoint;
   for (const auto &br : breakpoints) {
@@ -56,33 +50,34 @@ void Debug::m_hangUpOnBreakpoint(ASTNode *owner, ASTNode *node) {
       breakpoint = br;
     }
   }
-  
+
   if (!match) {
     return;
   }
-  
+
   std::cout << "breakpoint hit : line:" << breakpoint.loc << "\n" << std::flush;
   std::cout << "node: " << typeid(*node).name() << "\n";
-  
-  while (requestedStep == StepKind::None && breakpoint.loc == node->srcInfo.loc) {
+
+  while (requestedStep == StepKind::None &&
+         breakpoint.loc == node->srcInfo.loc) {
     std::string line;
     if (std::getline(std::cin, line)) {
-        switch (HandleInput(line)) {
-        case DebugControlFlow::None:
-            goto loopnone;
-        case DebugControlFlow::Break: 
-            goto loopbreak;
-        case DebugControlFlow::Continue:
-            goto loopcontinue;
-		}
+      switch (HandleInput(line)) {
+      case DebugControlFlow::None:
+        goto loopnone;
+      case DebugControlFlow::Break:
+        goto loopbreak;
+      case DebugControlFlow::Continue:
+        goto loopcontinue;
+      }
     }
-loopbreak:
+  loopbreak:
     break;
-loopcontinue:
-loopnone:
+  loopcontinue:
+  loopnone:
     continue;
   }
-  
+
   switch (requestedStep) {
   case StepKind::Over:
     m_stepOver(owner, node);
@@ -101,7 +96,9 @@ loopnone:
 void Debug::RemoveBreakpoint(const int &loc, const bool isTemporary) {
   breakpoints.erase(std::remove_if(breakpoints.begin(), breakpoints.end(),
                                    [loc, isTemporary](Breakpoint breakpoint) {
-                                     return breakpoint.loc == loc && breakpoint.isTemporary == isTemporary;
+                                     return breakpoint.loc == loc &&
+                                            breakpoint.isTemporary ==
+                                                isTemporary;
                                    }),
                     breakpoints.end());
 }
@@ -178,7 +175,7 @@ void Debug::m_getInfo(ASTNode *&owner, ASTNode *&node) {
     if (auto native =
             dynamic_cast<NativeCallable_T *>(fnCall->operand->Evaluate().get());
         native != nullptr) {
-          return;
+      return;
     } else {
       statements = &callable->block.get()->statements;
     }
@@ -196,8 +193,8 @@ void Debug::m_getInfo(ASTNode *&owner, ASTNode *&node) {
     statements = &block->statements;
   } else if (auto program = dynamic_cast<Program *>(owner)) {
     statements = &program->statements;
-  } 
-  
+  }
+
   if (statements) {
     int i = 0;
     for (const auto &statement : *statements) {
@@ -214,9 +211,9 @@ void Debug::m_getInfo(ASTNode *&owner, ASTNode *&node) {
 }
 void Debug::m_stepIn(ASTNode *&owner, ASTNode *&node) {
   Block *blockPtr;
-  
+
   m_getInfo(owner, node);
-  
+
   int loc = -1;
   // actually search which type of node that contains a block is being stepped
   // into and set a breakpoint on the first statement of that block;

@@ -158,15 +158,14 @@ ExpressionPtr Parser::ParsePostfix() {
     }
     if (next.type == TType::LParen) {
       auto args = ParseArguments();
-      
+
       // Type constructors.
-       if (auto identifier = dynamic_cast<Identifier *>(expr.get());
-        TypeSystem::Current().Exists(identifier->name)
-       ) {
+      if (auto identifier = dynamic_cast<Identifier *>(expr.get());
+          TypeSystem::Current().Exists(identifier->name)) {
         Type type = TypeSystem::Current().Find(identifier->name);
         return make_unique<Constructor>(info, type, std::move(args));
       }
-      
+
       expr = std::make_unique<Call>(info, std::move(expr), std::move(args));
     } else if (next.type == TType::SubscriptLeft) {
       Eat();
@@ -182,7 +181,8 @@ ExpressionPtr Parser::ParsePostfix() {
         auto iden = make_unique<Identifier>(info, name.value);
         auto call = ParseCall(std::move(iden));
         call->args->values.insert(call->args->values.begin(), std::move(expr));
-        expr = make_unique<MethodCall>(info, call->type, std::move(call->operand), std::move(call->args));
+        expr = make_unique<MethodCall>(
+            info, call->type, std::move(call->operand), std::move(call->args));
       } else {
         auto right = ParseExpression();
         expr = std::make_unique<DotExpr>(info, right->type, std::move(expr),
@@ -202,7 +202,7 @@ ExpressionPtr Parser::ParseOperand() {
     return make_unique<UnaryExpr>(info, operand->type, std::move(operand),
                                   token.type);
   }
-  
+
   switch (token.type) {
   case TType::Match: {
     Eat();
@@ -333,9 +333,9 @@ unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
     }
   }
 endloop:
-  
+
   Expect(TType::RCurly);
-  
+
   ASTNode::context.PopScope();
   // todo: redo the object system and type it.
   auto type = TypeSystem::Current().Find("object");

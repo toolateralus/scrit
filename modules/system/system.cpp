@@ -1,5 +1,6 @@
-#include "scrit/scritmod.hpp"
+#include "scrit/ast.hpp"
 #include "scrit/native.hpp"
+#include "scrit/scritmod.hpp"
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
@@ -11,23 +12,22 @@
 #include <string>
 #include <thread>
 #include <unistd.h>
-#include "scrit/ast.hpp"
 
 static Value fexists(std::vector<Value> values) {
   if (values.size() == 0) {
     return Ctx::Undefined();
   }
-  
+
   auto filename = values[0];
   if (filename->GetPrimitiveType() != PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto fname = static_cast<String_T *>(filename.get());
-  
+
   if (fname == nullptr) {
     return Ctx::Undefined();
   }
-  
+
   return Ctx::CreateBool(std::filesystem::exists(fname->value));
 }
 static Value fcreate(std::vector<Value> values) {
@@ -35,7 +35,7 @@ static Value fcreate(std::vector<Value> values) {
     return Ctx::Undefined();
   }
   auto filename = values[0];
-  if (filename->GetPrimitiveType()!= PrimitiveType::String) {
+  if (filename->GetPrimitiveType() != PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto fname = static_cast<String_T *>(filename.get());
@@ -49,19 +49,20 @@ static Value fcreate(std::vector<Value> values) {
   return Value_T::UNDEFINED;
 }
 static Value fwrite(std::vector<Value> values) {
-  
+
   if (values.size() < 2) {
     return Ctx::Undefined();
   }
   auto filename = values[0];
   auto content = values[1];
-  
-  if (filename->GetPrimitiveType()!= PrimitiveType::String) {
-    return Ctx::CreateString("invalid arguments to fwrite, filename must be a string.");
+
+  if (filename->GetPrimitiveType() != PrimitiveType::String) {
+    return Ctx::CreateString(
+        "invalid arguments to fwrite, filename must be a string.");
   }
   auto fname = static_cast<String_T *>(filename.get());
   auto fcontents = content->ToString();
-  
+
   std::ofstream file(fname->value);
   if (file.is_open()) {
     file << fcontents;
@@ -77,7 +78,7 @@ static Value fread(std::vector<Value> values) {
     return Ctx::Undefined();
   }
   auto filename = values[0];
-  if (filename->GetPrimitiveType()!= PrimitiveType::String) {
+  if (filename->GetPrimitiveType() != PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto fname = static_cast<String_T *>(filename.get());
@@ -97,7 +98,7 @@ static Value fdelete(std::vector<Value> values) {
     return Ctx::Undefined();
   }
   auto filename = values[0];
-  if (filename->GetPrimitiveType()!= PrimitiveType::String) {
+  if (filename->GetPrimitiveType() != PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto fname = static_cast<String_T *>(filename.get());
@@ -114,7 +115,7 @@ static Value dir_exists(std::vector<Value> values) {
     return Ctx::Undefined();
   }
   auto dirname = values[0];
-  if (dirname->GetPrimitiveType()!= PrimitiveType::String) {
+  if (dirname->GetPrimitiveType() != PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto dname = static_cast<String_T *>(dirname.get());
@@ -125,7 +126,7 @@ static Value dir_create(std::vector<Value> values) {
     return Ctx::Undefined();
   }
   auto dirname = values[0];
-  if (dirname->GetPrimitiveType()!= PrimitiveType::String) {
+  if (dirname->GetPrimitiveType() != PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto dname = static_cast<String_T *>(dirname.get());
@@ -145,7 +146,7 @@ static Value dir_getfiles(std::vector<Value> values) {
     return Ctx::Undefined();
   }
   auto dirname = values[0];
-  if (dirname->GetPrimitiveType()!= PrimitiveType::String) {
+  if (dirname->GetPrimitiveType() != PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto dname = static_cast<String_T *>(dirname.get());
@@ -162,7 +163,7 @@ static Value dir_delete(std::vector<Value> values) {
     return Ctx::Undefined();
   }
   auto dirname = values[0];
-  if (dirname->GetPrimitiveType()!= PrimitiveType::String) {
+  if (dirname->GetPrimitiveType() != PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto dname = static_cast<String_T *>(dirname.get());
@@ -176,9 +177,10 @@ static Value dir_delete(std::vector<Value> values) {
 
 static Value time(std::vector<Value>) {
   auto now = std::chrono::high_resolution_clock::now();
-  long milliseconds = (double)std::chrono::duration_cast<std::chrono::milliseconds>(
-                         now.time_since_epoch())
-                         .count();
+  long milliseconds =
+      (double)std::chrono::duration_cast<std::chrono::milliseconds>(
+          now.time_since_epoch())
+          .count();
   return Ctx::CreateFloat(milliseconds / 1000.0);
 }
 static Value sleep(std::vector<Value> args) {
@@ -188,7 +190,8 @@ static Value sleep(std::vector<Value> args) {
     if (Ctx::TryGetInt(args[0], seconds)) {
       std::this_thread::sleep_for(std::chrono::seconds(seconds));
     } else if (Ctx::TryGetFloat(args[0], milliseconds)) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(milliseconds)));
+      std::this_thread::sleep_for(
+          std::chrono::milliseconds(static_cast<int>(milliseconds)));
     } else {
       std::this_thread::sleep_for(std::chrono::seconds(1));
     }
@@ -201,7 +204,7 @@ static Value syscall(std::vector<Value> values) {
     return Ctx::Undefined();
   }
   auto cmd = values[0];
-  if (cmd->GetPrimitiveType()!= PrimitiveType::String) {
+  if (cmd->GetPrimitiveType() != PrimitiveType::String) {
     return Value_T::UNDEFINED;
   }
   auto command = static_cast<String_T *>(cmd.get());
@@ -212,12 +215,11 @@ static Value exit(std::vector<Value>) {
   return Value_T::UNDEFINED;
 }
 
-
-
 static Value file() {
   auto obj = Ctx::CreateObject();
-  obj->SetMember("read",   CREATE_CALLABLE(fread, "string", {"string"}));
-  obj->SetMember("write",  CREATE_CALLABLE(fwrite, "undefined", {"string", "string"}));
+  obj->SetMember("read", CREATE_CALLABLE(fread, "string", {"string"}));
+  obj->SetMember("write",
+                 CREATE_CALLABLE(fwrite, "undefined", {"string", "string"}));
   obj->SetMember("create", CREATE_CALLABLE(fcreate, "undefined", {"string"}));
   obj->SetMember("exists", CREATE_CALLABLE(fexists, "bool", {"string"}));
   obj->SetMember("delete", CREATE_CALLABLE(fdelete, "undefined", {"string"}));
@@ -227,9 +229,12 @@ static Value file() {
 static Value directory() {
   auto obj = Ctx::CreateObject();
   obj->SetMember("exists", CREATE_CALLABLE(dir_exists, "bool", {"string"}));
-  obj->SetMember("create", CREATE_CALLABLE(dir_create, "undefined", {"string"}));
-  obj->SetMember("delete", CREATE_CALLABLE(dir_delete, "undefined", {"string"}));
-  obj->SetMember("getfiles", CREATE_CALLABLE(dir_getfiles, "array<string>", {"string"}));
+  obj->SetMember("create",
+                 CREATE_CALLABLE(dir_create, "undefined", {"string"}));
+  obj->SetMember("delete",
+                 CREATE_CALLABLE(dir_delete, "undefined", {"string"}));
+  obj->SetMember("getfiles",
+                 CREATE_CALLABLE(dir_getfiles, "array<string>", {"string"}));
   obj->SetMember("current", CREATE_CALLABLE(cwd, "string", {}));
   return obj;
 }
@@ -237,20 +242,19 @@ static Value directory() {
 extern "C" ScritModDef *InitScritModule_system() {
   ScritModDef *def = CreateModDef();
   *def->description = "system functions. file io, time, etc.";
-  
+
   def->AddVariable("directory", directory(), Mutability::Const);
   def->AddVariable("file", file(), Mutability::Const);
-  
+
   auto time = CREATE_FUNCTION(::time, "float", {});
   auto syscall = CREATE_FUNCTION(::syscall, "int", {"string"});
   auto exit = CREATE_FUNCTION(::exit, "undefined", {"int"});
   auto sleep = CREATE_FUNCTION(::sleep, "undefined", {"float"});
-  
-  
+
   def->AddFunction("time", time);
   def->AddFunction("syscall", syscall);
   def->AddFunction("exit", exit);
   def->AddFunction("sleep", sleep);
-  
+
   return def;
 }

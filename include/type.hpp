@@ -6,11 +6,10 @@
 #include <vector>
 
 using std::make_shared;
-using std::vector;
 using std::shared_ptr;
 using std::string;
 using std::unordered_map;
-
+using std::vector;
 
 struct Arguments;
 using ArgumentsPtr = std::unique_ptr<Arguments>;
@@ -24,40 +23,39 @@ using Value = shared_ptr<Value_T>;
 
 struct Type_T {
   Type_T(const std::string &name);
-  virtual ~Type_T(){};
+  virtual ~Type_T() {};
   const string name;
-  
-  
-  Type_T(const Type_T&) = delete;
-  Type_T(Type_T&&) = delete;
-  Type_T& operator=(const Type_T&) = delete;
-  Type_T& operator=(Type_T&&) = delete;
-  
-  virtual auto Scope() -> Scope_T& = 0;
-  
+
+  Type_T(const Type_T &) = delete;
+  Type_T(Type_T &&) = delete;
+  Type_T &operator=(const Type_T &) = delete;
+  Type_T &operator=(Type_T &&) = delete;
+
+  virtual auto Scope() -> Scope_T & = 0;
+
   virtual auto Default() -> Value = 0;
-  
+
   virtual auto Get(const string &name) -> Value;
   virtual auto Set(const string &name, Value value) -> void;
-  
+
   bool operator==(const Type_T &other) const { return name == other.name; }
-  
-  virtual auto Equals(const Type_T * other) -> bool {
+
+  virtual auto Equals(const Type_T *other) -> bool {
     if (!other) {
       return false;
     }
     return *other == *this;
   }
-  
+
   static bool Equals(const Type_T *t0, const Type_T *t1) {
     if (t0 == nullptr || t1 == nullptr) {
       return false;
     }
-    
+
     if (t0->name == "any" || t1->name == "any") {
       return true;
     }
-    
+
     return *t0 == *t1;
   }
 };
@@ -66,7 +64,7 @@ using Type = shared_ptr<Type_T>;
 
 struct NullType : Type_T {
   NullType() : Type_T("null") {}
-  auto Scope() -> Scope_T& override;
+  auto Scope() -> Scope_T & override;
   Value Default() override;
 };
 struct UndefinedType : Type_T {
@@ -91,16 +89,14 @@ struct TemplateType : Type_T, std::enable_shared_from_this<TemplateType> {
   const shared_ptr<Scope_T> scope;
   TemplateType(const string &name, const Type &base_type,
                const vector<Type> &typenames);
-  
-  auto Scope() -> Scope_T& override {
-    return *scope;
-  }
+
+  auto Scope() -> Scope_T & override { return *scope; }
   auto Get(const string &name) -> Value override;
-  
+
   bool Equals(const Type_T *other) override {
     return other != nullptr && (*other == *this || *other == *base_type);
   }
-  
+
   Value Default() override;
 };
 
@@ -126,9 +122,7 @@ struct TupleType : Type_T {
   auto Scope() -> Scope_T & override;
 
   Value Default() override;
-  
-  
-  
+
   static auto GetName(const std::vector<Type> &subtypes) -> string {
     std::stringstream ss;
     ss << "(";
@@ -153,8 +147,8 @@ struct CallableType : Type_T {
   Value Default() override;
 
 private:
-  static auto GetName(const Type returnType, const std::vector<Type> paramTypes)
-      -> string {
+  static auto GetName(const Type returnType,
+                      const std::vector<Type> paramTypes) -> string {
     return returnType->name + TupleType::GetName(paramTypes);
   }
 };
@@ -172,9 +166,6 @@ struct AnyType : Type_T {
   Value Default() override;
 };
 
-
-
-
 struct StructType : Type_T, std::enable_shared_from_this<StructType> {
   ~StructType();
   std::unique_ptr<ObjectInitializer> ctor_obj;
@@ -186,11 +177,10 @@ struct StructType : Type_T, std::enable_shared_from_this<StructType> {
   Scope_T &Scope() override;
 };
 
-
 struct TypeSystem {
-  
+
   std::unordered_map<string, Type> global_types;
-  
+
   Type Null;
   Type Undefined;
   Type Int;
@@ -199,34 +189,34 @@ struct TypeSystem {
   Type NativeCallable;
   Type String;
   Type Any;
-  
+
   auto GetVector(const vector<string> &names) -> vector<Type>;
 
   auto Find(const string &name) -> Type;
 
   auto Exists(const string &name) -> bool;
-  
+
   auto FindOrCreateTemplate(const string &name, const Type &base,
-                           const vector<Type> &types) -> Type;
-                           
-  
+                            const vector<Type> &types) -> Type;
+
   auto FromPrimitive(const PrimitiveType &value) -> Type;
-  
+
   auto FromTuple(const vector<Type> &types) -> Type;
 
   auto FromTuple(const vector<Value> &values) -> Type;
 
-  auto FromCallable(const Type returnType, const vector<Type> paramTypes)
-      -> Type;
-  
+  auto FromCallable(const Type returnType,
+                    const vector<Type> paramTypes) -> Type;
+
   auto RegisterType(const Type &type, const bool module_type = false) -> void;
-  
+
   auto DumpInfo() -> void;
 
   static TypeSystem &Current() {
     static TypeSystem instance;
     return instance;
   }
+
 private:
   auto Initialize() -> void {
     Null = std::make_shared<NullType>();
@@ -234,29 +224,26 @@ private:
     Int = std::make_shared<IntType>();
     Float = std::make_shared<FloatType>();
     Bool = std::make_shared<BoolType>();
-    NativeCallable = std::make_shared<CallableType>(make_shared<AnyType>(), std::vector<Type>({}));
+    NativeCallable = std::make_shared<CallableType>(make_shared<AnyType>(),
+                                                    std::vector<Type>({}));
     String = std::make_shared<StringType>();
     Any = make_shared<AnyType>();
-    global_types = {
-      {"null", Null},
-      {"undefined", Undefined},
-      {"int", Int},
-      {"float", Float},
-      {"bool", Bool},
-      {"native_callable", NativeCallable},
-      {"string", String},
-      {"array", make_shared<ArrayType>()},
-      {"object", make_shared<ObjectType>()},
-      {"any", Any}
-    };
+    global_types = {{"null", Null},
+                    {"undefined", Undefined},
+                    {"int", Int},
+                    {"float", Float},
+                    {"bool", Bool},
+                    {"native_callable", NativeCallable},
+                    {"string", String},
+                    {"array", make_shared<ArrayType>()},
+                    {"object", make_shared<ObjectType>()},
+                    {"any", Any}};
   }
-  TypeSystem(const TypeSystem&) = delete;
-  TypeSystem(TypeSystem&&) = delete;
-  TypeSystem& operator=(const TypeSystem&) = delete;
-  TypeSystem& operator=(TypeSystem&&) = delete;
+  TypeSystem(const TypeSystem &) = delete;
+  TypeSystem(TypeSystem &&) = delete;
+  TypeSystem &operator=(const TypeSystem &) = delete;
+  TypeSystem &operator=(TypeSystem &&) = delete;
   ~TypeSystem() { global_types.clear(); }
-  TypeSystem() {
-    Initialize();
-  }
+  TypeSystem() { Initialize(); }
 };
 } // namespace Values

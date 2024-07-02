@@ -1,28 +1,22 @@
-#include "type.hpp"
-#include "ast.hpp"
-#include "value.hpp"
 #include "ast_serializer.hpp"
+#include "ast.hpp"
+#include "type.hpp"
+#include "value.hpp"
 
 ASTSerializer::ASTSerializer(int indent_level, int indent_size) {
-	this->indent_level = indent_level;
-	this->indent_size = indent_size;
+  this->indent_level = indent_level;
+  this->indent_size = indent_size;
 }
-void ASTSerializer::visit(ASTNode *_) {
-  Write("ASTNode");
-}
-void ASTSerializer::visit(Executable *_) {
-  Write("Executable");
-}
-void ASTSerializer::visit(Statement *_) {
-  Write("Statement");
-}
+void ASTSerializer::visit(ASTNode *_) { Write("ASTNode"); }
+void ASTSerializer::visit(Executable *_) { Write("Executable"); }
+void ASTSerializer::visit(Statement *_) { Write("Statement"); }
 void ASTSerializer::visit(Program *program) {
   Write("Program: {");
   auto _ = Indenter(this);
   for (auto &stmt : program->statements) {
     stmt->Accept(this);
   }
-  
+
   Write("}");
 }
 void ASTSerializer::visit(Expression *_) {
@@ -31,13 +25,15 @@ void ASTSerializer::visit(Expression *_) {
 }
 void ASTSerializer::visit(Operand *operand) {
   auto _ = Indenter(this);
-  Write("Operand: {\n" + operand->Evaluate()->ToString() + " type: " + operand->type->name  + "\n}");
-  
+  Write("Operand: {\n" + operand->Evaluate()->ToString() +
+        " type: " + operand->type->name + "\n}");
 }
 void ASTSerializer::visit(Identifier *identifier) {
   if (identifier->type)
-    Write("Identifier: " + identifier->name + " type: " + identifier->type->name);
-  else Write("Identifier: " + identifier->name + " type: unknown" );
+    Write("Identifier: " + identifier->name +
+          " type: " + identifier->type->name);
+  else
+    Write("Identifier: " + identifier->name + " type: unknown");
 }
 void ASTSerializer::visit(Arguments *arguments) {
   Write("Arguments: {");
@@ -45,7 +41,7 @@ void ASTSerializer::visit(Arguments *arguments) {
   for (auto &arg : arguments->values) {
     arg->Accept(this);
   }
-  
+
   Write("}");
 }
 void ASTSerializer::visit(TupleInitializer *tupleInitializer) {
@@ -54,14 +50,14 @@ void ASTSerializer::visit(TupleInitializer *tupleInitializer) {
   for (auto &arg : tupleInitializer->values) {
     arg->Accept(this);
   }
-  
+
   Write("}");
 }
 void ASTSerializer::visit(Property *property) {
   Write("Property: " + property->lambda->type->name + "{");
   auto _ = Indenter(this);
   property->lambda->Accept(this);
-  
+
   Write("}");
 }
 void ASTSerializer::visit(Parameters *parameters) {
@@ -70,15 +66,11 @@ void ASTSerializer::visit(Parameters *parameters) {
   for (auto &param : parameters->values) {
     stream << Indent() << param.name << ": " << param.type->name << "";
   }
-  
+
   Write("}");
 }
-void ASTSerializer::visit(Continue *_) {
-  Write("Continue");
-}
-void ASTSerializer::visit(Break *_) {
-  Write("Break");
-}
+void ASTSerializer::visit(Continue *_) { Write("Continue"); }
+void ASTSerializer::visit(Break *_) { Write("Break"); }
 void ASTSerializer::visit(Return *ret) {
   Write("Return: {");
   auto _ = Indenter(this);
@@ -94,7 +86,7 @@ void ASTSerializer::visit(Delete *del) {
   if (del->dot != nullptr) {
     del->dot->Accept(this);
   }
-  
+
   Write("}");
 }
 void ASTSerializer::visit(Block *block) {
@@ -103,7 +95,7 @@ void ASTSerializer::visit(Block *block) {
   for (auto &stmt : block->statements) {
     stmt->Accept(this);
   }
-  
+
   Write("}");
 }
 void ASTSerializer::visit(ObjectInitializer *objInit) {
@@ -112,7 +104,7 @@ void ASTSerializer::visit(ObjectInitializer *objInit) {
   for (auto &stmt : objInit->block->statements) {
     stmt->Accept(this);
   }
-  
+
   Write("}");
 }
 void ASTSerializer::visit(Call *call) {
@@ -123,11 +115,9 @@ void ASTSerializer::visit(Call *call) {
     {
       auto _ = Indenter(this);
       call->operand->Accept(this);
-      
     }
     Write("}");
     call->args->Accept(this);
-    
   }
   Write("}");
 }
@@ -139,14 +129,12 @@ void ASTSerializer::visit(If *ifStmt) {
     {
       auto _ = Indenter(this);
       ifStmt->condition->Accept(this);
-      
     }
     Write("}");
     ifStmt->block->Accept(this);
     if (ifStmt->elseStmnt != nullptr) {
       ifStmt->elseStmnt->Accept(this);
     }
-    
   }
   Write("}");
 }
@@ -159,13 +147,13 @@ void ASTSerializer::visit(Else *elseStmt) {
   if (elseStmt->block != nullptr) {
     elseStmt->block->Accept(this);
   }
-  
+
   Write("}");
 }
 void ASTSerializer::visit(For *forStmt) {
   Write("For: {");
   {
-    
+
     if (forStmt->decl) {
       auto _ = Indenter(this);
       Write("Init: {");
@@ -180,7 +168,6 @@ void ASTSerializer::visit(For *forStmt) {
       {
         auto _ = Indenter(this);
         forStmt->condition->Accept(this);
-        
       }
       Write("}");
     }
@@ -189,11 +176,10 @@ void ASTSerializer::visit(For *forStmt) {
       {
         auto _ = Indenter(this);
         forStmt->increment->Accept(this);
-        
       }
       Write("}");
     }
-    
+
     forStmt->block->Accept(this);
   }
   Write("}");
@@ -202,12 +188,12 @@ void ASTSerializer::visit(RangeBasedFor *rangeFor) {
   Write("RangeBasedFor: {");
   {
     auto _ = Indenter(this);
-    
+
     if (rangeFor->lhs) {
       rangeFor->lhs->Accept(this);
     } else if (!rangeFor->names.empty()) {
       auto size = rangeFor->names.size();
-      auto i =0;
+      auto i = 0;
       string output;
       for (const auto &name : rangeFor->names) {
         output += name;
@@ -217,36 +203,31 @@ void ASTSerializer::visit(RangeBasedFor *rangeFor) {
         i++;
       }
       Write("TupleDeconstruction: " + output);
-      
     }
-    
+
     Write("Range: {");
     {
       auto _ = Indenter(this);
       rangeFor->rhs->Accept(this);
-      
     }
     Write("}");
     rangeFor->block->Accept(this);
-    
   }
   Write("}");
 }
 void ASTSerializer::visit(Declaration *del) {
-  Write("Declaration: " +  del->type->name + " {");
+  Write("Declaration: " + del->type->name + " {");
   {
     auto _ = Indenter(this);
-    
-    
+
     Write("Expression: {");
     {
       auto _ = Indenter(this);
       del->expr->Accept(this);
-      
     }
     Write("}");
-    Write(string("Mutability: ") + (del->mut == Mutability::Mut ? "mut" : "const") + "");
-    
+    Write(string("Mutability: ") +
+          (del->mut == Mutability::Mut ? "mut" : "const") + "");
   }
   Write("}");
 }
@@ -263,17 +244,14 @@ void ASTSerializer::visit(TupleDeconstruction *tupleDec) {
       for (auto &iden : tupleDec->idens) {
         Write(iden + "");
       }
-      
     }
     Write("}");
     Write("Tuple: {");
     {
       auto _ = Indenter(this);
       tupleDec->tuple->Accept(this);
-      
     }
     Write("}");
-    
   }
   Write("}");
 }
@@ -292,10 +270,8 @@ void ASTSerializer::visit(CompAssignExpr *compAssignExpr) {
     {
       auto _ = Indenter(this);
       compAssignExpr->right->Accept(this);
-      
     }
     Write("}");
-    
   }
   Write("}");
 }
@@ -304,23 +280,27 @@ void ASTSerializer::visit(CompoundAssignment *compoundAssign) {
   {
     auto _ = Indenter(this);
     compoundAssign->expr->Accept(this);
-    
   }
   Write("}");
 }
 void ASTSerializer::visit(FunctionDecl *funcDecl) {
-  Write("FunctionDecl: " + TypeSystem::Current().FromCallable(funcDecl->returnType, funcDecl->parameters->ParamTypes())->name + " {");
+  Write("FunctionDecl: " +
+        TypeSystem::Current()
+            .FromCallable(funcDecl->returnType,
+                          funcDecl->parameters->ParamTypes())
+            ->name +
+        " {");
   {
     auto _ = Indenter(this);
     Write("Identifier: " + funcDecl->name);
     funcDecl->parameters->Accept(this);
     funcDecl->block->Accept(this);
-    
   }
   Write("}");
 }
 void ASTSerializer::visit(Noop *_) {
-  Write("Noop -- this is a function declaration. TODO: don't omit function declarations from the ast");
+  Write("Noop -- this is a function declaration. TODO: don't omit function "
+        "declarations from the ast");
 }
 void ASTSerializer::visit(DotExpr *dotExpr) {
   Write("DotExpr: " + dotExpr->type->name + " {");
@@ -330,17 +310,14 @@ void ASTSerializer::visit(DotExpr *dotExpr) {
     {
       auto _ = Indenter(this);
       dotExpr->left->Accept(this);
-      
     }
     Write("}");
     Write("Identifier: {");
     {
       auto _ = Indenter(this);
       dotExpr->right->Accept(this);
-      
     }
     Write("}");
-    
   }
   Write("}");
 }
@@ -506,21 +483,17 @@ void ASTSerializer::visit(Match *match) {
           {
             auto _ = Indenter(this);
             lhs->Accept(this);
-            
           }
           Write("}");
           Write("Expression: {");
           {
             auto _ = Indenter(this);
             rhs->Accept(this);
-            
           }
           Write("}");
-          
         }
         Write("}");
       }
-      
     }
     Write("}");
     if (match->branch_default != nullptr) {
@@ -529,7 +502,6 @@ void ASTSerializer::visit(Match *match) {
       match->branch_default->Accept(this);
       Write("}");
     }
-    
   }
   Write("}");
 }
@@ -558,7 +530,4 @@ void ASTSerializer::visit(MethodCall *method) {
 Indenter::Indenter(ASTSerializer *serializer) : serializer(serializer) {
   serializer->indent_level += serializer->indent_size;
 }
-Indenter::~Indenter() { 
-  serializer->indent_level -= serializer->indent_size;
-}
-
+Indenter::~Indenter() { serializer->indent_level -= serializer->indent_size; }

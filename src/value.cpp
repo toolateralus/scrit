@@ -24,21 +24,23 @@ Value Callable_T::Call(ArgumentsPtr &args) {
   for (const auto &param : params->values) {
     if (i >= values.size()) {
       if (param.default_value != nullptr) {
-        scope->Set(param.name, param.default_value); 
+        scope->Set(param.name, param.default_value);
       }
       continue;
     }
-    
+
     if (Type_T::Equals(param.type.get(), values[i]->type.get())) {
       scope->Set(param.name, values[i]);
     } else {
-      throw std::runtime_error("invalid type argument for function call. expected: " + param.type->name + " got: " + values[i]->type->name);
+      throw std::runtime_error(
+          "invalid type argument for function call. expected: " +
+          param.type->name + " got: " + values[i]->type->name);
     }
     i++;
   }
 
   auto result = block->Execute();
-  
+
   ASTNode::context.PopScope();
 
   switch (result.controlChange) {
@@ -46,12 +48,16 @@ Value Callable_T::Call(ArgumentsPtr &args) {
     return Value_T::VNULL;
   case ControlChange::Return: {
     auto this_type = std::dynamic_pointer_cast<CallableType>(type);
-    if (this_type && Type_T::Equals(result.value->type.get(), this_type->returnType.get())) {
+    if (this_type &&
+        Type_T::Equals(result.value->type.get(), this_type->returnType.get())) {
       return result.value;
     } else if (this_type) {
-      throw std::runtime_error("type error: function returned the wrong type.\nexpected: " + this_type->returnType->name + "\ngot: " + result.value->type->name);
+      throw std::runtime_error(
+          "type error: function returned the wrong type.\nexpected: " +
+          this_type->returnType->name + "\ngot: " + result.value->type->name);
     } else {
-      throw std::runtime_error("interpreter error: function did not have a return type.");
+      throw std::runtime_error(
+          "interpreter error: function did not have a return type.");
     }
   }
   default:
@@ -103,7 +109,6 @@ void Array_T::Assign(Int index, Value value) {
   }
   values[idx] = value;
 }
-
 Array Array_T::New(vector<ExpressionPtr> &init) {
   vector<Value> values;
   for (const auto &expr : init) {
@@ -115,18 +120,17 @@ Array Array_T::New() {
   auto values = vector<Value>{};
   return make_shared<Array_T>(values);
 }
-
 Value NativeCallable_T::Call(std::vector<Value> &args) {
   ASTNode::context.PushScope();
   Value result;
-  
+
   CheckParameterTypes(args);
-  
+
   if (function->ptr)
     result = function->ptr(args);
-  
+
   CheckReturnType(result);
-  
+
   ASTNode::context.PopScope();
   if (result == nullptr) {
     return UNDEFINED;
@@ -134,7 +138,6 @@ Value NativeCallable_T::Call(std::vector<Value> &args) {
     return result;
   }
 }
-
 void NativeCallable_T::CheckParameterTypes(vector<Value> &values) {
   for (auto i = 0; i < values.size(); ++i) {
     if (function->parameterTypes.size() <= i) {
@@ -152,15 +155,16 @@ void NativeCallable_T::CheckParameterTypes(vector<Value> &values) {
 }
 void NativeCallable_T::CheckReturnType(Value &result) {
   if (!Type_T::Equals(result->type.get(), function->returnType.get())) {
-    throw TypeError(result->type, function->returnType, "Invalid return type from function " + function->name);
+    throw TypeError(result->type, function->returnType,
+                    "Invalid return type from function " + function->name);
   }
 }
 Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
   ASTNode::context.PushScope();
-  
+
   auto values = Call::GetArgsValueList(args);
   Value result;
-  
+
   CheckParameterTypes(values);
 
   if (function->ptr)
@@ -177,8 +181,9 @@ Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
 }
 NativeCallable_T::NativeCallable_T(const shared_ptr<NativeFunction> &function)
     : function(function) {
-      type = TypeSystem::Current().FromCallable(function->returnType, function->parameterTypes);
-    }
+  type = TypeSystem::Current().FromCallable(function->returnType,
+                                            function->parameterTypes);
+}
 
 Value Float_T::Add(Value other) {
   if (other->GetPrimitiveType() == PrimitiveType::Float) {
@@ -328,7 +333,7 @@ string Callable_T::ToString() const {
   for (const auto &param : params->values) {
     ss << param.name << ": " << param.type->name;
     if (&param != &params->values.back()) {
-        ss << ", ";
+      ss << ", ";
     }
   }
   ss << ")";
@@ -337,7 +342,9 @@ string Callable_T::ToString() const {
 string Array_T::ToString() const { return Writer::ToString(this, {}); }
 string NativeCallable_T::ToString() const {
   stringstream ss = {};
-  ss << TypeSystem::Current().FromCallable(function->returnType, function->parameterTypes)->name;
+  ss << TypeSystem::Current()
+            .FromCallable(function->returnType, function->parameterTypes)
+            ->name;
   return ss.str();
 }
 
@@ -430,22 +437,26 @@ Value Array_T::Subscript(Value key) {
 }
 Value Array_T::SubscriptAssign(Value key, Value value) {
   int idx;
-  
+
   Type element_type;
-  
+
   // if this is a templated array, like array<int>
   // and the template is well formed (has typeargs)
-  if (auto template_t = std::dynamic_pointer_cast<TemplateType>(type); !template_t->typenames.empty()) {
+  if (auto template_t = std::dynamic_pointer_cast<TemplateType>(type);
+      !template_t->typenames.empty()) {
     auto array_t = template_t->typenames[0];
     if (!Type_T::Equals(value->type.get(), array_t.get())) {
       throw TypeError(value->type, array_t);
     }
-  // if not a template, this a generic array
-  // But, we have to make sure that it's got a valid generic array type.
+    // if not a template, this a generic array
+    // But, we have to make sure that it's got a valid generic array type.
   } else if (!std::dynamic_pointer_cast<ArrayType>(type)) {
-    throw TypeError(type, "invalid type for array. Array_T Value does not have a valid array type. This is basically impossible and is a language bug.");
+    throw TypeError(
+        type,
+        "invalid type for array. Array_T Value does not have a valid array "
+        "type. This is basically impossible and is a language bug.");
   }
-  
+
   if (Ctx::TryGetInt(key, idx)) {
     BoundsCheck(idx);
     values[idx] = value;
@@ -514,7 +525,7 @@ auto Tuple_T::Deconstruct(vector<string> &idens) const -> void {
     auto &value = values[i];
     ASTNode::context.Insert(iden, value, Mutability::Mut);
   }
-  
+
   for (size_t i = max; i < idens.size(); ++i) {
     auto &iden = idens[i];
     ASTNode::context.Insert(iden, Ctx::Undefined(), Mutability::Mut);
@@ -640,8 +651,7 @@ String_T::String_T(const string &value)
 }
 // this is only for native callables.
 // Todo: implement native callable type.
-Callable_T::Callable_T()
-    : Value_T(TypeSystem::Current().NativeCallable) {}
+Callable_T::Callable_T() : Value_T(TypeSystem::Current().NativeCallable) {}
 
 Null_T::Null_T() : Value_T(TypeSystem::Current().Null) {}
 Undefined_T::Undefined_T() : Value_T(TypeSystem::Current().Undefined) {}

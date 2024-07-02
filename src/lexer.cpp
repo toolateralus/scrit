@@ -11,16 +11,8 @@
 
 Token::Token(const int &loc, const int &col, const string &value,
              const TType type, const TFamily family)
-    : 
-    info(
-      SourceInfo(loc, col, value)
-    ), 
-    value(value),
-    loc(loc),
-    col(col),
-    type(type), family(family) {
-        
-}
+    : info(SourceInfo(loc, col, value)), value(value), loc(loc), col(col),
+      type(type), family(family) {}
 string Token::ToString() const {
   stringstream stream = {};
   stream << "Token(" << value << ") type::" << TTypeToString(type)
@@ -333,13 +325,12 @@ Lexer::Lexer() {
   loc = 1;
 }
 
-
 string TTypeToString(const TType &type) {
   switch (type) {
   case TType::Struct:
-    return "Struct";   
+    return "Struct";
   case TType::Type:
-    return "Type"; 
+    return "Type";
   case TType::Arrow:
     return "Arrow";
   case TType::Let:
