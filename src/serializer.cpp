@@ -95,10 +95,10 @@ void Writer::WriteObject(const Object_T *obj) {
       // try write.
       Write(value);
       
-      i++;
       if (i != size - 1) {
         stream << element_delimter << newline;
       }
+      i++;
     }
   }
   
@@ -132,10 +132,10 @@ void Writer::WriteArray(const Array_T *array) {
       
       // only append the element_delimiter if we're not on
       // the last element of the list.
-      ++i;
       if (i != size - 1) {
         stream << element_delimter << newline;
       }
+      ++i;
     }
   }
   
