@@ -279,7 +279,7 @@ ExpressionPtr Parser::ParseAnonFunc() {
   Eat(); // eat the 'func' keyword.
   auto params = ParseParameters();
   auto returnType = ParseReturnType();
-  auto body = ParseBlock();
+  auto body = ParseBlock(params);
   auto types = params->ParamTypes();
   auto callable =
       make_shared<Callable_T>(returnType, std::move(body), std::move(params));

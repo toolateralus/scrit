@@ -365,12 +365,14 @@ unique_ptr<Noop> Parser::ParseFunctionDeclaration() {
   auto name = Expect(TType::Identifier).value;
   auto parameters = ParseParameters();
   auto returnType = ParseReturnType();
-
+  
+  auto param_clone = parameters->Clone();
+  
   auto callable =
       make_shared<Callable_T>(returnType, nullptr, std::move(parameters));
   ASTNode::context.scopes.back()->Set(name, callable, Mutability::Mut);
-
-  auto block = ParseBlock();
+  
+  auto block = ParseBlock(param_clone);
 
   callable->block = std::move(block);
 
@@ -521,7 +523,7 @@ StatementPtr Parser::ParseAnonFuncInlineCall() {
   auto info = this->info;
   auto parameters = ParseParameters();
   auto returnType = ParseReturnType();
-  auto body = ParseBlock();
+  auto body = ParseBlock(parameters);
   auto arguments = ParseArguments();
   auto type = Values::TypeSystem::Current().FromCallable(
       returnType, parameters->ParamTypes());
@@ -595,9 +597,15 @@ ArgumentsPtr Parser::ParseArguments() {
   return make_unique<Arguments>(info, std::move(values));
 }
 
-BlockPtr Parser::ParseBlock() {
+BlockPtr Parser::ParseBlock(ParametersPtr &params) {
+  
   auto scope = ASTNode::context.PushScope();
-
+  
+  for (const auto &param : params->values) {
+    scope->ForwardDeclare(param.name, param.type, Mutability::Const);
+  }
+  
+  
   auto info = this->info;
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};
@@ -625,7 +633,7 @@ BlockPtr Parser::ParseBlock() {
       statements.push_back(make_unique<Return>(info, ParseExpression()));
       break;
     }
-
+    
     // add each statement to the block.
     auto statement = ParseStatement();
     statements.push_back(std::move(statement));
@@ -642,12 +650,70 @@ BlockPtr Parser::ParseBlock() {
       // break the parse loop.
       break;
     }
-
+    
     if (next.type == TType::RCurly) {
       break;
     }
   }
+  
+  Expect(TType::RCurly);
+  ASTNode::context.PopScope();
+  return make_unique<Block>(info, std::move(statements), scope);
+}
 
+BlockPtr Parser::ParseBlock() {
+  auto scope = ASTNode::context.PushScope();
+  
+  auto info = this->info;
+  Expect(TType::LCurly);
+  vector<StatementPtr> statements = {};
+  auto next = Peek();
+
+  // Empty block.
+  if (next.type == TType::RCurly) {
+    Eat();
+    ASTNode::context.PopScope();
+    return make_unique<Block>(info, std::move(statements), scope);
+  }
+
+  while (tokens.size() > 0) {
+
+    // If the last line of a block is an identifier or a literal, we just create
+    // an implicit return. I am not sure that it's possible, but I would love to
+    // have a rust-like clone of their implicit returns. that is, any expression
+    // can be the last 'statement' of a block and have an implicit return. like
+    // a match or complex expression etc.
+    if (Peek(1).type == TType::RCurly &&
+        (Peek().family == TFamily::Identifier ||
+         Peek().family == TFamily::Literal || Peek().type == TType::Undefined ||
+         Peek().type == TType::Null || Peek().type == TType::False ||
+         Peek().type == TType::True)) {
+      statements.push_back(make_unique<Return>(info, ParseExpression()));
+      break;
+    }
+    
+    // add each statement to the block.
+    auto statement = ParseStatement();
+    statements.push_back(std::move(statement));
+    next = Peek();
+
+    // If we get a return statement, we just discard any unreachable code.
+    // this reduces some memory usage and simplifies the AST.
+    if (dynamic_cast<Return *>(statement.get())) {
+      // eat up the remainder of the block following the return statement we
+      // just paresed.
+      while (!tokens.empty() && next.type != TType::RCurly) {
+        next = Eat();
+      }
+      // break the parse loop.
+      break;
+    }
+    
+    if (next.type == TType::RCurly) {
+      break;
+    }
+  }
+  
   Expect(TType::RCurly);
   ASTNode::context.PopScope();
   return make_unique<Block>(info, std::move(statements), scope);

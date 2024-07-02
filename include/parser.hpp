@@ -21,6 +21,7 @@ struct Parser {
   Token Expect(const TType ttype);
   unique_ptr<Program> Parse(vector<Token> &&tokens);
   BlockPtr ParseBlock();
+  BlockPtr ParseBlock(ParametersPtr &params);
   StatementPtr ParseAnonFuncInlineCall();
   StatementPtr ParseStatement();
   StatementPtr ParseKeyword(Token keyword);
@@ -50,7 +51,7 @@ struct Parser {
   StatementPtr ParseBreak();
   ExpressionPtr ParseMatch();
   StatementPtr ParseMatchStatement();
-
+  
   ParametersPtr ParseParameters();
   ArgumentsPtr ParseArguments();
 

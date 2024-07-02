@@ -177,7 +177,8 @@ struct Parameters : Statement {
     Type type;
   };
   std::vector<Param> values;
-
+  
+  Parameters(SourceInfo &info);
   auto ParamTypes() -> vector<Type> {
     vector<Type> types;
     for (const auto &p : values) {
@@ -188,6 +189,8 @@ struct Parameters : Statement {
   Parameters(SourceInfo &info, std::vector<Param> &&params);
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;
+  
+  auto Clone() -> unique_ptr<Parameters>;
 };
 struct Continue : Statement {
   Continue(SourceInfo &info) : Statement(info) {}

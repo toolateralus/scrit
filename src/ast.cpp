@@ -323,6 +323,10 @@ ExecutionResult Program::Execute() {
         throw std::runtime_error("Uncaught " +
                                  CC_ToString(result.controlChange));
       }
+    } catch (TypeError err) {
+      std::cout << "\033[1;31m" << err.what() << "\n"
+                << statement->srcInfo.ToString() << std::endl;
+      std::cout << "\033[0m";
     } catch (std::runtime_error err) {
       std::cout << "\033[1;31m" << err.what() << "\n"
                 << statement->srcInfo.ToString() << std::endl;
@@ -487,25 +491,21 @@ ExecutionResult Block::Execute() {
   ASTNode::context.PushScope(scope);
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
-    try {
-      auto result = statement->Execute();
-      switch (result.controlChange) {
-      case ControlChange::Continue:
-      case ControlChange::Break:
-      case ControlChange::Return:
-        ASTNode::context.PopScope();
+    auto result = statement->Execute();
+    switch (result.controlChange) {
+    case ControlChange::Continue:
+    case ControlChange::Break:
+    case ControlChange::Return:
+      ASTNode::context.PopScope();
 
-        if (result.value != nullptr) {
-          ApplyCopySemantics(result);
-          return result;
-        }
-
+      if (result.value != nullptr) {
+        ApplyCopySemantics(result);
         return result;
-      case ControlChange::None:
-        continue;
       }
-    } catch (std::runtime_error err) {
-      std::cout << statement->srcInfo.ToString() << err.what() << std::endl;
+
+      return result;
+    case ControlChange::None:
+      continue;
     }
   }
   ASTNode::context.PopScope();
@@ -702,7 +702,7 @@ ExecutionResult Assignment::Execute() {
   auto var = ASTNode::context.Find(iden->name);
   if (!var) {
     throw std::runtime_error(
-        "cannot assign a non-existant identifier.\nuse 'let ___ = ...' or let "
+        "cannot assign a non-existent identifier.\nuse 'let ___ = ...'\nor\nlet "
         "___ : type = ...' syntax. \n offending variable: " +
         iden->name);
   }
@@ -1342,3 +1342,15 @@ Value Constructor::Evaluate() {
 
   return structType->Construct(args);
 }
+auto Parameters::Clone() -> unique_ptr<Parameters> {
+  auto clone = std::make_unique<Parameters>(this->srcInfo);
+  clone->values.reserve(values.size());
+  for (const auto &param : values) {
+    Param clonedParam = {param.name, param.default_value, param.type};
+    clone->values.push_back(std::move(clonedParam));
+  }
+  return clone;
+}
+
+Parameters::Parameters(SourceInfo &info) : 
+  Statement(info) {}
