@@ -153,8 +153,7 @@ void NativeCallable_T::CheckParameterTypes(vector<Value> &values) {
 }
 void NativeCallable_T::CheckReturnType(Value &result) {
   if (!Type_T::Equals(result->type.get(), function->returnType.get())) {
-    throw std::runtime_error("invalid return type from function " +
-                             function->name);
+    throw TypeError(result->type, function->returnType, "Invalid return type from function " + function->name);
   }
 }
 Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {

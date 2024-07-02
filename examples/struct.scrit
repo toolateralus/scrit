@@ -1,0 +1,42 @@
+
+
+
+// Declare a template object or 'struct' called Vec2
+struct Vec2 {
+  // for now, fields do have to declare mutability if they're to be changed.
+  // we can use default construction
+  mut x: int
+  // or provide default values
+  mut y: int = 100
+  
+  // we can also declare functions.
+  func zero() {
+    return Vec2(0, 0)
+  }
+  
+  // just like anonymous objects, we can also declare
+  // operator overloads.
+  
+  // overload + 
+  func add(self: Vec2, other: Vec2) -> Vec2 {
+    return Vec2(self.x + other.y, self.y + other.y)
+  }
+  
+  // overload ()
+  func call(self: Vec2) {
+    return 0
+  }
+  
+  // other overloads include
+  // mul (*)
+  // div (/)
+  // sub (-)
+  // equals(==)
+  
+  // we plan to have (=) overloading in the future
+  // so users can control assignment semantics
+}
+
+
+let instance = Vec2(0, 1)
+println(instance)

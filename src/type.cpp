@@ -1,6 +1,7 @@
 #include "type.hpp"
 #include "ast.hpp"
 #include "context.hpp"
+#include "error.hpp"
 #include "parser.hpp"
 #include "value.hpp"
 #include <iostream>
@@ -304,8 +305,9 @@ Value AnyType::Default() { return Ctx::Undefined(); }
 StructType::StructType(const string &name,
                                std::unique_ptr<ObjectInitializer> &&ctor_obj)
     : Type_T(name), ctor_obj(std::move(ctor_obj)) {
+      // this happens during forward declaration during parsing of struct so they can reference their own type.
       if (this->ctor_obj == nullptr) {
-        throw std::runtime_error("invalid struct declaration");
+        return;
       }
       
       for (const auto &statement: this->ctor_obj->block->statements) {
@@ -332,11 +334,19 @@ StructType::~StructType() {}
 
 Value StructType::Construct(ArgumentsPtr &args) {
   auto object = std::dynamic_pointer_cast<Object_T>(Default());  
+  
+  std::cout << object->ToString() << std::endl;
+  
   size_t i = 0;
   for (const auto &arg: args->values) {
     auto value = arg->Evaluate();
     if (i < names.size()) {
       auto name = names[i];
+      auto field_type = object->GetMember(name)->type;
+      
+      if (!field_type->Equals(arg->type.get())) {
+        throw TypeError(field_type, arg->type);
+      }
       object->SetMember(name, value);
     }
     ++i;  

@@ -1,4 +1,5 @@
 #include "scrit/scritmod.hpp"
+#include "scrit/native.hpp"
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
@@ -215,21 +216,21 @@ static Value exit(std::vector<Value>) {
 
 static Value file() {
   auto obj = Ctx::CreateObject();
-  obj->SetMember("read", FunctionRegistry::MakeCallable(fread));
-  obj->SetMember("write", FunctionRegistry::MakeCallable(fwrite));
-  obj->SetMember("create", FunctionRegistry::MakeCallable(fcreate));
-  obj->SetMember("exists", FunctionRegistry::MakeCallable(fexists));
-  obj->SetMember("delete", FunctionRegistry::MakeCallable(fdelete));
+  obj->SetMember("read",   CREATE_CALLABLE(fread, "string", {"string"}));
+  obj->SetMember("write",  CREATE_CALLABLE(fwrite, "undefined", {"string", "string"}));
+  obj->SetMember("create", CREATE_CALLABLE(fcreate, "undefined", {"string"}));
+  obj->SetMember("exists", CREATE_CALLABLE(fexists, "bool", {"string"}));
+  obj->SetMember("delete", CREATE_CALLABLE(fdelete, "undefined", {"string"}));
   return obj;
 }
 
 static Value directory() {
   auto obj = Ctx::CreateObject();
-  obj->SetMember("exists", FunctionRegistry::MakeCallable(dir_exists));
-  obj->SetMember("create", FunctionRegistry::MakeCallable(dir_create));
-  obj->SetMember("delete", FunctionRegistry::MakeCallable(dir_delete));
-  obj->SetMember("getfiles", FunctionRegistry::MakeCallable(dir_getfiles));
-  obj->SetMember("current", FunctionRegistry::MakeCallable(cwd));
+  obj->SetMember("exists", CREATE_CALLABLE(dir_exists, "bool", {"string"}));
+  obj->SetMember("create", CREATE_CALLABLE(dir_create, "undefined", {"string"}));
+  obj->SetMember("delete", CREATE_CALLABLE(dir_delete, "undefined", {"string"}));
+  obj->SetMember("getfiles", CREATE_CALLABLE(dir_getfiles, "array<string>", {"string"}));
+  obj->SetMember("current", CREATE_CALLABLE(cwd, "string", {}));
   return obj;
 }
 
@@ -240,10 +241,16 @@ extern "C" ScritModDef *InitScritModule_system() {
   def->AddVariable("directory", directory(), Mutability::Const);
   def->AddVariable("file", file(), Mutability::Const);
   
-  def->AddFunction("time", &time);
-  def->AddFunction("syscall", &syscall);
-  def->AddFunction("exit", &exit);
-  def->AddFunction("sleep", &sleep);
+  auto time = CREATE_FUNCTION(::time, "float", {});
+  auto syscall = CREATE_FUNCTION(::syscall, "int", {"string"});
+  auto exit = CREATE_FUNCTION(::exit, "undefined", {"int"});
+  auto sleep = CREATE_FUNCTION(::sleep, "undefined", {"float"});
+  
+  
+  def->AddFunction("time", time);
+  def->AddFunction("syscall", syscall);
+  def->AddFunction("exit", exit);
+  def->AddFunction("sleep", sleep);
   
   return def;
 }

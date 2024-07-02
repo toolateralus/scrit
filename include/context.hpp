@@ -60,10 +60,16 @@ struct Scope_T {
   auto Contains(const string &name) -> bool;
   auto Erase(const string &name) -> size_t;
   auto Members() -> std::map<Key, Value> &;
-  
+
+  auto ClearVariables() -> void;
+
+  // Used to patch fwd declared types during struct decls.
+  auto OverwriteType(const string &name, const Type &type) {
+    types[name] = type;
+  }
   
   auto InsertType(const string &name, const Type &type) {
-    if (TypeExists(name)) {
+    if (TypeExists(name) && FindType(name) != nullptr) {
       throw std::runtime_error("re-definition of type: " + name);
     }
     types[name] = type;

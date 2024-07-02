@@ -1,1 +1,0 @@
-sudo clang++ -std=c++2b -shared -fPIC -o /usr/local/scrit/modules/math.dll math.cpp -lscrit

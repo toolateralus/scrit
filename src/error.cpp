@@ -26,3 +26,12 @@ TypeError::TypeError(const Type &type_a, const Type &type_b)
     return "Type Error: incompatible types.\noffending types:\n" +
          type_a->name + "\n" + type_b->name;
   }()) {}
+
+TypeError::TypeError(const Type &type_a, const Type &type_b, const std::string message)
+  : std::runtime_error([message, type_a, type_b]() -> std::string {
+    if (!type_a || !type_b) {
+      return "Type Error: One or more type arguments are null.." + message;
+    }
+    return "Type Error: incompatible types.\noffending types:\n" +
+         type_a->name + "\n" + type_b->name + "\n" + message;
+  }()) {}

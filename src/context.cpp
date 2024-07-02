@@ -188,3 +188,13 @@ auto Context::TypeExists(const string &name) -> bool {
   }
   return false;
 }
+auto Scope_T::ClearVariables() -> void {
+  auto it = variables.begin();
+  while (it != variables.end()) {
+    if (it->second->GetPrimitiveType() != Values::PrimitiveType::Callable) {
+      it = variables.erase(it);
+    } else {
+      ++it;
+    }
+  }
+}

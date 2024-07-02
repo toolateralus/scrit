@@ -6,7 +6,7 @@
 #include "native.hpp"
 #include "parser.hpp"
 #include "value.hpp"
-
+#include <algorithm>
 #include "ast_visitor.hpp"
 #include <iostream>
 #include <memory>
@@ -70,9 +70,8 @@ Program::Program(vector<StatementPtr> &&statements)
 Return::Return(SourceInfo &info, ExpressionPtr &&value) : Statement(info) {
   this->value = std::move(value);
 }
-Block::Block(SourceInfo &info, vector<StatementPtr> &&statements)
-    : Statement(info) {
-  this->statements = std::move(statements);
+Block::Block(SourceInfo &info, vector<StatementPtr> &&statements, Scope scope)
+    : Statement(info), scope(scope), statements(std::move(statements)) {
 }
 ObjectInitializer::ObjectInitializer(SourceInfo &info, const Type &type,
                                      BlockPtr &&block)
@@ -457,7 +456,6 @@ void ApplyCopySemantics(ExecutionResult &result) {
 }
 ExecutionResult Block::Execute(Scope scope) {
   ASTNode::context.PushScope(scope);
-
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
@@ -485,7 +483,8 @@ ExecutionResult Block::Execute(Scope scope) {
   return ExecutionResult::None;
 }
 ExecutionResult Block::Execute() {
-  ASTNode::context.PushScope();
+  scope->ClearVariables();  
+  ASTNode::context.PushScope(scope);
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
@@ -1150,11 +1149,7 @@ ExecutionResult Declaration::Execute() {
   // somewhat cheap but unneccesary cost of double checking each type.
   if (!Type_T::Equals(value->type.get(), this->type.get())) {
     if (value->type && this->type)
-      throw std::runtime_error(
-          "invalid types in declaration:\ndeclaring type: " + type->name +
-          "\nexpression type: " + value->type->name);
-    throw std::runtime_error("invalid types in declaration. one or both types "
-                             "were null, this is a language bug");
+      throw TypeError(value->type, this->type);
   }
 
   // copy where needed
@@ -1328,7 +1323,7 @@ void MethodCall::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
                                      unique_ptr<ObjectInitializer> &&ctor_obj)
     : Statement(info), name(name), ctor_obj(std::move(ctor_obj)) {
-  context.scopes.back()->InsertType(name, make_shared<StructType>(name, std::move(this->ctor_obj)));
+  context.scopes.back()->OverwriteType(name, make_shared<StructType>(name, std::move(this->ctor_obj)));
 }
 ExecutionResult StructDeclaration::Execute() {  
   return ExecutionResult::None;

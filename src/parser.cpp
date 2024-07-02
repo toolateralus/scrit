@@ -126,6 +126,7 @@ StatementPtr Parser::ParseKeyword(Token token) {
   switch (token.type) {
   case TType::Struct: {
     auto name = Expect(TType::Identifier).value;
+    ASTNode::context.scopes.back()->InsertType(name, make_shared<StructType>(name, nullptr));
     auto ctor = ParseObjectInitializer();
     return make_unique<StructDeclaration>(info, name, std::move(ctor));
   }
@@ -363,11 +364,15 @@ unique_ptr<Noop> Parser::ParseFunctionDeclaration() {
   auto name = Expect(TType::Identifier).value;
   auto parameters = ParseParameters();
   auto returnType = ParseReturnType();
+  
   auto callable =
       make_shared<Callable_T>(returnType, nullptr, std::move(parameters));
   ASTNode::context.scopes.back()->Set(name, callable, Mutability::Mut);
+  
   auto block = ParseBlock();
+  
   callable->block = std::move(block);
+  
   return std::make_unique<Noop>(info);
 }
 // for statements like
@@ -578,7 +583,7 @@ ArgumentsPtr Parser::ParseArguments() {
     if (tokens.empty()) {
       throw std::runtime_error("unmatched parens, or incomplete expression");
     }
-
+    
     if (Peek().type == TType::Comma) {
       Eat();
     } else {
@@ -593,6 +598,8 @@ ArgumentsPtr Parser::ParseArguments() {
 }
 
 BlockPtr Parser::ParseBlock() {
+  auto scope = ASTNode::context.PushScope();
+  
   auto info = this->info;
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};
@@ -601,8 +608,10 @@ BlockPtr Parser::ParseBlock() {
   // Empty block.
   if (next.type == TType::RCurly) {
     Eat();
-    return make_unique<Block>(info, std::move(statements));
+    ASTNode::context.PopScope();
+    return make_unique<Block>(info, std::move(statements), scope);
   }
+  
   while (tokens.size() > 0) {
 
     // If the last line of a block is an identifier or a literal, we just create
@@ -612,11 +621,12 @@ BlockPtr Parser::ParseBlock() {
     // a match or complex expression etc.
     if (Peek(1).type == TType::RCurly &&
         (Peek().family == TFamily::Identifier ||
-         Peek().family == TFamily::Literal)) {
+         Peek().family == TFamily::Literal ||
+         Peek().type == TType::Undefined || Peek().type == TType::Null || Peek().type == TType::False || Peek().type == TType::True)) {
       statements.push_back(make_unique<Return>(info, ParseExpression()));
       break;
     }
-
+    
     // add each statement to the block.
     auto statement = ParseStatement();
     statements.push_back(std::move(statement));
@@ -638,8 +648,10 @@ BlockPtr Parser::ParseBlock() {
       break;
     }
   }
+  
   Expect(TType::RCurly);
-  return make_unique<Block>(info, std::move(statements));
+  ASTNode::context.PopScope();
+  return make_unique<Block>(info, std::move(statements), scope);
 }
 
 // ########## Control flow ###############

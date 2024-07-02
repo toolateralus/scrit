@@ -218,8 +218,9 @@ struct Delete : Statement {
   void Accept(ASTVisitor *visitor) override;
 };
 struct Block : Statement {
-  Block(SourceInfo &info, vector<StatementPtr> &&statements);
+  Block(SourceInfo &info, vector<StatementPtr> &&statements, Scope scope);
   vector<StatementPtr> statements;
+  Scope scope;
   ExecutionResult Execute() override;
   ExecutionResult Execute(Scope scope);
   void Accept(ASTVisitor *visitor) override;
@@ -382,7 +383,9 @@ struct FunctionDecl : Statement {
   FunctionDecl(SourceInfo &info, string &name, BlockPtr &&block,
                ParametersPtr &&parameters, const Type &returnType)
       : Statement(info), block(std::move(block)),
-        parameters(std::move(parameters)), name(name), returnType(returnType) {}
+        parameters(std::move(parameters)), name(name), returnType(returnType) {
+          
+        }
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;
 };

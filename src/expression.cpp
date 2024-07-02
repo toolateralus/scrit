@@ -202,7 +202,7 @@ ExpressionPtr Parser::ParseOperand() {
     return make_unique<UnaryExpr>(info, operand->type, std::move(operand),
                                   token.type);
   }
-
+  
   switch (token.type) {
   case TType::Match: {
     Eat();
@@ -293,7 +293,7 @@ ExpressionPtr Parser::ParseAnonFunc() {
 unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};
-
+  auto scope = ASTNode::context.PushScope();
   while (tokens.size() > 0) {
     auto next = Peek();
 
@@ -333,13 +333,14 @@ unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
     }
   }
 endloop:
-
+  
   Expect(TType::RCurly);
-
+  
+  ASTNode::context.PopScope();
   // todo: redo the object system and type it.
   auto type = TypeSystem::Current().Find("object");
   return make_unique<ObjectInitializer>(
-      info, type, make_unique<Block>(info, std::move(statements)));
+      info, type, make_unique<Block>(info, std::move(statements), scope));
 }
 ExpressionPtr Parser::ParseTuple(ExpressionPtr &&expr) {
   Eat(); // eat first comma.
