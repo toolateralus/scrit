@@ -94,9 +94,9 @@ Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
                                operand->srcInfo.ToString());
     }
   }
-  
+
   auto target = std::dynamic_pointer_cast<CallableType>(value->type);
-  
+
   if (target && target->returnType) {
     this->type = target->returnType;
   }
@@ -384,6 +384,31 @@ ExecutionResult Return::Execute() {
   else
     return ExecutionResult(ControlChange::Return, Value_T::UNDEFINED);
 }
+
+Value ReturnCopyIfNeeded(Value result) {
+  switch (result->GetPrimitiveType()) {
+  case Values::PrimitiveType::Invalid:
+  case Values::PrimitiveType::Null:
+  case Values::PrimitiveType::Undefined:
+  case Values::PrimitiveType::Object:
+  case Values::PrimitiveType::Array:
+  case Values::PrimitiveType::Callable:
+    return result;
+  case Values::PrimitiveType::Tuple:
+  case Values::PrimitiveType::Float:
+  case Values::PrimitiveType::Int:
+  case Values::PrimitiveType::Bool:
+  case Values::PrimitiveType::String:
+    return result->Clone();
+    break;
+  case Values::PrimitiveType::Lambda: {
+    auto lambda = static_cast<Lambda_T *>(result.get());
+    return lambda->Evaluate();
+    break;
+  }
+  }
+}
+
 void ApplyCopySemantics(Value &result) {
   switch (result->GetPrimitiveType()) {
   case Values::PrimitiveType::Invalid:
@@ -711,16 +736,16 @@ Value EvaluateWithinObject(Scope &scope, Value object,
 }
 Value DotExpr::Evaluate() {
   auto lvalue = left->Evaluate();
-  
+
   if (lvalue->GetPrimitiveType() != PrimitiveType::Object) {
     throw std::runtime_error("invalid lhs on dot operation : " +
                              TypeToString(lvalue->GetPrimitiveType()));
   }
-  
+
   auto object = static_cast<Object_T *>(lvalue.get());
-  
+
   auto scope = object->scope;
-  
+
   auto result = EvaluateWithinObject(scope, lvalue, right);
 
   return result;
@@ -795,7 +820,7 @@ Value BinExpr::Evaluate() {
   if (!Type_T::Equals(left->type.get(), right->type.get())) {
     throw TypeError(left->type, right->type);
   }
-  
+
   switch (op) {
   case TType::NullCoalescing: {
     if (left->GetPrimitiveType() == PrimitiveType::Null ||
@@ -1198,9 +1223,7 @@ void ASTNode::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Executable::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Statement::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Program::Accept(ASTVisitor *visitor) { visitor->visit(this); }
-void Expression::Accept(ASTVisitor *visitor) { 
-  visitor->visit(this); 
-}
+void Expression::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Operand::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Identifier::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Arguments::Accept(ASTVisitor *visitor) { visitor->visit(this); }
@@ -1245,17 +1268,15 @@ TypeAlias::TypeAlias(SourceInfo &info, const string &alias, const Type &type)
   context.scopes.back()->InsertType(alias, type);
 }
 
-Value MethodCall::Evaluate() {
-  return callable->Call(this->args);
-}
+Value MethodCall::Evaluate() { return callable->Call(this->args); }
 
 MethodCall::MethodCall(SourceInfo &info, const Type &type,
                        ExpressionPtr &&operand, ArgumentsPtr &&args)
     : Statement(info), Expression(info, type), args(std::move(args)),
       operand(std::move(operand)) {
-      callable = FindCallable();
-      auto t = std::dynamic_pointer_cast<CallableType>(callable->type); 
-      this->type = t->returnType;
+  callable = FindCallable();
+  auto t = std::dynamic_pointer_cast<CallableType>(callable->type);
+  this->type = t->returnType;
 }
 
 shared_ptr<Callable_T> MethodCall::FindCallable() {
@@ -1269,38 +1290,37 @@ shared_ptr<Callable_T> MethodCall::FindCallable() {
     throw std::runtime_error("Too few arguments for a method call: the caller "
                              "object was not in the argument list");
   }
-  
-  
+
   // This causes a double evaulation if we do
   // obj.somemethod().println()
   // or something to that effect.
-  
-  
+
   Type type;
   auto &caller = args[0];
-  
+
   if (!caller->type) {
-    type = caller->Evaluate()->type;    
+    type = caller->Evaluate()->type;
   } else {
     type = caller->type;
   }
-  
+
   if (auto method = type->Get(identifier->name);
       auto callable = std::dynamic_pointer_cast<Callable_T>(method)) {
     if (callable != nullptr) {
       return callable;
     }
   }
-  
-  if (auto obj = ASTNode::context.Find(identifier->name); 
+
+  if (auto obj = ASTNode::context.Find(identifier->name);
       auto callable = std::dynamic_pointer_cast<Callable_T>(obj)) {
     return callable;
   }
-  
+
   if (auto callable = FunctionRegistry::GetCallable(identifier->name)) {
-    return callable; 
+    return callable;
   }
-  
-  throw std::runtime_error("invalid method call: couldn't find method : " + identifier->name);
+
+  throw std::runtime_error("invalid method call: couldn't find method : " +
+                           identifier->name);
 }
 void MethodCall::Accept(ASTVisitor *visitor) { visitor->visit(this); }
