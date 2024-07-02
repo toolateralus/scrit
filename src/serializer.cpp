@@ -49,7 +49,7 @@ void Writer::Map(const Value_T *val) {
     break;
   }
 }
-void Writer::HandleRefs(const string &element_delimter, Value_T *&value, const string &key) {
+bool Writer::HandleRefs(const string &element_delimter, Value_T *&value, const string &key) {
   
   // for getting a space away from iden when it exists, but
   // don't want that one space indentation unless it does exist.
@@ -59,13 +59,19 @@ void Writer::HandleRefs(const string &element_delimter, Value_T *&value, const s
     case ReferenceHandling::Remove:
       break;
     case ReferenceHandling::Mark:
-      stream << indent << key << ref_key << foundObjs.size() << ">" << newline;
+      if (foundObjs.contains(value)) {
+        stream << indent << key << ref_key << foundObjs.size() << ">" << newline;
+        return true;
+      }
       break;
     case ReferenceHandling::Preserve: {
-      if (references.contains(value)) 
+      if (references.contains(value))  {
         stream << indent << key << ref_key << references[value] << ">" << newline;
+        return true;
+      }
     }
   }
+  return false;
 }
 
 void Writer::WriteObject(const Object_T *obj) {
@@ -85,8 +91,7 @@ void Writer::WriteObject(const Object_T *obj) {
     for (const auto &[key, var] : obj->scope->Members()) {
       auto value = var.get();
       
-      if (foundObjs.contains(value)) {
-        HandleRefs(element_delimter, value, '\"' + key.value + '\"');
+      if (HandleRefs(element_delimter, value, '\"' + key.value + '\"')) {
         continue;
       }
       
@@ -122,8 +127,7 @@ void Writer::WriteArray(const Array_T *array) {
       
       auto value = var.get();
       
-      if (foundObjs.contains(value)) {
-        HandleRefs(element_delimter, value);
+      if (HandleRefs(element_delimter, value)) {
         continue;
       }
       

@@ -118,7 +118,7 @@ struct Writer {
   std::stringstream stream;
   void BuildMap(const Value_T *);
   void Map(const Value_T *array);
-  void HandleRefs(const string &element_delimter,
+  bool HandleRefs(const string &element_delimter,
                  Value_T *&value, const string &key = "");
                  
   void WriteArray(const Array_T *val);
