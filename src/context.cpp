@@ -112,7 +112,7 @@ auto Scope_T::Set(const Scope_T::Key &key, Value value) -> void {
 }
   
 auto Scope_T::Set(const string &name, Value value, const Mutability &mutability) -> void {
-  if (TypeSystem::Current().Get(name)) {
+  if (TypeSystem::Current().Exists(name)) {
     throw std::runtime_error("cannot declare a variable of an existing type: " + name);
   }
   

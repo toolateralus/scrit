@@ -588,7 +588,7 @@ Object Object_T::New(Scope scope) {
   return make_shared<Object_T>(scope);
 }
 
-Object_T::Object_T() : Value_T(TypeSystem::Current().Get("object")) {}
+Object_T::Object_T() : Value_T(TypeSystem::Current().Find("object")) {}
 
 Tuple_T::Tuple_T(vector<Value> values) : Value_T(nullptr), values(values) {
   auto types = vector<Type>();
@@ -653,11 +653,11 @@ Bool_T::Bool_T(bool value) : Value_T(TypeSystem::Current().Bool) {
 Array_T::Array_T(vector<Value> init) : Value_T(nullptr) {
   this->values = init;
   if (init.size() != 0) {
-    this->type = TypeSystem::Current().GetOrCreateTemplate(
+    this->type = TypeSystem::Current().FindOrCreateTemplate(
         "array<" + init[0]->type->name + ">",
-        TypeSystem::Current().Get("array"), {init[0]->type});
+        TypeSystem::Current().Find("array"), {init[0]->type});
   } else {
-    this->type = TypeSystem::Current().Get("array");
+    this->type = TypeSystem::Current().Find("array");
   }
 }
 

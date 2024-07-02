@@ -3,10 +3,10 @@
 #include "native.hpp"
 #include "type.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <functional>
 #include <memory>
-
 #include <vector>
 
 class ASTVisitor;
@@ -228,6 +228,19 @@ struct ObjectInitializer : Expression {
   ObjectInitializer(SourceInfo &info, const Type &type, BlockPtr &&block);
   Value Evaluate() override;
   void Accept(ASTVisitor *visitor) override;
+};
+
+struct TypeAlias : Statement {
+  const Type type;
+  const string alias;
+  ~TypeAlias() {
+    
+  }
+  TypeAlias(SourceInfo &info, const string &alias, const Type &type)
+      : Statement(info), type(type), alias(alias) {
+    
+  }
+  ExecutionResult Execute() override { return ExecutionResult::None; }
 };
 
 struct ArrayInitializer : Expression {

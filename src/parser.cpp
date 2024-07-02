@@ -124,6 +124,14 @@ StatementPtr Parser::ParseStatement() {
 
 StatementPtr Parser::ParseKeyword(Token token) {
   switch (token.type) {
+    
+  case TType::Type: {
+    auto name = Expect(TType::Identifier).value;
+    Expect(TType::Assign);
+    auto type = ParseType();
+    return make_unique<TypeAlias>(info, name, type);
+  }
+  
   case TType::Delete: {
     return ParseDelete();
   }
@@ -537,7 +545,7 @@ ParametersPtr Parser::ParseParameters() {
     }
     
     params.push_back(param);
-
+    
     if (Peek().type == TType::Comma) {
       Eat();
     }

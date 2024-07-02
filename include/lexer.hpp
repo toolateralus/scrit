@@ -105,7 +105,8 @@ enum class TType {
   Import,
   Delete,
   Let,
-  Arrow
+  Arrow,
+  Type,
 };
 struct Token {
   Token(const int &loc, const int &col, const string &value, const TType type,

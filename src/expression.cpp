@@ -310,7 +310,7 @@ endloop:
   Expect(TType::RCurly);
   
   // todo: redo the object system and type it.
-  auto type = TypeSystem::Current().Get("object");
+  auto type = TypeSystem::Current().Find("object");
   return make_unique<ObjectInitializer>(info, type, make_unique<Block>(info, std::move(statements)));
 }
 ExpressionPtr Parser::ParseTuple(ExpressionPtr &&expr) {
@@ -394,7 +394,7 @@ OperandPtr Parser::ParseArrayInitializer() {
   Eat();
   if (Peek().type == TType::SubscriptRight) {
     Eat();
-    auto type = TypeSystem::Current().Get("array");
+    auto type = TypeSystem::Current().Find("array");
     return make_unique<Operand>(info, type, make_unique<ArrayInitializer>(info, type, std::vector<ExpressionPtr>()));
   } else {
     vector<ExpressionPtr> init_expressions = {};
@@ -418,7 +418,7 @@ OperandPtr Parser::ParseArrayInitializer() {
       }
     }
     Expect(TType::SubscriptRight);
-    auto type = TypeSystem::Current().GetOrCreateTemplate("array<" + inner_type->name + ">", TypeSystem::Current().Get("array"), {inner_type});
+    auto type = TypeSystem::Current().FindOrCreateTemplate("array<" + inner_type->name + ">", TypeSystem::Current().Find("array"), {inner_type});
     return make_unique<Operand>(info, type, make_unique<ArrayInitializer>(info, type, std::move(init_expressions)));
   }
 }

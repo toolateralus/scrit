@@ -307,6 +307,7 @@ Lexer::Lexer() {
 
   };
   keywords = {
+      {"type", TType::Type},
       {"let", TType::Let},
       {"delete", TType::Delete},
       {"const", TType::Const},
@@ -334,6 +335,8 @@ Lexer::Lexer() {
 
 string TTypeToString(const TType &type) {
   switch (type) {
+  case TType::Type:
+    return "Type"; 
   case TType::Arrow:
     return "Arrow";
   case TType::Let:

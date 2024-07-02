@@ -70,7 +70,7 @@ struct FunctionRegistry {
 
 #pragma GCC diagnostic push
 
-#define CREATE_FUNCTION(name, returnType, parameterTypes...) NativeFunction::Create(#name, TypeSystem::Current().Get(returnType), TypeSystem::Current().GetVector(parameterTypes), name)
+#define CREATE_FUNCTION(name, returnType, parameterTypes...) NativeFunction::Create(#name, TypeSystem::Current().Find(returnType), TypeSystem::Current().GetVector(parameterTypes), name)
 
 #define CREATE_CALLABLE(name, returnType, parameterTypes...) FunctionRegistry::MakeCallable(CREATE_FUNCTION(name, returnType, parameterTypes))
 
@@ -78,7 +78,7 @@ struct FunctionRegistry {
   namespace { \
     struct name##_Register { \
       name##_Register() { \
-        auto _returnType = TypeSystem::Current().Get(returnType); \
+        auto _returnType = TypeSystem::Current().Find(returnType); \
         auto _parameterTypes = TypeSystem::Current().GetVector(parameterTypes); \
         auto func = NativeFunction::Create(#name, _returnType, _parameterTypes, name); \
         RegisterFunction(#name, func); \

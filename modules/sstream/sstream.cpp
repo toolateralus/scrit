@@ -12,7 +12,7 @@
 
 struct StringStream : Value_T {
   std::stringstream stream = std::stringstream("");
-  StringStream() : Value_T(TypeSystem::Current().Get("array")) {}
+  StringStream() : Value_T(TypeSystem::Current().Find("array")) {}
   string ToString() const override {
     return stream.str();
   }

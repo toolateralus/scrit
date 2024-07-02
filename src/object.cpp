@@ -70,7 +70,7 @@ bool Object_T::HasMember(const string &name)
 { 
   return scope->Contains(name); 
 }
-Object_T::Object_T(Scope scope) : Value_T(TypeSystem::Current().Get("object")) { this->scope = scope; }
+Object_T::Object_T(Scope scope) : Value_T(TypeSystem::Current().Find("object")) { this->scope = scope; }
 
 Value Object_T::CallOpOverload(Value &arg, const string &op_key) {
   if (!scope->Contains(op_key)) {

@@ -1,9 +1,11 @@
 #pragma once
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <algorithm>
 
 using std::make_shared;
 using std::vector;
@@ -22,6 +24,7 @@ struct Type_T {
   Type_T(const std::string &name);
   virtual ~Type_T(){};
   const string name;
+  
   
   Type_T(const Type_T&) = delete;
   Type_T(Type_T&&) = delete;
@@ -151,12 +154,37 @@ struct TypeSystem {
   Type NativeCallable;
   Type String;
   Type Any;
-
-  auto GetVector(const vector<string> &names) -> vector<Type>;
-
-  auto Get(const string &name) -> Type { return types[name]; }
   
-  auto GetOrCreateTemplate(const string &name, const Type &base,
+  auto GetVector(const vector<string> &names) -> vector<Type>;
+  
+  auto Find(const string &name) -> Type { 
+    // Return a type if it exists normally in the hash map.
+    if (types.contains(name)) {
+      return types[name];
+    }
+   
+    
+    // // search for aliased types.
+    // auto it = std::find_if(types.begin(), types.end(), [name](auto pair) {
+    //   auto &[name, search_type] = pair;
+    //   // does an alias exist?
+    //   auto alias_it = std::find(search_type->aliases.begin(), search_type->aliases.end(), name);
+    //   return alias_it != search_type->aliases.end();
+    // });
+    
+    // if (it != types.end()) {
+    //   return it->second;
+    // }
+    
+    
+    throw std::runtime_error("use of undeclared type: " + name);
+  }
+  
+  auto Exists(const string &name) -> bool {
+    return types.contains(name);
+  }
+  
+  auto FindOrCreateTemplate(const string &name, const Type &base,
                            const vector<Type> &types) -> Type;
                            
   auto GetDefault(const Type &type) -> Value;

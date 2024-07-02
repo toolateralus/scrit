@@ -72,7 +72,7 @@ auto TypeSystem::GetDefault(const Type &type) -> Value {
   return Value_T::UNDEFINED;
 }
 
-auto Values::TypeSystem::GetOrCreateTemplate(const string &name,
+auto Values::TypeSystem::FindOrCreateTemplate(const string &name,
                                              const Type &base,
                                              const vector<Type> &types)
     -> Type {
@@ -167,7 +167,7 @@ auto Values::TypeSystem::GetVector(const vector<string> &names)
     -> vector<Type> {
   auto types = vector<Type>();
   for (const auto &name : names) {
-    auto type = Get(name);
+    auto type = Find(name);
     if (!type) {
       throw std::runtime_error("invalid type in type group: " + name);
     }
@@ -217,7 +217,7 @@ Type Parser::ParseTemplateType(const Type &base_type) {
   }
   name += ">";
   
-  return TypeSystem::Current().GetOrCreateTemplate(name, base_type, types);
+  return TypeSystem::Current().FindOrCreateTemplate(name, base_type, types);
 }
 Type Parser::ParseFunctionType(const Type &returnType) {
   Expect(TType::LParen);
@@ -258,7 +258,7 @@ Type Parser::ParseType() {
   
   
   auto tname = Expect(TType::Identifier).value;
-  auto type = TypeSystem::Current().Get(tname);
+  auto type = TypeSystem::Current().Find(tname);
   // template types.
   if (Peek().type == TType::Less) {
     return Parser::ParseTemplateType(type);
