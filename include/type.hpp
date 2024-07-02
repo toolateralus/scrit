@@ -11,6 +11,10 @@ using std::shared_ptr;
 using std::string;
 using std::unordered_map;
 
+
+struct Arguments;
+using ArgumentsPtr = std::unique_ptr<Arguments>;
+struct ObjectInitializer;
 struct Scope_T;
 
 namespace Values {
@@ -37,6 +41,13 @@ struct Type_T {
   virtual auto Set(const string &name, Value value) -> void;
   
   bool operator==(const Type_T &other) const { return name == other.name; }
+  
+  virtual auto Equals(const Type_T * other) -> bool {
+    if (!other) {
+      return false;
+    }
+    return *other == *this;
+  }
   
   static bool Equals(const Type_T *t0, const Type_T *t1) {
     if (t0 == nullptr || t1 == nullptr) {
@@ -154,6 +165,21 @@ struct AnyType : Type_T {
   auto Scope() -> Scope_T & override;
   Value Default() override;
 };
+
+
+
+
+struct StructType : Type_T, std::enable_shared_from_this<StructType> {
+  ~StructType();
+  std::unique_ptr<ObjectInitializer> ctor_obj;
+  vector<string> names;
+  StructType(const string &name, std::unique_ptr<ObjectInitializer> &&init);
+  bool Equals(const Type_T *other) override;
+  Value Default() override;
+  Value Construct(ArgumentsPtr &args);
+  Scope_T &Scope() override;
+};
+
 
 struct TypeSystem {
   

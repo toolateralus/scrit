@@ -307,6 +307,7 @@ Lexer::Lexer() {
 
   };
   keywords = {
+      {"struct", TType::Struct},
       {"type", TType::Type},
       {"let", TType::Let},
       {"delete", TType::Delete},
@@ -335,6 +336,8 @@ Lexer::Lexer() {
 
 string TTypeToString(const TType &type) {
   switch (type) {
+  case TType::Struct:
+    return "Struct";   
   case TType::Type:
     return "Type"; 
   case TType::Arrow:

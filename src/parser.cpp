@@ -124,7 +124,11 @@ StatementPtr Parser::ParseStatement() {
 
 StatementPtr Parser::ParseKeyword(Token token) {
   switch (token.type) {
-    
+  case TType::Struct: {
+    auto name = Expect(TType::Identifier).value;
+    auto ctor = ParseObjectInitializer();
+    return make_unique<StructDeclaration>(info, name, std::move(ctor));
+  }
   case TType::Type: {
     auto name = Expect(TType::Identifier).value;
     Expect(TType::Assign);
@@ -450,6 +454,7 @@ StatementPtr Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
     return ParseTupleDeconstruction(std::move(identifier));
   }
   case TType::LParen: {
+   
     return ParseCall(std::move(identifier));
   }
   default:
@@ -522,7 +527,7 @@ StatementPtr Parser::ParseAnonFuncInlineCall() {
 // Call statement.
 unique_ptr<Call> Parser::ParseCall(IdentifierPtr identifier) {
   auto info = this->info;
-  auto args = ParseArguments();
+  auto args = ParseArguments();  
   return make_unique<Call>(info, std::move(identifier), std::move(args));
 }
 ParametersPtr Parser::ParseParameters() {

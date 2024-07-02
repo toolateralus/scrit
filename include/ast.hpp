@@ -95,6 +95,8 @@ struct ASTNode {
   virtual ~ASTNode() {}
   virtual void Accept(ASTVisitor *visitor) = 0;
 };
+
+
 struct Executable : ASTNode {
   virtual ~Executable() {}
   virtual ExecutionResult Execute() = 0;
@@ -498,6 +500,23 @@ struct Match : Expression {
   Value Evaluate() override;
   void Accept(ASTVisitor *visitor) override;
 };
+
+struct StructDeclaration : Statement {
+  unique_ptr<ObjectInitializer> ctor_obj;
+  string name;
+  StructDeclaration(SourceInfo &info, const string &name,
+                    unique_ptr<ObjectInitializer> &&ctor_obj);
+                    
+  ExecutionResult Execute() override;
+};
+
+struct Constructor : Expression {
+  ArgumentsPtr args;
+  Constructor(SourceInfo &info, const Type &type, ArgumentsPtr &&args);
+  Value Evaluate() override;
+};
+
+
 struct MatchStatement : Statement {
   ExpressionPtr match;
   MatchStatement(SourceInfo &info, ExpressionPtr &&match)

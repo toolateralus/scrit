@@ -1,7 +1,7 @@
-#include "ast_serializer.hpp"
-#include "ast.hpp"
 #include "type.hpp"
+#include "ast.hpp"
 #include "value.hpp"
+#include "ast_serializer.hpp"
 
 ASTSerializer::ASTSerializer(int indent_level, int indent_size) {
 	this->indent_level = indent_level;

@@ -83,7 +83,7 @@ Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
     : Expression(info, operand->type), Statement(info) {
   
   auto value = operand->Evaluate();
-
+  
   if (!value) {
     // a bit of specific code for functor objects.
     if (auto object = std::dynamic_pointer_cast<Object_T>(value);
@@ -94,13 +94,13 @@ Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
                                operand->srcInfo.ToString());
     }
   }
-
-  auto target = std::dynamic_pointer_cast<CallableType>(value->type);
-
-  if (target && target->returnType) {
-    this->type = target->returnType;
+  
+  auto callable_type = std::dynamic_pointer_cast<CallableType>(value->type);
+  
+  if (callable_type && callable_type->returnType) {
+    this->type = callable_type->returnType;
   }
-
+  
   this->operand = std::move(operand);
   this->args = std::move(args);
 }
@@ -400,13 +400,13 @@ Value ReturnCopyIfNeeded(Value result) {
   case Values::PrimitiveType::Bool:
   case Values::PrimitiveType::String:
     return result->Clone();
-    break;
   case Values::PrimitiveType::Lambda: {
     auto lambda = static_cast<Lambda_T *>(result.get());
     return lambda->Evaluate();
-    break;
   }
   }
+  // how? all cases are handled.
+  return result;
 }
 
 void ApplyCopySemantics(Value &result) {
@@ -495,7 +495,7 @@ ExecutionResult Block::Execute() {
       case ControlChange::Break:
       case ControlChange::Return:
         ASTNode::context.PopScope();
-
+        
         if (result.value != nullptr) {
           ApplyCopySemantics(result);
           return result;
@@ -707,11 +707,11 @@ ExecutionResult Assignment::Execute() {
         "___ : type = ...' syntax. \n offending variable: " +
         iden->name);
   }
-
+  
   auto result = expr->Evaluate();
   result->type = type;
   ApplyCopySemantics(result);
-
+  
   // TODO: find a better way to query mutability of a variable.
   auto iter = ASTNode::context.FindIter(iden->name);
   context.Insert(iden->name, result, iter->first.mutability);
@@ -1324,3 +1324,28 @@ shared_ptr<Callable_T> MethodCall::FindCallable() {
                            identifier->name);
 }
 void MethodCall::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+
+StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
+                                     unique_ptr<ObjectInitializer> &&ctor_obj)
+    : Statement(info), name(name), ctor_obj(std::move(ctor_obj)) {
+  context.scopes.back()->InsertType(name, make_shared<StructType>(name, std::move(this->ctor_obj)));
+}
+ExecutionResult StructDeclaration::Execute() {  
+  return ExecutionResult::None;
+}
+Constructor::Constructor(SourceInfo &info, const Type &type, ArgumentsPtr &&args)
+    : Expression(info, type), args(std::move(args)) {
+      
+}
+Value Constructor::Evaluate() {
+
+  auto structType = std::dynamic_pointer_cast<StructType>(type);
+  if (!structType && args->values.empty()) {
+    return type->Default();
+  } else if (!structType) {
+    // todo: provide more global type specific constructors. Tuples, etc.
+    // we can also use this noed to do functional style casting.
+  }
+
+  return structType->Construct(args);
+}

@@ -158,6 +158,15 @@ ExpressionPtr Parser::ParsePostfix() {
     }
     if (next.type == TType::LParen) {
       auto args = ParseArguments();
+      
+      // Type constructors.
+       if (auto identifier = dynamic_cast<Identifier *>(expr.get()); 
+          ASTNode::context.TypeExists(identifier->name)) {
+        auto type = ASTNode::context.FindType(identifier->name);
+        // todo: add a way to pass named parameters.
+        return make_unique<Constructor>(info, type, std::move(args));
+      }
+      
       expr = std::make_unique<Call>(info, std::move(expr), std::move(args));
     } else if (next.type == TType::SubscriptLeft) {
       Eat();
@@ -281,7 +290,7 @@ ExpressionPtr Parser::ParseAnonFunc() {
   }
   return make_unique<AnonymousFunction>(info, type, callable);
 }
-ExpressionPtr Parser::ParseObjectInitializer() {
+unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};
 

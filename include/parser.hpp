@@ -85,6 +85,6 @@ struct Parser {
   unique_ptr<Noop>  ParseFunctionDeclaration();
   
   ExpressionPtr ParseAnonFunc();
-  ExpressionPtr ParseObjectInitializer();
+  unique_ptr<ObjectInitializer> ParseObjectInitializer();
   OperandPtr ParseArrayInitializer();
 };

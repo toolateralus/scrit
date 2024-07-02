@@ -5,6 +5,7 @@
 #include "value.hpp"
 #include <iostream>
 #include <ostream>
+#include <stdexcept>
 
 using namespace Values;
 
@@ -54,7 +55,7 @@ auto TypeSystem::FromCallable(const Type returnType,
   return type;
 }
 
-auto Values::TypeSystem::FindOrCreateTemplate(const string &name,
+auto TypeSystem::FindOrCreateTemplate(const string &name,
                                               const Type &base,
                                               const vector<Type> &types)
     -> Type {
@@ -67,10 +68,10 @@ auto Values::TypeSystem::FindOrCreateTemplate(const string &name,
   return type;
 }
 
-auto Values::Type_T::Get(const string &name) -> Value {
+auto Type_T::Get(const string &name) -> Value {
   return this->Scope().Get(name);
 }
-auto Values::Type_T::Set(const string &name, Value value) -> void {
+auto Type_T::Set(const string &name, Value value) -> void {
   this->Scope().Set(name, value, Mutability::Const);
 }
 auto NullType::Scope() -> Scope_T & {
@@ -135,13 +136,13 @@ TemplateType::TemplateType(const string &name, const Type &base_type,
     : Type_T(name), typenames(typenames), base_type(base_type),
       scope(Scope_T::Create()) {}
 
-auto Values::TypeSystem::DumpInfo() -> void {
+auto TypeSystem::DumpInfo() -> void {
   for (const auto &[name, type] : global_types) {
     std::cout << "type: " << name << "\ncontains '"
               << type->Scope().Members().size() << "' members." << std::endl;
   }
 }
-auto Values::TypeSystem::GetVector(const vector<string> &names)
+auto TypeSystem::GetVector(const vector<string> &names)
     -> vector<Type> {
   auto types = vector<Type>();
   for (const auto &name : names) {
@@ -243,25 +244,25 @@ Type Parser::ParseType() {
   if (Peek().type == TType::LParen) {
     return Parser::ParseFunctionType(type);
   }
-
+  
   return type;
 }
 
-auto Values::TypeSystem::FromTuple(const vector<Value> &values) -> Type {
+auto TypeSystem::FromTuple(const vector<Value> &values) -> Type {
   vector<Type> types;
   for (const auto &value : values) {
     types.push_back(value->type);
   }
   return FromTuple(types);
 }
-auto Values::TypeSystem::Exists(const string &name) -> bool {
+auto TypeSystem::Exists(const string &name) -> bool {
   auto exists = global_types.contains(name);
   if (exists) {
     return exists;
   }
   return ASTNode::context.scopes.back()->TypeExists(name);
 }
-auto Values::TypeSystem::Find(const string &name) -> Type {
+auto TypeSystem::Find(const string &name) -> Type {
   // Return a type if it exists normally in the hash map.
   if (global_types.contains(name)) {
     return global_types[name];
@@ -273,11 +274,11 @@ auto Values::TypeSystem::Find(const string &name) -> Type {
 
   throw std::runtime_error("use of undeclared type: " + name);
 }
-Values::Value Values::NullType::Default() { return Ctx::Null(); }
-Values::Value Values::UndefinedType::Default() { return Ctx::Undefined(); }
-Values::Value Values::StringType::Default() { return Ctx::CreateString(); }
-Values::Value Values::IntType::Default() { return Ctx::CreateInt(); }
-Values::Value Values::TemplateType::Default() {
+Value NullType::Default() { return Ctx::Null(); }
+Value UndefinedType::Default() { return Ctx::Undefined(); }
+Value StringType::Default() { return Ctx::CreateString(); }
+Value IntType::Default() { return Ctx::CreateInt(); }
+Value TemplateType::Default() {
   // todo: figure out how we'll ever default construct various template types.
 
   if (base_type->name == "array") {
@@ -287,16 +288,58 @@ Values::Value Values::TemplateType::Default() {
   }
   return Ctx::Undefined();
 }
-Values::Value Values::ObjectType::Default() { return Ctx::CreateObject(); }
-Values::Value Values::FloatType::Default() { return Ctx::CreateFloat(); }
-Values::Value Values::BoolType::Default() { return Ctx::CreateBool(); }
-Values::Value Values::TupleType::Default() {
+Value ObjectType::Default() { return Ctx::CreateObject(); }
+Value FloatType::Default() { return Ctx::CreateFloat(); }
+Value BoolType::Default() { return Ctx::CreateBool(); }
+Value TupleType::Default() {
   vector<Value> values;
   for (const auto &type : subtypes) {
     values.push_back(type->Default());
   }
   return make_shared<Tuple_T>(values);
 }
-Values::Value Values::CallableType::Default() { return Ctx::Undefined(); }
-Values::Value Values::ArrayType::Default() { return Ctx::CreateArray(); }
-Values::Value Values::AnyType::Default() { return Ctx::Undefined(); }
+Value CallableType::Default() { return Ctx::Undefined(); }
+Value ArrayType::Default() { return Ctx::CreateArray(); }
+Value AnyType::Default() { return Ctx::Undefined(); }
+StructType::StructType(const string &name,
+                               std::unique_ptr<ObjectInitializer> &&ctor_obj)
+    : Type_T(name), ctor_obj(std::move(ctor_obj)) {
+      if (this->ctor_obj == nullptr) {
+        throw std::runtime_error("invalid struct declaration");
+      }
+      
+      for (const auto &statement: this->ctor_obj->block->statements) {
+        if (auto decl = dynamic_cast<Declaration *>(statement.get())) {
+          names.push_back(decl->name); 
+        }
+      }
+    }
+
+Value StructType::Default() { 
+  auto object = ctor_obj->Evaluate()->Clone();
+  object->type = shared_from_this();
+  return object;  
+}
+
+bool StructType::Equals(const Type_T *other) {
+  return other != nullptr && other->name == "object" || *other == *this;
+}
+Scope_T &StructType::Scope() {
+  static Scope_T scope;
+  return scope;
+}
+StructType::~StructType() {}
+
+Value StructType::Construct(ArgumentsPtr &args) {
+  auto object = std::dynamic_pointer_cast<Object_T>(Default());  
+  size_t i = 0;
+  for (const auto &arg: args->values) {
+    auto value = arg->Evaluate();
+    if (i < names.size()) {
+      auto name = names[i];
+      object->SetMember(name, value);
+    }
+    ++i;  
+  }
+  return object;
+}

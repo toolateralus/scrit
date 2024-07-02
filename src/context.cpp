@@ -169,3 +169,22 @@ auto Scope_T::Find(const std::string &name) -> VarIter {
   return it;
 }
 
+auto Context::FindType(const string &name) -> Type {
+  for (auto it = scopes.rbegin(); it != scopes.rend(); it++) {
+    auto scope = *it;
+    if (scope->TypeExists(name)) {
+      return scope->FindType(name);
+    }
+  }
+  throw std::runtime_error("couldn't find type " + name);
+}
+
+auto Context::TypeExists(const string &name) -> bool {
+  for (auto it = scopes.rbegin(); it != scopes.rend(); it++) {
+    auto scope = *it;
+    if (scope->TypeExists(name)) {
+      return true;
+    }
+  }
+  return false;
+}
