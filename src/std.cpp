@@ -69,7 +69,7 @@ REGISTER_FUNCTION(nameof, "string", {"any"}) {
 
 // have to do this obnoxiously since it just auto-conflicts.
 #undef assert
-REGISTER_FUNCTION(assert, "bool", {}) {
+REGISTER_FUNCTION(assert, "undefined", {"bool", "any"}) {
   if (args.empty()) {
     return Bool_T::False;
   }
@@ -98,7 +98,7 @@ REGISTER_FUNCTION(type, "string", {"any"}) {
 // Serializer
 REGISTER_FUNCTION(serialize, "string", {"any", "object"}) {
   auto val = args[0];
-  WriterSettings settings = {};
+  Writer::Settings settings = {};
   Object settingsObj;
   if (Ctx::TryGetObject(args[1], settingsObj)) {
     int indentation = 0;
