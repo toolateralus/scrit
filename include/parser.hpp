@@ -35,7 +35,7 @@ struct Parser {
   StatementPtr ParseDeclaration();
   StatementPtr ParseDeclaration(SourceInfo &info, const string &iden, const Mutability &mut);
   
-  StatementPtr ParseCall(IdentifierPtr identifier);
+  unique_ptr<Call> ParseCall(IdentifierPtr identifier);
   StatementPtr ParseAssignment(IdentifierPtr identifier);
   StatementPtr ParseLValuePostFix(ExpressionPtr &expr);
   StatementPtr ParseIdentifierStatement(IdentifierPtr identifier);
@@ -85,6 +85,6 @@ struct Parser {
   unique_ptr<Noop>  ParseFunctionDeclaration();
   
   ExpressionPtr ParseAnonFunc();
-  ExpressionPtr ParseObjectInitializer();
+  unique_ptr<ObjectInitializer> ParseObjectInitializer();
   OperandPtr ParseArrayInitializer();
 };

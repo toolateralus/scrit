@@ -68,5 +68,6 @@ struct ASTSerializer : ASTVisitor {
 	void visit(Lambda *lambda) override;
 	void visit(Match *match) override;
 	void visit(MatchStatement *matchStmt) override;
-  void visit(Literal *literal) override;
+        void visit(MethodCall *method) override;
+        void visit(Literal *literal) override;
 };

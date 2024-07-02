@@ -124,7 +124,11 @@ StatementPtr Parser::ParseStatement() {
 
 StatementPtr Parser::ParseKeyword(Token token) {
   switch (token.type) {
-    
+  case TType::Struct: {
+    auto name = Expect(TType::Identifier).value;
+    auto ctor = ParseObjectInitializer();
+    return make_unique<StructDeclaration>(info, name, std::move(ctor));
+  }
   case TType::Type: {
     auto name = Expect(TType::Identifier).value;
     Expect(TType::Assign);
@@ -397,8 +401,8 @@ StatementPtr Parser::ParseLValuePostFix(ExpressionPtr &expr) {
       return make_unique<DotAssignment>(info, std::move(expr),
                                         std::move(value));
     }
-
-    if (dynamic_cast<Call *>(dotRight->right.get())) {
+    
+    if (dynamic_cast<MethodCall *>(dotRight->right.get())) {
       return make_unique<DotCallStmnt>(info, std::move(expr));
     }
 
@@ -419,6 +423,11 @@ StatementPtr Parser::ParseLValuePostFix(ExpressionPtr &expr) {
     return make_unique<Call>(info, std::move(call->operand),
                              std::move(call->args));
   }
+  
+  if (auto call = dynamic_cast<MethodCall *>(expr.get())) {
+    return make_unique<DotCallStmnt>(info, std::move(expr));
+  }
+  
   if (dynamic_cast<CompAssignExpr *>(expr.get())) {
     return make_unique<CompoundAssignment>(info, std::move(expr));
   }
@@ -445,6 +454,7 @@ StatementPtr Parser::ParseIdentifierStatement(IdentifierPtr identifier) {
     return ParseTupleDeconstruction(std::move(identifier));
   }
   case TType::LParen: {
+   
     return ParseCall(std::move(identifier));
   }
   default:
@@ -515,9 +525,9 @@ StatementPtr Parser::ParseAnonFuncInlineCall() {
   return make_unique<Call>(info, std::move(op), std::move(arguments));
 }
 // Call statement.
-StatementPtr Parser::ParseCall(IdentifierPtr identifier) {
+unique_ptr<Call> Parser::ParseCall(IdentifierPtr identifier) {
   auto info = this->info;
-  auto args = ParseArguments();
+  auto args = ParseArguments();  
   return make_unique<Call>(info, std::move(identifier), std::move(args));
 }
 ParametersPtr Parser::ParseParameters() {
@@ -554,6 +564,9 @@ ParametersPtr Parser::ParseParameters() {
   Expect(TType::RParen);
   return make_unique<Parameters>(info, std::move(params));
 }
+
+// TODO: add support for named parameters in arguments.
+// some_func(iden: 0, is_something: false)
 ArgumentsPtr Parser::ParseArguments() {
   Expect(TType::LParen);
   auto next = Peek();

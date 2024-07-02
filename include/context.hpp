@@ -117,9 +117,14 @@ struct Context {
   Scope PushScope(Scope scope = nullptr);
   Scope PopScope();
   void Erase(const string &name);
+
+  auto TypeExists(const string &name) -> bool;
+  auto FindType(const string &name) -> Type;
+
   auto Find(const string &name) const -> Value;
   auto FindIter(const string &name) const -> VarIter;
   void Insert(const string &name, Value value, const Mutability &mutability);
   void Insert(const Scope_T::Key &key, Value value);
+  
   void Reset();
 };

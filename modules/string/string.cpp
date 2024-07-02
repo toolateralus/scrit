@@ -1,5 +1,6 @@
 #include <memory>
 #include <scrit/scritmod.hpp>
+#include <scrit/type.hpp>
 
 #pragma clang diagnostic ignored "-Wunused-parameter"
 
@@ -272,10 +273,8 @@ function(remove) {
         pos += pattern.length();
       }
     }
-
     return Ctx::CreateString(str);
   }
-
   return Ctx::Undefined();
 }
 
@@ -307,25 +306,24 @@ function(without) {
 extern "C" ScritModDef *InitScritModule_string() {
   ScritModDef *def = CreateModDef();
   *def->description = "your description here";
-
-  def->AddFunction("isalpha", isalpha);
-  def->AddFunction("ispunct", ispunct);
-  def->AddFunction("isdigit", isdigit);
-  def->AddFunction("isalnum", isalnum);
-  def->AddFunction("split", split);
-  def->AddFunction("substring", substring);
-  def->AddFunction("indexOf", indexOf);
-  def->AddFunction("front", front);
-  def->AddFunction("back", back);
-
-  def->AddFunction("pop", pop);
-  def->AddFunction("push", push);
-  def->AddFunction("len", len);
-  def->AddFunction("insert", insert);
-  def->AddFunction("contains", contains);
-  def->AddFunction("replace", replace);
-  def->AddFunction("remove", remove);
-  def->AddFunction("without", without);
-
+  auto type = make_shared<StringType>();
+  type->Set("isalpha", CREATE_CALLABLE(isalpha, "bool", {"string"}));
+  type->Set("ispunct", CREATE_CALLABLE(ispunct, "bool", {"string"}));
+  type->Set("isdigit", CREATE_CALLABLE(isdigit, "bool", {"string"}));
+  type->Set("isalnum", CREATE_CALLABLE(isalnum, "bool", {"string"}));
+  type->Set("split", CREATE_CALLABLE(split, "array", {"string", "string"}));
+  type->Set("substring", CREATE_CALLABLE(substring, "string", {"string", "int", "int"}));
+  type->Set("indexOf", CREATE_CALLABLE(indexOf, "int", {"string", "string"}));
+  type->Set("front", CREATE_CALLABLE(front, "string", {"string"}));
+  type->Set("back", CREATE_CALLABLE(back, "string", {"string"}));
+  type->Set("pop", CREATE_CALLABLE(pop, "string", {"string"}));
+  type->Set("push", CREATE_CALLABLE(push, "undefined", {"string", "string"}));
+  type->Set("len", CREATE_CALLABLE(len, "int", {"string"}));
+  type->Set("insert", CREATE_CALLABLE(insert, "string", {"string", "int", "string"}));
+  type->Set("contains", CREATE_CALLABLE(contains, "bool", {"string", "string"}));
+  type->Set("replace", CREATE_CALLABLE(replace, "string", {"string", "string", "string"}));
+  type->Set("remove", CREATE_CALLABLE(remove, "string", {"string", "string"}));
+  type->Set("without", CREATE_CALLABLE(without, "string", {"string", "string"}));
+  def->AddType("string", type);
   return def;
 }

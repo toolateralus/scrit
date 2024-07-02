@@ -1,22 +1,24 @@
 #include "type.hpp"
-#include "parser.hpp"
 #include "ast.hpp"
 #include "context.hpp"
+#include "parser.hpp"
 #include "value.hpp"
 #include <iostream>
 #include <ostream>
+#include <stdexcept>
 
 using namespace Values;
 
 Type_T::Type_T(const std::string &name) : name(name) {}
 
-auto TypeSystem::RegisterType(const Type &type, const bool module_type) -> void {
+auto TypeSystem::RegisterType(const Type &type, const bool module_type)
+    -> void {
   const auto exists = global_types.contains(type->name);
   // if a type exists && this comes from a module, we supplement members.
   if (exists && module_type) {
     auto t = global_types[type->name];
     for (const auto &[name, member] : type->Scope().Members()) {
-      t->Scope().Members()[name] = member;      
+      t->Scope().Members()[name] = member;
     }
   } else if (!exists) {
     global_types[type->name] = type;
@@ -45,7 +47,7 @@ auto TypeSystem::FromTuple(const vector<Type> &types) -> Type {
 auto TypeSystem::FromCallable(const Type returnType,
                               const vector<Type> paramTypes) -> Type {
   // todo: make this more efficient.
-  auto type= make_shared<CallableType>(returnType, paramTypes);
+  auto type = make_shared<CallableType>(returnType, paramTypes);
   if (global_types.contains(type->name)) {
     return global_types[type->name];
   }
@@ -53,28 +55,9 @@ auto TypeSystem::FromCallable(const Type returnType,
   return type;
 }
 
-auto TypeSystem::GetDefault(const Type &type) -> Value {
-  if (type->name == "bool") {
-    return Value_T::False;
-  } else if (type->name == "int") {
-    return Ctx::CreateInt();
-  } else if (type->name == "float") {
-    return Ctx::CreateFloat();
-  } else if (type->name == "string") {
-    return Ctx::CreateString();
-  } else if (type->name == "object") {
-    return Ctx::CreateObject();
-  } else if (type->name.starts_with("array") && type->name.contains("<")) {
-    auto array = Ctx::CreateArray();
-    array->type = type;
-    return array;
-  }
-  return Value_T::UNDEFINED;
-}
-
-auto Values::TypeSystem::FindOrCreateTemplate(const string &name,
-                                             const Type &base,
-                                             const vector<Type> &types)
+auto TypeSystem::FindOrCreateTemplate(const string &name,
+                                              const Type &base,
+                                              const vector<Type> &types)
     -> Type {
   auto &current = Current();
   if (current.global_types.contains(name)) {
@@ -85,17 +68,13 @@ auto Values::TypeSystem::FindOrCreateTemplate(const string &name,
   return type;
 }
 
-auto Values::Type_T::Get(const string &name) -> Value {
+auto Type_T::Get(const string &name) -> Value {
   return this->Scope().Get(name);
 }
-auto Values::Type_T::Set(const string &name, Value value) -> void {
+auto Type_T::Set(const string &name, Value value) -> void {
   this->Scope().Set(name, value, Mutability::Const);
 }
 auto NullType::Scope() -> Scope_T & {
-  static Scope_T scope = Scope_T();
-  return scope;
-}
-auto LambdaType::Scope() -> Scope_T & {
   static Scope_T scope = Scope_T();
   return scope;
 }
@@ -156,14 +135,14 @@ TemplateType::TemplateType(const string &name, const Type &base_type,
                            const vector<Type> &typenames)
     : Type_T(name), typenames(typenames), base_type(base_type),
       scope(Scope_T::Create()) {}
-      
-auto Values::TypeSystem::DumpInfo() -> void {
+
+auto TypeSystem::DumpInfo() -> void {
   for (const auto &[name, type] : global_types) {
     std::cout << "type: " << name << "\ncontains '"
               << type->Scope().Members().size() << "' members." << std::endl;
   }
 }
-auto Values::TypeSystem::GetVector(const vector<string> &names)
+auto TypeSystem::GetVector(const vector<string> &names)
     -> vector<Type> {
   auto types = vector<Type>();
   for (const auto &name : names) {
@@ -192,22 +171,22 @@ Type Parser::ParseTemplateType(const Type &base_type) {
   vector<Type> types;
   while (!tokens.empty()) {
     auto next = Peek();
-    
+
     // if the next token is > we are done.
     if (next.type == TType::Greater) {
       break;
     }
-    
+
     types.push_back(ParseType());
-    
+
     // eat commas.
     if (Peek().type == TType::Comma) {
       Eat();
     }
   }
-  
+
   Expect(TType::Greater);
-  
+
   auto name = base_type->name + "<";
   for (size_t i = 0; i < types.size(); ++i) {
     name += types[i]->name;
@@ -216,7 +195,7 @@ Type Parser::ParseTemplateType(const Type &base_type) {
     }
   }
   name += ">";
-  
+
   return TypeSystem::Current().FindOrCreateTemplate(name, base_type, types);
 }
 Type Parser::ParseFunctionType(const Type &returnType) {
@@ -225,7 +204,7 @@ Type Parser::ParseFunctionType(const Type &returnType) {
   while (!tokens.empty()) {
     if (Peek().type == TType::RParen) {
       break;
-    } 
+    }
     auto type = ParseType();
     types.push_back(type);
     if (Peek().type == TType::Comma) {
@@ -240,7 +219,7 @@ Type Parser::ParseTupleType() {
   std::vector<Type> types;
   while (!tokens.empty()) {
     types.push_back(ParseType());
-    
+
     if (Peek().type == TType::Comma) {
       Eat();
     }
@@ -255,8 +234,7 @@ Type Parser::ParseType() {
   if (Peek().type == TType::LParen) {
     return ParseTupleType();
   }
-  
-  
+
   auto tname = Expect(TType::Identifier).value;
   auto type = TypeSystem::Current().Find(tname);
   // template types.
@@ -270,29 +248,98 @@ Type Parser::ParseType() {
   return type;
 }
 
-auto Values::TypeSystem::FromTuple(const vector<Value> &values) -> Type {
+auto TypeSystem::FromTuple(const vector<Value> &values) -> Type {
   vector<Type> types;
   for (const auto &value : values) {
     types.push_back(value->type);
   }
   return FromTuple(types);
 }
-auto Values::TypeSystem::Exists(const string &name) -> bool {
+auto TypeSystem::Exists(const string &name) -> bool {
   auto exists = global_types.contains(name);
   if (exists) {
     return exists;
   }
-  return ASTNode::context.scopes.back()->TypeExists(name);
+  return  ASTNode::context.TypeExists(name);
 }
-auto Values::TypeSystem::Find(const string &name) -> Type {
+auto TypeSystem::Find(const string &name) -> Type {
   // Return a type if it exists normally in the hash map.
   if (global_types.contains(name)) {
     return global_types[name];
   }
   
-  if (ASTNode::context.scopes.back()->TypeExists(name)) {
-    return ASTNode::context.scopes.back()->FindType(name);
+  if (ASTNode::context.TypeExists(name)) {
+    return ASTNode::context.FindType(name);
   }
-  
+
   throw std::runtime_error("use of undeclared type: " + name);
+}
+Value NullType::Default() { return Ctx::Null(); }
+Value UndefinedType::Default() { return Ctx::Undefined(); }
+Value StringType::Default() { return Ctx::CreateString(); }
+Value IntType::Default() { return Ctx::CreateInt(); }
+Value TemplateType::Default() {
+  // todo: figure out how we'll ever default construct various template types.
+
+  if (base_type->name == "array") {
+    auto array = Ctx::CreateArray();
+    array->type = shared_from_this();
+    return array;
+  }
+  return Ctx::Undefined();
+}
+Value ObjectType::Default() { return Ctx::CreateObject(); }
+Value FloatType::Default() { return Ctx::CreateFloat(); }
+Value BoolType::Default() { return Ctx::CreateBool(); }
+Value TupleType::Default() {
+  vector<Value> values;
+  for (const auto &type : subtypes) {
+    values.push_back(type->Default());
+  }
+  return make_shared<Tuple_T>(values);
+}
+Value CallableType::Default() { return Ctx::Undefined(); }
+Value ArrayType::Default() { return Ctx::CreateArray(); }
+Value AnyType::Default() { return Ctx::Undefined(); }
+StructType::StructType(const string &name,
+                               std::unique_ptr<ObjectInitializer> &&ctor_obj)
+    : Type_T(name), ctor_obj(std::move(ctor_obj)) {
+      if (this->ctor_obj == nullptr) {
+        throw std::runtime_error("invalid struct declaration");
+      }
+      
+      for (const auto &statement: this->ctor_obj->block->statements) {
+        if (auto decl = dynamic_cast<Declaration *>(statement.get())) {
+          names.push_back(decl->name); 
+        }
+      }
+    }
+
+Value StructType::Default() { 
+  auto object = ctor_obj->Evaluate()->Clone();
+  object->type = shared_from_this();
+  return object;  
+}
+
+bool StructType::Equals(const Type_T *other) {
+  return other != nullptr && other->name == "object" || *other == *this;
+}
+Scope_T &StructType::Scope() {
+  static Scope_T scope;
+  return scope;
+}
+StructType::~StructType() {}
+
+Value StructType::Construct(ArgumentsPtr &args) {
+  auto object = std::dynamic_pointer_cast<Object_T>(Default());  
+  size_t i = 0;
+  for (const auto &arg: args->values) {
+    auto value = arg->Evaluate();
+    if (i < names.size()) {
+      auto name = names[i];
+      object->SetMember(name, value);
+    }
+    ++i;  
+  }
+  return object;
 }

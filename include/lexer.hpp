@@ -107,6 +107,7 @@ enum class TType {
   Let,
   Arrow,
   Type,
+  Struct,
 };
 struct Token {
   Token(const int &loc, const int &col, const string &value, const TType type,
