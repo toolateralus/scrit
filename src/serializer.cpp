@@ -67,7 +67,7 @@ bool Writer::HandleRefs(const string &element_delimter, Value_T *&value, const s
     case ReferenceHandling::Preserve: {
       if (references.contains(value))  {
         stream << indent << key << ref_key << references[value] << ">" << newline;
-        return true;
+        return false;
       }
     }
   }
