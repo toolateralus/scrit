@@ -13,7 +13,11 @@ using std::vector;
 
 
 struct Parser {
+  Parser() {}
+  Parser(vector<Token> tokens) : tokens(tokens) {}
+  
   vector<Token> tokens;
+
   Token Peek(size_t lookahead = 0);
   Token Eat();
   Token Expect(const TType ttype);
