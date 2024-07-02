@@ -2,8 +2,10 @@
 #include "context.hpp"
 #include "native.hpp"
 #include "value.hpp"
-#include <iostream>
+#include <stdexcept>
 
+// Builds a map of the references an object has,
+// Only used when the writer needs to preserve references
 void Writer::BuildMap(const Value_T *value) {
   foundObjs.clear();
   references.clear();
@@ -19,6 +21,8 @@ void Writer::BuildMap(const Value_T *value) {
   }
   foundObjs.clear();
 }
+// Maps an object inside of the initial value passed to BuildMap
+// Should only be caled by BuildMap 
 void Writer::Map(const Value_T *val) {
   if (dynamic_cast<const Object_T *>(val) ||
       dynamic_cast<const Array_T *>(val)) {
@@ -49,160 +53,120 @@ void Writer::Map(const Value_T *val) {
     break;
   }
 }
-bool Writer::HandleRefs(const string &element_delimter, Value_T *&value, const string &key) {
-  
-  // for getting a space away from iden when it exists, but
-  // don't want that one space indentation unless it does exist.
-  string ref_key = key.empty() ? "$ref<" : indent + "$ref<";
-  
-  switch (settings.ref_handling) {
-    case ReferenceHandling::Remove:
-      break;
-    case ReferenceHandling::Mark:
-      if (foundObjs.contains(value)) {
-        stream << indent << key << ref_key << foundObjs.size() << ">" << newline;
-        return true;
-      }
-      break;
-    case ReferenceHandling::Preserve: {
-      if (references.contains(value))  {
-        stream << indent << key << ref_key << references[value] << ">" << newline;
-        return false;
-      }
-    }
-  }
-  return false;
-}
-
-void Writer::WriteObject(const Object_T *obj) {
-  
-  const static string container_delimiter_front = "{";
-  const static string container_delimiter  = "}";
-  const static string element_delimter = ", ";
-  
-  stream << newline << indent << container_delimiter_front << newline;
-  
-  int i = 0;
-  const size_t size = obj->scope->Members().size();
-  
-  // do the indented writing
-  {
-    const auto _ = Indenter(this);
-    for (const auto &[key, var] : obj->scope->Members()) {
-      auto value = var.get();
-      
-      if (HandleRefs(element_delimter, value, '\"' + key.value + '\"')) {
-        continue;
-      }
-      
-      stream << indent << '\"' << key.value << "\" : ";
-      
-      // try write.
-      Write(value);
-      
-      if (i != size - 1) {
-        stream << element_delimter << newline;
-      }
-      i++;
-    }
-  }
-  
-  stream << newline << indent  << container_delimiter;
-}
-
-void Writer::WriteArray(const Array_T *array) {
-  const static string container_delimiter_front = "[";
-  const static string element_delimter = ", ";
-  const static string container_delimiter = "]";
-  
-  stream << newline << indent << container_delimiter_front << newline;
-  
-  // do the indented writing 
-  {
-    const auto _ = Indenter(this);
-    const size_t size = array->values.size();
-    
-    int i = 0;
-    for (const auto &var : array->values) {
-      
-      auto value = var.get();
-      
-      if (HandleRefs(element_delimter, value)) {
-        continue;
-      }
-      
-      // try write.
-      Write(value);
-      
-      // only append the element_delimiter if we're not on
-      // the last element of the list.
-      if (i != size - 1) {
-        stream << element_delimter << newline;
-      }
-      ++i;
-    }
-  }
-  
-  stream << newline << container_delimiter;
-}
-
+// Writes a value to the writer's stream based on it's settings.
+// Call BuildMap once before you start calling this if you want to preserve references. 
 void Writer::Write(const Value_T *val) {
-  auto object = dynamic_cast<const Object_T *>(val);
-  auto array = dynamic_cast<const Array_T *>(val);
-  
-  if (object || array) {
-    foundObjs.insert(val);
-  }
-  
   if (val == nullptr) {
-    std::cout << "writer failed.. value was nullptr." << std::endl;
-    return;
+    throw new std::runtime_error("nullptr contained in value passed to serializer");
   }
-  
-  auto _ = Writer::Indenter(this);
-  switch (val->GetPrimitiveType()) {
-    case PrimitiveType::Object: {
-      WriteObject(object);
-      break;
-    }
-    case PrimitiveType::Array: {
-      WriteArray(array);
-      break;
-    }
-    default: {
-      if (val->GetPrimitiveType() == Values::PrimitiveType::String) {
-        stream << '\"' << val->ToString() << '\"';
-      } else {
-        stream << val->ToString();
-      }
-      break;
-    }
-  }
-};
 
+  auto type = val->GetPrimitiveType();
+  
+  if (type == PrimitiveType::Array |
+      type == PrimitiveType::Object) {
+    
+    // hanlde found objects
+    if (foundObjs.contains(val)) {
+      switch (settings.ref_handling) {
+      case ReferenceHandling::Remove:
+        break;
+      case ReferenceHandling::Mark:
+        stream << "ref";
+        break;
+      case ReferenceHandling::Preserve:
+        stream << "ref:" << references[val];
+        break;
+      }
+      return;
+    }     
+    foundObjs.insert(val);
+
+    // handle preserved references
+    if (settings.ref_handling == ReferenceHandling::Preserve &&
+        references.contains(val)) {
+      // this marks the first reference to an object
+      // only if the reference needs to be preserved
+      // this is why we have to build the reference map when preserving
+      stream << "<ref:" << references[val] << ">";
+    }
+
+    // if first iteration, set indent as starting indent
+    if (settings.StartingIndentLevel > 0 && indentLevel == 0) {
+      indentLevel = settings.StartingIndentLevel;
+    }
+
+    // handle indenting and delimiting
+    string container_delimiter;
+    string indent = "";
+    if (settings.IndentSize > 0) {
+      indentLevel += settings.IndentSize;
+      indent = "\n" + string(indentLevel, ' ');
+    }
+
+    // handle iterating over elements
+    // depending on if object (key and value) or array (just values)
+
+    // just put identifier in if to check for cast
+    if (const Object_T *object;
+        type == PrimitiveType::Object &&
+        (object = dynamic_cast<const Object_T *>(val))) {
+      stream << "{";
+      container_delimiter = "}";
+      int i = object->scope->Members().size();
+      for (const auto &[key, var] : object->scope->Members()) {
+        stream << indent << '\"' << key.value << "\" : ";
+        Write(var.get());
+        i--;
+        if (i != 0) {
+          // only delimit if not last element
+          stream << ", ";
+        }
+      }
+    } else if (const Array_T *array = dynamic_cast<const Array_T *>(val)) {
+      // not checking type here because already checked type is obj or array
+      // in outer if and else rules out obj so must be array
+      stream << "[";
+      container_delimiter = "]";
+      int i = array->values.size();
+      for (const auto &var : array->values) {
+        stream << indent;
+        Write(var.get());
+        i--;
+        if (i != 0) {
+          // only delimit if not last element
+          stream << ", ";
+        }
+      }
+    } else {
+      // obviously something really went wrong if GetPrimitiveType() retuns
+      // a type mismatched from what dynamic_cast thinks it is 
+      throw new std::runtime_error("Value failed to cast as marked type in serializer, this is a language bug.");
+    }
+
+    // finish indenting
+    if (settings.IndentSize > 0) {
+      indentLevel -= settings.IndentSize;
+      indent = "\n" + string(indentLevel, ' ');
+    }
+    
+    // finish delimiting
+    stream << indent << container_delimiter;
+
+  } else if (type == PrimitiveType::String) {
+    stream << '\"' << val->ToString() << '\"';
+  } else {
+    stream << val->ToString();
+  }
+}
+
+// Serializes value and builds a string based on the passed in settings.
 string Writer::ToString(const Value_T *value, Settings settings) {
   Writer writer(settings);
   
+  // only build reference map if we need to, only used to preserve references 
   if (settings.ref_handling == ReferenceHandling::Preserve) {
     writer.BuildMap(value);
   }
   writer.Write(value);
   return writer.stream.str();
-}
-Writer::Indenter::~Indenter() {
-  auto &settings = writer->settings;
-  if (settings.IndentSize > 0) {
-    writer->indentLevel -= settings.IndentSize;
-    writer->indent = string(writer->indentLevel, ' ');
-  }
-}
-Writer::Indenter::Indenter(Writer *writer) : writer(writer) {
-  auto &settings = writer->settings;
-  if (settings.StartingIndentLevel > 0 && writer->indentLevel == 0) {
-    writer->indentLevel = settings.StartingIndentLevel;
-  }
-  if (settings.IndentSize > 0) {
-    writer->indentLevel += settings.IndentSize;
-    writer->indent = string(writer->indentLevel, ' ');
-  }
 }
