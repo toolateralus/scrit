@@ -564,6 +564,9 @@ ParametersPtr Parser::ParseParameters() {
   Expect(TType::RParen);
   return make_unique<Parameters>(info, std::move(params));
 }
+
+// TODO: add support for named parameters in arguments.
+// some_func(iden: 0, is_something: false)
 ArgumentsPtr Parser::ParseArguments() {
   Expect(TType::LParen);
   auto next = Peek();

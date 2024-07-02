@@ -160,10 +160,10 @@ ExpressionPtr Parser::ParsePostfix() {
       auto args = ParseArguments();
       
       // Type constructors.
-       if (auto identifier = dynamic_cast<Identifier *>(expr.get()); 
-          ASTNode::context.TypeExists(identifier->name)) {
-        auto type = ASTNode::context.FindType(identifier->name);
-        // todo: add a way to pass named parameters.
+       if (auto identifier = dynamic_cast<Identifier *>(expr.get());
+        TypeSystem::Current().Exists(identifier->name)
+       ) {
+        Type type = TypeSystem::Current().Find(identifier->name);
         return make_unique<Constructor>(info, type, std::move(args));
       }
       

@@ -260,16 +260,16 @@ auto TypeSystem::Exists(const string &name) -> bool {
   if (exists) {
     return exists;
   }
-  return ASTNode::context.scopes.back()->TypeExists(name);
+  return  ASTNode::context.TypeExists(name);
 }
 auto TypeSystem::Find(const string &name) -> Type {
   // Return a type if it exists normally in the hash map.
   if (global_types.contains(name)) {
     return global_types[name];
   }
-
-  if (ASTNode::context.scopes.back()->TypeExists(name)) {
-    return ASTNode::context.scopes.back()->FindType(name);
+  
+  if (ASTNode::context.TypeExists(name)) {
+    return ASTNode::context.FindType(name);
   }
 
   throw std::runtime_error("use of undeclared type: " + name);
