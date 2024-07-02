@@ -44,10 +44,10 @@ struct Scope_T {
   struct Key {
     const std::string value;
     const Mutability mutability;
-    
+    bool forward_declared;
     Key() = delete;
-    Key(const std::string &value, const Mutability &mutability)
-        : value(value), mutability(mutability) {}
+    Key(const std::string &value, const Mutability &mutability, const bool forward_declared = false)
+        : value(value), mutability(mutability), forward_declared(forward_declared) {}
         
     bool operator<(const Key &other) const { return value < other.value; }
     bool operator==(const Key &other) const {
@@ -60,6 +60,9 @@ struct Scope_T {
   auto Contains(const string &name) -> bool;
   auto Erase(const string &name) -> size_t;
   auto Members() -> std::map<Key, Value> &;
+
+  auto ForwardDeclare(const string &name, const Type &type,
+                      const Mutability &mut) -> void;
 
   auto ClearVariables() -> void;
 
@@ -126,7 +129,7 @@ struct Context {
 
   auto TypeExists(const string &name) -> bool;
   auto FindType(const string &name) -> Type;
-
+  
   auto Find(const string &name) const -> Value;
   auto FindIter(const string &name) const -> VarIter;
   void Insert(const string &name, Value value, const Mutability &mutability);

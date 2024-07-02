@@ -96,7 +96,11 @@ struct TemplateType : Type_T, std::enable_shared_from_this<TemplateType> {
     return *scope;
   }
   auto Get(const string &name) -> Value override;
-
+  
+  bool Equals(const Type_T *other) override {
+    return other != nullptr && (*other == *this || *other == *base_type);
+  }
+  
   Value Default() override;
 };
 
@@ -122,6 +126,8 @@ struct TupleType : Type_T {
   auto Scope() -> Scope_T & override;
 
   Value Default() override;
+  
+  
   
   static auto GetName(const std::vector<Type> &subtypes) -> string {
     std::stringstream ss;

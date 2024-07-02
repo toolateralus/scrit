@@ -145,9 +145,8 @@ void NativeCallable_T::CheckParameterTypes(vector<Value> &values) {
     }
     auto value = values[i];
     auto paramType = function->parameterTypes[i];
-    if (!Type_T::Equals(value->type.get(), paramType.get())) {
-      throw std::runtime_error("invalid parameter type: " + value->type->name +
-                               "\n expected: " + paramType->name);
+    if (!paramType->Equals(value->type.get())) {
+      throw TypeError(value->type, paramType, "invalid parameter types");
     }
   }
 }

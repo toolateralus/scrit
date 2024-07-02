@@ -261,7 +261,7 @@ StatementPtr Parser::ParseDeclaration(SourceInfo &info, const string &iden,
   Type type = nullptr;
   auto next = Peek();
   switch (next.type) {
-
+  
   case TType::Colon: {
     Eat();
     type = ParseType();

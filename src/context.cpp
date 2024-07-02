@@ -119,15 +119,26 @@ auto Scope_T::Set(const string &name, Value value, const Mutability &mutability)
   auto it = Find(name);
   auto &[key, var] = *it;
   
+  // variable didn't exist, we freely declare it.
   if (it == variables.end()) {
-    variables[Key(name, mutability)] = value;
-  } else {
-    if (key.mutability == Mutability::Mut) {
-      variables[key] = value;
-    } else {
-      throw std::runtime_error("Cannot set a const value.. identifier: " + name);
-    }
+    variables[Key(name, mutability, false)] = value;
+    return;
+  } 
+  
+  // a forward declaration is being fulfilled.
+  if (key.forward_declared) {
+    auto new_key = Key(key.value, key.mutability, false);
+    variables[new_key] = value;
+    return;
   }
+  
+  // the variable is being assigned,
+  if (key.mutability == Mutability::Mut) {
+    variables[key] = value;
+    return;
+  }
+  
+  throw std::runtime_error("Cannot set a const value.. identifier: " + name);
 }
 auto Scope_T::Contains(const string &name) -> bool {
   return Find(name) != variables.end();
@@ -197,4 +208,11 @@ auto Scope_T::ClearVariables() -> void {
       ++it;
     }
   }
+}
+
+auto Scope_T::ForwardDeclare(const string &name, const Type &type,
+                             const Mutability &mut) -> void {
+  auto val = make_shared<Undefined_T>();
+  val->type = type;
+  variables[Key(name, mut, true)] = val;
 }

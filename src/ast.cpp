@@ -292,7 +292,8 @@ Declaration::Declaration(SourceInfo &info, const string &name,
                          ExpressionPtr &&expr, const Mutability &mut,
                          const Type &type)
     : Statement(info), name(name), expr(std::move(expr)), mut(mut), type(type) {
-
+      
+  context.scopes.back()->ForwardDeclare(name, type, mut);
 }
 
 // ##############################################
@@ -1135,8 +1136,8 @@ ExecutionResult Property::Execute() {
 ExecutionResult Declaration::Execute() {
 
   auto &scope = ASTNode::context.scopes.back();
-
-  if (scope->Contains(name)) {
+  
+  if (scope->Contains(name) && !scope->Find(name)->first.forward_declared) {
     throw std::runtime_error(
         "cannot re-define an already existing variable.\noffending variable: " +
         name);
