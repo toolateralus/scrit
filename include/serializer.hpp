@@ -1,6 +1,7 @@
 #pragma once
 #include "native.hpp"
 #include "value.hpp"
+#include <set>
 #include <unordered_set>
 #include <map>
 
@@ -20,11 +21,22 @@ struct Writer {
     ~Indenter();
   };
   struct Settings {
+    static Settings Default() {
+      return {};
+    }
     int StartingIndentLevel = 0;
     int IndentSize = 0;
     ReferenceHandling ref_handling = ReferenceHandling::Mark;
   };  
   
+  Writer() = delete;
+  Writer(Settings settings = Settings::Default()) : settings(settings) {
+    if (settings.IndentSize > 0) {
+      newline = "\n";
+    }
+  }
+  
+  string newline = "";
   string indent = "";
   int indentLevel = 0;
   Settings settings {};

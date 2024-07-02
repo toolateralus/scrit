@@ -74,7 +74,7 @@ void Writer::WriteObject(const Object_T *obj) {
   const static string container_delimiter  = "}";
   const static string element_delimter = ", ";
   
-  stream << "\n" << indent << container_delimiter_front << "\n";
+  stream << newline << indent << container_delimiter_front << newline;
   
   int i = 0;
   const size_t size = obj->scope->Members().size();
@@ -95,14 +95,14 @@ void Writer::WriteObject(const Object_T *obj) {
       // try write.
       Write(value);
       
-      if (i != size - 1) {
-        stream << element_delimter << "\n";
-      }
       i++;
+      if (i != size - 1) {
+        stream << element_delimter << newline;
+      }
     }
   }
   
-  stream << "\n" << indent  << container_delimiter;
+  stream << newline << indent  << container_delimiter;
 }
 
 void Writer::WriteArray(const Array_T *array) {
@@ -110,7 +110,7 @@ void Writer::WriteArray(const Array_T *array) {
   const static string element_delimter = ", ";
   const static string container_delimiter = "]";
   
-  stream << "\n" << indent << container_delimiter_front << "\n";
+  stream << newline << indent << container_delimiter_front << newline;
   
   // do the indented writing 
   {
@@ -132,14 +132,14 @@ void Writer::WriteArray(const Array_T *array) {
       
       // only append the element_delimiter if we're not on
       // the last element of the list.
-      if (i != size - 1) {
-        stream << element_delimter << "\n";
-      }
       ++i;
+      if (i != size - 1) {
+        stream << element_delimter << newline;
+      }
     }
   }
   
-  stream << "\n" << container_delimiter;
+  stream << newline << container_delimiter;
 }
 
 void Writer::Write(const Value_T *val) {
@@ -166,14 +166,15 @@ void Writer::Write(const Value_T *val) {
       break;
     }
     default: {
-      stream << indent << val->ToString();
+      stream << val->ToString();
       break;
     }
   }
 };
 
 string Writer::ToString(const Value_T *value, Settings settings) {
-  Writer writer{.settings = settings};
+  Writer writer(settings);
+  
   if (settings.ref_handling == ReferenceHandling::Preserve) {
     writer.BuildMap(value);
   }

@@ -124,7 +124,7 @@ REGISTER_FUNCTION(serialize, "string", {"any", "object"}) {
       settings.ref_handling = handling;
     }
   }
-  Writer writer = {.settings = settings};
+  Writer writer(settings);
   writer.BuildMap(val.get());
   writer.Write(val.get());
   return Ctx::CreateString(writer.stream.str());
