@@ -312,7 +312,7 @@ function(without) {
   return Ctx::CreateString(target);
 }
 
-extern "C" ScritModDef *InitScritModule_string() {
+extern "C" ScritModDef *InitScritModule_std_SR_string() {
   ScritModDef *def = CreateModDef();
   *def->description = "your description here";
   auto type = make_shared<StringType>();
@@ -339,5 +339,6 @@ extern "C" ScritModDef *InitScritModule_string() {
   type->Set("without",
             CREATE_CALLABLE(without, "string", {"string", "string"}));
   def->AddType("string", type);
+  def->SetNamespace("std::string");
   return def;
 }

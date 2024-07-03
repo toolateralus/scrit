@@ -130,8 +130,8 @@ struct Namespace {
 
   explicit Namespace(string name, shared_ptr<Namespace> parent)
       : name(name), parent(parent) {
-        std::cout << "creating namespace '" << name << '\'' << std::endl;
-      }
+    std::cout << "creating namespace '" << name << '\'' << std::endl;
+  }
 
   const string name;
   // every namespace has to have a root scope by default.
@@ -168,15 +168,16 @@ struct Context {
   Context(Context &&) = default;
   Context &operator=(const Context &) = default;
   Context &operator=(Context &&) = default;
-
-  shared_ptr<Namespace> root_namespace;
-  shared_ptr<Namespace> current_namespace;
   
+  shared_ptr<Namespace> root_namespace = make_shared<Namespace>("global", nullptr);
+  
+  shared_ptr<Namespace> current_namespace = root_namespace;
+
   Scope &ImmediateScope() { return current_namespace->scopes.back(); }
 
   void CreateNamespace(const vector<string> &identifiers) {
     shared_ptr<Namespace> current = root_namespace;
-    
+
     for (const auto &id : identifiers) {
       if (!current->nested_namespaces.count(id)) {
         current->nested_namespaces[id] = make_shared<Namespace>(id, current);
@@ -184,10 +185,22 @@ struct Context {
       current = current->nested_namespaces[id];
     }
   }
-  
+
+  void ImportNamespace(const vector<string> &identifiers) {
+    auto nsToImport = FindNamespace(identifiers);
+    if (!nsToImport) {
+      throw std::runtime_error("Namespace to import does not exist.");
+    }
+
+    string nsName = identifiers.back();
+    if (current_namespace->imported_namespaces.count(nsName) == 0) {
+      current_namespace->imported_namespaces[nsName] = nsToImport;
+    }
+  }
+
   void SetCurrentNamespace(const vector<string> &identifiers) {
     shared_ptr<Namespace> current = root_namespace;
-    
+
     for (const auto &id : identifiers) {
       if (!current->nested_namespaces.count(id)) {
         throw std::runtime_error("Namespace does not exist: " + id);
@@ -212,9 +225,9 @@ struct Context {
     if (identifiers.empty()) {
       return nullptr;
     }
-    
+
     std::shared_ptr<Namespace> ns = root_namespace;
-    
+
     for (size_t i = 0; i < identifiers.size() && ns; ++i) {
       const std::string &currentPart = identifiers[i];
       if (ns->nested_namespaces.contains(currentPart)) {
@@ -251,9 +264,7 @@ struct Context {
 
     return ns->Find(identifiers.back());
   }
-  auto Find(const string &name) const -> Value {
-    return current_namespace->Find(name);
-  }
+  auto Find(const string &name) const -> Value;
   auto FindIter(const string &name) const -> VarIter {
     return current_namespace->FindIter(name);
   }

@@ -162,15 +162,10 @@ BinExpr::BinExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right,
   this->op = op;
 }
 
-Using::Using(SourceInfo &info, const string &name, const bool isWildcard)
-    : Statement(info), symbols({}), moduleName(name), isWildcard(isWildcard) {
-  Load();
-};
-
-Using::Using(SourceInfo &info, const string &name, vector<string> &symbols)
-    : Statement(info), symbols(symbols), moduleName(name), isWildcard(false) {
-  Load();
-};
+Using::Using(SourceInfo &info, unique_ptr<ScopeResolution> &&resolution) : Statement(info) {
+  auto path = moduleRoot + resolution->full_path;
+  Load(resolution->full_path);
+}
 
 UnaryStatement::UnaryStatement(SourceInfo &info, ExpressionPtr &&expr)
     : Statement(info), expr(std::move(expr)) {}
@@ -1120,7 +1115,7 @@ ExecutionResult Declaration::Execute() {
   //   if (value->type && this->type)
   //     throw TypeError(value->type, this->type);
   // }
-
+  
   // copy where needed
   ApplyCopySemantics(value);
   
@@ -1132,7 +1127,7 @@ ExecutionResult Declaration::Execute() {
 // Ideally this would be done when the node is interpreted.
 // However, we have a problem where we do all of our symbol lookup during
 // parsing.
-void Using::Load() {
+void Using::Load(const std::string &moduleName) {
   for (const auto &mod : activeModules) {
     if (moduleName == mod) {
       return;
@@ -1140,43 +1135,41 @@ void Using::Load() {
   }
 
   activeModules.push_back(moduleName);
-
+  
   auto path = moduleRoot + moduleName + ".dll";
-
+  
   void *handle;
   auto module = LoadScritModule(moduleName, path, handle);
-
-  // we do this even when we ignore the object becasue it registers the native
-  // callables.
-  auto object = ScritModDefAsObject(module);
-
-  for (const auto &[name, t] : *module->types) {
-    TypeSystem::Current().RegisterType(t, true);
+  
+  auto _namespace = context.current_namespace;
+  
+  if (module->_namespace) {
+    auto idens = Namespace::split(*module->_namespace);
+    context.CreateNamespace(idens);
+    context.SetCurrentNamespace(idens);
   }
-
-  if (!isWildcard && symbols.empty()) {
-    ASTNode::context.Insert(moduleName, object, Mutability::Const);
-  } else {
-    vector<Value> values = {};
-    if (!symbols.empty()) {
-      for (const auto &name : symbols) {
-        auto value = module->context->Find(name);
-        if (value == Value_T::UNDEFINED) {
-          throw std::runtime_error("invalid using statement. could not find " +
-                                   name);
-        }
-
-        ASTNode::context.Insert(name, value, Mutability::Const);
-      }
+  
+  for (const auto &[name, t] : *module->types) {
+    if (TypeSystem::Current().Exists(name)) {
+      TypeSystem::Current().RegisterType(t, true);      
     } else {
-      for (const auto &[key, var] : object->scope->Members()) {
-        ASTNode::context.Insert(key.value, var, key.mutability);
-      }
+      ASTNode::context.ImmediateScope()->InsertType(t->name, t);
     }
   }
-
+  
+  for (const auto &symbol: *module->functions) {
+    ASTNode::context.ImmediateScope()->Set(symbol.first, FunctionRegistry::MakeCallable(symbol.second), Mutability::Const);
+  }
+    
+  
+  // revert to the original namespace.
+  context.current_namespace = _namespace;
+  if (module->_namespace) {
+    context.ImportNamespace(Namespace::split(*module->_namespace));
+  }
+  
   free(module);
-
+  
   ASTNode::context.RegisterModuleHandle(handle);
 }
 
@@ -1379,6 +1372,11 @@ ScopeResolution::ScopeResolution(SourceInfo &info,
                                  vector<string> &identifiers) : Expression(info, TypeSystem::Current().Undefined) {
   for (const auto &iden : identifiers) {
     full_path += iden;
+    
+    if (iden != identifiers.back()) {
+      full_path += "::";
+    }
   }
   this->identifiers = identifiers;
 }
+

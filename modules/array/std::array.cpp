@@ -1,4 +1,3 @@
-#include <iostream>
 #include <scrit/native.hpp>
 #include <scrit/scritmod.hpp>
 #include <scrit/type.hpp>
@@ -159,11 +158,11 @@ function(len) {
   return Ctx::Undefined();
 }
 
-extern "C" ScritModDef *InitScritModule_array() {
+extern "C" ScritModDef *InitScritModule_std_SR_array() {
   ScritModDef *def = CreateModDef();
   *def->description = "provide functionality for the array type.";
   auto array = make_shared<ArrayType>();
-
+  
   array->Set("remove", CREATE_CALLABLE(remove, "undefined", {"array", "any"}));
   array->Set("contains", CREATE_CALLABLE(contains, "bool", {"array", "any"}));
   array->Set("clear", CREATE_CALLABLE(clear, "undefined", {"array"}));
@@ -175,6 +174,8 @@ extern "C" ScritModDef *InitScritModule_array() {
   array->Set("pop", CREATE_CALLABLE(pop, "any", {"array"}));
   array->Set("len", CREATE_CALLABLE(len, "int", {"array"}));
   def->AddType("array", array);
+  
+  def->SetNamespace("std::array");
 
   return def;
 }

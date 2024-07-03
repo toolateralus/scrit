@@ -482,17 +482,16 @@ struct BinExpr : Expression {
   Value Evaluate() override;
   void Accept(ASTVisitor *visitor) override;
 };
+
+struct ScopeResolution;
 struct Using : Statement {
   static vector<string> activeModules;
-  void Load();
-  Using(SourceInfo &info, const string &name, const bool isWildcard);
-  Using(SourceInfo &info, const string &name, vector<string> &symbols);
-  vector<string> symbols;
-  string moduleName;
-  bool isWildcard;
-  // TODO: make this cross platform friendly. it's the only thing keeping us
-  // linux-only, as well as the install script.
+  void Load(const string &moduleName);
+  Using(SourceInfo &info, unique_ptr<ScopeResolution> &&resolution);
+
+  // TODO: make this cross platform.
   const string moduleRoot = "/usr/local/scrit/modules/";
+  
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;
 };

@@ -35,9 +35,7 @@ Token Parser::Expect(const TType ttype) {
 }
 
 unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
-  // insert a global namespace.
-  ASTNode::context.root_namespace = make_shared<Namespace>("global", nullptr);
-  ASTNode::context.current_namespace = ASTNode::context.root_namespace;
+  
   
   std::reverse(tokens.begin(), tokens.end());
   this->tokens = std::move(tokens);
@@ -209,66 +207,10 @@ StatementPtr Parser::ParseKeyword(Token token) {
   }
 }
 
-// TODO: we need to refactor usings entirely for the way the type system mingles
-// with types. usings should be equivalent to a CSharp namespace.
 StatementPtr Parser::ParseUsing() {
-  auto next = Peek();
-
-  // using all * widlcard
-  if (next.type == TType::Mul) {
-    Eat();
-    Expect(TType::From);
-    auto iden = Expect(TType::Identifier);
-    return make_unique<Using>(info, iden.value, true);
-
-  }
-  // plain 'using raylib' statement
-  // also parses 'using std.array'
-  else if (next.type == TType::Identifier) {
-    string name;
-    auto iden = Expect(TType::Identifier);
-    name = iden.value;
-    if (Peek().type == TType::Dot) {
-      name += Eat().value;
-      while (!tokens.empty()) {
-        name += Eat().value;
-        if (Peek().type != TType::Dot) {
-          break;
-        }
-      }
-    }
-    return make_unique<Using>(info, name, false);
-  }
-  // 'using {iden, iden} from raylib'
-  else if (next.type == TType::LCurly) {
-    Eat();
-    vector<string> names = {};
-    while (!tokens.empty()) {
-      auto next = Peek();
-
-      if (next.type == TType::Comma) {
-        Eat();
-        continue;
-      }
-
-      if (next.type == TType::RCurly) {
-        break;
-      }
-      auto operand = ParseOperand();
-
-      if (auto iden = dynamic_cast<Identifier *>(operand.get())) {
-        names.push_back(iden->name);
-      } else {
-        throw std::runtime_error("invalid using statement");
-      }
-    }
-    Expect(TType::RCurly);
-    Expect(TType::From);
-    auto iden = Expect(TType::Identifier);
-
-    return make_unique<Using>(info, iden.value, names);
-  }
-  throw std::runtime_error("Failed to parse using statement");
+  auto path = ParseScopeResolution();
+  
+  return make_unique<Using>(info, std::move(path));  
 }
 // This makes it seem like we could use an 'Expression Statement' kind of
 // wrapper for generalized cases. Then, for and if can be expressions and we can

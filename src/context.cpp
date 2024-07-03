@@ -62,6 +62,7 @@ auto Namespace::FindIter(const string &name) const -> VarIter {
 }
 
 auto Namespace::Find(const string &name) const -> Value {
+  // First, search in the current namespace's scopes
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     for (const auto &[key, var] : (*it)->Members()) {
       if (key.value == name) {
@@ -74,9 +75,15 @@ auto Namespace::Find(const string &name) const -> Value {
       }
     }
   }
-  if (FunctionRegistry::Exists(name)) {
-    return FunctionRegistry::GetCallable(name);
+
+  for (const auto& [_, importedNs] : imported_namespaces) {
+    auto found = importedNs->Find(name);
+    if (found) 
+      return found;
   }
+  
+
+  
   return nullptr;
 }
 
@@ -218,4 +225,12 @@ Context::ResolvedPath Context::Resolve(ScopeResolution *res) {
     return { ._namespace = ns };
   }
   throw std::runtime_error("failed to resolive symbol :" + res->full_path);
+}
+
+auto Context::Find(const string &name) const -> Value {
+  auto result = current_namespace->Find(name);
+  if (!result && FunctionRegistry::Exists(name)) {
+    return FunctionRegistry::GetCallable(name);
+  }
+  return result;
 }
