@@ -340,7 +340,7 @@ Value StructType::Construct(ArgumentsPtr &args) {
     if (i < names.size()) {
       auto name = names[i];
       auto field_type = object->GetMember(name)->type;
-
+      
       if (!field_type->Equals(arg->type.get())) {
         throw TypeError(field_type, arg->type);
       }
