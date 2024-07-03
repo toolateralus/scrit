@@ -156,16 +156,32 @@ ExpressionPtr Parser::ParsePostfix() {
         next.type != TType::Dot) {
       break;
     }
+    // Templated function call
+    if (next.type == TType::Less && Peek(1).type == TType::Identifier && TypeSystem::Current().Exists(Peek(1).value)) {
+      // // auto template_params = ParseTemplateParams();
+      // auto args= ParseArguments();
+      
+      // auto type_iden = dynamic_cast<TypeIdentifier *>(expr.get());
+      
+      // if (type_iden) {
+      //   expr =  make_unique<Constructor>(info, type_iden->type, std::move(args));
+      //   continue;
+      // }
+      
+      // expr = std::make_unique<Call>(info, std::move(expr), std::move(args));
+    }
     if (next.type == TType::LParen) {
+      
       auto args = ParseArguments();
-
+      
       // Type constructors.
       auto type_iden = dynamic_cast<TypeIdentifier *>(expr.get());
       
       if (type_iden) {
-        return make_unique<Constructor>(info, type_iden->type, std::move(args));
+        expr = make_unique<Constructor>(info, type_iden->type, std::move(args));
+        continue;
       }
-
+      
       expr = std::make_unique<Call>(info, std::move(expr), std::move(args));
     } else if (next.type == TType::SubscriptLeft) {
       Eat();

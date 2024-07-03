@@ -29,7 +29,7 @@ struct Parser {
   Type ParseTupleType();
   Type ParseType();
   Type ParseTemplateType(const Type &base_type);
-
+  
   StatementPtr ParseTupleDeconstruction(IdentifierPtr &&iden);
 
   StatementPtr ParseDeclaration();

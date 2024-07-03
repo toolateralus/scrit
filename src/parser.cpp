@@ -136,6 +136,9 @@ StatementPtr Parser::ParseKeyword(Token token) {
           break;
         }
         template_args.push_back(Expect(TType::Identifier).value);
+        if (Peek().type == TType::Comma) {
+          Eat();
+        }
       }
       Expect(TType::Greater);
     }    

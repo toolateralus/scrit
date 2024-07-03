@@ -536,9 +536,10 @@ struct StructDeclaration : Statement {
   
   StructDeclaration(SourceInfo &info, const string &name,
                     unique_ptr<ObjectInitializer> &&ctor_obj, vector<string> &template_args);
-
+  
   ExecutionResult Execute() override;
 };
+
 
 struct Constructor : Expression {
   ArgumentsPtr args;
