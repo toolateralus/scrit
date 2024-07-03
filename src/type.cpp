@@ -332,7 +332,6 @@ StructType::~StructType() {}
 
 Value StructType::Construct(ArgumentsPtr &args) {
   auto object = std::dynamic_pointer_cast<Object_T>(Default());
-
   std::cout << object->ToString() << std::endl;
 
   size_t i = 0;
