@@ -19,24 +19,9 @@ Undefined Value_T::UNDEFINED = make_shared<::Undefined_T>();
 Value Callable_T::Call(ArgumentsPtr &args) {
   auto scope = ASTNode::context.PushScope();
   auto values = Call::GetArgsValueList(args);
-
-  size_t i = 0;
-  for (const auto &param : params->values) {
-    if (i >= values.size()) {
-      if (param.default_value != nullptr) {
-        scope->Set(param.name, param.default_value);
-      }
-      continue;
-    }
-    
-    if (!param.type->Equals(values[i]->type.get())) {
-      throw TypeError(param.type, values[i]->type, "invalid argument type");
-    }
-    
-    scope->Set(param.name, values[i]);
-    i++;
-  }
-
+  
+  params->Apply(scope, args->values);
+  
   auto result = block->Execute();
 
   ASTNode::context.PopScope();
@@ -324,9 +309,9 @@ string Callable_T::ToString() const {
   auto type = std::dynamic_pointer_cast<CallableType>(this->type);
   auto returnType = type->returnType->name;
   ss << returnType << "(";
-  for (const auto &param : params->values) {
+  for (const auto &param : params->Params()) {
     ss << param.name << ": " << param.type->name;
-    if (&param != &params->values.back()) {
+    if (&param != &params->Params().back()) {
       ss << ", ";
     }
   }
@@ -606,16 +591,8 @@ Tuple_T::Tuple_T(vector<Value> values) : Value_T(nullptr), values(values) {
 Value Callable_T::Call(std::vector<Value> &values) {
   auto scope = ASTNode::context.PushScope();
   size_t i = 0;
-  for (const auto &param : params->values) {
-    if (i < values.size()) {
-      scope->Set(param.name, values[i]);
-    } else if (param.default_value != nullptr) {
-      scope->Set(param.name, param.default_value);
-    } else {
-      break;
-    }
-    i++;
-  }
+  
+  params->Apply(scope, values);
 
   auto result = block->Execute();
   ASTNode::context.PopScope();

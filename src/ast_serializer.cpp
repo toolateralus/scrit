@@ -63,7 +63,7 @@ void ASTSerializer::visit(Property *property) {
 void ASTSerializer::visit(Parameters *parameters) {
   Write("Parameters: {");
   auto _ = Indenter(this);
-  for (auto &param : parameters->values) {
+  for (auto &param : parameters->Params()) {
     stream << Indent() << param.name << ": " << param.type->name << "";
   }
 

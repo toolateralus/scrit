@@ -175,22 +175,35 @@ struct Parameters : Statement {
     string name;
     Value default_value;
     Type type;
+    Mutability mutability;
   };
-  std::vector<Param> values;
   
   Parameters(SourceInfo &info);
   auto ParamTypes() -> vector<Type> {
     vector<Type> types;
-    for (const auto &p : values) {
+    for (const auto &p : params) {
       types.push_back(p.type);
     }
     return types;
   }
   Parameters(SourceInfo &info, std::vector<Param> &&params);
+
+  void Apply(Scope scope, vector<ExpressionPtr> &values);
+  void Apply(Scope scope, vector<Value> &values);
+
+  void ForwardDeclare(Scope scope);
+
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;
   
   auto Clone() -> unique_ptr<Parameters>;
+  
+  auto Params() -> vector<Param>& {
+    return params;
+  }
+  
+  private:
+  std::vector<Param> params;
 };
 struct Continue : Statement {
   Continue(SourceInfo &info) : Statement(info) {}
@@ -255,7 +268,6 @@ struct Call : virtual Expression, virtual Statement {
   ArgumentsPtr args;
   Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args);
   static vector<Value> GetArgsValueList(ArgumentsPtr &args);
-  void ValidateArgumentSize(std::shared_ptr<Values::Callable_T> &callable);
   Value Evaluate() override;
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;

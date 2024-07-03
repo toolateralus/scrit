@@ -544,13 +544,22 @@ ParametersPtr Parser::ParseParameters() {
   auto next = Peek();
   std::vector<Parameters::Param> params = {};
   while (tokens.size() > 0 && next.type != TType::RParen) {
-
+    
+    Mutability mut = Mutability::Const;
+    if (Peek().type == TType::Const || Peek().type == TType::Mut) {
+      mut = Eat().type == TType::Mut ? Mutability::Mut : Mutability::Const;
+    }
+    
     auto value = Expect(TType::Identifier).value;
     Expect(TType::Colon);
     auto type = ParseType();
-
+    
     Parameters::Param param = {
-        .name = value, .default_value = nullptr, .type = type};
+        .name = value, 
+        .default_value = nullptr,
+        .type = type, 
+        .mutability = mut
+    };
 
     // Default values for parameter.
     if (Peek().type == TType::Assign) {
@@ -602,10 +611,7 @@ BlockPtr Parser::ParseBlock(ParametersPtr &params) {
   
   auto scope = ASTNode::context.PushScope();
   
-  for (const auto &param : params->values) {
-    scope->ForwardDeclare(param.name, param.type, Mutability::Const);
-  }
-  
+  params->ForwardDeclare(scope);
   
   auto info = this->info;
   Expect(TType::LCurly);

@@ -17,8 +17,9 @@ using std::*
 // from a parent.
 using std::array
 
+
 // import as object
-using std::raylib as 'raylib' object
+using std::raylib as 'raylib'
 
 // ###################################### 
 // ###################################### 

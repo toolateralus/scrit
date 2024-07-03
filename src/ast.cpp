@@ -57,7 +57,7 @@ Arguments::Arguments(SourceInfo &info, vector<ExpressionPtr> &&args)
 }
 Parameters::Parameters(SourceInfo &info, std::vector<Param> &&params)
     : Statement(info) {
-  this->values = std::move(params);
+  this->params = std::move(params);
 }
 Identifier::Identifier(SourceInfo &info, const Type &type, const string &name)
     : Expression(info, type), name(name) {}
@@ -545,44 +545,11 @@ Value ArrayInitializer::Evaluate() {
   array->type = type;
   return array;
 }
-void Call::ValidateArgumentSize(shared_ptr<Callable_T> &callable) {
-  if (!callable) {
-    return;
-  }
 
-  if (!callable->params || !callable->block) {
-    auto native_callable =
-        std::dynamic_pointer_cast<NativeCallable_T>(callable);
-    if (native_callable->function->parameterTypes.size() !=
-        args->values.size()) {
-      auto delta = native_callable->function->parameterTypes.size() -
-                   args->values.size();
-
-      if (delta > 0) {
-        throw std::runtime_error("Invalid function call: too many arguments");
-      } else {
-        throw std::runtime_error("Invalid function call: too few arguments");
-      }
-    }
-
-    return;
-  }
-
-  if (callable->params->values.size() != args->values.size()) {
-    auto delta = callable->params->values.size() - args->values.size();
-
-    if (delta > 0) {
-      throw std::runtime_error("Invalid function call: too many arguments");
-    } else {
-      throw std::runtime_error("Invalid function call: too few arguments");
-    }
-  }
-}
 Value Call::Evaluate() {
   auto lvalue = operand->Evaluate();
   if (lvalue->GetPrimitiveType() == PrimitiveType::Callable) {
     auto callable = std::static_pointer_cast<Callable_T>(lvalue);
-    ValidateArgumentSize(callable);
     auto result = callable->Call(args);
     return result;
   } else {
@@ -594,8 +561,6 @@ Value Call::Evaluate() {
       auto fn = obj->GetMember("call");
       auto callable = std::dynamic_pointer_cast<Callable_T>(fn);
       if (callable) {
-        ValidateArgumentSize(callable);
-
         auto args_values = GetArgsValueList(args);
         args_values.insert(args_values.begin(), obj);
         return callable->Call(args_values);
@@ -1341,13 +1306,50 @@ Value Constructor::Evaluate() {
 }
 auto Parameters::Clone() -> unique_ptr<Parameters> {
   auto clone = std::make_unique<Parameters>(this->srcInfo);
-  clone->values.reserve(values.size());
-  for (const auto &param : values) {
+  clone->params.reserve(params.size());
+  for (const auto &param : params) {
     Param clonedParam = {param.name, param.default_value, param.type};
-    clone->values.push_back(std::move(clonedParam));
+    clone->params.push_back(std::move(clonedParam));
   }
   return clone;
 }
 
 Parameters::Parameters(SourceInfo &info) : 
   Statement(info) {}
+
+
+void Parameters::Apply(Scope scope, std::vector<ExpressionPtr> &values) {
+  for (size_t i = 0; i < params.size(); ++i) {
+    auto &param = params[i];
+    
+    const auto has_default = param.default_value != nullptr;
+    const auto has_value = i < values.size();
+    
+    if (has_value) {
+      scope->Set(Scope_T::Key(param.name, param.mutability), values[i]->Evaluate());
+    } else if (has_default) {
+      scope->Set(Scope_T::Key(param.name, param.mutability), param.default_value);
+    } else throw std::runtime_error("too few args provided to function");
+  }
+}
+
+void Parameters::Apply(Scope scope, std::vector<Value> &values) {
+  for (size_t i = 0; i < params.size(); ++i) {
+    auto &param = params[i];
+    
+    const auto has_default = param.default_value != nullptr;
+    const auto has_value = i < values.size();
+    
+    if (has_value) {
+      scope->Set(Scope_T::Key(param.name, param.mutability), values[i]);
+    } else if (has_default) {
+      scope->Set(Scope_T::Key(param.name, param.mutability), param.default_value);
+    } else throw std::runtime_error("too few args provided to function");
+  }
+}
+
+void Parameters::ForwardDeclare(Scope scope) {
+  for (const auto &param : params) {
+    scope->ForwardDeclare(param.name, param.type, param.mutability);
+  }
+}
