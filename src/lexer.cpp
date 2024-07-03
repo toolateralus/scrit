@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 Token::Token(const int &loc, const int &col, const string &value,
@@ -300,6 +301,7 @@ Lexer::Lexer() {
 
   };
   keywords = {
+      {"namespace", TType::Namespace},
       {"struct", TType::Struct},
       {"type", TType::Type},
       {"let", TType::Let},
@@ -448,7 +450,12 @@ string TTypeToString(const TType &type) {
     return "Mut";
   case TType::Delete:
     return "Delete";
+  case TType::ScopeResolution:
+    return "ScopeResolution";
+  case TType::Namespace:
+    return "Namespace";
   }
+  std::unreachable();
 }
 string TFamilyToString(const TFamily &family) {
   switch (family) {

@@ -17,9 +17,14 @@ using std::shared_ptr;
 using std::string;
 using std::vector;
 
+
+
+
 namespace Values {
 struct Value_T;
 typedef shared_ptr<Values::Value_T> Value;
+
+
 
 } // namespace Values
 using namespace Values;
@@ -116,15 +121,30 @@ private:
   std::map<Key, Value> variables = {};
 };
 
+using VarIter =  std::_Rb_tree_iterator<
+    std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>>;
+
+
 struct Namespace {
   explicit Namespace(string name) : name(std::move(name)) {}
   const string name;
   // every namespace has to have a root scope by default.
   vector<Scope> scopes = { make_shared<Scope_T>() };
+  
+   
+  void RegisterModuleHandle(void *handle);
+  Scope PushScope(Scope scope = nullptr);
+  Scope PopScope();
+  void Erase(const string &name);
+  auto TypeExists(const string &name) -> bool;
+  auto FindType(const string &name) -> Type;
+  auto Find(const string &name) const -> Value;
+  auto FindIter(const string &name) const -> VarIter;
+  void Insert(const string &name, Value value, const Mutability &mutability);
+  void Insert(const Scope_T::Key &key, Value value);
+  void Reset();
+  
 };
-
-using VarIter =  std::_Rb_tree_iterator<
-    std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>>;
 
 struct Context {
   Context();
@@ -156,19 +176,40 @@ struct Context {
     return *it;
   }
     
+  void RegisterModuleHandle(void *handle) {
+    current_namespace->RegisterModuleHandle(handle);
+  }
+  Scope PushScope(Scope scope = nullptr) {
+    return current_namespace->PushScope(scope);
+  }
+  Scope PopScope() {
+    return current_namespace->PopScope();
+  }
+  void Erase(const string &name) {
+    current_namespace->Erase(name);
+  }
+  auto TypeExists(const string &name) -> bool {
+    return current_namespace->TypeExists(name);
+  }
+  auto FindType(const string &name) -> Type {
+    return current_namespace->FindType(name);
+  }
+  auto Find(const string &name) const -> Value {
+    return current_namespace->Find(name);
+  }
+  auto FindIter(const string &name) const -> VarIter {
+    return current_namespace->FindIter(name);
+  }
+  void Insert(const string &name, Value value, const Mutability &mutability) {
+    current_namespace->Insert(name, value, mutability);
+  }
+  void Insert(const Scope_T::Key &key, Value value) {
+    current_namespace->Insert(key, value);
+  }
   
-  void RegisterModuleHandle(void *handle);
-  Scope PushScope(Scope scope = nullptr);
-  Scope PopScope();
-  void Erase(const string &name);
-  
-  auto TypeExists(const string &name) -> bool;
-  auto FindType(const string &name) -> Type;
-  
-  auto Find(const string &name) const -> Value;
-  auto FindIter(const string &name) const -> VarIter;
-  void Insert(const string &name, Value value, const Mutability &mutability);
-  void Insert(const Scope_T::Key &key, Value value);
-
-  void Reset();
+  // Why do we need this??
+  void Reset() {
+    namespaces.clear();
+  }
+ 
 };

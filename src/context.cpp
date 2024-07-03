@@ -5,15 +5,15 @@
 #include <stdexcept>
 
 Context::Context() {}
-Scope Context::PushScope(Scope scope) {
+
+Scope Namespace::PushScope(Scope scope) {
   if (scope == nullptr) {
     scope = std::make_shared<Scope_T>();
   }
-  current_namespace->scopes.push_back(scope);
+  scopes.push_back(scope);
   return scope;
 }
-Scope Context::PopScope() {
-  auto &scopes = current_namespace->scopes;
+Scope Namespace::PopScope() {
   if (scopes.empty()) {
     throw std::runtime_error("Cannot pop: Scope stack is empty");
   }
@@ -22,8 +22,7 @@ Scope Context::PopScope() {
   return scope;
 }
 
-void Context::Erase(const string &name) {
-  auto &scopes = current_namespace->scopes;
+void Namespace::Erase(const string &name) {
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     if ((*it)->Contains(name)) {
       (*it)->Erase(name);
@@ -32,8 +31,7 @@ void Context::Erase(const string &name) {
   }
 }
 
-void Context::Insert(const Scope_T::Key &key, Value value) {
-  auto &scopes = current_namespace->scopes;
+void Namespace::Insert(const Scope_T::Key &key, Value value) {
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     if ((*it)->Contains(key.value)) {
       (*it)->Set(key, value);
@@ -43,9 +41,8 @@ void Context::Insert(const Scope_T::Key &key, Value value) {
   scopes.back()->Set(key, value);
 }
 
-void Context::Insert(const string &name, Value value,
+void Namespace::Insert(const string &name, Value value,
                      const Mutability &mutability) {
-  auto &scopes = current_namespace->scopes;
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     if ((*it)->Contains(name)) {
       (*it)->Set(name, value, mutability);
@@ -55,8 +52,7 @@ void Context::Insert(const string &name, Value value,
   scopes.back()->Set(name, value, mutability);
 }
 
-auto Context::FindIter(const string &name) const -> VarIter {
-  auto &scopes = current_namespace->scopes;
+auto Namespace::FindIter(const string &name) const -> VarIter {
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     if ((*it)->Contains(name)) {
       return (*it)->Find(name);
@@ -65,8 +61,7 @@ auto Context::FindIter(const string &name) const -> VarIter {
   return scopes.back()->end();
 }
 
-auto Context::Find(const string &name) const -> Value {
-  auto &scopes = current_namespace->scopes;
+auto Namespace::Find(const string &name) const -> Value {
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     for (const auto &[key, var] : (*it)->Members()) {
       if (key.value == name) {
@@ -84,8 +79,8 @@ auto Context::Find(const string &name) const -> Value {
   }
   return nullptr;
 }
-void Context::Reset() {
-  namespaces.clear();
+void Namespace::Reset() {
+  scopes.clear();
   PushScope();
 }
 auto Scope_T::Clone() -> Scope {
@@ -165,8 +160,8 @@ ScritModHandle::~ScritModHandle() noexcept {
 }
 ScritModHandle::ScritModHandle(void *handle) noexcept : handle(handle) {}
 
-void Context::RegisterModuleHandle(void *handle) {
-  ImmediateScope()->PushModule(ScritModHandle(handle));
+void Namespace::RegisterModuleHandle(void *handle) {
+  scopes.back()->PushModule(ScritModHandle(handle));
 }
 ScritModHandle::ScritModHandle(ScritModHandle &&move) noexcept {
   this->handle = move.handle;
@@ -181,8 +176,7 @@ auto Scope_T::Find(const std::string &name) -> VarIter {
   return it;
 }
 
-auto Context::FindType(const string &name) -> Type {
-  auto &scopes = current_namespace->scopes;
+auto Namespace::FindType(const string &name) -> Type {
   for (auto it = scopes.rbegin(); it != scopes.rend(); it++) {
     auto scope = *it;
     if (scope->TypeExists(name)) {
@@ -192,8 +186,7 @@ auto Context::FindType(const string &name) -> Type {
   throw std::runtime_error("couldn't find type " + name);
 }
 
-auto Context::TypeExists(const string &name) -> bool {
-  auto &scopes = current_namespace->scopes;
+auto Namespace::TypeExists(const string &name) -> bool {
   for (auto it = scopes.rbegin(); it != scopes.rend(); it++) {
     auto scope = *it;
     if (scope->TypeExists(name)) {
