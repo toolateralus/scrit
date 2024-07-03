@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ast.hpp"
+#include <iostream>
 #include <stdexcept>
 #include <unordered_map>
 #ifdef __linux__
@@ -128,7 +129,9 @@ struct Namespace {
   Namespace &operator=(Namespace &&) = delete;
 
   explicit Namespace(string name, shared_ptr<Namespace> parent)
-      : name(std::move(name)), parent(parent) {}
+      : name(name), parent(parent) {
+        std::cout << "creating namespace '" << name << '\'' << std::endl;
+      }
 
   const string name;
   // every namespace has to have a root scope by default.
@@ -168,12 +171,12 @@ struct Context {
 
   shared_ptr<Namespace> root_namespace;
   shared_ptr<Namespace> current_namespace;
-
+  
   Scope &ImmediateScope() { return current_namespace->scopes.back(); }
 
   void CreateNamespace(const vector<string> &identifiers) {
-    shared_ptr<Namespace> current = current_namespace;
-
+    shared_ptr<Namespace> current = root_namespace;
+    
     for (const auto &id : identifiers) {
       if (!current->nested_namespaces.count(id)) {
         current->nested_namespaces[id] = make_shared<Namespace>(id, current);
@@ -181,9 +184,10 @@ struct Context {
       current = current->nested_namespaces[id];
     }
   }
-
+  
   void SetCurrentNamespace(const vector<string> &identifiers) {
     shared_ptr<Namespace> current = root_namespace;
+    
     for (const auto &id : identifiers) {
       if (!current->nested_namespaces.count(id)) {
         throw std::runtime_error("Namespace does not exist: " + id);
@@ -208,7 +212,7 @@ struct Context {
     if (identifiers.empty()) {
       return nullptr;
     }
-
+    
     std::shared_ptr<Namespace> ns = root_namespace;
     
     for (size_t i = 0; i < identifiers.size() && ns; ++i) {

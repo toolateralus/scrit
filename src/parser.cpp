@@ -865,11 +865,14 @@ unique_ptr<ScopeResolution> Parser::ParseScopeResolution() {
   vector<string> identifiers;
   while (!tokens.empty()) {
     identifiers.push_back(Expect(TType::Identifier).value);
-    if (!tokens.empty() && Peek().type == TType::ScopeResolution) {
-      Eat();
-    }
-    if (!tokens.empty() && Peek().type != TType::Identifier) {
-      break;
+    
+    if (!tokens.empty()) {
+      auto next = Peek();
+      if (next.type != TType::ScopeResolution)  {
+        break;      
+      } else {
+        Eat();
+      }
     }
   }
   return make_unique<ScopeResolution>(info, identifiers);
