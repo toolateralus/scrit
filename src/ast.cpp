@@ -1363,3 +1363,22 @@ void Parameters::ForwardDeclare(Scope scope) {
   }
 }
 Value TypeIdentifier::Evaluate() { return Ctx::Undefined(); }
+
+    
+    
+Value ScopeResolution::Evaluate() { 
+  auto resolution =  context.Resolve(this);
+  if (resolution.value) {
+    return resolution.value;
+  } else {
+    throw std::runtime_error("unable to resolve scope for : " + this->full_path);
+  }
+}
+
+ScopeResolution::ScopeResolution(SourceInfo &info,
+                                 vector<string> &identifiers) : Expression(info, TypeSystem::Current().Undefined) {
+  for (const auto &iden : identifiers) {
+    full_path += iden;
+  }
+  this->identifiers = identifiers;
+}

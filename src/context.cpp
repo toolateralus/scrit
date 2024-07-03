@@ -79,10 +79,7 @@ auto Namespace::Find(const string &name) const -> Value {
   }
   return nullptr;
 }
-void Namespace::Reset() {
-  scopes.clear();
-  PushScope();
-}
+
 auto Scope_T::Clone() -> Scope {
   std::map<Key, Value> variables = {};
 
@@ -211,4 +208,14 @@ auto Scope_T::ForwardDeclare(const string &name, const Type &type,
   auto val = make_shared<Undefined_T>();
   val->type = type;
   variables[Key(name, mut, true)] = val;
+}
+
+Context::ResolvedPath Context::Resolve(ScopeResolution *res) {
+  auto ns = FindNamespace(res->identifiers);
+  if (ns && ns->Find(res->identifiers.back())) {
+    return { .value = ns->Find(res->identifiers.back()) };
+  } else if (ns) {
+    return { ._namespace = ns };
+  }
+  throw std::runtime_error("failed to resolive symbol :" + res->full_path);
 }

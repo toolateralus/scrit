@@ -1,7 +1,6 @@
 #pragma once
 #include "lexer.hpp"
 #include "native.hpp"
-#include "type.hpp"
 
 #include <cassert>
 #include <functional>
@@ -12,6 +11,7 @@ class ASTVisitor;
 
 using std::string;
 using std::vector;
+using std::shared_ptr;
 
 enum class Mutability {
   Const = 0,
@@ -538,6 +538,13 @@ struct StructDeclaration : Statement {
                     unique_ptr<ObjectInitializer> &&ctor_obj, vector<string> &template_args);
   
   ExecutionResult Execute() override;
+};
+
+struct ScopeResolution : Expression {
+  vector<string> identifiers;
+  string full_path;
+  ScopeResolution(SourceInfo &info, vector<string> &identifiers);
+  Value Evaluate() override;
 };
 
 

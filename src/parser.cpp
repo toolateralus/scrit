@@ -36,7 +36,8 @@ Token Parser::Expect(const TType ttype) {
 
 unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
   // insert a global namespace.
-  ASTNode::context.current_namespace = make_shared<Namespace>("global");
+  ASTNode::context.root_namespace = make_shared<Namespace>("global", nullptr);
+  ASTNode::context.current_namespace = ASTNode::context.root_namespace;
   
   std::reverse(tokens.begin(), tokens.end());
   this->tokens = std::move(tokens);
@@ -152,6 +153,13 @@ StatementPtr Parser::ParseKeyword(Token token) {
     auto ctor = ParseObjectInitializer();
     
     return make_unique<StructDeclaration>(info, name, std::move(ctor), template_args);
+  }
+  
+  case TType::Namespace: {
+    auto path = ParseScopeResolution();
+    ASTNode::context.CreateNamespace(path->identifiers);
+    ASTNode::context.SetCurrentNamespace(path->identifiers);
+    return make_unique<Noop>(info);
   }
   case TType::Type: {
     auto name = Expect(TType::Identifier).value;
@@ -850,4 +858,19 @@ StatementPtr Parser::ParseReturn() {
   return make_unique<Return>(info, ParseExpression());
 }
 StatementPtr Parser::ParseBreak() { return make_unique<Break>(info); }
+
+
 // ####### END CONTROL FLOW #########
+unique_ptr<ScopeResolution> Parser::ParseScopeResolution() {
+  vector<string> identifiers;
+  while (!tokens.empty()) {
+    identifiers.push_back(Expect(TType::Identifier).value);
+    if (!tokens.empty() && Peek().type == TType::ScopeResolution) {
+      Eat();
+    }
+    if (!tokens.empty() && Peek().type != TType::Identifier) {
+      break;
+    }
+  }
+  return make_unique<ScopeResolution>(info, identifiers);
+}

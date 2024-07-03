@@ -267,6 +267,11 @@ ExpressionPtr Parser::ParseOperand() {
   case TType::Identifier: {
     Eat();
     
+    if (Peek().type == TType::ScopeResolution) {
+      tokens.push_back(token);
+      return ParseScopeResolution();
+    }
+    
     if (TypeSystem::Current().Exists(token.value)) {
       tokens.push_back(token);
       auto type = ParseType();

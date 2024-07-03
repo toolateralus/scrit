@@ -32,6 +32,8 @@ struct Parser {
   
   StatementPtr ParseTupleDeconstruction(IdentifierPtr &&iden);
 
+  unique_ptr<ScopeResolution> ParseScopeResolution();
+
   StatementPtr ParseDeclaration();
   StatementPtr ParseDeclaration(SourceInfo &info, const string &iden,
                                 const Mutability &mut);
