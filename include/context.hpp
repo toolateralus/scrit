@@ -127,10 +127,9 @@ struct Namespace {
   Namespace(Namespace &&) = default;
   Namespace &operator=(const Namespace &) = delete;
   Namespace &operator=(Namespace &&) = delete;
-
+  
   explicit Namespace(string name, shared_ptr<Namespace> parent)
       : name(name), parent(parent) {
-    std::cout << "creating namespace '" << name << '\'' << std::endl;
   }
 
   const string name;
@@ -154,12 +153,16 @@ struct Namespace {
 
   static std::vector<std::string> split(const std::string &input) {
     std::vector<std::string> result;
-    auto split_view = std::views::split(input, "::");
-    for (auto &&subrange : split_view) {
-      result.push_back(std::string(subrange.begin(), subrange.end()));
+    std::string::size_type start = 0;
+    auto end = input.find("::");
+    while (end != std::string::npos) {
+        result.push_back(input.substr(start, end - start));
+        start = end + 2; // Skip over the delimiter
+        end = input.find("::", start);
     }
+    result.push_back(input.substr(start));
     return result;
-  }
+}
 };
 
 struct Context {
@@ -261,7 +264,7 @@ struct Context {
     if (!ns) {
       throw std::runtime_error("couldn't find namespace");
     }
-
+    
     return ns->Find(identifiers.back());
   }
   auto Find(const string &name) const -> Value;

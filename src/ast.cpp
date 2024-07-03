@@ -1133,7 +1133,7 @@ void Using::Load(const std::string &moduleName) {
       return;
     }
   }
-
+  
   activeModules.push_back(moduleName);
   
   auto path = moduleRoot + moduleName + ".dll";
@@ -1151,7 +1151,7 @@ void Using::Load(const std::string &moduleName) {
   
   for (const auto &[name, t] : *module->types) {
     if (TypeSystem::Current().Exists(name)) {
-      TypeSystem::Current().RegisterType(t, true);      
+      TypeSystem::Current().RegisterType(t, true);
     } else {
       ASTNode::context.ImmediateScope()->InsertType(t->name, t);
     }

@@ -173,6 +173,17 @@ extern "C" ScritModDef *InitScritModule_std_SR_array() {
   array->Set("back", CREATE_CALLABLE(back, "any", {"array"}));
   array->Set("pop", CREATE_CALLABLE(pop, "any", {"array"}));
   array->Set("len", CREATE_CALLABLE(len, "int", {"array"}));
+  
+  def->AddFunction("remove", CREATE_FUNCTION(remove, "undefined", {"array", "any"}));
+  def->AddFunction("contains", CREATE_FUNCTION(contains, "bool", {"array", "any"}));
+  def->AddFunction("clear", CREATE_FUNCTION(clear, "undefined", {"array"}));
+  def->AddFunction("expand", CREATE_FUNCTION(expand, "undefined", {"array", "int", "any"}));
+  def->AddFunction("push", CREATE_FUNCTION(push, "undefined", {"array", "any"}));
+  def->AddFunction("front", CREATE_FUNCTION(front, "any", {"array"}));
+  def->AddFunction("back", CREATE_FUNCTION(back, "any", {"array"}));
+  def->AddFunction("pop", CREATE_FUNCTION(pop, "any", {"array"}));
+  def->AddFunction("len", CREATE_FUNCTION(len, "int", {"array"}));
+  
   def->AddType("array", array);
   
   def->SetNamespace("std::array");
