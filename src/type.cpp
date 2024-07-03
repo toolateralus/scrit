@@ -299,18 +299,19 @@ Value TupleType::Default() {
 Value CallableType::Default() { return Ctx::Undefined(); }
 Value ArrayType::Default() { return Ctx::CreateArray(); }
 Value AnyType::Default() { return Ctx::Undefined(); }
+
 StructType::StructType(const string &name,
-                       std::unique_ptr<ObjectInitializer> &&ctor_obj)
-    : Type_T(name), ctor_obj(std::move(ctor_obj)) {
+                       std::unique_ptr<ObjectInitializer> &&ctor_obj, vector<string> &template_args)
+    : Type_T(name), ctor_obj(std::move(ctor_obj)), template_args(template_args) {
   // this happens during forward declaration during parsing of struct so they
   // can reference their own type.
   if (this->ctor_obj == nullptr) {
     return;
   }
-
+  
   for (const auto &statement : this->ctor_obj->block->statements) {
     if (auto decl = dynamic_cast<Declaration *>(statement.get())) {
-      names.push_back(decl->name);
+      field_names.push_back(decl->name);
     }
   }
 }
@@ -337,8 +338,8 @@ Value StructType::Construct(ArgumentsPtr &args) {
   size_t i = 0;
   for (const auto &arg : args->values) {
     auto value = arg->Evaluate();
-    if (i < names.size()) {
-      auto name = names[i];
+    if (i < field_names.size()) {
+      auto name = field_names[i];
       auto field_type = object->GetMember(name)->type;
       
       if (!field_type->Equals(arg->type.get())) {

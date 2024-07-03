@@ -148,6 +148,15 @@ struct Identifier : Expression {
   Value Evaluate() override;
   void Accept(ASTVisitor *visitor) override;
 };
+
+struct TypeIdentifier : Expression {
+  TypeIdentifier(SourceInfo &info, Type type) : Expression(info, type) {
+    
+  }
+  Value Evaluate() override;
+};
+
+
 struct Arguments : Expression {
   Arguments(SourceInfo &info, vector<ExpressionPtr> &&args);
   vector<ExpressionPtr> values;
@@ -190,7 +199,7 @@ struct Parameters : Statement {
 
   void Apply(Scope scope, vector<ExpressionPtr> &values);
   void Apply(Scope scope, vector<Value> &values);
-
+  
   void ForwardDeclare(Scope scope);
 
   ExecutionResult Execute() override;
@@ -205,6 +214,9 @@ struct Parameters : Statement {
   private:
   std::vector<Param> params;
 };
+
+
+
 struct Continue : Statement {
   Continue(SourceInfo &info) : Statement(info) {}
   ExecutionResult Execute() override;
@@ -518,9 +530,12 @@ struct Match : Expression {
 
 struct StructDeclaration : Statement {
   unique_ptr<ObjectInitializer> ctor_obj;
-  string name;
+  
+  string type_name;
+  vector<string> template_args;
+  
   StructDeclaration(SourceInfo &info, const string &name,
-                    unique_ptr<ObjectInitializer> &&ctor_obj);
+                    unique_ptr<ObjectInitializer> &&ctor_obj, vector<string> &template_args);
 
   ExecutionResult Execute() override;
 };

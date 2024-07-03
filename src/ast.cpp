@@ -14,6 +14,7 @@
 #include <stdexcept>
 #include <string>
 #include <type.hpp>
+#include <vector>
 
 auto programSourceInfo = SourceInfo{0, 0, ""};
 
@@ -1286,10 +1287,11 @@ shared_ptr<Callable_T> MethodCall::FindCallable() {
 void MethodCall::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 
 StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
-                                     unique_ptr<ObjectInitializer> &&ctor_obj)
-    : Statement(info), name(name), ctor_obj(std::move(ctor_obj)) {
+                                     unique_ptr<ObjectInitializer> &&ctor_obj, vector<string> &template_args)
+    : Statement(info), type_name(name), ctor_obj(std::move(ctor_obj)), template_args(template_args) {
+      
   context.scopes.back()->OverwriteType(
-      name, make_shared<StructType>(name, std::move(this->ctor_obj)));
+      name, make_shared<StructType>(name, std::move(this->ctor_obj), template_args));
 }
 ExecutionResult StructDeclaration::Execute() { return ExecutionResult::None; }
 Constructor::Constructor(SourceInfo &info, const Type &type,
@@ -1356,3 +1358,4 @@ void Parameters::ForwardDeclare(Scope scope) {
     scope->ForwardDeclare(param.name, param.type, param.mutability);
   }
 }
+Value TypeIdentifier::Evaluate() { return Ctx::Undefined(); }

@@ -519,7 +519,7 @@ bool Tuple_T::Equals(Value other) {
   if (!other_tuple) {
     return false;
   }
-
+  
   auto other_vals = other_tuple->values;
 
   if (other_vals.size() != this->values.size()) {

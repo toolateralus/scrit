@@ -127,10 +127,25 @@ StatementPtr Parser::ParseKeyword(Token token) {
   switch (token.type) {
   case TType::Struct: {
     auto name = Expect(TType::Identifier).value;
+    
+    vector<string> template_args;
+    if (Peek().type == TType::Less) {
+      Eat();
+      while (!tokens.empty()) {
+        if (Peek().type == TType::Greater) {
+          break;
+        }
+        template_args.push_back(Expect(TType::Identifier).value);
+      }
+      Expect(TType::Greater);
+    }    
+    
     ASTNode::context.scopes.back()->InsertType(
-        name, make_shared<StructType>(name, nullptr));
+        name, make_shared<StructType>(name, nullptr, template_args));
+        
     auto ctor = ParseObjectInitializer();
-    return make_unique<StructDeclaration>(info, name, std::move(ctor));
+    
+    return make_unique<StructDeclaration>(info, name, std::move(ctor), template_args);
   }
   case TType::Type: {
     auto name = Expect(TType::Identifier).value;

@@ -160,10 +160,10 @@ ExpressionPtr Parser::ParsePostfix() {
       auto args = ParseArguments();
 
       // Type constructors.
-      if (auto identifier = dynamic_cast<Identifier *>(expr.get());
-          TypeSystem::Current().Exists(identifier->name)) {
-        Type type = TypeSystem::Current().Find(identifier->name);
-        return make_unique<Constructor>(info, type, std::move(args));
+      auto type_iden = dynamic_cast<TypeIdentifier *>(expr.get());
+      
+      if (type_iden) {
+        return make_unique<Constructor>(info, type_iden->type, std::move(args));
       }
 
       expr = std::make_unique<Call>(info, std::move(expr), std::move(args));
@@ -250,6 +250,13 @@ ExpressionPtr Parser::ParseOperand() {
                                 Int_T::New(stoi(token.value)));
   case TType::Identifier: {
     Eat();
+    
+    if (TypeSystem::Current().Exists(token.value)) {
+      tokens.push_back(token);
+      auto type = ParseType();
+      return make_unique<TypeIdentifier>(info, type);
+    }
+    
     return make_unique<Identifier>(info, token.value);
   }
   case TType::LParen: {
