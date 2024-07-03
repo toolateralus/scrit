@@ -2,6 +2,7 @@
 #include "ast.hpp"
 #include "context.hpp"
 #include "error.hpp"
+#include "lexer.hpp"
 #include "parser.hpp"
 #include "value.hpp"
 #include <iostream>
@@ -196,7 +197,8 @@ Type Parser::ParseTemplateType(const Type &base_type) {
 
   return TypeSystem::Current().FindOrCreateTemplate(name, base_type, types);
 }
-Type Parser::ParseFunctionType(const Type &returnType) {
+Type Parser::ParseFunctionType() {
+  Expect(TType::Func);
   Expect(TType::LParen);
   std::vector<Type> types;
   while (!tokens.empty()) {
@@ -210,6 +212,7 @@ Type Parser::ParseFunctionType(const Type &returnType) {
     }
   }
   Expect(TType::RParen);
+  auto returnType = ParseReturnType();
   return TypeSystem::Current().FromCallable(returnType, types);
 }
 Type Parser::ParseTupleType() {
@@ -229,19 +232,21 @@ Type Parser::ParseTupleType() {
   return TypeSystem::Current().FromTuple(types);
 }
 Type Parser::ParseType() {
-  if (Peek().type == TType::LParen) {
+  if (!tokens.empty() && Peek().type == TType::Func) {
+    return Parser::ParseFunctionType();
+  }
+  
+  if (!tokens.empty() && Peek().type == TType::LParen) {
     return ParseTupleType();
   }
-
+  
   auto tname = Expect(TType::Identifier).value;
   auto type = TypeSystem::Current().Find(tname);
   // template types.
-  if (Peek().type == TType::Less) {
+  if (!tokens.empty() && Peek().type == TType::Less) {
     return Parser::ParseTemplateType(type);
   }
-  if (Peek().type == TType::LParen) {
-    return Parser::ParseFunctionType(type);
-  }
+ 
 
   return type;
 }

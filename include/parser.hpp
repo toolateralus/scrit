@@ -25,7 +25,7 @@ struct Parser {
   StatementPtr ParseAnonFuncInlineCall();
   StatementPtr ParseStatement();
   StatementPtr ParseKeyword(Token keyword);
-  Type ParseFunctionType(const Type &type);
+  Type ParseFunctionType();
   Type ParseTupleType();
   Type ParseType();
   Type ParseTemplateType(const Type &base_type);
