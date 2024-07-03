@@ -293,7 +293,7 @@ Declaration::Declaration(SourceInfo &info, const string &name,
                          const Type &type)
     : Statement(info), name(name), expr(std::move(expr)), mut(mut), type(type) {
 
-  context.scopes.back()->ForwardDeclare(name, type, mut);
+  context.ImmediateScope()->ForwardDeclare(name, type, mut);
 }
 
 // ##############################################
@@ -302,9 +302,12 @@ Declaration::Declaration(SourceInfo &info, const string &name,
 // ##############################################
 
 ExecutionResult Program::Execute() {
-
+  
+  
+  
+  
   // create an object called global, so we can bypass any shadowed variables.
-  auto global = Object_T::New(ASTNode::context.scopes.front());
+  auto global = Object_T::New(ASTNode::context.current_namespace->scopes.front());
 
   // include all of the native functions in this global object.
   for (const auto &[name, _] : FunctionRegistry::GetRegistry()) {
@@ -845,10 +848,10 @@ ExecutionResult RangeBasedFor::Execute() {
         "or a tuple deconstruction\n"
         "example: for k,v : someObject/tupleArray {}");
   }
-
+  
   auto setter = [this, lhs](Value value) -> void {
     if (lhs) {
-      context.scopes.back()->Set(lhs->name, value, Mutability::Const);
+      context.ImmediateScope()->Set(lhs->name, value, Mutability::Const);
     } else if (auto tuple = std::dynamic_pointer_cast<Tuple_T>(value);
                !names.empty()) {
       tuple->Deconstruct(names);
@@ -1103,7 +1106,7 @@ ExecutionResult Property::Execute() {
 }
 ExecutionResult Declaration::Execute() {
 
-  auto &scope = ASTNode::context.scopes.back();
+  auto &scope = ASTNode::context.ImmediateScope();
   
   if (scope->Contains(name) && !scope->Find(name)->first.forward_declared) {
     throw std::runtime_error(
@@ -1120,8 +1123,8 @@ ExecutionResult Declaration::Execute() {
 
   // copy where needed
   ApplyCopySemantics(value);
-
-  ASTNode::context.scopes.back()->Set(name, value, mut);
+  
+  ASTNode::context.ImmediateScope()->Set(name, value, mut);
 
   return ExecutionResult::None;
 }
@@ -1226,7 +1229,7 @@ void Literal::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 
 TypeAlias::TypeAlias(SourceInfo &info, const string &alias, const Type &type)
     : Statement(info), type(type), alias(alias) {
-  context.scopes.back()->InsertType(alias, type);
+  context.ImmediateScope()->InsertType(alias, type);
 }
 
 Value MethodCall::Evaluate() { return callable->Call(this->args); }
@@ -1290,8 +1293,9 @@ StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
                                      unique_ptr<ObjectInitializer> &&ctor_obj, vector<string> &template_args)
     : Statement(info), type_name(name), ctor_obj(std::move(ctor_obj)), template_args(template_args) {
       
-  context.scopes.back()->OverwriteType(
-      name, make_shared<StructType>(name, std::move(this->ctor_obj), template_args));
+  context.ImmediateScope()->OverwriteType(
+    name, make_shared<StructType>(name, std::move(this->ctor_obj), template_args)
+  );
 }
 ExecutionResult StructDeclaration::Execute() { return ExecutionResult::None; }
 Constructor::Constructor(SourceInfo &info, const Type &type,

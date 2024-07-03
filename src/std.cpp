@@ -50,21 +50,6 @@ REGISTER_FUNCTION(clone, "any", {"any"}) {
   return args[0]->Clone();
 }
 
-REGISTER_FUNCTION(nameof, "string", {"any"}) {
-  if (args.empty()) {
-    return undefined;
-  }
-  const auto &ctx = ASTNode::context;
-  for (const auto &scope : ctx.scopes) {
-    for (const auto &member : scope->Members()) {
-      if (args[0]->Equals(member.second)) {
-        return Ctx::CreateString(member.first.value);
-      }
-    }
-  }
-  return undefined;
-}
-
 // have to do this obnoxiously since it just auto-conflicts.
 #undef assert
 REGISTER_FUNCTION(assert, "undefined", {"bool", "any"}) {

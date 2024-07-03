@@ -116,21 +116,55 @@ private:
   std::map<Key, Value> variables = {};
 };
 
-typedef std::_Rb_tree_iterator<
-    std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>>
-    VarIter;
+struct Namespace {
+  explicit Namespace(string name) : name(std::move(name)) {}
+  const string name;
+  // every namespace has to have a root scope by default.
+  vector<Scope> scopes = { make_shared<Scope_T>() };
+};
+
+using VarIter =  std::_Rb_tree_iterator<
+    std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>>;
 
 struct Context {
   Context();
-  vector<Scope> scopes = {};
+  Context(const Context &) = default;
+  Context(Context &&) = default;
+  Context &operator=(const Context &) = default;
+  Context &operator=(Context &&) = default;
+  
+  vector<shared_ptr<Namespace>> namespaces;
+  shared_ptr<Namespace> current_namespace;
+  
+  Scope& ImmediateScope() {
+    return current_namespace->scopes.back();
+  }
+  
+  void CreateNamespace(const std::string &name) {
+    namespaces.push_back(make_shared<Namespace>(name));
+  }
+  shared_ptr<Namespace> FindNamespace(const std::string &name) {
+    auto it = std::find_if(namespaces.begin(), namespaces.end(), [name](const shared_ptr<Namespace> &_namespace) {
+        if (_namespace->name == name) {
+          return true;
+        }
+        return false;
+    });
+    if (it == namespaces.end()) {
+      throw std::runtime_error("cannot find namespace " + name);
+    }
+    return *it;
+  }
+    
+  
   void RegisterModuleHandle(void *handle);
   Scope PushScope(Scope scope = nullptr);
   Scope PopScope();
   void Erase(const string &name);
-
+  
   auto TypeExists(const string &name) -> bool;
   auto FindType(const string &name) -> Type;
-
+  
   auto Find(const string &name) const -> Value;
   auto FindIter(const string &name) const -> VarIter;
   void Insert(const string &name, Value value, const Mutability &mutability);

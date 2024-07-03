@@ -35,6 +35,9 @@ Token Parser::Expect(const TType ttype) {
 }
 
 unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
+  // insert a global namespace.
+  ASTNode::context.current_namespace = make_shared<Namespace>("global");
+  
   std::reverse(tokens.begin(), tokens.end());
   this->tokens = std::move(tokens);
   vector<StatementPtr> statements;
@@ -143,7 +146,7 @@ StatementPtr Parser::ParseKeyword(Token token) {
       Expect(TType::Greater);
     }    
     
-    ASTNode::context.scopes.back()->InsertType(
+    ASTNode::context.ImmediateScope()->InsertType(
         name, make_shared<StructType>(name, nullptr, template_args));
         
     auto ctor = ParseObjectInitializer();
@@ -389,10 +392,10 @@ unique_ptr<Noop> Parser::ParseFunctionDeclaration() {
   
   auto callable =
       make_shared<Callable_T>(returnType, nullptr, std::move(parameters));
-  ASTNode::context.scopes.back()->Set(name, callable, Mutability::Mut);
+  ASTNode::context.ImmediateScope()->Set(name, callable, Mutability::Mut);
   
   auto block = ParseBlock(param_clone);
-
+  
   callable->block = std::move(block);
 
   return std::make_unique<Noop>(info);

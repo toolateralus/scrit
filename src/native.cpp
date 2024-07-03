@@ -20,8 +20,8 @@ std::unordered_map<std::string, NativeCallable>
 
 Object ScritModDefAsObject(ScritModDef *mod) {
   m_InstantiateCallables(mod);
-  auto object = Object_T::New(mod->context->scopes[0]);
-  return object;
+  // TODO: we now are going to treat modules as namespaces, not objects.
+  return nullptr;
 }
 
 void m_InstantiateCallables(ScritModDef *module) {

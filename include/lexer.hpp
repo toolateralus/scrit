@@ -110,6 +110,7 @@ enum class TType {
   Arrow,
   Type,
   Struct,
+  ScopeResolution,
 };
 struct Token {
   Token(const int &loc, const int &col, const string &value, const TType type,

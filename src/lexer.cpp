@@ -259,7 +259,8 @@ Token Lexer::LexOp() {
   throw std::runtime_error("failed to parse operator " + ch);
 }
 Lexer::Lexer() {
-  operators = {{"->", TType::Arrow},
+  operators = {{"::", TType::ScopeResolution},
+               {"->", TType::Arrow},
                {"+", TType::Add},
                {"-", TType::Sub},
                {"*", TType::Mul},
