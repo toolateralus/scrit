@@ -138,7 +138,7 @@ struct CallableType : Type_T {
 private:
   static auto GetName(const Type returnType,
                       const std::vector<Type> paramTypes) -> string {
-    return returnType->name + TupleType::GetName(paramTypes);
+    return "func" + TupleType::GetName(paramTypes) + " -> " + returnType->name;
   }
 };
 

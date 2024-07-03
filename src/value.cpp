@@ -306,9 +306,10 @@ void Bool_T::Set(Value newValue) {
 
 string Callable_T::ToString() const {
   std::stringstream ss;
+  ss << "func";
   auto type = std::dynamic_pointer_cast<CallableType>(this->type);
-  auto returnType = type->returnType->name;
-  ss << returnType << "(";
+  
+  ss << "(";
   for (const auto &param : params->Params()) {
     ss << param.name << ": " << param.type->name;
     if (&param != &params->Params().back()) {
@@ -316,6 +317,8 @@ string Callable_T::ToString() const {
     }
   }
   ss << ")";
+  auto returnType = type->returnType->name;
+  ss << " -> " << returnType;
   return ss.str();
 }
 string Array_T::ToString() const { return Writer::ToString(this, {}); }
