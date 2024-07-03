@@ -28,14 +28,12 @@ Value Callable_T::Call(ArgumentsPtr &args) {
       }
       continue;
     }
-
-    if (Type_T::Equals(param.type.get(), values[i]->type.get())) {
-      scope->Set(param.name, values[i]);
-    } else {
-      throw std::runtime_error(
-          "invalid type argument for function call. expected: " +
-          param.type->name + " got: " + values[i]->type->name);
+    
+    if (!param.type->Equals(values[i]->type.get())) {
+      throw TypeError(param.type, values[i]->type, "invalid argument type");
     }
+    
+    scope->Set(param.name, values[i]);
     i++;
   }
 
@@ -48,17 +46,13 @@ Value Callable_T::Call(ArgumentsPtr &args) {
     return Value_T::VNULL;
   case ControlChange::Return: {
     auto this_type = std::dynamic_pointer_cast<CallableType>(type);
-    if (this_type &&
-        Type_T::Equals(result.value->type.get(), this_type->returnType.get())) {
-      return result.value;
-    } else if (this_type) {
-      throw std::runtime_error(
-          "type error: function returned the wrong type.\nexpected: " +
-          this_type->returnType->name + "\ngot: " + result.value->type->name);
-    } else {
-      throw std::runtime_error(
-          "interpreter error: function did not have a return type.");
-    }
+    
+    // TODO: remove runtime type checking. this should be done at parse time.
+    if (!this_type || !result.value->type->Equals(this_type->returnType.get())) {
+      throw TypeError(this_type, result.value->type, "invalid return type");
+    } 
+    return result.value;
+    
   }
   default:
     throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
@@ -154,7 +148,7 @@ void NativeCallable_T::CheckParameterTypes(vector<Value> &values) {
   }
 }
 void NativeCallable_T::CheckReturnType(Value &result) {
-  if (!Type_T::Equals(result->type.get(), function->returnType.get())) {
+  if (!result->type->Equals(function->returnType.get())) {
     throw TypeError(result->type, function->returnType,
                     "Invalid return type from function " + function->name);
   }
@@ -444,8 +438,10 @@ Value Array_T::SubscriptAssign(Value key, Value value) {
   // and the template is well formed (has typeargs)
   if (auto template_t = std::dynamic_pointer_cast<TemplateType>(type);
       !template_t->typenames.empty()) {
+        
     auto array_t = template_t->typenames[0];
-    if (!Type_T::Equals(value->type.get(), array_t.get())) {
+    
+    if (!value->type->Equals(array_t.get())) {
       throw TypeError(value->type, array_t);
     }
     // if not a template, this a generic array

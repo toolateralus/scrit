@@ -439,10 +439,8 @@ OperandPtr Parser::ParseArrayInitializer() {
         inner_type = val->type;
       }
 
-      if (inner_type && !Type_T::Equals(val->type.get(), inner_type.get())) {
-        throw std::runtime_error(
-            "invalid type in array initializer\nexpected: " + inner_type->name +
-            "\ngot: " + val->type->name);
+      if (inner_type && !val->type->Equals(inner_type.get())) {
+        throw TypeError(inner_type, val->type, "invalid type in array initializer");
       }
 
       init_expressions.push_back(std::move(val));

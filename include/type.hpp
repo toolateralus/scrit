@@ -34,29 +34,18 @@ struct Type_T {
   virtual auto Scope() -> Scope_T & = 0;
 
   virtual auto Default() -> Value = 0;
-
+  
   virtual auto Get(const string &name) -> Value;
   virtual auto Set(const string &name, Value value) -> void;
-
+  
   bool operator==(const Type_T &other) const { return name == other.name; }
-
+  
   virtual auto Equals(const Type_T *other) -> bool {
     if (!other) {
       return false;
     }
-    return *other == *this;
-  }
-
-  static bool Equals(const Type_T *t0, const Type_T *t1) {
-    if (t0 == nullptr || t1 == nullptr) {
-      return false;
-    }
-
-    if (t0->name == "any" || t1->name == "any") {
-      return true;
-    }
-
-    return *t0 == *t1;
+    // TODO: improve the any type.
+    return *other == *this || other->name == "any" || name == "any";
   }
 };
 

@@ -1,6 +1,7 @@
 #include "parser.hpp"
 #include "ast.hpp"
 #include "context.hpp"
+#include "error.hpp"
 #include "lexer.hpp"
 #include "type.hpp"
 #include "value.hpp"
@@ -329,15 +330,15 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
   if (next.type == TType::Assign) {
     Eat();
     auto value = ParseExpression();
+    
     if (type) {
-      if (Type_T::Equals(type.get(), value->type.get())) {
+      if (type->Equals(value->type.get())) {
         value->type = type;
       } else {
-        throw std::runtime_error(
-            "invalid types expression in declaration:\n declared type: " +
-            type->name + "\nexpression type: " + value->type->name);
+        throw TypeError(type, value->type, "invalid types in assignment");
       }
     }
+    
     return make_unique<Assignment>(info, value->type, std::move(identifier),
                                    std::move(value));
 

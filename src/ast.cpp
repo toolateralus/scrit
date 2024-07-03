@@ -816,7 +816,7 @@ Value BinExpr::Evaluate() {
   auto left = this->left->Evaluate();
   auto right = this->right->Evaluate();
 
-  if (!Type_T::Equals(left->type.get(), right->type.get())) {
+  if (!left->type->Equals(right->type.get())) {
     throw TypeError(left->type, right->type);
   }
 
@@ -1142,15 +1142,12 @@ ExecutionResult Declaration::Execute() {
         name);
   }
   auto value = this->expr->Evaluate();
-
-  // TODO: remove this. This basically implies theres some guarantee of
-  // inaccuracy in the typing of the expression node vs the returned value,
-  // which should be sought out to completely eliminated. This just incurs a
-  // somewhat cheap but unneccesary cost of double checking each type.
-  if (!Type_T::Equals(value->type.get(), this->type.get())) {
-    if (value->type && this->type)
-      throw TypeError(value->type, this->type);
-  }
+  
+  // We should not need to type check declarations at run time.
+  // if (!value->type->Equals(this->type.get())) {
+  //   if (value->type && this->type)
+  //     throw TypeError(value->type, this->type);
+  // }
 
   // copy where needed
   ApplyCopySemantics(value);
