@@ -553,6 +553,9 @@ Value Call::Evaluate() {
     auto result = callable->Call(args);
     return result;
   } else {
+    // TODO: put this somewhere where it makes sense. maybe it's own node for operator overloads
+    // where an operator is directly applied to a type like an object.
+    
     // Here we overload the () operator. this is done in a special case because
     // we don't treat invocation of callables like a binary expression, it's its
     // own binary expr node.
