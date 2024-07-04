@@ -84,8 +84,7 @@ struct Parser {
   ExpressionPtr ParsePostfix();
   ExpressionPtr ParseUnary();
   ExpressionPtr ParseOperand();
-
-  unique_ptr<Noop> ParseFunctionDeclaration();
+  unique_ptr<FunctionDecl> ParseFunctionDeclaration();
 
   ExpressionPtr ParseAnonFunc();
   unique_ptr<ObjectInitializer> ParseObjectInitializer();

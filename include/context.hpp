@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ast.hpp"
-#include <iostream>
 #include <stdexcept>
 #include <unordered_map>
 #ifdef __linux__
@@ -12,7 +11,6 @@
 
 #include <map>
 #include <memory>
-#include <ranges>
 #include <string>
 #include <vector>
 

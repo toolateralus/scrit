@@ -324,7 +324,7 @@ unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
   auto scope = ASTNode::context.PushScope();
   while (tokens.size() > 0) {
     auto next = Peek();
-
+    
     switch (next.type) {
     //
     case TType::Comma: {
@@ -363,7 +363,7 @@ unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
 endloop:
 
   Expect(TType::RCurly);
-
+  
   ASTNode::context.PopScope();
   // todo: redo the object system and type it.
   auto type = TypeSystem::Current().Find("object");

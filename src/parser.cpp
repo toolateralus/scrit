@@ -146,11 +146,12 @@ StatementPtr Parser::ParseKeyword(Token token) {
     }    
     
     ASTNode::context.ImmediateScope()->InsertType(
-        name, make_shared<StructType>(name, nullptr, template_args));
+        name, make_shared<StructType>(name, std::vector<unique_ptr<Declaration>>(), template_args));
         
-    auto ctor = ParseObjectInitializer();
+    auto obj = ParseObjectInitializer();
     
-    return make_unique<StructDeclaration>(info, name, std::move(ctor), template_args);
+    return make_unique<StructDeclaration>(info, name, std::move(obj->block->statements), template_args);
+  
   }
   
   case TType::Namespace: {
@@ -332,23 +333,17 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
   }
 }
 
-unique_ptr<Noop> Parser::ParseFunctionDeclaration() {
+unique_ptr<FunctionDecl> Parser::ParseFunctionDeclaration() {
   auto info = this->info;
   auto name = Expect(TType::Identifier).value;
   auto parameters = ParseParameters();
   auto returnType = ParseReturnType();
-  
   auto param_clone = parameters->Clone();
-  
-  auto callable =
-      make_shared<Callable_T>(returnType, nullptr, std::move(parameters));
+  auto callable = make_shared<Callable_T>(returnType, nullptr, std::move(parameters));
   ASTNode::context.ImmediateScope()->Set(name, callable, Mutability::Mut);
-  
   auto block = ParseBlock(param_clone);
-  
   callable->block = std::move(block);
-
-  return std::make_unique<Noop>(info);
+  return make_unique<FunctionDecl>(info, name, callable);
 }
 // for statements like
 // obj.func()

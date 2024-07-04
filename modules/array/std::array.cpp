@@ -64,34 +64,14 @@ function(clear) {
 }
 
 function(expand) {
-  if (args.size() < 2) {
-    return Ctx::Undefined();
+  static auto __undefined = Ctx::Undefined();
+  auto array = args[0]->Cast<Array_T>();
+  auto count = args[1]->Cast<Int_T>()->value;
+  Callable_T *callable = nullptr;
+  for (int i = array->values.size(); i < count; i++) {
+    array->Push(__undefined);
   }
-
-  int value;
-  if (args[0]->GetPrimitiveType() == PrimitiveType::Array &&
-      Ctx::TryGetInt(args[1], value)) {
-    auto array = dynamic_cast<Array_T *>(args[0].get());
-
-    auto default_value = args.size() > 2 ? args[2] : Value_T::UNDEFINED;
-
-    Callable_T *callable = nullptr;
-    if (default_value->GetPrimitiveType() == PrimitiveType::Callable) {
-      callable = static_cast<Callable_T *>(default_value.get());
-    }
-
-    std::vector<Value> empty = {};
-
-    for (int i = 0; i < value; i++) {
-      if (callable) {
-        array->Push(callable->Call(empty));
-      } else {
-        array->Push(default_value);
-      }
-    }
-    return args[0];
-  }
-  return Ctx::Undefined();
+  return args[0];
 }
 
 function(push) {
@@ -166,8 +146,7 @@ extern "C" ScritModDef *InitScritModule_std_SR_array() {
   array->Set("remove", CREATE_CALLABLE(remove, "undefined", {"array", "any"}));
   array->Set("contains", CREATE_CALLABLE(contains, "bool", {"array", "any"}));
   array->Set("clear", CREATE_CALLABLE(clear, "undefined", {"array"}));
-  array->Set("expand",
-             CREATE_CALLABLE(expand, "undefined", {"array", "int", "any"}));
+  array->Set("expand", CREATE_CALLABLE(expand, "array", {"array", "int"}));
   array->Set("push", CREATE_CALLABLE(push, "undefined", {"any"}));
   array->Set("front", CREATE_CALLABLE(front, "any", {"array"}));
   array->Set("back", CREATE_CALLABLE(back, "any", {"array"}));
@@ -176,7 +155,7 @@ extern "C" ScritModDef *InitScritModule_std_SR_array() {
   
   def->AddFunction("remove", CREATE_FUNCTION(remove, "undefined", {"array", "any"}));
   def->AddFunction("contains", CREATE_FUNCTION(contains, "bool", {"array", "any"}));
-  def->AddFunction("clear", CREATE_FUNCTION(clear, "undefined", {"array"}));
+  def->AddFunction("clear",    CREATE_FUNCTION(clear, "undefined", {"array"}));
   def->AddFunction("expand", CREATE_FUNCTION(expand, "undefined", {"array", "int", "any"}));
   def->AddFunction("push", CREATE_FUNCTION(push, "undefined", {"array", "any"}));
   def->AddFunction("front", CREATE_FUNCTION(front, "any", {"array"}));
@@ -185,7 +164,6 @@ extern "C" ScritModDef *InitScritModule_std_SR_array() {
   def->AddFunction("len", CREATE_FUNCTION(len, "int", {"array"}));
   
   def->AddType("array", array);
-  
   def->SetNamespace("std::array");
 
   return def;

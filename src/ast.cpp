@@ -584,6 +584,15 @@ ExecutionResult Else::Execute() {
   }
 }
 ExecutionResult For::Execute() {
+  
+  if (block->statements.empty()) {
+    return ExecutionResult::None;
+  }
+  
+  if (condition && condition->Evaluate()->Equals(Ctx::CreateBool(false))) {
+    return ExecutionResult::None;
+  }
+  
   context.PushScope(scope);
   if (decl != nullptr) {
     auto result = decl->Execute();
@@ -604,10 +613,8 @@ ExecutionResult For::Execute() {
       if (conditionResult->GetPrimitiveType() != PrimitiveType::Bool) {
         return ExecutionResult::None;
       }
-
-      auto b = static_cast<Bool_T *>(conditionResult.get());
-
-      if (b->Equals(Bool_T::False)) {
+      
+      if (conditionResult->Equals(Bool_T::False)) {
         context.PopScope();
         return ExecutionResult::None;
       }
@@ -1283,12 +1290,26 @@ shared_ptr<Callable_T> MethodCall::FindCallable() {
 void MethodCall::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 
 StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
-                                     unique_ptr<ObjectInitializer> &&ctor_obj, vector<string> &template_args)
-    : Statement(info), type_name(name), ctor_obj(std::move(ctor_obj)), template_args(template_args) {
+                    vector<StatementPtr> &&statements, vector<string> &template_args)
+    : Statement(info), type_name(name), template_args(template_args) {
       
-  context.ImmediateScope()->OverwriteType(
-    name, make_shared<StructType>(name, std::move(this->ctor_obj), template_args)
-  );
+      
+  vector<unique_ptr<Declaration>> declarations;
+      
+  for (auto &statement: statements) {
+    if (auto decl = dynamic_cast<Declaration *>(statement.get())) {
+      declarations.push_back(std::unique_ptr<Declaration>(static_cast<Declaration*>(statement.release())));
+    }
+  }
+  auto type = make_shared<StructType>(name, std::move(declarations), template_args);
+  
+  for (auto &statement: statements) {
+    if (auto decl = dynamic_cast<FunctionDecl *>(statement.get())) {
+      type->Scope().Set(decl->name, decl->callable, Mutability::Const);
+    }
+  }
+      
+  context.ImmediateScope()->OverwriteType(name, type);
 }
 ExecutionResult StructDeclaration::Execute() { return ExecutionResult::None; }
 Constructor::Constructor(SourceInfo &info, const Type &type,
@@ -1321,6 +1342,11 @@ Parameters::Parameters(SourceInfo &info) :
 
 
 void Parameters::Apply(Scope scope, std::vector<ExpressionPtr> &values) {
+  
+  if (values.size() > params.size()) {
+    throw std::runtime_error("too many arguments provided to function call");
+  }
+  
   for (size_t i = 0; i < params.size(); ++i) {
     auto &param = params[i];
     
@@ -1380,3 +1406,7 @@ ScopeResolution::ScopeResolution(SourceInfo &info,
   this->identifiers = identifiers;
 }
 
+FunctionDecl::FunctionDecl(SourceInfo &info, string &name, const shared_ptr<Callable_T> &callable)
+    : Statement(info), name(name) {
+  this->callable = callable;
+}

@@ -22,9 +22,10 @@ enum struct TType;
 struct Context;
 
 namespace Values {
-struct Value_T;
-struct Type_T;
-enum class PrimitiveType;
+  struct Value_T;
+  struct Type_T;
+  struct Callable_T;
+  enum class PrimitiveType;
 } // namespace Values
 
 using Type = std::shared_ptr<Values::Type_T>;
@@ -272,9 +273,7 @@ struct ArrayInitializer : Expression {
                    vector<ExpressionPtr> &&init);
   Value Evaluate() override;
 };
-namespace Values {
-struct Callable_T;
-}
+
 struct Call : virtual Expression, virtual Statement {
   ExpressionPtr operand;
   ArgumentsPtr args;
@@ -401,15 +400,14 @@ struct CompoundAssignment : Statement {
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;
 };
+
 struct FunctionDecl : Statement {
   BlockPtr block;
   ParametersPtr parameters;
   const string name;
   const Type returnType;
-  FunctionDecl(SourceInfo &info, string &name, BlockPtr &&block,
-               ParametersPtr &&parameters, const Type &returnType)
-      : Statement(info), block(std::move(block)),
-        parameters(std::move(parameters)), name(name), returnType(returnType) {}
+  shared_ptr<Values::Callable_T> callable;
+  FunctionDecl(SourceInfo &info, string &name, const shared_ptr<Values::Callable_T> &callable);
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;
 };
@@ -528,13 +526,13 @@ struct Match : Expression {
 };
 
 struct StructDeclaration : Statement {
-  unique_ptr<ObjectInitializer> ctor_obj;
+  
   
   string type_name;
   vector<string> template_args;
   
   StructDeclaration(SourceInfo &info, const string &name,
-                    unique_ptr<ObjectInitializer> &&ctor_obj, vector<string> &template_args);
+                    vector<StatementPtr> &&statements, vector<string> &template_args);
   
   ExecutionResult Execute() override;
 };
