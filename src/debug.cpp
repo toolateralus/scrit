@@ -1,6 +1,7 @@
 #include "debug.hpp"
 #include "ast.hpp"
 #include "context.hpp"
+#include "ctx.hpp"
 #include "value.hpp"
 #include <algorithm>
 #include <iostream>
@@ -115,7 +116,7 @@ void Debug::m_setBreakpoint(std::string &line, const string &breakpointKey) {
   Debug::InsertBreakpoint(index, false);
 }
 void Debug::m_printScope() {
-  auto scope = ASTNode::context.scopes.back();
+  auto &scope = ASTNode::context.ImmediateScope();
   if (scope->Members().size() == 0) {
     std::cout << "scope empty." << '\n';
   }

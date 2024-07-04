@@ -1,7 +1,6 @@
 #pragma once
 #include "lexer.hpp"
 #include "native.hpp"
-#include "type.hpp"
 
 #include <cassert>
 #include <functional>
@@ -10,6 +9,7 @@
 
 class ASTVisitor;
 
+using std::shared_ptr;
 using std::string;
 using std::vector;
 
@@ -22,11 +22,14 @@ enum struct TType;
 struct Context;
 
 namespace Values {
-struct Value_T;
-struct Type_T;
-enum class PrimitiveType;
+  struct Value_T;
+  struct Type_T;
+  struct Callable_T;
+  enum class PrimitiveType;
+  struct TypeParam_T;
 } // namespace Values
 
+using TypeParam = std::shared_ptr<Values::TypeParam_T>;
 using Type = std::shared_ptr<Values::Type_T>;
 
 struct Scope_T;
@@ -154,12 +157,9 @@ struct Identifier : Expression {
 };
 
 struct TypeIdentifier : Expression {
-  TypeIdentifier(SourceInfo &info, Type type) : Expression(info, type) {
-    
-  }
+  TypeIdentifier(SourceInfo &info, Type type) : Expression(info, type) {}
   Value Evaluate() override;
 };
-
 
 struct Arguments : Expression {
   Arguments(SourceInfo &info, vector<ExpressionPtr> &&args);
@@ -196,7 +196,7 @@ struct Parameters : Statement {
     Type type;
     Mutability mutability;
   };
-  
+
   Parameters(SourceInfo &info);
   auto ParamTypes() -> vector<Type> {
     vector<Type> types;
@@ -209,30 +209,28 @@ struct Parameters : Statement {
 
   void Apply(Scope scope, vector<ExpressionPtr> &values);
   void Apply(Scope scope, vector<Value> &values);
-  
+
   void ForwardDeclare(Scope scope);
 
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;
-  
+
   auto Clone() -> unique_ptr<Parameters>;
-  
-  auto Params() -> vector<Param>& {
-    return params;
-  }
-  
-  private:
+
+  auto Params() -> vector<Param> & { return params; }
+
+private:
   std::vector<Param> params;
 };
 struct TypeParameters : Statement {
   ExecutionResult Execute() override;
-  TypeParameters(SourceInfo &info, std::vector<Values::TypeParam> &&params);
+  TypeParameters(SourceInfo &info, std::vector<TypeParam> &&params);
   void Accept(ASTVisitor *visitor) override;
   void DeclareTypes();
   auto Clone() -> unique_ptr<TypeParameters>;
   TypeParameters(SourceInfo &info);
 private:
-  std::vector<Values::TypeParam> params;
+  std::vector<TypeParam> params;
 };
 
 
@@ -264,6 +262,7 @@ struct Delete : Statement {
   void Accept(ASTVisitor *visitor) override;
 };
 struct Block : Statement {
+  ~Block();
   Block(SourceInfo &info, vector<StatementPtr> &&statements, Scope scope);
   vector<StatementPtr> statements;
   Scope scope;
@@ -293,7 +292,7 @@ struct ArrayInitializer : Expression {
 };
 namespace Values {
 struct Callable_T;
-} // namespace Values
+}
 struct Call : virtual Expression, virtual Statement {
   ExpressionPtr operand;
   ArgumentsPtr args;
@@ -420,15 +419,15 @@ struct CompoundAssignment : Statement {
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;
 };
+
 struct FunctionDecl : Statement {
   BlockPtr block;
   ParametersPtr parameters;
   const string name;
   const Type returnType;
-  FunctionDecl(SourceInfo &info, string &name, BlockPtr &&block,
-               ParametersPtr &&parameters, const Type &returnType)
-      : Statement(info), block(std::move(block)),
-        parameters(std::move(parameters)), name(name), returnType(returnType) {}
+  shared_ptr<Values::Callable_T> callable;
+  FunctionDecl(SourceInfo &info, string &name,
+               const shared_ptr<Values::Callable_T> &callable);
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;
 };
@@ -501,17 +500,16 @@ struct BinExpr : Expression {
   Value Evaluate() override;
   void Accept(ASTVisitor *visitor) override;
 };
+
+struct ScopeResolution;
 struct Using : Statement {
   static vector<string> activeModules;
-  void Load();
-  Using(SourceInfo &info, const string &name, const bool isWildcard);
-  Using(SourceInfo &info, const string &name, vector<string> &symbols);
-  vector<string> symbols;
-  string moduleName;
-  bool isWildcard;
-  // TODO: make this cross platform friendly. it's the only thing keeping us
-  // linux-only, as well as the install script.
+  void Load(const string &moduleName);
+  Using(SourceInfo &info, unique_ptr<ScopeResolution> &&resolution);
+
+  // TODO: make this cross platform.
   const string moduleRoot = "/usr/local/scrit/modules/";
+
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;
 };
@@ -548,15 +546,22 @@ struct Match : Expression {
 };
 
 struct StructDeclaration : Statement {
-  unique_ptr<ObjectInitializer> ctor_obj;
-  
+
   string type_name;
   vector<string> template_args;
-  
+
   StructDeclaration(SourceInfo &info, const string &name,
-                    unique_ptr<ObjectInitializer> &&ctor_obj, vector<string> &template_args);
+                    vector<StatementPtr> &&statements,
+                    vector<string> &template_args);
 
   ExecutionResult Execute() override;
+};
+
+struct ScopeResolution : Expression {
+  vector<string> identifiers;
+  string full_path;
+  ScopeResolution(SourceInfo &info, vector<string> &identifiers);
+  Value Evaluate() override;
 };
 
 struct Constructor : Expression {

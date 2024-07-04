@@ -431,19 +431,6 @@ void ASTSerializer::visit(BinExpr *binExpr) {
 void ASTSerializer::visit(Using *usingStmt) {
   Write("Using: {");
   {
-    auto _ = Indenter(this);
-    Write("IsWildcard: " + std::to_string(usingStmt->isWildcard));
-    Write("Identifier: " + usingStmt->moduleName);
-    if (!usingStmt->symbols.empty()) {
-      Write("Symbols: {");
-      {
-        auto _ = Indenter(this);
-        for (auto &symbol : usingStmt->symbols) {
-          Write(symbol);
-        }
-      }
-      Write("}");
-    }
   }
   Write("}");
 }

@@ -4,6 +4,7 @@
 #include "value.hpp"
 #include <cstdlib>
 
+#include "ctx.hpp"
 #include "type.hpp"
 #include "value.hpp"
 #include <stdexcept>
@@ -19,16 +20,13 @@ std::unordered_map<std::string, NativeCallable>
     FunctionRegistry::cachedCallables = {};
 
 Object ScritModDefAsObject(ScritModDef *mod) {
-  m_InstantiateCallables(mod);
-  auto object = Object_T::New(mod->context->scopes[0]);
-  return object;
+  return Ctx::CreateObject(mod->scopes->front());
 }
 
 void m_InstantiateCallables(ScritModDef *module) {
-  auto context = module->context;
   for (const auto &[key, func] : *module->functions) {
-    context->Insert(key, FunctionRegistry::MakeCallable(func),
-                    Mutability::Const);
+    module->scopes->front()->Set(key, FunctionRegistry::MakeCallable(func),
+                                 Mutability::Const);
   }
 }
 
@@ -54,6 +52,16 @@ NativeCallable FunctionRegistry::GetCallable(const std::string &name) {
   return nullptr;
 }
 
+std::string replaceAll(std::string str, const std::string &from,
+                       const std::string &to) {
+  size_t start_pos = 0;
+  while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+    str.replace(start_pos, from.length(), to);
+    start_pos += to.length();
+  }
+  return str;
+}
+
 ScritModDef *LoadScritModule(const std::string &name, const std::string &path,
                              void *&out_handle) {
 #ifdef __linux__
@@ -62,7 +70,10 @@ ScritModDef *LoadScritModule(const std::string &name, const std::string &path,
     throw std::runtime_error(dlerror());
   }
 
-  auto fnName = "InitScritModule_" + name;
+  auto replaced = std::string(name);
+  replaced = replaceAll(replaced, "::", "_SR_");
+
+  auto fnName = "InitScritModule_" + replaced;
   void *func = dlsym(out_handle, fnName.c_str());
   if (!func) {
     throw std::runtime_error(dlerror());
@@ -106,11 +117,12 @@ ScritModDef *LoadScritModule(const std::string &name, const std::string &path,
 }
 ScritModDef *CreateModDef() {
   ScritModDef *mod = (ScritModDef *)malloc(sizeof(ScritModDef));
-  mod->context = new Context();
+  mod->scopes = new std::vector<shared_ptr<Scope_T>>{make_shared<Scope_T>()};
   mod->description = new string();
   mod->functions =
       new std::unordered_map<std::string, shared_ptr<NativeFunction>>();
   mod->types = new std::unordered_map<std::string, Type>();
+  mod->_namespace = nullptr;
   return mod;
 }
 std::unordered_map<std::string, shared_ptr<NativeFunction>> &
@@ -132,14 +144,21 @@ void ScritModDef::AddFunction(const std::string &name,
 }
 void ScritModDef::AddVariable(const std::string &name, Value value,
                               const Mutability &mutability) {
-  context->Insert(name, value, mutability);
+  scopes->back()->Set(name, value, mutability);
 }
 ScritModDef::~ScritModDef() {
   delete description;
-  delete context;
+  delete scopes;
   delete types;
   delete functions;
 }
 void ScritModDef::AddType(const std::string &name, const Type type) {
   (*types)[name] = type;
+}
+void ScritModDef::SetNamespace(const string &name) {
+  if (_namespace != nullptr) {
+    throw std::runtime_error(
+        "error in module: namespace cannot be set more than once");
+  }
+  _namespace = new std::string(name);
 }

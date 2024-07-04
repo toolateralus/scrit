@@ -14,11 +14,12 @@
 Token Parser::Peek(size_t lookahead) {
   if (lookahead >= tokens.size()) {
     throw std::out_of_range("Lookahead is out of range");
+  } else [[likely]] {
+    auto &tkn = tokens[tokens.size() - 1 - lookahead];
+    return tkn;
   }
-  auto &tkn = tokens[tokens.size() - 1 - lookahead];
-  return tkn;
 }
-Token Parser::Eat() {
+Token Parser::Eat() noexcept {
   auto tkn = tokens.back();
   info = tkn.info;
   tokens.pop_back();
@@ -28,13 +29,15 @@ Token Parser::Expect(const TType ttype) {
   if (tokens.back().type != ttype) {
     throw std::runtime_error("Expected " + TTypeToString(ttype) + " got " +
                              TTypeToString(tokens.back().type));
+  } else [[likely]] {
+    auto tkn = tokens.back();
+    tokens.pop_back();
+    return tkn;
   }
-  auto tkn = tokens.back();
-  tokens.pop_back();
-  return tkn;
 }
 
 unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
+
   std::reverse(tokens.begin(), tokens.end());
   this->tokens = std::move(tokens);
   vector<StatementPtr> statements;
@@ -127,7 +130,7 @@ StatementPtr Parser::ParseKeyword(Token token) {
   switch (token.type) {
   case TType::Struct: {
     auto name = Expect(TType::Identifier).value;
-    
+
     vector<string> template_args;
     if (Peek().type == TType::Less) {
       Eat();
@@ -136,16 +139,28 @@ StatementPtr Parser::ParseKeyword(Token token) {
           break;
         }
         template_args.push_back(Expect(TType::Identifier).value);
+        if (Peek().type == TType::Comma) {
+          Eat();
+        }
       }
       Expect(TType::Greater);
-    }    
-    
-    ASTNode::context.scopes.back()->InsertType(
-        name, make_shared<StructType>(name, nullptr, template_args));
-        
-    auto ctor = ParseObjectInitializer();
-    
-    return make_unique<StructDeclaration>(info, name, std::move(ctor), template_args);
+    }
+
+    ASTNode::context.ImmediateScope()->InsertType(
+        name, make_shared<StructType>(
+                  name, std::vector<unique_ptr<Declaration>>(), template_args));
+
+    auto obj = ParseObjectInitializer();
+
+    return make_unique<StructDeclaration>(
+        info, name, std::move(obj->block->statements), template_args);
+  }
+
+  case TType::Namespace: {
+    auto path = ParseScopeResolution();
+    ASTNode::context.CreateNamespace(path->identifiers);
+    ASTNode::context.SetCurrentNamespace(path->identifiers);
+    return make_unique<Noop>(info);
   }
   case TType::Type: {
     auto name = Expect(TType::Identifier).value;
@@ -195,66 +210,10 @@ StatementPtr Parser::ParseKeyword(Token token) {
   }
 }
 
-// TODO: we need to refactor usings entirely for the way the type system mingles
-// with types. usings should be equivalent to a CSharp namespace.
 StatementPtr Parser::ParseUsing() {
-  auto next = Peek();
+  auto path = ParseScopeResolution();
 
-  // using all * widlcard
-  if (next.type == TType::Mul) {
-    Eat();
-    Expect(TType::From);
-    auto iden = Expect(TType::Identifier);
-    return make_unique<Using>(info, iden.value, true);
-
-  }
-  // plain 'using raylib' statement
-  // also parses 'using std.array'
-  else if (next.type == TType::Identifier) {
-    string name;
-    auto iden = Expect(TType::Identifier);
-    name = iden.value;
-    if (Peek().type == TType::Dot) {
-      name += Eat().value;
-      while (!tokens.empty()) {
-        name += Eat().value;
-        if (Peek().type != TType::Dot) {
-          break;
-        }
-      }
-    }
-    return make_unique<Using>(info, name, false);
-  }
-  // 'using {iden, iden} from raylib'
-  else if (next.type == TType::LCurly) {
-    Eat();
-    vector<string> names = {};
-    while (!tokens.empty()) {
-      auto next = Peek();
-
-      if (next.type == TType::Comma) {
-        Eat();
-        continue;
-      }
-
-      if (next.type == TType::RCurly) {
-        break;
-      }
-      auto operand = ParseOperand();
-
-      if (auto iden = dynamic_cast<Identifier *>(operand.get())) {
-        names.push_back(iden->name);
-      } else {
-        throw std::runtime_error("invalid using statement");
-      }
-    }
-    Expect(TType::RCurly);
-    Expect(TType::From);
-    auto iden = Expect(TType::Identifier);
-
-    return make_unique<Using>(info, iden.value, names);
-  }
-  throw std::runtime_error("Failed to parse using statement");
+  return make_unique<Using>(info, std::move(path));
 }
 // This makes it seem like we could use an 'Expression Statement' kind of
 // wrapper for generalized cases. Then, for and if can be expressions and we can
@@ -345,7 +304,7 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
   if (next.type == TType::Assign) {
     Eat();
     auto value = ParseExpression();
-    
+
     if (type) {
       if (type->Equals(value->type.get())) {
         value->type = type;
@@ -353,7 +312,7 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
         throw TypeError(type, value->type, "invalid types in assignment");
       }
     }
-    
+
     return make_unique<Assignment>(info, value->type, std::move(identifier),
                                    std::move(value));
 
@@ -376,7 +335,7 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
   }
 }
 
-unique_ptr<Noop> Parser::ParseFunctionDeclaration() {
+unique_ptr<FunctionDecl> Parser::ParseFunctionDeclaration() {
   auto info = this->info;
   auto name = Expect(TType::Identifier).value;
 
@@ -396,13 +355,12 @@ unique_ptr<Noop> Parser::ParseFunctionDeclaration() {
   
   auto callable = make_shared<Callable_T>
     (returnType, nullptr, std::move(parameters), std::move(type_params));
-  ASTNode::context.scopes.back()->Set(name, callable, Mutability::Mut);
+  ASTNode::context.ImmediateScope()->Set(name, callable, Mutability::Mut);
   
   auto block = ParseBlock(param_clone, std::move(type_param_clone));
 
   callable->block = std::move(block);
-
-  return std::make_unique<Noop>(info);
+  return make_unique<FunctionDecl>(info, name, callable);
 }
 // for statements like
 // obj.func()
@@ -569,22 +527,20 @@ ParametersPtr Parser::ParseParameters() {
   auto next = Peek();
   std::vector<Parameters::Param> params = {};
   while (tokens.size() > 0 && next.type != TType::RParen) {
-    
+
     Mutability mut = Mutability::Const;
     if (Peek().type == TType::Const || Peek().type == TType::Mut) {
       mut = Eat().type == TType::Mut ? Mutability::Mut : Mutability::Const;
     }
-    
+
     auto value = Expect(TType::Identifier).value;
     Expect(TType::Colon);
     auto type = ParseType();
-    
-    Parameters::Param param = {
-        .name = value, 
-        .default_value = nullptr,
-        .type = type, 
-        .mutability = mut
-    };
+
+    Parameters::Param param = {.name = value,
+                               .default_value = nullptr,
+                               .type = type,
+                               .mutability = mut};
 
     // Default values for parameter.
     if (Peek().type == TType::Assign) {
@@ -654,7 +610,7 @@ ArgumentsPtr Parser::ParseArguments() {
 BlockPtr Parser::ParseBlock(ParametersPtr &params, TypeParamsPtr &&type_params) {
   
   auto scope = ASTNode::context.PushScope();
-  
+
   params->ForwardDeclare(scope);
 
   if (type_params) {
@@ -688,7 +644,7 @@ BlockPtr Parser::ParseBlock(ParametersPtr &params, TypeParamsPtr &&type_params) 
       statements.push_back(make_unique<Return>(info, ParseExpression()));
       break;
     }
-    
+
     // add each statement to the block.
     auto statement = ParseStatement();
     statements.push_back(std::move(statement));
@@ -705,12 +661,12 @@ BlockPtr Parser::ParseBlock(ParametersPtr &params, TypeParamsPtr &&type_params) 
       // break the parse loop.
       break;
     }
-    
+
     if (next.type == TType::RCurly) {
       break;
     }
   }
-  
+
   Expect(TType::RCurly);
   ASTNode::context.PopScope();
   return make_unique<Block>(info, std::move(statements), scope);
@@ -718,7 +674,7 @@ BlockPtr Parser::ParseBlock(ParametersPtr &params, TypeParamsPtr &&type_params) 
 
 BlockPtr Parser::ParseBlock() {
   auto scope = ASTNode::context.PushScope();
-  
+
   auto info = this->info;
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};
@@ -746,7 +702,7 @@ BlockPtr Parser::ParseBlock() {
       statements.push_back(make_unique<Return>(info, ParseExpression()));
       break;
     }
-    
+
     // add each statement to the block.
     auto statement = ParseStatement();
     statements.push_back(std::move(statement));
@@ -763,12 +719,12 @@ BlockPtr Parser::ParseBlock() {
       // break the parse loop.
       break;
     }
-    
+
     if (next.type == TType::RCurly) {
       break;
     }
   }
-  
+
   Expect(TType::RCurly);
   ASTNode::context.PopScope();
   return make_unique<Block>(info, std::move(statements), scope);
@@ -877,4 +833,21 @@ StatementPtr Parser::ParseReturn() {
   return make_unique<Return>(info, ParseExpression());
 }
 StatementPtr Parser::ParseBreak() { return make_unique<Break>(info); }
+
 // ####### END CONTROL FLOW #########
+unique_ptr<ScopeResolution> Parser::ParseScopeResolution() {
+  vector<string> identifiers;
+  while (!tokens.empty()) {
+    identifiers.push_back(Expect(TType::Identifier).value);
+
+    if (!tokens.empty()) {
+      auto next = Peek();
+      if (next.type != TType::ScopeResolution) {
+        break;
+      } else {
+        Eat();
+      }
+    }
+  }
+  return make_unique<ScopeResolution>(info, identifiers);
+}

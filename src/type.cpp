@@ -1,6 +1,7 @@
 #include "type.hpp"
 #include "ast.hpp"
 #include "context.hpp"
+#include "ctx.hpp"
 #include "error.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
@@ -241,18 +242,17 @@ Type Parser::ParseType() {
   if (!tokens.empty() && Peek().type == TType::Func) {
     return Parser::ParseFunctionType();
   }
-  
+
   if (!tokens.empty() && Peek().type == TType::LParen) {
     return ParseTupleType();
   }
-  
+
   auto tname = Expect(TType::Identifier).value;
   auto type = TypeSystem::Current().Find(tname);
   // template types.
   if (!tokens.empty() && Peek().type == TType::Less) {
     return Parser::ParseTemplateType(type);
   }
- 
 
   return type;
 }
@@ -314,23 +314,17 @@ Value ArrayType::Default() { return Ctx::CreateArray(); }
 Value AnyType::Default() { return Ctx::Undefined(); }
 
 StructType::StructType(const string &name,
-                       std::unique_ptr<ObjectInitializer> &&ctor_obj, vector<string> &template_args)
-    : name(name), ctor_obj(std::move(ctor_obj)), template_args(template_args) {
-  // this happens during forward declaration during parsing of struct so they
-  // can reference their own type.
-  if (this->ctor_obj == nullptr) {
-    return;
-  }
-  
-  for (const auto &statement : this->ctor_obj->block->statements) {
-    if (auto decl = dynamic_cast<Declaration *>(statement.get())) {
-      field_names.push_back(decl->name);
-    }
-  }
-}
+                       vector<std::unique_ptr<Declaration>> &&fields,
+                       vector<string> &template_args)
+    : name(name), template_args(template_args), fields(std::move(fields)) {}
 
 Value StructType::Default() {
-  auto object = ctor_obj->Evaluate()->Clone();
+  auto object = Ctx::CreateObject();
+  ASTNode::context.PushScope(object->scope);
+  for (const auto &field : fields) {
+    field->Execute();
+  }
+  ASTNode::context.PopScope();
   object->type = shared_from_this();
   return object;
 }
@@ -351,10 +345,9 @@ Value StructType::Construct(ArgumentsPtr &args) {
   size_t i = 0;
   for (const auto &arg : args->values) {
     auto value = arg->Evaluate();
-    if (i < field_names.size()) {
-      auto name = field_names[i];
+    if (i < fields.size()) {
+      auto &name = fields[i]->name;
       auto field_type = object->GetMember(name)->type;
-      
       if (!field_type->Equals(arg->type.get())) {
         throw TypeError(field_type, arg->type);
       }

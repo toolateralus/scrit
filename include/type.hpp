@@ -14,6 +14,7 @@ struct Arguments;
 using ArgumentsPtr = std::unique_ptr<Arguments>;
 struct ObjectInitializer;
 struct Scope_T;
+struct Declaration;
 
 namespace Values {
 struct Value_T;
@@ -135,10 +136,10 @@ struct AnyType : Type_T {
 };
 struct StructType : Type_T, std::enable_shared_from_this<StructType> {
   ~StructType();
-  std::unique_ptr<ObjectInitializer> ctor_obj;
-  vector<string> field_names;
+  vector<std::unique_ptr<Declaration>> fields;
   vector<string> template_args;
-  StructType(const string &name, std::unique_ptr<ObjectInitializer> &&init, vector<string> &template_args);
+  StructType(const string &name, vector<std::unique_ptr<Declaration>> &&fields,
+             vector<string> &template_args);
   bool Equals(const Type_T *other) override;
   Value Default() override;
   Value Construct(ArgumentsPtr &args);

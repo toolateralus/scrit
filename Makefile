@@ -8,7 +8,7 @@ RELEASEFLAGS := -O3
 TESTFLAGS := -g
 
 # Linker flags
-LDFLAGS := # -fsanitize=address -fsanitize=undefined -fsanitize=leak
+LDFLAGS := #-fsanitize=address -fsanitize=undefined -fsanitize=leak
 TESTLINKERFLAGS := -lgtest -lgtest_main
 
 # Directories

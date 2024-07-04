@@ -1,6 +1,7 @@
 #include "ast.hpp"
 #include "ast_visitor.hpp"
 #include "context.hpp"
+#include "ctx.hpp"
 #include "debug.hpp"
 #include "error.hpp"
 #include "lexer.hpp"
@@ -167,15 +168,17 @@ BinExpr::BinExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right,
   this->op = op;
 }
 
-Using::Using(SourceInfo &info, const string &name, const bool isWildcard)
-    : Statement(info), symbols({}), moduleName(name), isWildcard(isWildcard) {
-  Load();
-};
+Using::Using(SourceInfo &info, unique_ptr<ScopeResolution> &&resolution)
+    : Statement(info) {
 
-Using::Using(SourceInfo &info, const string &name, vector<string> &symbols)
-    : Statement(info), symbols(symbols), moduleName(name), isWildcard(false) {
-  Load();
-};
+  // if (auto ns = context.FindNamespace(resolution->identifiers)) {
+  //   context.ImportNamespace(resolution->identifiers);
+  //   return;
+  // }
+
+  auto path = moduleRoot + resolution->full_path;
+  Load(resolution->full_path);
+}
 
 UnaryStatement::UnaryStatement(SourceInfo &info, ExpressionPtr &&expr)
     : Statement(info), expr(std::move(expr)) {}
@@ -193,7 +196,7 @@ CompAssignExpr::CompAssignExpr(SourceInfo &info, ExpressionPtr &&left,
                                ExpressionPtr &&right, TType op)
     : Expression(info, nullptr), left(std::move(left)), right(std::move(right)),
       op(op) {
-  this->type = left->type;
+  this->type = this->left->type;
 }
 
 string CC_ToString(ControlChange controlChange) {
@@ -298,7 +301,7 @@ Declaration::Declaration(SourceInfo &info, const string &name,
                          const Type &type)
     : Statement(info), name(name), expr(std::move(expr)), mut(mut), type(type) {
 
-  context.scopes.back()->ForwardDeclare(name, type, mut);
+  context.ImmediateScope()->ForwardDeclare(name, type, mut);
 }
 
 // ##############################################
@@ -309,7 +312,8 @@ Declaration::Declaration(SourceInfo &info, const string &name,
 ExecutionResult Program::Execute() {
 
   // create an object called global, so we can bypass any shadowed variables.
-  auto global = Object_T::New(ASTNode::context.scopes.front());
+  auto global =
+      Object_T::New(ASTNode::context.current_namespace->scopes.front());
 
   // include all of the native functions in this global object.
   for (const auto &[name, _] : FunctionRegistry::GetRegistry()) {
@@ -394,7 +398,6 @@ ExecutionResult Return::Execute() {
   else
     return ExecutionResult(ControlChange::Return, Value_T::UNDEFINED);
 }
-
 Value ReturnCopyIfNeeded(Value result) {
   switch (result->GetPrimitiveType()) {
   case Values::PrimitiveType::Invalid:
@@ -418,7 +421,6 @@ Value ReturnCopyIfNeeded(Value result) {
   // how? all cases are handled.
   return result;
 }
-
 void ApplyCopySemantics(Value &result) {
   switch (result->GetPrimitiveType()) {
   case Values::PrimitiveType::Invalid:
@@ -515,6 +517,7 @@ ExecutionResult Block::Execute() {
       continue;
     }
   }
+  scope->Clear();
   ASTNode::context.PopScope();
   return ExecutionResult::None;
 }
@@ -552,7 +555,6 @@ Value ArrayInitializer::Evaluate() {
   array->type = type;
   return array;
 }
-
 Value Call::Evaluate() {
   auto lvalue = operand->Evaluate();
   if (lvalue->GetPrimitiveType() == PrimitiveType::Callable) {
@@ -560,9 +562,10 @@ Value Call::Evaluate() {
     auto result = callable->Call(args);
     return result;
   } else {
-    // TODO: put this somewhere where it makes sense. maybe it's own node for operator overloads
-    // where an operator is directly applied to a type like an object.
-    
+    // TODO: put this somewhere where it makes sense. maybe it's own node for
+    // operator overloads where an operator is directly applied to a type like
+    // an object.
+
     // Here we overload the () operator. this is done in a special case because
     // we don't treat invocation of callables like a binary expression, it's its
     // own binary expr node.
@@ -592,30 +595,27 @@ ExecutionResult Else::Execute() {
   }
 }
 ExecutionResult For::Execute() {
-  context.PushScope(scope);
-  if (decl != nullptr) {
-    auto result = decl->Execute();
-    switch (result.controlChange) {
-    case ControlChange::None:
-      break;
-    case ControlChange::Continue:
-    case ControlChange::Break:
-    case ControlChange::Return:
-      return result;
-    }
+
+  if (block->statements.empty()) {
+    return ExecutionResult::None;
   }
 
-  if (condition != nullptr) {
+  context.PushScope(scope);
+  if (decl) {
+    auto _ = decl->Execute();
+  }
+
+  if (condition && condition->Evaluate()->Equals(Ctx::CreateBool(false))) {
+    return ExecutionResult::None;
+  }
+
+  // for i < 250
+  // for let i = 0, i < 250, ++i
+  if (condition) {
     while (true) {
       auto conditionResult = condition->Evaluate();
 
-      if (conditionResult->GetPrimitiveType() != PrimitiveType::Bool) {
-        return ExecutionResult::None;
-      }
-
-      auto b = static_cast<Bool_T *>(conditionResult.get());
-
-      if (b->Equals(Bool_T::False)) {
+      if (conditionResult->Equals(Bool_T::False)) {
         context.PopScope();
         return ExecutionResult::None;
       }
@@ -632,42 +632,22 @@ ExecutionResult For::Execute() {
       }
 
       if (increment) {
-        result = increment->Execute();
-        switch (result.controlChange) {
-        case ControlChange::None:
-          break;
-        case ControlChange::Continue:
-        case ControlChange::Return:
-        case ControlChange::Break:
-          throw std::runtime_error(CC_ToString(result.controlChange) +
-                                   " not allowed in for initialization.");
-        }
+        increment->Execute();
       }
     }
-  } else {
-    while (true) {
-      if (increment) {
-        auto result = increment->Execute();
-        switch (result.controlChange) {
-        case ControlChange::None:
-          break;
-        case ControlChange::Continue:
-        case ControlChange::Return:
-        case ControlChange::Break:
-          throw std::runtime_error(CC_ToString(result.controlChange) +
-                                   " not allowed in for initialization.");
-        }
-      }
-      auto result = block->Execute();
-      switch (result.controlChange) {
-      case ControlChange::None:
-      case ControlChange::Continue:
-        break;
-      case ControlChange::Return:
-      case ControlChange::Break:
-        context.PopScope();
-        return ExecutionResult::None;
-      }
+  }
+
+  // for {..}
+  while (true) {
+    auto result = block->Execute();
+    switch (result.controlChange) {
+    case ControlChange::None:
+    case ControlChange::Continue:
+      continue;
+    case ControlChange::Return:
+    case ControlChange::Break:
+      context.PopScope();
+      return ExecutionResult::None;
     }
   }
   context.PopScope();
@@ -677,7 +657,8 @@ ExecutionResult Assignment::Execute() {
   auto var = ASTNode::context.Find(iden->name);
   if (!var) {
     throw std::runtime_error(
-        "cannot assign a non-existent identifier.\nuse 'let ___ = ...'\nor\nlet "
+        "cannot assign a non-existent identifier.\nuse 'let ___ = "
+        "...'\nor\nlet "
         "___ : type = ...' syntax. \n offending variable: " +
         iden->name);
   }
@@ -692,20 +673,16 @@ ExecutionResult Assignment::Execute() {
   return ExecutionResult::None;
 }
 Value EvaluateWithinObject(Scope &scope, Value object, ExpressionPtr &expr) {
-  scope->Set("this", object, Mutability::Mut);
   ASTNode::context.PushScope(scope);
   auto result = expr->Evaluate();
   ASTNode::context.PopScope();
-  scope->Erase("this");
   return result;
 }
 Value EvaluateWithinObject(Scope &scope, Value object,
                            std::function<Value()> lambda) {
-  scope->Set("this", object, Mutability::Mut);
   ASTNode::context.PushScope(scope);
   auto result = lambda();
   ASTNode::context.PopScope();
-  scope->Erase("this");
   return result;
 }
 Value DotExpr::Evaluate() {
@@ -852,9 +829,9 @@ ExecutionResult RangeBasedFor::Execute() {
         "example: for k,v : someObject/tupleArray {}");
   }
 
-  auto setter = [this, lhs](Value value) -> void {
+  const auto SetVariable = [&](const Value &value) -> void {
     if (lhs) {
-      context.scopes.back()->Set(lhs->name, value, Mutability::Const);
+      context.ImmediateScope()->Set(lhs->name, value, Mutability::Const);
     } else if (auto tuple = std::dynamic_pointer_cast<Tuple_T>(value);
                !names.empty()) {
       tuple->Deconstruct(names);
@@ -878,7 +855,7 @@ ExecutionResult RangeBasedFor::Execute() {
     for (auto &v : array->values) {
       scope->Clear();
 
-      setter(v);
+      SetVariable(v);
 
       auto result = block->Execute();
 
@@ -901,7 +878,7 @@ ExecutionResult RangeBasedFor::Execute() {
       tuple->type = TypeSystem::Current().FromTuple(tuple->values);
       scope->Clear();
 
-      setter(tuple);
+      SetVariable(tuple);
 
       auto result = block->Execute();
 
@@ -919,7 +896,7 @@ ExecutionResult RangeBasedFor::Execute() {
   } else if (isString) {
     for (auto c : string) {
       scope->Clear();
-      setter(Ctx::CreateString(std::string() + c));
+      SetVariable(Ctx::CreateString(std::string() + c));
       auto result = block->Execute();
 
       switch (result.controlChange) {
@@ -935,6 +912,7 @@ ExecutionResult RangeBasedFor::Execute() {
     }
   }
 breakLoops:
+  scope->Clear();
   ASTNode::context.PopScope();
   return ExecutionResult::None;
 }
@@ -1109,15 +1087,15 @@ ExecutionResult Property::Execute() {
 }
 ExecutionResult Declaration::Execute() {
 
-  auto &scope = ASTNode::context.scopes.back();
-  
+  auto &scope = ASTNode::context.ImmediateScope();
+
   if (scope->Contains(name) && !scope->Find(name)->first.forward_declared) {
     throw std::runtime_error(
         "cannot re-define an already existing variable.\noffending variable: " +
         name);
   }
   auto value = this->expr->Evaluate();
-  
+
   // We should not need to type check declarations at run time.
   // if (!value->type->Equals(this->type.get())) {
   //   if (value->type && this->type)
@@ -1127,7 +1105,7 @@ ExecutionResult Declaration::Execute() {
   // copy where needed
   ApplyCopySemantics(value);
 
-  ASTNode::context.scopes.back()->Set(name, value, mut);
+  ASTNode::context.ImmediateScope()->Set(name, value, mut);
 
   return ExecutionResult::None;
 }
@@ -1135,7 +1113,8 @@ ExecutionResult Declaration::Execute() {
 // Ideally this would be done when the node is interpreted.
 // However, we have a problem where we do all of our symbol lookup during
 // parsing.
-void Using::Load() {
+void Using::Load(const std::string &moduleName) {
+
   for (const auto &mod : activeModules) {
     if (moduleName == mod) {
       return;
@@ -1149,33 +1128,32 @@ void Using::Load() {
   void *handle;
   auto module = LoadScritModule(moduleName, path, handle);
 
-  // we do this even when we ignore the object becasue it registers the native
-  // callables.
-  auto object = ScritModDefAsObject(module);
+  auto _namespace = context.current_namespace;
 
-  for (const auto &[name, t] : *module->types) {
-    TypeSystem::Current().RegisterType(t, true);
+  if (module->_namespace) {
+    auto idens = Namespace::split(*module->_namespace);
+    context.CreateNamespace(idens);
+    context.SetCurrentNamespace(idens);
   }
 
-  if (!isWildcard && symbols.empty()) {
-    ASTNode::context.Insert(moduleName, object, Mutability::Const);
-  } else {
-    vector<Value> values = {};
-    if (!symbols.empty()) {
-      for (const auto &name : symbols) {
-        auto value = module->context->Find(name);
-        if (value == Value_T::UNDEFINED) {
-          throw std::runtime_error("invalid using statement. could not find " +
-                                   name);
-        }
-
-        ASTNode::context.Insert(name, value, Mutability::Const);
-      }
+  for (const auto &[name, t] : *module->types) {
+    if (TypeSystem::Current().Exists(name)) {
+      TypeSystem::Current().RegisterType(t, true);
     } else {
-      for (const auto &[key, var] : object->scope->Members()) {
-        ASTNode::context.Insert(key.value, var, key.mutability);
-      }
+      ASTNode::context.ImmediateScope()->InsertType(t->GetName(), t);
     }
+  }
+
+  for (const auto &symbol : *module->functions) {
+    ASTNode::context.ImmediateScope()->Set(
+        symbol.first, FunctionRegistry::MakeCallable(symbol.second),
+        Mutability::Const);
+  }
+
+  // revert to the original namespace.
+  context.current_namespace = _namespace;
+  if (module->_namespace) {
+    context.ImportNamespace(Namespace::split(*module->_namespace));
   }
 
   free(module);
@@ -1184,7 +1162,6 @@ void Using::Load() {
 }
 
 Value Literal::Evaluate() { return expression->Clone(); }
-
 Value DefaultValue::Evaluate() { return type->Default(); }
 void ASTNode::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Executable::Accept(ASTVisitor *visitor) { visitor->visit(this); }
@@ -1233,7 +1210,7 @@ void Literal::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 
 TypeAlias::TypeAlias(SourceInfo &info, const string &alias, const Type &type)
     : Statement(info), type(type), alias(alias) {
-  context.scopes.back()->InsertType(alias, type);
+  context.ImmediateScope()->InsertType(alias, type);
 }
 
 Value MethodCall::Evaluate() { return callable->Call(this->args); }
@@ -1294,11 +1271,28 @@ shared_ptr<Callable_T> MethodCall::FindCallable() {
 void MethodCall::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 
 StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
-                                     unique_ptr<ObjectInitializer> &&ctor_obj, vector<string> &template_args)
-    : Statement(info), type_name(name), ctor_obj(std::move(ctor_obj)), template_args(template_args) {
-      
-  context.scopes.back()->OverwriteType(
-      name, make_shared<StructType>(name, std::move(this->ctor_obj), template_args));
+                                     vector<StatementPtr> &&statements,
+                                     vector<string> &template_args)
+    : Statement(info), type_name(name), template_args(template_args) {
+
+  vector<unique_ptr<Declaration>> declarations;
+
+  for (auto &statement : statements) {
+    if (auto decl = dynamic_cast<Declaration *>(statement.get())) {
+      declarations.push_back(std::unique_ptr<Declaration>(
+          static_cast<Declaration *>(statement.release())));
+    }
+  }
+  auto type =
+      make_shared<StructType>(name, std::move(declarations), template_args);
+
+  for (auto &statement : statements) {
+    if (auto decl = dynamic_cast<FunctionDecl *>(statement.get())) {
+      type->Scope().Set(decl->name, decl->callable, Mutability::Const);
+    }
+  }
+
+  context.ImmediateScope()->OverwriteType(name, type);
 }
 ExecutionResult StructDeclaration::Execute() { return ExecutionResult::None; }
 Constructor::Constructor(SourceInfo &info, const Type &type,
@@ -1334,37 +1328,45 @@ auto TypeParameters::Clone() -> unique_ptr<TypeParameters> {
   return clone;
 }
 
-Parameters::Parameters(SourceInfo &info) : 
-  Statement(info) {}
-
+Parameters::Parameters(SourceInfo &info) : Statement(info) {}
 
 void Parameters::Apply(Scope scope, std::vector<ExpressionPtr> &values) {
+
+  if (values.size() > params.size()) {
+    throw std::runtime_error("too many arguments provided to function call");
+  }
+
   for (size_t i = 0; i < params.size(); ++i) {
     auto &param = params[i];
-    
+
     const auto has_default = param.default_value != nullptr;
     const auto has_value = i < values.size();
-    
+
     if (has_value) {
-      scope->Set(Scope_T::Key(param.name, param.mutability), values[i]->Evaluate());
+      scope->Set(Scope_T::Key(param.name, param.mutability),
+                 values[i]->Evaluate());
     } else if (has_default) {
-      scope->Set(Scope_T::Key(param.name, param.mutability), param.default_value);
-    } else throw std::runtime_error("too few args provided to function");
+      scope->Set(Scope_T::Key(param.name, param.mutability),
+                 param.default_value);
+    } else
+      throw std::runtime_error("too few args provided to function");
   }
 }
 
 void Parameters::Apply(Scope scope, std::vector<Value> &values) {
   for (size_t i = 0; i < params.size(); ++i) {
     auto &param = params[i];
-    
+
     const auto has_default = param.default_value != nullptr;
     const auto has_value = i < values.size();
-    
+
     if (has_value) {
       scope->Set(Scope_T::Key(param.name, param.mutability), values[i]);
     } else if (has_default) {
-      scope->Set(Scope_T::Key(param.name, param.mutability), param.default_value);
-    } else throw std::runtime_error("too few args provided to function");
+      scope->Set(Scope_T::Key(param.name, param.mutability),
+                 param.default_value);
+    } else
+      throw std::runtime_error("too few args provided to function");
   }
 }
 
@@ -1374,9 +1376,38 @@ void Parameters::ForwardDeclare(Scope scope) {
   }
 }
 Value TypeIdentifier::Evaluate() { return Ctx::Undefined(); }
+
+Value ScopeResolution::Evaluate() {
+  auto resolution = context.Resolve(this);
+  if (resolution.value) {
+    return resolution.value;
+  } else {
+    throw std::runtime_error("unable to resolve scope for : " +
+                             this->full_path);
+  }
+}
+
+ScopeResolution::ScopeResolution(SourceInfo &info, vector<string> &identifiers)
+    : Expression(info, TypeSystem::Current().Undefined) {
+  for (const auto &iden : identifiers) {
+    full_path += iden;
+
+    if (iden != identifiers.back()) {
+      full_path += "::";
+    }
+  }
+  this->identifiers = identifiers;
+}
+
+FunctionDecl::FunctionDecl(SourceInfo &info, string &name,
+                           const shared_ptr<Callable_T> &callable)
+    : Statement(info), name(name) {
+  this->callable = callable;
+}
+Block::~Block() {}
 void TypeParameters::DeclareTypes() {
   for (auto &param : params) {
     auto type = make_shared<GenericType_T>(param);
-    ASTNode::context.scopes.back()->InsertType(param->name, type);
+    ASTNode::context.ImmediateScope()->InsertType(param->name, type);
   }
 }

@@ -2,6 +2,7 @@
 
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -9,16 +10,18 @@ using std::string;
 using std::stringstream;
 using std::vector;
 
-struct SourceInfo {
-  static vector<SourceInfo *> &getInfos() {
-    static vector<SourceInfo *> all_info;
-    return all_info;
-  }
-  SourceInfo(const int loc, const int col, const std::string &source)
-      : loc(loc), col(col), source(source) {
-    getInfos().push_back(this);
-  }
-  std::string ToString() const {
+struct SourceInfo final {
+  SourceInfo() = delete;
+  SourceInfo(const SourceInfo &) = default;
+  SourceInfo(SourceInfo &&) = default;
+  SourceInfo &operator=(const SourceInfo &) = default;
+  SourceInfo &operator=(SourceInfo &&) = default;
+  ~SourceInfo() {}
+
+  explicit SourceInfo(const int loc, const int col, const std::string &source)
+      : loc(loc), col(col), source(source) {}
+
+  std::string ToString() const noexcept {
     return string("{\n   ") + "line: " + std::to_string(loc) +
            "\n   col: " + std::to_string(col) + "\n   source: " + source +
            "\n}\n";
@@ -110,30 +113,39 @@ enum class TType {
   Arrow,
   Type,
   Struct,
+  ScopeResolution,
+  Namespace,
 };
+
 struct Token {
-  Token(const int &loc, const int &col, const string &value, const TType type,
-        const TFamily family);
+  Token() = delete;
+  Token(const Token &) = default;
+  Token(Token &&) = default;
+  Token &operator=(const Token &) = default;
+  Token &operator=(Token &&) = default;
+
+  explicit Token(const int &loc, const int &col, const string &value,
+                 const TType type, const TFamily family);
   SourceInfo info;
   string value;
   int loc = 0, col = 0;
   TType type;
   TFamily family;
 
-  string ToString() const;
+  string ToString() const noexcept;
 };
-struct Lexer {
+struct Lexer final {
   size_t pos = 0;
   size_t loc = 0;
   size_t col = 0;
-  string input;
-  std::unordered_map<string, TType> operators;
-  std::unordered_map<string, TType> keywords;
-  Lexer();
+  std::string_view input;
+  const std::unordered_map<string, TType> operators;
+  const std::unordered_map<string, TType> keywords;
+  explicit Lexer();
   vector<Token> Lex(const string &input);
-  Token LexIden();
+  Token LexIden() noexcept;
+  Token LexNum() noexcept;
   Token LexString();
-  Token LexNum();
   Token LexOp();
 };
 string TokensToString(const vector<Token> &tokens);

@@ -1,5 +1,6 @@
 #include "ast.hpp"
 #include "context.hpp"
+#include "ctx.hpp"
 #include "error.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
@@ -28,7 +29,7 @@ ExpressionPtr Parser::ParseExpression() {
 ExpressionPtr Parser::ParseCompoundAssignment() {
   auto left = ParseLogicalOr();
 
-  if (!tokens.empty()) {
+  while (!tokens.empty()) {
     auto next = Peek();
     if (!IsCompoundAssignmentOperator(next.type)) {
       return left;
@@ -37,10 +38,10 @@ ExpressionPtr Parser::ParseCompoundAssignment() {
     if (dynamic_cast<Literal *>(left.get())) {
       throw std::runtime_error("cannot use compound assignment on a literal");
     }
-
+    
     Eat();
     auto expr = ParseExpression();
-    return make_unique<CompAssignExpr>(info, std::move(left), std::move(expr),
+    left = make_unique<CompAssignExpr>(info, std::move(left), std::move(expr),
                                        next.type);
   }
   return left;
@@ -156,14 +157,31 @@ ExpressionPtr Parser::ParsePostfix() {
         next.type != TType::Dot) {
       break;
     }
+    // Templated function call
+    if (next.type == TType::Less && Peek(1).type == TType::Identifier &&
+        TypeSystem::Current().Exists(Peek(1).value)) {
+      // // auto template_params = ParseTemplateParams();
+      // auto args= ParseArguments();
+
+      // auto type_iden = dynamic_cast<TypeIdentifier *>(expr.get());
+
+      // if (type_iden) {
+      //   expr =  make_unique<Constructor>(info, type_iden->type,
+      //   std::move(args)); continue;
+      // }
+
+      // expr = std::make_unique<Call>(info, std::move(expr), std::move(args));
+    }
     if (next.type == TType::LParen) {
+
       auto args = ParseArguments();
 
       // Type constructors.
       auto type_iden = dynamic_cast<TypeIdentifier *>(expr.get());
-      
+
       if (type_iden) {
-        return make_unique<Constructor>(info, type_iden->type, std::move(args));
+        expr = make_unique<Constructor>(info, type_iden->type, std::move(args));
+        continue;
       }
 
       expr = std::make_unique<Call>(info, std::move(expr), std::move(args));
@@ -250,13 +268,18 @@ ExpressionPtr Parser::ParseOperand() {
                                 Int_T::New(stoi(token.value)));
   case TType::Identifier: {
     Eat();
-    
+
+    if (Peek().type == TType::ScopeResolution) {
+      tokens.push_back(token);
+      return ParseScopeResolution();
+    }
+
     if (TypeSystem::Current().Exists(token.value)) {
       tokens.push_back(token);
       auto type = ParseType();
       return make_unique<TypeIdentifier>(info, type);
     }
-    
+
     return make_unique<Identifier>(info, token.value);
   }
   case TType::LParen: {
@@ -315,10 +338,14 @@ unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
     case TType::RCurly:
       goto endloop;
 
-    case TType::Func:
+    case TType::Func: {
       Eat(); // eat keyword.
-      statements.push_back(ParseFunctionDeclaration());
+      auto stmnt = ParseFunctionDeclaration();
+      ASTNode::context.ImmediateScope()->Set(stmnt->name, stmnt->callable,
+                                             Mutability::Const);
+      statements.push_back(std::move(stmnt));
       break;
+    }
 
     // ignore let tokens.
     case TType::Let:
@@ -447,7 +474,8 @@ OperandPtr Parser::ParseArrayInitializer() {
       }
 
       if (inner_type && !val->type->Equals(inner_type.get())) {
-        throw TypeError(inner_type, val->type, "invalid type in array initializer");
+        throw TypeError(inner_type, val->type,
+                        "invalid type in array initializer");
       }
 
       init_expressions.push_back(std::move(val));

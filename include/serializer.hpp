@@ -1,4 +1,5 @@
 #pragma once
+#include "ctx.hpp"
 #include "error.hpp"
 #include "lexer.hpp"
 #include "native.hpp"
@@ -6,23 +7,28 @@
 #include "type.hpp"
 #include "value.hpp"
 #include <map>
-#include <set>
 #include <stdexcept>
 #include <unordered_set>
 
 enum struct ReferenceHandling { Remove, Mark, Preserve };
 
-struct Reader {
+struct Reader final {
   vector<Token> tokens;
   Parser parser;
 
-  Reader() = delete;
-  Reader(const string &input) {
-    auto lexer = Lexer();
-    auto tokens = lexer.Lex(input);
-    std::reverse(tokens.begin(), tokens.end());
-    parser = Parser(tokens);
-  }
+  Reader(const Reader &) = default;
+  Reader(Reader &&) = default;
+  Reader &operator=(const Reader &) = default;
+  Reader &operator=(Reader &&) = default;
+  // I don't like this
+  explicit Reader(const string &input)
+      : parser(Parser([input]() {
+          auto lexer = Lexer();
+          auto tokens = lexer.Lex(input);
+          std::reverse(tokens.begin(), tokens.end());
+          auto parser = Parser(tokens);
+          return parser;
+        }())) {}
 
   Value Read() {
     auto next = parser.Peek();

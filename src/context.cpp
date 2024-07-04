@@ -4,19 +4,16 @@
 #include "value.hpp"
 #include <stdexcept>
 
-Context::Context() {
-  scopes = {
-      make_shared<Scope_T>(),
-  };
-}
-Scope Context::PushScope(Scope scope) {
+Context::Context() {}
+
+Scope Namespace::PushScope(Scope scope) {
   if (scope == nullptr) {
     scope = std::make_shared<Scope_T>();
   }
   scopes.push_back(scope);
   return scope;
 }
-Scope Context::PopScope() {
+Scope Namespace::PopScope() {
   if (scopes.empty()) {
     throw std::runtime_error("Cannot pop: Scope stack is empty");
   }
@@ -25,7 +22,7 @@ Scope Context::PopScope() {
   return scope;
 }
 
-void Context::Erase(const string &name) {
+void Namespace::Erase(const string &name) {
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     if ((*it)->Contains(name)) {
       (*it)->Erase(name);
@@ -34,7 +31,7 @@ void Context::Erase(const string &name) {
   }
 }
 
-void Context::Insert(const Scope_T::Key &key, Value value) {
+void Namespace::Insert(const Scope_T::Key &key, Value value) {
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     if ((*it)->Contains(key.value)) {
       (*it)->Set(key, value);
@@ -44,8 +41,8 @@ void Context::Insert(const Scope_T::Key &key, Value value) {
   scopes.back()->Set(key, value);
 }
 
-void Context::Insert(const string &name, Value value,
-                     const Mutability &mutability) {
+void Namespace::Insert(const string &name, Value value,
+                       const Mutability &mutability) {
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     if ((*it)->Contains(name)) {
       (*it)->Set(name, value, mutability);
@@ -55,16 +52,17 @@ void Context::Insert(const string &name, Value value,
   scopes.back()->Set(name, value, mutability);
 }
 
-auto Context::FindIter(const string &name) const -> VarIter {
+auto Namespace::FindIter(const string &name) const -> VarIter {
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     if ((*it)->Contains(name)) {
       return (*it)->Find(name);
     }
   }
-  return scopes.back()->end();
+  return scopes.back()->End();
 }
 
-auto Context::Find(const string &name) const -> Value {
+auto Namespace::Find(const string &name) const -> Value {
+  // First, search in the current namespace's scopes
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     for (const auto &[key, var] : (*it)->Members()) {
       if (key.value == name) {
@@ -77,15 +75,16 @@ auto Context::Find(const string &name) const -> Value {
       }
     }
   }
-  if (FunctionRegistry::Exists(name)) {
-    return FunctionRegistry::GetCallable(name);
+
+  for (const auto &[_, importedNs] : imported_namespaces) {
+    auto found = importedNs->Find(name);
+    if (found)
+      return found;
   }
+
   return nullptr;
 }
-void Context::Reset() {
-  scopes.clear();
-  PushScope();
-}
+
 auto Scope_T::Clone() -> Scope {
   std::map<Key, Value> variables = {};
 
@@ -163,7 +162,7 @@ ScritModHandle::~ScritModHandle() noexcept {
 }
 ScritModHandle::ScritModHandle(void *handle) noexcept : handle(handle) {}
 
-void Context::RegisterModuleHandle(void *handle) {
+void Namespace::RegisterModuleHandle(void *handle) {
   scopes.back()->PushModule(ScritModHandle(handle));
 }
 ScritModHandle::ScritModHandle(ScritModHandle &&move) noexcept {
@@ -179,7 +178,7 @@ auto Scope_T::Find(const std::string &name) -> VarIter {
   return it;
 }
 
-auto Context::FindType(const string &name) -> Type {
+auto Namespace::FindType(const string &name) -> Type {
   for (auto it = scopes.rbegin(); it != scopes.rend(); it++) {
     auto scope = *it;
     if (scope->TypeExists(name)) {
@@ -189,7 +188,7 @@ auto Context::FindType(const string &name) -> Type {
   throw std::runtime_error("couldn't find type " + name);
 }
 
-auto Context::TypeExists(const string &name) -> bool {
+auto Namespace::TypeExists(const string &name) -> bool {
   for (auto it = scopes.rbegin(); it != scopes.rend(); it++) {
     auto scope = *it;
     if (scope->TypeExists(name)) {
@@ -214,4 +213,49 @@ auto Scope_T::ForwardDeclare(const string &name, const Type &type,
   auto val = make_shared<Undefined_T>();
   val->type = type;
   variables[Key(name, mut, true)] = val;
+}
+
+Context::ResolvedPath Context::Resolve(ScopeResolution *res) {
+  auto ns = FindNamespace(res->identifiers);
+  if (ns && ns->Find(res->identifiers.back())) {
+    return {.value = ns->Find(res->identifiers.back())};
+  } else if (ns) {
+    return {._namespace = ns};
+  }
+  throw std::runtime_error("failed to resolive symbol :" + res->full_path);
+}
+
+auto Context::Find(const string &name) const -> Value {
+  auto result = current_namespace->Find(name);
+  if (!result && FunctionRegistry::Exists(name)) {
+    return FunctionRegistry::GetCallable(name);
+  }
+  return result;
+}
+auto Scope_T::InsertType(const string &name, const Type &type) -> void {
+  if (TypeExists(name) && FindType(name) != nullptr) {
+    throw std::runtime_error("re-definition of type: " + name);
+  }
+  types[name] = type;
+}
+auto Scope_T::OverwriteType(const string &name, const Type &type) -> void {
+  types[name] = type;
+}
+auto Scope_T::FindType(const string &name) -> Type {
+  if (types.contains(name)) {
+    return types[name];
+  }
+  throw std::runtime_error("couldn't find type: " + name + " in this scope");
+}
+auto Scope_T::PushModule(ScritModHandle &&handle) -> void {
+  module_handles.push_back(std::move(handle));
+}
+auto Scope_T::Create() -> Scope { return std::make_shared<Scope_T>(); }
+auto Scope_T::Create(Scope_T *scope) -> Scope {
+  return std::make_shared<Scope_T>(scope);
+}
+auto Scope_T::End() -> VarIter{ return variables.end(); }
+Scope_T::Scope_T(Scope_T *scope) {
+  variables = scope->variables;
+  types = scope->types;
 }
