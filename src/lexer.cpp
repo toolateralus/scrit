@@ -14,7 +14,7 @@ Token::Token(const int &loc, const int &col, const string &value,
              const TType type, const TFamily family)
     : info(SourceInfo(loc, col, value)), value(value), loc(loc), col(col),
       type(type), family(family) {}
-string Token::ToString() const {
+string Token::ToString() const noexcept {
   stringstream stream = {};
   stream << "Token(" << value << ") type::" << TTypeToString(type)
          << " family::" << TFamilyToString(family) << "\n";
@@ -110,21 +110,21 @@ vector<Token> Lexer::Lex(const string &input) {
 
   return tokens;
 }
-Token Lexer::LexIden() {
+Token Lexer::LexIden() noexcept {
   stringstream stream = std::stringstream{};
   int startLoc = loc;
   int startCol = col;
-
+  
   while (isalnum(input[pos]) || input[pos] == '_') {
     stream << input[pos];
     pos++;
     col++;
   }
-
+  
   auto value = stream.str();
-
+  
   if (keywords.count(value) > 0) {
-    return Token(startLoc, startCol, value, keywords[value], TFamily::Keyword);
+    return Token(startLoc, startCol, value, keywords.at(value), TFamily::Keyword);
   } else {
     return Token(startLoc, startCol, value, TType::Identifier,
                  TFamily::Identifier);
@@ -209,7 +209,7 @@ Token Lexer::LexString() {
   auto value = stream.str();
   return Token(startLoc, startCol, value, TType::String, TFamily::Literal);
 }
-Token Lexer::LexNum() {
+Token Lexer::LexNum() noexcept {
   stringstream stream = {};
   int startLoc = loc;
   int startCol = col;
@@ -256,75 +256,76 @@ Token Lexer::LexOp() {
       return Token(startLoc, startCol, op.first, op.second, TFamily::Operator);
     }
   }
+  // TODO improve this error. It prints nonsensical values which makes it harder to debug.
   auto ch = std::string() + input[startLoc];
   throw std::runtime_error("failed to parse operator " + ch);
 }
-Lexer::Lexer() {
-  operators = {{"::", TType::ScopeResolution},
-               {"->", TType::Arrow},
-               {"+", TType::Add},
-               {"-", TType::Sub},
-               {"*", TType::Mul},
-               {"/", TType::Div},
-               {"||", TType::Or},
-               {"&&", TType::And},
-               {">", TType::Greater},
-               {"<", TType::Less},
-               {">=", TType::GreaterEq},
-               {"<=", TType::LessEq},
-               {"+=", TType::AddEq},
-               {"-=", TType::SubEq},
-               {"*=", TType::MulEq},
-               {"/=", TType::DivEq},
-               {"++", TType::Increment},
-               {"--", TType::Decrement},
-               {"==", TType::Equals},
-               {"!=", TType::NotEquals},
-               {".", TType::Dot},
-               {"!", TType::Not},
-               // punctuation
-               {"(", TType::LParen},
-               {")", TType::RParen},
+Lexer::Lexer()
+    : keywords({
+          {"namespace", TType::Namespace},
+          {"struct", TType::Struct},
+          {"type", TType::Type},
+          {"let", TType::Let},
+          {"delete", TType::Delete},
+          {"const", TType::Const},
+          {"mut", TType::Mut},
+          {"default", TType::Default},
+          {"match", TType::Match},
+          {"func", TType::Func},
+          {"for", TType::For},
+          {"continue", TType::Continue},
+          {"break", TType::Break},
+          {"return", TType::Return},
+          {"if", TType::If},
+          {"else", TType::Else},
+          {"false", TType::False},
+          {"true", TType::True},
+          {"null", TType::Null},
+          {"undefined", TType::Undefined},
+          {"using", TType::Using},
+          {"from", TType::From},
+          {"import", TType::Import},
+      }),
+      operators({{"::", TType::ScopeResolution},
+                 {"->", TType::Arrow},
+                 {"+", TType::Add},
+                 {"-", TType::Sub},
+                 {"*", TType::Mul},
+                 {"/", TType::Div},
+                 {"||", TType::Or},
+                 {"&&", TType::And},
+                 {">", TType::Greater},
+                 {"<", TType::Less},
+                 {">=", TType::GreaterEq},
+                 {"<=", TType::LessEq},
+                 {"+=", TType::AddEq},
+                 {"-=", TType::SubEq},
+                 {"*=", TType::MulEq},
+                 {"/=", TType::DivEq},
+                 {"++", TType::Increment},
+                 {"--", TType::Decrement},
+                 {"==", TType::Equals},
+                 {"!=", TType::NotEquals},
+                 {".", TType::Dot},
+                 {"!", TType::Not},
+                 // punctuation
+                 {"(", TType::LParen},
+                 {")", TType::RParen},
 
-               {"{", TType::LCurly},
-               {"}", TType::RCurly},
+                 {"{", TType::LCurly},
+                 {"}", TType::RCurly},
 
-               {"[", TType::SubscriptLeft},
-               {"]", TType::SubscriptRight},
-               {",", TType::Comma},
-               {":", TType::Colon},
-               {"=", TType::Assign},
-               {"??", TType::NullCoalescing},
-               {"=>", TType::Lambda},
-               // these are escpaed because theyre trigraphs
-               {"\?\?=", TType::NullCoalescingEq}
+                 {"[", TType::SubscriptLeft},
+                 {"]", TType::SubscriptRight},
+                 {",", TType::Comma},
+                 {":", TType::Colon},
+                 {"=", TType::Assign},
+                 {"??", TType::NullCoalescing},
+                 {"=>", TType::Lambda},
+                 // these are escpaed because theyre trigraphs
+                 {"\?\?=", TType::NullCoalescingEq}
 
-  };
-  keywords = {
-      {"namespace", TType::Namespace},
-      {"struct", TType::Struct},
-      {"type", TType::Type},
-      {"let", TType::Let},
-      {"delete", TType::Delete},
-      {"const", TType::Const},
-      {"mut", TType::Mut},
-      {"default", TType::Default},
-      {"match", TType::Match},
-      {"func", TType::Func},
-      {"for", TType::For},
-      {"continue", TType::Continue},
-      {"break", TType::Break},
-      {"return", TType::Return},
-      {"if", TType::If},
-      {"else", TType::Else},
-      {"false", TType::False},
-      {"true", TType::True},
-      {"null", TType::Null},
-      {"undefined", TType::Undefined},
-      {"using", TType::Using},
-      {"from", TType::From},
-      {"import", TType::Import},
-  };
+      }) {
   loc = 1;
 }
 

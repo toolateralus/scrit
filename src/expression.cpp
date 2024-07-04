@@ -1,4 +1,5 @@
 #include "ast.hpp"
+#include "ctx.hpp"
 #include "context.hpp"
 #include "error.hpp"
 #include "lexer.hpp"
@@ -336,10 +337,13 @@ unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
     case TType::RCurly:
       goto endloop;
 
-    case TType::Func:
+    case TType::Func: {
       Eat(); // eat keyword.
-      statements.push_back(ParseFunctionDeclaration());
+      auto stmnt = ParseFunctionDeclaration();
+      ASTNode::context.ImmediateScope()->Set(stmnt->name, stmnt->callable, Mutability::Const);
+      statements.push_back(std::move(stmnt));
       break;
+    }
 
     // ignore let tokens.
     case TType::Let:

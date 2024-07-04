@@ -1,13 +1,14 @@
 
-using {directory, file} from system
+using system
+using std::string
+using std::array
 
-func buildScript(name) {
+func buildScript(name: string) -> string {
   return "sudo clang++ -std=c++2b -shared -fPIC -o /usr/local/scrit/modules/" + name + ".dll " + name + ".cpp" + " -lscrit"
 }
 
-func cppBoilerplate(name) {
+func cppBoilerplate(name: string) -> string {
 return "#include <scrit/scritmod.hpp>
-
 // provide your function and object definitions here.
 // Note that these will stay alive in the language until the using ... statement goes out of scope.
 static Value doSomething(std::vector<Value> values) {
@@ -15,68 +16,37 @@ static Value doSomething(std::vector<Value> values) {
 }
 
 // Link your module with your definitions here
+// note: if you intend to namespace your module, use _SR_ where there would be a ::.
+// so if we wanted std::myStdModule::doSomething
+// youd do InitScritModule_funnyModuleName_SR_myStdModule()
+
 extern \"C\" ScritModDef* InitScritModule_" + name + "() {
   ScritModDef *def = CreateModDef();
   *def->description = \"your description here\";
-  AddFunction(def, \"doSomething\", &doSomething);
+                                                                // return type
+                                                                            // parameter types.
+  def->AddFunction(\"doSomething\", CREATE_FUNCTION(doSomething, \"string\", {\"string\"}))
   return def;
 }"
 }
 
-func createModule(name) {
-  
-  if name == undefined {
-    println("invalid name: was undefined")
-    return 1
-  } else {
-    println("Creating module: " + name)
-  }
-  
-  path = directory.current() + "/" + name
-  
-  if path == undefined {
-    println("invalid path: was undefined")
-    return 1
-  }
-  
-  cppPath = path + "/" + name + ".cpp"
-  bashPath = path + "/build.sh"
-  
-  mut err = directory.create(path)
-  if (err != undefined) {
-    println("dir create error: " + err)
-    return 1
-  }
-  
-  err = file.write(bashPath, buildScript())
-  if (err != undefined) {
-    println("fwrite error: " + err)
-    return 1
-  }
-  
-  err = file.write(cppPath, cppBoilerplate(name))
-  if (err != undefined) {
-    println("fwrite error: " + err)
-    return 1
-  }
-  
-  syscall("chmod +x " + bashPath)
-  return 0
+func createModule(name: string) -> int {
+  let path = dir_current() + "/" + name
+  let cppPath = path + "/" + name + ".cpp"
+  let bashPath = path + "/build.sh"
+  dir_create(path)
+  file_write(bashPath, buildScript())
+  file_write(cppPath, cppBoilerplate(name))
+  println("module: " + name + " created!")
+  return syscall("chmod +x " + bashPath)
 }
 
 func() {
-  if len(args) == 0 {
-    println("Must provide a module name.")
-    return 1
+  if args.len() > 0 {
+    createModule(args[0])
+  } else {
+    println("provide an argument for your module name.")
   }
-  println("Are you sure you want to create a module named :" + args[0])
-  println("type [y/n] and press enter")
-  input = readln()
-  if (input == "y") {
-    return createModule(args[0])
-  } 
-  
-  return 0
 }()
 
 

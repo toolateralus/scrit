@@ -8,6 +8,7 @@
 #include "value.hpp"
 #include <stdexcept>
 #include <unordered_map>
+#include "ctx.hpp"
 
 #ifdef _WIN32
 #include <windows.h>

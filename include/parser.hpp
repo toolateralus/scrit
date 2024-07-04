@@ -11,14 +11,21 @@ using std::make_unique;
 using std::unique_ptr;
 using std::vector;
 
-struct Parser {
+struct Parser final {
+  Parser(const Parser &) = default;
+  Parser(Parser &&) = default;
+  Parser &operator=(const Parser &) = default;
+  Parser &operator=(Parser &&) = default;
   Parser() {}
+  ~Parser() {}
   explicit Parser(vector<Token> tokens) : tokens(tokens) {}
   vector<Token> tokens;
-  SourceInfo info = {0, 0, ""};
+  SourceInfo info = SourceInfo(0, 0, "");
+  
   Token Peek(size_t lookahead = 0);
-  Token Eat();
   Token Expect(const TType ttype);
+  
+  Token Eat() noexcept;
   unique_ptr<Program> Parse(vector<Token> &&tokens);
   BlockPtr ParseBlock();
   BlockPtr ParseBlock(ParametersPtr &params);

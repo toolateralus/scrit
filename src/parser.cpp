@@ -14,11 +14,12 @@
 Token Parser::Peek(size_t lookahead) {
   if (lookahead >= tokens.size()) {
     throw std::out_of_range("Lookahead is out of range");
+  } else [[likely]] {
+    auto &tkn = tokens[tokens.size() - 1 - lookahead];
+    return tkn;
   }
-  auto &tkn = tokens[tokens.size() - 1 - lookahead];
-  return tkn;
 }
-Token Parser::Eat() {
+Token Parser::Eat() noexcept {
   auto tkn = tokens.back();
   info = tkn.info;
   tokens.pop_back();
@@ -28,14 +29,14 @@ Token Parser::Expect(const TType ttype) {
   if (tokens.back().type != ttype) {
     throw std::runtime_error("Expected " + TTypeToString(ttype) + " got " +
                              TTypeToString(tokens.back().type));
+  } else [[likely]] {
+    auto tkn = tokens.back();
+    tokens.pop_back();
+    return tkn;
   }
-  auto tkn = tokens.back();
-  tokens.pop_back();
-  return tkn;
 }
 
 unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
-  
   
   std::reverse(tokens.begin(), tokens.end());
   this->tokens = std::move(tokens);

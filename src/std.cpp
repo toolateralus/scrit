@@ -169,3 +169,10 @@ REGISTER_FUNCTION(readln, "string", {}) {
   std::cin >> s;
   return Ctx::CreateString(s);
 }
+
+REGISTER_FUNCTION(readch, "string", {}) {
+  char c;
+  std::cin.get(c);
+  string s(1, c);
+  return Ctx::CreateString(s);
+}

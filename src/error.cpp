@@ -1,8 +1,9 @@
 
 #include "error.hpp"
 #include "lexer.hpp"
-#include "type.hpp"
 #include <stdexcept>
+
+#include "type.hpp"
 
 using namespace Values;
 

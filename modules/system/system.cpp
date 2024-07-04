@@ -132,7 +132,7 @@ static Value dir_create(std::vector<Value> values) {
   auto dname = static_cast<String_T *>(dirname.get());
 
   if (std::filesystem::create_directory(dname->value)) {
-    return Value_T::UNDEFINED;
+    return Ctx::CreateString();
   } else {
     return Ctx::CreateString("Unable to create directory");
   }
@@ -215,46 +215,38 @@ static Value exit(std::vector<Value>) {
   return Value_T::UNDEFINED;
 }
 
-static Value file() {
-  auto obj = Ctx::CreateObject();
-  obj->SetMember("read", CREATE_CALLABLE(fread, "string", {"string"}));
-  obj->SetMember("write",
-                 CREATE_CALLABLE(fwrite, "undefined", {"string", "string"}));
-  obj->SetMember("create", CREATE_CALLABLE(fcreate, "undefined", {"string"}));
-  obj->SetMember("exists", CREATE_CALLABLE(fexists, "bool", {"string"}));
-  obj->SetMember("delete", CREATE_CALLABLE(fdelete, "undefined", {"string"}));
-  return obj;
+static void file(ScritModDef * mod) {
+  mod->AddFunction("file_read",   CREATE_FUNCTION(fread, "string", {"string"}));
+  mod->AddFunction("file_write",  CREATE_FUNCTION(fwrite, "undefined", {"string", "string"}));
+  mod->AddFunction("file_create", CREATE_FUNCTION(fcreate, "undefined", {"string"}));
+  mod->AddFunction("file_exists", CREATE_FUNCTION(fexists, "bool", {"string"}));
+  mod->AddFunction("file_delete", CREATE_FUNCTION(fdelete, "undefined", {"string"}));
 }
 
-static Value directory() {
-  auto obj = Ctx::CreateObject();
-  obj->SetMember("exists", CREATE_CALLABLE(dir_exists, "bool", {"string"}));
-  obj->SetMember("create",
-                 CREATE_CALLABLE(dir_create, "undefined", {"string"}));
-  obj->SetMember("delete",
-                 CREATE_CALLABLE(dir_delete, "undefined", {"string"}));
-  obj->SetMember("getfiles",
-                 CREATE_CALLABLE(dir_getfiles, "array<string>", {"string"}));
-  obj->SetMember("current", CREATE_CALLABLE(cwd, "string", {}));
-  return obj;
+static void directory(ScritModDef * mod) {
+  mod->AddFunction("dir_exists",  CREATE_FUNCTION(dir_exists, "bool", {"string"}));
+  mod->AddFunction("dir_create",  CREATE_FUNCTION(dir_create, "undefined", {"string"}));
+  mod->AddFunction("dir_delete",  CREATE_FUNCTION(dir_delete, "undefined", {"string"}));
+  mod->AddFunction("dir_files",CREATE_FUNCTION(dir_getfiles, "array", {"string"}));
+  mod->AddFunction("dir_current", CREATE_FUNCTION(cwd, "string", {}));
+}
+
+static void general(ScritModDef *def) {
+  auto time = CREATE_FUNCTION(::time, "float", {});
+  auto syscall = CREATE_FUNCTION(::syscall, "int", {"string"});
+  auto exit = CREATE_FUNCTION(::exit, "undefined", {"int"});
+  auto sleep = CREATE_FUNCTION(::sleep, "undefined", {"float"});
+  def->AddFunction("time", time);
+  def->AddFunction("syscall", syscall);
+  def->AddFunction("exit", exit);
+  def->AddFunction("sleep", sleep);
 }
 
 extern "C" ScritModDef *InitScritModule_system() {
   ScritModDef *def = CreateModDef();
   *def->description = "system functions. file io, time, etc.";
-
-  def->AddVariable("directory", directory(), Mutability::Const);
-  def->AddVariable("file", file(), Mutability::Const);
-
-  auto time = CREATE_FUNCTION(::time, "float", {});
-  auto syscall = CREATE_FUNCTION(::syscall, "int", {"string"});
-  auto exit = CREATE_FUNCTION(::exit, "undefined", {"int"});
-  auto sleep = CREATE_FUNCTION(::sleep, "undefined", {"float"});
-
-  def->AddFunction("time", time);
-  def->AddFunction("syscall", syscall);
-  def->AddFunction("exit", exit);
-  def->AddFunction("sleep", sleep);
-
+  directory(def);
+  file(def);
+  general(def);
   return def;
 }

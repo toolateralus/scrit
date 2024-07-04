@@ -38,12 +38,12 @@ void InsertCmdLineArgs(int argc, char **argv) {
   ASTNode::context.Insert("args", args, Mutability::Const);
 }
 
-std::vector<Token> &PreProcessUseStatements(std::vector<Token> &tokens) {
+static std::vector<Token> &PreProcessUseStatements(std::vector<Token> &tokens) {
   size_t i = 0;
   while (i < tokens.size()) {
     const auto &tok = tokens[i];
     if (tok.type == TType::Import) {
-      if ((size_t)i + 1 < tokens.size()) {
+      if (i + 1 < tokens.size()) {
         tokens.erase(tokens.begin() + i);       // remove 'use' token
         std::string filePath = tokens[i].value; // get file path token
         tokens.erase(tokens.begin() + i);       // remove file path token
@@ -53,8 +53,7 @@ std::vector<Token> &PreProcessUseStatements(std::vector<Token> &tokens) {
           buffer << file.rdbuf();
           std::string code = buffer.str();
           file.close();
-          Lexer lexer = {};
-          Parser parser = {};
+          Lexer lexer;
           auto includedTokens = lexer.Lex(code);
           includedTokens = PreProcessUseStatements(includedTokens);
           tokens.insert(tokens.begin() + i, includedTokens.begin(),
@@ -71,9 +70,9 @@ std::vector<Token> &PreProcessUseStatements(std::vector<Token> &tokens) {
 }
 
 int main(int argc, char **argv) {
-  Lexer lexer = {};
-  Parser parser = {};
-
+  Lexer lexer;
+  Parser parser;
+  
   if (argc > 1) {
     std::string filename = argv[1];
     std::ifstream file(filename);
