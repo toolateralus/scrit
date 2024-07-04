@@ -316,7 +316,9 @@ Value AnyType::Default() { return Ctx::Undefined(); }
 StructType::StructType(const string &name,
                        vector<std::unique_ptr<Declaration>> &&fields,
                        vector<string> &template_args)
-    : name(name), template_args(template_args), fields(std::move(fields)) {}
+    : name(name), template_args(template_args), fields(std::move(fields)) {
+      
+}
 
 Value StructType::Default() {
   auto object = Ctx::CreateObject();
@@ -333,15 +335,12 @@ bool StructType::Equals(const Type_T *other) {
   return other != nullptr && other->GetName() == "object" || *other == *this;
 }
 Scope_T &StructType::Scope() {
-  static Scope_T scope;
-  return scope;
+  return *this->scope;
 }
 StructType::~StructType() {}
 
 Value StructType::Construct(ArgumentsPtr &args) {
   auto object = std::dynamic_pointer_cast<Object_T>(Default());
-  std::cout << object->ToString() << std::endl;
-
   size_t i = 0;
   for (const auto &arg : args->values) {
     auto value = arg->Evaluate();
@@ -351,7 +350,13 @@ Value StructType::Construct(ArgumentsPtr &args) {
       if (!field_type->Equals(arg->type.get())) {
         throw TypeError(field_type, arg->type);
       }
-      object->SetMember(name, value);
+      if (object->scope->Contains(name)) {
+        auto it = object->scope->Find(name);
+        object->scope->Erase(name);
+        object->scope->Set(it->first, value);
+      } else {
+        object->SetMember(name, value);
+      }
     }
     ++i;
   }

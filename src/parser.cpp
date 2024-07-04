@@ -351,7 +351,11 @@ unique_ptr<FunctionDecl> Parser::ParseFunctionDeclaration() {
   ASTNode::context.PopScope();
   
   auto param_clone = parameters->Clone();
-  auto type_param_clone = type_params->Clone();
+  
+  TypeParamsPtr type_param_clone;
+  if (type_params) {
+    type_param_clone = type_params->Clone();
+  }
   
   auto callable = make_shared<Callable_T>
     (returnType, nullptr, std::move(parameters), std::move(type_params));

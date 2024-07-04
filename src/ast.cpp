@@ -767,11 +767,11 @@ Value UnaryExpr::Evaluate() {
 Value BinExpr::Evaluate() {
   auto left = this->left->Evaluate();
   auto right = this->right->Evaluate();
-
+  
   if (!left->type->Equals(right->type.get())) {
     throw TypeError(left->type, right->type);
   }
-
+  
   switch (op) {
   case TType::NullCoalescing: {
     if (left->GetPrimitiveType() == PrimitiveType::Null ||

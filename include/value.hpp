@@ -231,19 +231,19 @@ struct Object_T : Value_T {
   ~Object_T() override;
   Scope scope;
   static Object New(Scope scope = nullptr);
-
+  
   bool operator==(Object_T *other);
-
+  
   PrimitiveType GetPrimitiveType() const override {
     return PrimitiveType::Object;
   }
-
+  
   virtual string ToString() const override;
   virtual Value GetMember(const string &name);
   virtual void SetMember(const string &name, Value value,
                          Mutability mutability = Mutability::Const);
   virtual bool HasMember(const string &name);
-
+  
   virtual bool Equals(Value value) override;
   virtual Value Subscript(Value key) override;
   virtual Value SubscriptAssign(Value key, Value value) override;

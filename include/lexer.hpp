@@ -42,13 +42,16 @@ enum class TType {
   Float,
   Bool,
   String,
-
+  
   LParen,
   RParen,
+  
   LCurly,
   RCurly,
-  SubscriptLeft,
-  SubscriptRight,
+  
+  LBrace,
+  RBrace,
+  
   Not,
 
   Add,

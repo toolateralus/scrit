@@ -36,7 +36,7 @@ struct Reader final {
     switch (next.type) {
     case TType::LCurly:
       return ReadObject();
-    case TType::SubscriptLeft:
+    case TType::LBrace:
       return ReadArray();
     default:
       if (next.family == TFamily::Literal) {
@@ -48,7 +48,7 @@ struct Reader final {
   }
 
   Value ReadArray() {
-    parser.Expect(TType::SubscriptLeft);
+    parser.Expect(TType::LBrace);
     vector<Value> values;
     while (!tokens.empty()) {
       if (parser.Peek().type == TType::LCurly) {

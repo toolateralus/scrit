@@ -153,7 +153,7 @@ ExpressionPtr Parser::ParsePostfix() {
                                     next.type);
     }
 
-    if (next.type != TType::LParen && next.type != TType::SubscriptLeft &&
+    if (next.type != TType::LParen && next.type != TType::LBrace &&
         next.type != TType::Dot) {
       break;
     }
@@ -185,10 +185,10 @@ ExpressionPtr Parser::ParsePostfix() {
       }
 
       expr = std::make_unique<Call>(info, std::move(expr), std::move(args));
-    } else if (next.type == TType::SubscriptLeft) {
+    } else if (next.type == TType::LBrace) {
       Eat();
       auto index = ParseExpression();
-      Expect(TType::SubscriptRight);
+      Expect(TType::RBrace);
       expr = std::make_unique<Subscript>(info, expr->type, std::move(expr),
                                          std::move(index));
     } else if (next.type == TType::Dot) {
@@ -226,7 +226,7 @@ ExpressionPtr Parser::ParseOperand() {
     Eat();
     return ParseMatch();
   }
-  case TType::SubscriptLeft: {
+  case TType::LBrace: {
     return ParseArrayInitializer();
   }
   case TType::Func: {
@@ -456,7 +456,7 @@ ExpressionPtr Parser::ParseMatch() {
 }
 OperandPtr Parser::ParseArrayInitializer() {
   Eat();
-  if (Peek().type == TType::SubscriptRight) {
+  if (Peek().type == TType::RBrace) {
     Eat();
     auto type = TypeSystem::Current().Find("array");
     return make_unique<Operand>(info, type,
@@ -466,7 +466,7 @@ OperandPtr Parser::ParseArrayInitializer() {
     vector<ExpressionPtr> init_expressions = {};
 
     Type inner_type;
-    while (Peek().type != TType::SubscriptRight) {
+    while (Peek().type != TType::RBrace) {
       auto val = ParseExpression();
 
       if (!inner_type) {
@@ -484,7 +484,7 @@ OperandPtr Parser::ParseArrayInitializer() {
         Eat();
       }
     }
-    Expect(TType::SubscriptRight);
+    Expect(TType::RBrace);
     auto type = TypeSystem::Current().FindOrCreateTemplate(
         "array<" + inner_type->GetName() + ">", TypeSystem::Current().Find("array"),
         {inner_type});

@@ -424,7 +424,7 @@ Value Array_T::SubscriptAssign(Value key, Value value) {
   int idx;
 
   Type element_type;
-
+  
   // if this is a templated array, like array<int>
   // and the template is well formed (has typeargs)
   if (auto template_t = std::dynamic_pointer_cast<TemplateType>(type);

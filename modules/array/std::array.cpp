@@ -143,31 +143,17 @@ extern "C" ScritModDef *InitScritModule_std_SR_array() {
   ScritModDef *def = CreateModDef();
   *def->description = "provide functionality for the array type.";
   auto array = make_shared<ArrayType>();
-
-  array->Set("remove", CREATE_CALLABLE(remove, "undefined", {"array", "any"}));
-  array->Set("contains", CREATE_CALLABLE(contains, "bool", {"array", "any"}));
-  array->Set("clear", CREATE_CALLABLE(clear, "undefined", {"array"}));
-  array->Set("expand", CREATE_CALLABLE(expand, "array", {"array", "int"}));
-  array->Set("push", CREATE_CALLABLE(push, "undefined", {"any"}));
-  array->Set("front", CREATE_CALLABLE(front, "any", {"array"}));
-  array->Set("back", CREATE_CALLABLE(back, "any", {"array"}));
-  array->Set("pop", CREATE_CALLABLE(pop, "any", {"array"}));
-  array->Set("len", CREATE_CALLABLE(len, "int", {"array"}));
-
-  def->AddFunction("remove",
-                   CREATE_FUNCTION(remove, "undefined", {"array", "any"}));
-  def->AddFunction("contains",
-                   CREATE_FUNCTION(contains, "bool", {"array", "any"}));
-  def->AddFunction("clear", CREATE_FUNCTION(clear, "undefined", {"array"}));
-  def->AddFunction(
-      "expand", CREATE_FUNCTION(expand, "undefined", {"array", "int", "any"}));
-  def->AddFunction("push",
-                   CREATE_FUNCTION(push, "undefined", {"array", "any"}));
-  def->AddFunction("front", CREATE_FUNCTION(front, "any", {"array"}));
-  def->AddFunction("back", CREATE_FUNCTION(back, "any", {"array"}));
-  def->AddFunction("pop", CREATE_FUNCTION(pop, "any", {"array"}));
-  def->AddFunction("len", CREATE_FUNCTION(len, "int", {"array"}));
-
+  
+  array->Set("remove", CREATE_CALLABLE(remove, "undefined", {"any", "any"}));
+  array->Set("contains", CREATE_CALLABLE(contains, "bool", {"any", "any"}));
+  array->Set("clear", CREATE_CALLABLE(clear, "undefined", {"any"}));
+  array->Set("expand", CREATE_CALLABLE(expand, "array", {"any", "int"}));
+  array->Set("push", CREATE_CALLABLE(push, "undefined", {"any", "any"}));
+  array->Set("front", CREATE_CALLABLE(front, "any", {"any"}));
+  array->Set("back", CREATE_CALLABLE(back, "any", {"any"}));
+  array->Set("pop", CREATE_CALLABLE(pop, "any", {"any"}));
+  array->Set("len", CREATE_CALLABLE(len, "int", {"any"}));
+  
   def->AddType("array", array);
   def->SetNamespace("std::array");
 

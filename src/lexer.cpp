@@ -317,8 +317,8 @@ Lexer::Lexer()
                  {"{", TType::LCurly},
                  {"}", TType::RCurly},
 
-                 {"[", TType::SubscriptLeft},
-                 {"]", TType::SubscriptRight},
+                 {"[", TType::LBrace},
+                 {"]", TType::RBrace},
                  {",", TType::Comma},
                  {":", TType::Colon},
                  {"=", TType::Assign},
@@ -417,9 +417,9 @@ string TTypeToString(const TType &type) {
     return "NotEquals";
   case TType::Dot:
     return "Dot";
-  case TType::SubscriptLeft:
+  case TType::LBrace:
     return "SubscriptLeft";
-  case TType::SubscriptRight:
+  case TType::RBrace:
     return "SubscriptRight";
   case TType::Comma:
     return "Comma";
