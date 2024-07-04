@@ -170,9 +170,21 @@ REGISTER_FUNCTION(readln, "string", {}) {
   return Ctx::CreateString(s);
 }
 
+static struct termios orig_termios;
+REGISTER_FUNCTION(enter_raw_mode, "undefined", {}) {
+   struct termios raw;
+  tcgetattr(STDIN_FILENO, &orig_termios);
+  raw = orig_termios;
+  raw.c_lflag &= ~(ICANON | ECHO);
+  tcsetattr(STDIN_FILENO, TCSANOW, &raw);
+  return Ctx::Undefined();
+}
+REGISTER_FUNCTION(exit_raw_mode, "undefined", {}) {
+  tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
+  return Ctx::Undefined();
+}
+
 REGISTER_FUNCTION(readch, "string", {}) {
-  char c;
-  std::cin.get(c);
-  string s(1, c);
-  return Ctx::CreateString(s);
+  char ch = getchar();
+  return Ctx::CreateString(string(1, ch));
 }
