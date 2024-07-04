@@ -165,6 +165,12 @@ BinExpr::BinExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right,
 
 Using::Using(SourceInfo &info, unique_ptr<ScopeResolution> &&resolution)
     : Statement(info) {
+
+  // if (auto ns = context.FindNamespace(resolution->identifiers)) {
+  //   context.ImportNamespace(resolution->identifiers);
+  //   return;
+  // }
+
   auto path = moduleRoot + resolution->full_path;
   Load(resolution->full_path);
 }
@@ -386,7 +392,6 @@ ExecutionResult Return::Execute() {
   else
     return ExecutionResult(ControlChange::Return, Value_T::UNDEFINED);
 }
-
 Value ReturnCopyIfNeeded(Value result) {
   switch (result->GetPrimitiveType()) {
   case Values::PrimitiveType::Invalid:
@@ -410,7 +415,6 @@ Value ReturnCopyIfNeeded(Value result) {
   // how? all cases are handled.
   return result;
 }
-
 void ApplyCopySemantics(Value &result) {
   switch (result->GetPrimitiveType()) {
   case Values::PrimitiveType::Invalid:
@@ -545,7 +549,6 @@ Value ArrayInitializer::Evaluate() {
   array->type = type;
   return array;
 }
-
 Value Call::Evaluate() {
   auto lvalue = operand->Evaluate();
   if (lvalue->GetPrimitiveType() == PrimitiveType::Callable) {
@@ -591,30 +594,20 @@ ExecutionResult For::Execute() {
     return ExecutionResult::None;
   }
 
+  context.PushScope(scope);
+  if (decl) {
+    auto _ = decl->Execute();
+  }
+
   if (condition && condition->Evaluate()->Equals(Ctx::CreateBool(false))) {
     return ExecutionResult::None;
   }
 
-  context.PushScope(scope);
-  if (decl != nullptr) {
-    auto result = decl->Execute();
-    switch (result.controlChange) {
-    case ControlChange::None:
-      break;
-    case ControlChange::Continue:
-    case ControlChange::Break:
-    case ControlChange::Return:
-      return result;
-    }
-  }
-
-  if (condition != nullptr) {
+  // for i < 250
+  // for let i = 0, i < 250, ++i
+  if (condition) {
     while (true) {
       auto conditionResult = condition->Evaluate();
-
-      if (conditionResult->GetPrimitiveType() != PrimitiveType::Bool) {
-        return ExecutionResult::None;
-      }
 
       if (conditionResult->Equals(Bool_T::False)) {
         context.PopScope();
@@ -633,42 +626,22 @@ ExecutionResult For::Execute() {
       }
 
       if (increment) {
-        result = increment->Execute();
-        switch (result.controlChange) {
-        case ControlChange::None:
-          break;
-        case ControlChange::Continue:
-        case ControlChange::Return:
-        case ControlChange::Break:
-          throw std::runtime_error(CC_ToString(result.controlChange) +
-                                   " not allowed in for initialization.");
-        }
+        increment->Execute();
       }
     }
-  } else {
-    while (true) {
-      if (increment) {
-        auto result = increment->Execute();
-        switch (result.controlChange) {
-        case ControlChange::None:
-          break;
-        case ControlChange::Continue:
-        case ControlChange::Return:
-        case ControlChange::Break:
-          throw std::runtime_error(CC_ToString(result.controlChange) +
-                                   " not allowed in for initialization.");
-        }
-      }
-      auto result = block->Execute();
-      switch (result.controlChange) {
-      case ControlChange::None:
-      case ControlChange::Continue:
-        break;
-      case ControlChange::Return:
-      case ControlChange::Break:
-        context.PopScope();
-        return ExecutionResult::None;
-      }
+  }
+
+  // for {..}
+  while (true) {
+    auto result = block->Execute();
+    switch (result.controlChange) {
+    case ControlChange::None:
+    case ControlChange::Continue:
+      continue;
+    case ControlChange::Return:
+    case ControlChange::Break:
+      context.PopScope();
+      return ExecutionResult::None;
     }
   }
   context.PopScope();
@@ -693,14 +666,12 @@ ExecutionResult Assignment::Execute() {
   context.Insert(iden->name, result, iter->first.mutability);
   return ExecutionResult::None;
 }
-
 Value EvaluateWithinObject(Scope &scope, Value object, ExpressionPtr &expr) {
   ASTNode::context.PushScope(scope);
   auto result = expr->Evaluate();
   ASTNode::context.PopScope();
   return result;
 }
-
 Value EvaluateWithinObject(Scope &scope, Value object,
                            std::function<Value()> lambda) {
   ASTNode::context.PushScope(scope);
@@ -708,7 +679,6 @@ Value EvaluateWithinObject(Scope &scope, Value object,
   ASTNode::context.PopScope();
   return result;
 }
-
 Value DotExpr::Evaluate() {
   auto lvalue = left->Evaluate();
 
@@ -720,7 +690,7 @@ Value DotExpr::Evaluate() {
   auto object = static_cast<Object_T *>(lvalue.get());
 
   auto scope = object->scope;
-  
+
   auto result = EvaluateWithinObject(scope, lvalue, right);
 
   return result;
@@ -852,7 +822,7 @@ ExecutionResult RangeBasedFor::Execute() {
         "or a tuple deconstruction\n"
         "example: for k,v : someObject/tupleArray {}");
   }
-  
+
   const auto SetVariable = [&](const Value &value) -> void {
     if (lhs) {
       context.ImmediateScope()->Set(lhs->name, value, Mutability::Const);
@@ -1138,6 +1108,7 @@ ExecutionResult Declaration::Execute() {
 // However, we have a problem where we do all of our symbol lookup during
 // parsing.
 void Using::Load(const std::string &moduleName) {
+
   for (const auto &mod : activeModules) {
     if (moduleName == mod) {
       return;
@@ -1185,7 +1156,6 @@ void Using::Load(const std::string &moduleName) {
 }
 
 Value Literal::Evaluate() { return expression->Clone(); }
-
 Value DefaultValue::Evaluate() { return type->Default(); }
 void ASTNode::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Executable::Accept(ASTVisitor *visitor) { visitor->visit(this); }
@@ -1236,9 +1206,7 @@ TypeAlias::TypeAlias(SourceInfo &info, const string &alias, const Type &type)
   context.ImmediateScope()->InsertType(alias, type);
 }
 
-Value MethodCall::Evaluate() { 
-  return callable->Call(this->args); 
-}
+Value MethodCall::Evaluate() { return callable->Call(this->args); }
 
 MethodCall::MethodCall(SourceInfo &info, const Type &type,
                        ExpressionPtr &&operand, ArgumentsPtr &&args)
