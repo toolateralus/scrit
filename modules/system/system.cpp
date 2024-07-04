@@ -1,14 +1,16 @@
-#include "scrit/ast.hpp"
-#include "scrit/native.hpp"
-#include "scrit/scritmod.hpp"
+#include <scrit/ast.hpp>
+#include <scrit/native.hpp>
+#include <scrit/scritmod.hpp>
+#include <scrit/ctx.hpp>
+#include <scrit/native.hpp>
+#include <scrit/value.hpp>
+
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <memory>
-#include <scrit/native.hpp>
-#include <scrit/value.hpp>
 #include <string>
 #include <thread>
 #include <unistd.h>
@@ -215,19 +217,26 @@ static Value exit(std::vector<Value>) {
   return Value_T::UNDEFINED;
 }
 
-static void file(ScritModDef * mod) {
-  mod->AddFunction("file_read",   CREATE_FUNCTION(fread, "string", {"string"}));
-  mod->AddFunction("file_write",  CREATE_FUNCTION(fwrite, "undefined", {"string", "string"}));
-  mod->AddFunction("file_create", CREATE_FUNCTION(fcreate, "undefined", {"string"}));
+static void file(ScritModDef *mod) {
+  mod->AddFunction("file_read", CREATE_FUNCTION(fread, "string", {"string"}));
+  mod->AddFunction("file_write",
+                   CREATE_FUNCTION(fwrite, "undefined", {"string", "string"}));
+  mod->AddFunction("file_create",
+                   CREATE_FUNCTION(fcreate, "undefined", {"string"}));
   mod->AddFunction("file_exists", CREATE_FUNCTION(fexists, "bool", {"string"}));
-  mod->AddFunction("file_delete", CREATE_FUNCTION(fdelete, "undefined", {"string"}));
+  mod->AddFunction("file_delete",
+                   CREATE_FUNCTION(fdelete, "undefined", {"string"}));
 }
 
-static void directory(ScritModDef * mod) {
-  mod->AddFunction("dir_exists",  CREATE_FUNCTION(dir_exists, "bool", {"string"}));
-  mod->AddFunction("dir_create",  CREATE_FUNCTION(dir_create, "undefined", {"string"}));
-  mod->AddFunction("dir_delete",  CREATE_FUNCTION(dir_delete, "undefined", {"string"}));
-  mod->AddFunction("dir_files",CREATE_FUNCTION(dir_getfiles, "array", {"string"}));
+static void directory(ScritModDef *mod) {
+  mod->AddFunction("dir_exists",
+                   CREATE_FUNCTION(dir_exists, "bool", {"string"}));
+  mod->AddFunction("dir_create",
+                   CREATE_FUNCTION(dir_create, "undefined", {"string"}));
+  mod->AddFunction("dir_delete",
+                   CREATE_FUNCTION(dir_delete, "undefined", {"string"}));
+  mod->AddFunction("dir_files",
+                   CREATE_FUNCTION(dir_getfiles, "array", {"string"}));
   mod->AddFunction("dir_current", CREATE_FUNCTION(cwd, "string", {}));
 }
 

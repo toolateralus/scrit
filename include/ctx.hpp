@@ -3,37 +3,39 @@
 #include <memory>
 #include <vector>
 
-
-using std::string;
-using std::shared_ptr;
 using std::make_shared;
+using std::shared_ptr;
+using std::string;
 using std::vector;
-
 
 struct Scope_T;
 using Scope = shared_ptr<Scope_T>;
 namespace Values {
-  struct Value_T;
-  struct Bool_T;
-  struct String_T;
-  struct Int_T;
-  struct Float_T;
-  struct Array_T;
-  struct Object_T;
-  
-  using Value = shared_ptr<Value_T>;
-  using Bool = shared_ptr<Bool_T>;
-  using String = shared_ptr<String_T>;
-  using Float = shared_ptr<Float_T>;
-  using Array = shared_ptr<Array_T>;
-  using Object = shared_ptr<Object_T>;
-  using Int = shared_ptr<Int_T>;
-}
+struct Value_T;
+struct Bool_T;
+struct String_T;
+struct Int_T;
+struct Float_T;
+struct Array_T;
+struct Object_T;
+
+using Value = shared_ptr<Value_T>;
+using Bool = shared_ptr<Bool_T>;
+using String = shared_ptr<String_T>;
+using Float = shared_ptr<Float_T>;
+using Array = shared_ptr<Array_T>;
+using Object = shared_ptr<Object_T>;
+using Int = shared_ptr<Int_T>;
+} // namespace Values
 
 using namespace Values;
 struct Ctx final {
   Ctx() = delete;
 
+  Ctx(const Ctx &) = default;
+  Ctx(Ctx &&) = default;
+  Ctx &operator=(const Ctx &) = default;
+  Ctx &operator=(Ctx &&) = default;
   static Value Null();
   static Value Undefined();
   static Bool CreateBool(const bool value = false);

@@ -72,7 +72,7 @@ static std::vector<Token> &PreProcessUseStatements(std::vector<Token> &tokens) {
 int main(int argc, char **argv) {
   Lexer lexer;
   Parser parser;
-  
+
   if (argc > 1) {
     std::string filename = argv[1];
     std::ifstream file(filename);

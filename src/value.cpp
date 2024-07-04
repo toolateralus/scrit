@@ -1,9 +1,9 @@
-#include "serializer.hpp"
-#include "ctx.hpp"
 #include "value.hpp"
 #include "ast.hpp"
 #include "context.hpp"
+#include "ctx.hpp"
 #include "error.hpp"
+#include "serializer.hpp"
 #include "type.hpp"
 
 #include <memory>
@@ -20,10 +20,13 @@ Undefined Value_T::UNDEFINED = make_shared<::Undefined_T>();
 Value Callable_T::Call(ArgumentsPtr &args) {
   auto scope = ASTNode::context.PushScope();
   auto values = Call::GetArgsValueList(args);
-  
+
   params->Apply(scope, args->values);
   auto result = block->Execute();
-
+  
+  block->scope->Clear();
+  scope->Clear();
+  
   ASTNode::context.PopScope();
 
   switch (result.controlChange) {
@@ -31,13 +34,13 @@ Value Callable_T::Call(ArgumentsPtr &args) {
     return Value_T::VNULL;
   case ControlChange::Return: {
     auto this_type = std::dynamic_pointer_cast<CallableType>(type);
-    
+
     // TODO: remove runtime type checking. this should be done at parse time.
-    if (!this_type || !result.value->type->Equals(this_type->returnType.get())) {
+    if (!this_type ||
+        !result.value->type->Equals(this_type->returnType.get())) {
       throw TypeError(this_type, result.value->type, "invalid return type");
-    } 
+    }
     return result.value;
-    
   }
   default:
     throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
@@ -107,7 +110,7 @@ Value NativeCallable_T::Call(std::vector<Value> &args) {
 
   if (function->ptr)
     result = function->ptr(args);
-
+  
   CheckReturnType(result);
 
   ASTNode::context.PopScope();
@@ -308,7 +311,7 @@ string Callable_T::ToString() const {
   std::stringstream ss;
   ss << "func";
   auto type = std::dynamic_pointer_cast<CallableType>(this->type);
-  
+
   ss << "(";
   for (const auto &param : params->Params()) {
     ss << param.name << ": " << param.type->name;
@@ -426,9 +429,9 @@ Value Array_T::SubscriptAssign(Value key, Value value) {
   // and the template is well formed (has typeargs)
   if (auto template_t = std::dynamic_pointer_cast<TemplateType>(type);
       !template_t->typenames.empty()) {
-        
+
     auto array_t = template_t->typenames[0];
-    
+
     if (!value->type->Equals(array_t.get())) {
       throw TypeError(value->type, array_t);
     }
@@ -522,7 +525,7 @@ bool Tuple_T::Equals(Value other) {
   if (!other_tuple) {
     return false;
   }
-  
+
   auto other_vals = other_tuple->values;
 
   if (other_vals.size() != this->values.size()) {
@@ -594,12 +597,13 @@ Tuple_T::Tuple_T(vector<Value> values) : Value_T(nullptr), values(values) {
 Value Callable_T::Call(std::vector<Value> &values) {
   auto scope = ASTNode::context.PushScope();
   size_t i = 0;
-  
+
   params->Apply(scope, values);
-
   auto result = block->Execute();
+  scope->Clear();
+  block->scope->Clear();
   ASTNode::context.PopScope();
-
+  
   switch (result.controlChange) {
   case ControlChange::None:
     return Value_T::VNULL;

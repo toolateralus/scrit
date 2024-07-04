@@ -42,7 +42,7 @@ void Namespace::Insert(const Scope_T::Key &key, Value value) {
 }
 
 void Namespace::Insert(const string &name, Value value,
-                     const Mutability &mutability) {
+                       const Mutability &mutability) {
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     if ((*it)->Contains(name)) {
       (*it)->Set(name, value, mutability);
@@ -58,7 +58,7 @@ auto Namespace::FindIter(const string &name) const -> VarIter {
       return (*it)->Find(name);
     }
   }
-  return scopes.back()->end();
+  return scopes.back()->End();
 }
 
 auto Namespace::Find(const string &name) const -> Value {
@@ -76,14 +76,12 @@ auto Namespace::Find(const string &name) const -> Value {
     }
   }
 
-  for (const auto& [_, importedNs] : imported_namespaces) {
+  for (const auto &[_, importedNs] : imported_namespaces) {
     auto found = importedNs->Find(name);
-    if (found) 
+    if (found)
       return found;
   }
-  
 
-  
   return nullptr;
 }
 
@@ -220,9 +218,9 @@ auto Scope_T::ForwardDeclare(const string &name, const Type &type,
 Context::ResolvedPath Context::Resolve(ScopeResolution *res) {
   auto ns = FindNamespace(res->identifiers);
   if (ns && ns->Find(res->identifiers.back())) {
-    return { .value = ns->Find(res->identifiers.back()) };
+    return {.value = ns->Find(res->identifiers.back())};
   } else if (ns) {
-    return { ._namespace = ns };
+    return {._namespace = ns};
   }
   throw std::runtime_error("failed to resolive symbol :" + res->full_path);
 }
@@ -233,4 +231,31 @@ auto Context::Find(const string &name) const -> Value {
     return FunctionRegistry::GetCallable(name);
   }
   return result;
+}
+auto Scope_T::InsertType(const string &name, const Type &type) -> void {
+  if (TypeExists(name) && FindType(name) != nullptr) {
+    throw std::runtime_error("re-definition of type: " + name);
+  }
+  types[name] = type;
+}
+auto Scope_T::OverwriteType(const string &name, const Type &type) -> void {
+  types[name] = type;
+}
+auto Scope_T::FindType(const string &name) -> Type {
+  if (types.contains(name)) {
+    return types[name];
+  }
+  throw std::runtime_error("couldn't find type: " + name + " in this scope");
+}
+auto Scope_T::PushModule(ScritModHandle &&handle) -> void {
+  module_handles.push_back(std::move(handle));
+}
+auto Scope_T::Create() -> Scope { return std::make_shared<Scope_T>(); }
+auto Scope_T::Create(Scope_T *scope) -> Scope {
+  return std::make_shared<Scope_T>(scope);
+}
+auto Scope_T::End() -> VarIter{ return variables.end(); }
+Scope_T::Scope_T(Scope_T *scope) {
+  variables = scope->variables;
+  types = scope->types;
 }

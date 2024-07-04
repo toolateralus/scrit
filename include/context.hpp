@@ -18,16 +18,19 @@ using std::shared_ptr;
 using std::string;
 using std::vector;
 
-struct ScopeResolution;
-namespace Values {
-struct Value_T;
-typedef shared_ptr<Values::Value_T> Value;
 
+// ast node for iden::other::iden
+struct ScopeResolution;
+  
+namespace Values {
+  struct Value_T;
+  typedef shared_ptr<Values::Value_T> Value; 
 } // namespace Values
 using namespace Values;
 
 struct Scope_T;
-typedef shared_ptr<Scope_T> Scope;
+using Scope = shared_ptr<Scope_T>;
+
 struct ScritModHandle {
   void *handle;
   ScritModHandle() noexcept = delete;
@@ -42,7 +45,6 @@ struct ScritModHandle {
 };
 
 struct Scope_T {
-
   struct Key {
     const std::string value;
     const Mutability mutability;
@@ -58,9 +60,26 @@ struct Scope_T {
       return value == other.value && mutability == other.mutability;
     }
   };
+  
   Scope_T() {}
-  auto Find(const std::string &name) -> std::_Rb_tree_iterator<
-      std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>>;
+  
+  Scope_T(const Scope_T &) = delete;
+  Scope_T(Scope_T &&) = delete;
+  Scope_T &operator=(const Scope_T &) = delete;
+  Scope_T &operator=(Scope_T &&) = delete;
+  Scope_T(Scope_T *scope);
+  
+  ~Scope_T() {
+    variables.clear();
+    types.clear();
+  }
+  
+  using VarIter = std::_Rb_tree_iterator<
+          std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>>;
+  
+  auto Find(const std::string &name)
+      -> VarIter;
+      
   auto Contains(const string &name) -> bool;
   auto Erase(const string &name) -> size_t;
   auto Members() -> std::map<Key, Value> &;
@@ -69,47 +88,25 @@ struct Scope_T {
                       const Mutability &mut) -> void;
 
   auto ClearVariables() -> void;
-
+  
   // Used to patch fwd declared types during struct decls.
-  auto OverwriteType(const string &name, const Type &type) {
-    types[name] = type;
-  }
-
-  auto InsertType(const string &name, const Type &type) {
-    if (TypeExists(name) && FindType(name) != nullptr) {
-      throw std::runtime_error("re-definition of type: " + name);
-    }
-    types[name] = type;
-  }
-  auto FindType(const string &name) -> Type {
-    if (types.contains(name)) {
-      return types[name];
-    }
-    throw std::runtime_error("couldn't find type: " + name + " in this scope");
-  }
+  auto OverwriteType(const string &name, const Type &type) -> void;
+  auto InsertType(const string &name, const Type &type) -> void;
+  auto FindType(const string &name) -> Type;
   auto TypeExists(const string &name) -> bool { return types.contains(name); }
-
+  
   auto Get(const string &name) -> Value;
   auto Set(const Key &name, Value value) -> void;
   auto Set(const string &name, Value value,
            const Mutability &mutability = Mutability::Const) -> void;
-
+  
   auto Clear() -> void { variables.clear(); }
   auto Clone() -> Scope;
-  auto PushModule(ScritModHandle &&handle) {
-    module_handles.push_back(std::move(handle));
-  }
-  Scope_T(Scope_T *scope) { variables = scope->variables; }
-  static auto Create() -> Scope { return std::make_shared<Scope_T>(); }
-  static auto Create(Scope_T *scope) -> Scope {
-    return std::make_shared<Scope_T>(scope);
-  }
-  auto end() { return variables.end(); }
-
-  Scope_T(const Scope_T &) = delete;
-  Scope_T(Scope_T &&) = delete;
-  Scope_T &operator=(const Scope_T &) = delete;
-  Scope_T &operator=(Scope_T &&) = delete;
+  auto PushModule(ScritModHandle &&handle) -> void;
+  static auto Create() -> Scope;
+  static auto Create(Scope_T *scope) -> Scope;
+  auto End() -> VarIter;
+  
 
 private:
   std::vector<ScritModHandle> module_handles;
@@ -117,18 +114,16 @@ private:
   std::map<Key, Value> variables = {};
 };
 
-using VarIter = std::_Rb_tree_iterator<
-    std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>>;
+using VarIter = Scope_T::VarIter;
 
 struct Namespace {
   Namespace(const Namespace &) = default;
   Namespace(Namespace &&) = default;
   Namespace &operator=(const Namespace &) = delete;
   Namespace &operator=(Namespace &&) = delete;
-  
+
   explicit Namespace(string name, shared_ptr<Namespace> parent)
-      : name(name), parent(parent) {
-  }
+      : name(name), parent(parent) {}
 
   const string name;
   // every namespace has to have a root scope by default.
@@ -154,13 +149,13 @@ struct Namespace {
     std::string::size_type start = 0;
     auto end = input.find("::");
     while (end != std::string::npos) {
-        result.push_back(input.substr(start, end - start));
-        start = end + 2; // Skip over the delimiter
-        end = input.find("::", start);
+      result.push_back(input.substr(start, end - start));
+      start = end + 2; // Skip over the delimiter
+      end = input.find("::", start);
     }
     result.push_back(input.substr(start));
     return result;
-}
+  }
 };
 
 struct Context {
@@ -169,9 +164,10 @@ struct Context {
   Context(Context &&) = default;
   Context &operator=(const Context &) = default;
   Context &operator=(Context &&) = default;
-  
-  shared_ptr<Namespace> root_namespace = make_shared<Namespace>("global", nullptr);
-  
+
+  shared_ptr<Namespace> root_namespace =
+      make_shared<Namespace>("global", nullptr);
+
   shared_ptr<Namespace> current_namespace = root_namespace;
 
   Scope &ImmediateScope() { return current_namespace->scopes.back(); }
@@ -262,7 +258,7 @@ struct Context {
     if (!ns) {
       throw std::runtime_error("couldn't find namespace");
     }
-    
+
     return ns->Find(identifiers.back());
   }
   auto Find(const string &name) const -> Value;

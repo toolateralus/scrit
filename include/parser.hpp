@@ -21,10 +21,10 @@ struct Parser final {
   explicit Parser(vector<Token> tokens) : tokens(tokens) {}
   vector<Token> tokens;
   SourceInfo info = SourceInfo(0, 0, "");
-  
+
   Token Peek(size_t lookahead = 0);
   Token Expect(const TType ttype);
-  
+
   Token Eat() noexcept;
   unique_ptr<Program> Parse(vector<Token> &&tokens);
   BlockPtr ParseBlock();
@@ -36,7 +36,7 @@ struct Parser final {
   Type ParseTupleType();
   Type ParseType();
   Type ParseTemplateType(const Type &base_type);
-  
+
   StatementPtr ParseTupleDeconstruction(IdentifierPtr &&iden);
 
   unique_ptr<ScopeResolution> ParseScopeResolution();
@@ -60,7 +60,7 @@ struct Parser final {
   StatementPtr ParseBreak();
   ExpressionPtr ParseMatch();
   StatementPtr ParseMatchStatement();
-  
+
   ParametersPtr ParseParameters();
   ArgumentsPtr ParseArguments();
 

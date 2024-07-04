@@ -45,12 +45,13 @@ struct NativeFunction {
 
 extern "C" struct ScritModDef {
   std::string *description;
-  vector<shared_ptr<Scope_T> > *scopes;
-  
+  vector<shared_ptr<Scope_T>> *scopes;
+
   std::string *_namespace = nullptr;
-  std::unordered_map<std::string, shared_ptr<NativeFunction>> *functions = nullptr;
+  std::unordered_map<std::string, shared_ptr<NativeFunction>> *functions =
+      nullptr;
   std::unordered_map<std::string, Type> *types = nullptr;
-  
+
   void AddFunction(const std::string &name,
                    const shared_ptr<NativeFunction> func);
   void AddVariable(const std::string &name, Value value, const Mutability &mut);

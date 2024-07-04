@@ -37,7 +37,7 @@ Token Parser::Expect(const TType ttype) {
 }
 
 unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
-  
+
   std::reverse(tokens.begin(), tokens.end());
   this->tokens = std::move(tokens);
   vector<StatementPtr> statements;
@@ -130,7 +130,7 @@ StatementPtr Parser::ParseKeyword(Token token) {
   switch (token.type) {
   case TType::Struct: {
     auto name = Expect(TType::Identifier).value;
-    
+
     vector<string> template_args;
     if (Peek().type == TType::Less) {
       Eat();
@@ -144,17 +144,18 @@ StatementPtr Parser::ParseKeyword(Token token) {
         }
       }
       Expect(TType::Greater);
-    }    
-    
+    }
+
     ASTNode::context.ImmediateScope()->InsertType(
-        name, make_shared<StructType>(name, std::vector<unique_ptr<Declaration>>(), template_args));
-        
+        name, make_shared<StructType>(
+                  name, std::vector<unique_ptr<Declaration>>(), template_args));
+
     auto obj = ParseObjectInitializer();
-    
-    return make_unique<StructDeclaration>(info, name, std::move(obj->block->statements), template_args);
-  
+
+    return make_unique<StructDeclaration>(
+        info, name, std::move(obj->block->statements), template_args);
   }
-  
+
   case TType::Namespace: {
     auto path = ParseScopeResolution();
     ASTNode::context.CreateNamespace(path->identifiers);
@@ -211,8 +212,8 @@ StatementPtr Parser::ParseKeyword(Token token) {
 
 StatementPtr Parser::ParseUsing() {
   auto path = ParseScopeResolution();
-  
-  return make_unique<Using>(info, std::move(path));  
+
+  return make_unique<Using>(info, std::move(path));
 }
 // This makes it seem like we could use an 'Expression Statement' kind of
 // wrapper for generalized cases. Then, for and if can be expressions and we can
@@ -303,7 +304,7 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
   if (next.type == TType::Assign) {
     Eat();
     auto value = ParseExpression();
-    
+
     if (type) {
       if (type->Equals(value->type.get())) {
         value->type = type;
@@ -311,7 +312,7 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
         throw TypeError(type, value->type, "invalid types in assignment");
       }
     }
-    
+
     return make_unique<Assignment>(info, value->type, std::move(identifier),
                                    std::move(value));
 
@@ -340,7 +341,8 @@ unique_ptr<FunctionDecl> Parser::ParseFunctionDeclaration() {
   auto parameters = ParseParameters();
   auto returnType = ParseReturnType();
   auto param_clone = parameters->Clone();
-  auto callable = make_shared<Callable_T>(returnType, nullptr, std::move(parameters));
+  auto callable =
+      make_shared<Callable_T>(returnType, nullptr, std::move(parameters));
   ASTNode::context.ImmediateScope()->Set(name, callable, Mutability::Mut);
   auto block = ParseBlock(param_clone);
   callable->block = std::move(block);
@@ -511,22 +513,20 @@ ParametersPtr Parser::ParseParameters() {
   auto next = Peek();
   std::vector<Parameters::Param> params = {};
   while (tokens.size() > 0 && next.type != TType::RParen) {
-    
+
     Mutability mut = Mutability::Const;
     if (Peek().type == TType::Const || Peek().type == TType::Mut) {
       mut = Eat().type == TType::Mut ? Mutability::Mut : Mutability::Const;
     }
-    
+
     auto value = Expect(TType::Identifier).value;
     Expect(TType::Colon);
     auto type = ParseType();
-    
-    Parameters::Param param = {
-        .name = value, 
-        .default_value = nullptr,
-        .type = type, 
-        .mutability = mut
-    };
+
+    Parameters::Param param = {.name = value,
+                               .default_value = nullptr,
+                               .type = type,
+                               .mutability = mut};
 
     // Default values for parameter.
     if (Peek().type == TType::Assign) {
@@ -575,11 +575,11 @@ ArgumentsPtr Parser::ParseArguments() {
 }
 
 BlockPtr Parser::ParseBlock(ParametersPtr &params) {
-  
+
   auto scope = ASTNode::context.PushScope();
-  
+
   params->ForwardDeclare(scope);
-  
+
   auto info = this->info;
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};
@@ -607,7 +607,7 @@ BlockPtr Parser::ParseBlock(ParametersPtr &params) {
       statements.push_back(make_unique<Return>(info, ParseExpression()));
       break;
     }
-    
+
     // add each statement to the block.
     auto statement = ParseStatement();
     statements.push_back(std::move(statement));
@@ -624,12 +624,12 @@ BlockPtr Parser::ParseBlock(ParametersPtr &params) {
       // break the parse loop.
       break;
     }
-    
+
     if (next.type == TType::RCurly) {
       break;
     }
   }
-  
+
   Expect(TType::RCurly);
   ASTNode::context.PopScope();
   return make_unique<Block>(info, std::move(statements), scope);
@@ -637,7 +637,7 @@ BlockPtr Parser::ParseBlock(ParametersPtr &params) {
 
 BlockPtr Parser::ParseBlock() {
   auto scope = ASTNode::context.PushScope();
-  
+
   auto info = this->info;
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};
@@ -665,7 +665,7 @@ BlockPtr Parser::ParseBlock() {
       statements.push_back(make_unique<Return>(info, ParseExpression()));
       break;
     }
-    
+
     // add each statement to the block.
     auto statement = ParseStatement();
     statements.push_back(std::move(statement));
@@ -682,12 +682,12 @@ BlockPtr Parser::ParseBlock() {
       // break the parse loop.
       break;
     }
-    
+
     if (next.type == TType::RCurly) {
       break;
     }
   }
-  
+
   Expect(TType::RCurly);
   ASTNode::context.PopScope();
   return make_unique<Block>(info, std::move(statements), scope);
@@ -797,17 +797,16 @@ StatementPtr Parser::ParseReturn() {
 }
 StatementPtr Parser::ParseBreak() { return make_unique<Break>(info); }
 
-
 // ####### END CONTROL FLOW #########
 unique_ptr<ScopeResolution> Parser::ParseScopeResolution() {
   vector<string> identifiers;
   while (!tokens.empty()) {
     identifiers.push_back(Expect(TType::Identifier).value);
-    
+
     if (!tokens.empty()) {
       auto next = Peek();
-      if (next.type != TType::ScopeResolution)  {
-        break;      
+      if (next.type != TType::ScopeResolution) {
+        break;
       } else {
         Eat();
       }

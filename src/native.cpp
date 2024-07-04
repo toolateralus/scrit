@@ -4,11 +4,11 @@
 #include "value.hpp"
 #include <cstdlib>
 
+#include "ctx.hpp"
 #include "type.hpp"
 #include "value.hpp"
 #include <stdexcept>
 #include <unordered_map>
-#include "ctx.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -26,7 +26,7 @@ Object ScritModDefAsObject(ScritModDef *mod) {
 void m_InstantiateCallables(ScritModDef *module) {
   for (const auto &[key, func] : *module->functions) {
     module->scopes->front()->Set(key, FunctionRegistry::MakeCallable(func),
-                    Mutability::Const);
+                                 Mutability::Const);
   }
 }
 
@@ -52,13 +52,14 @@ NativeCallable FunctionRegistry::GetCallable(const std::string &name) {
   return nullptr;
 }
 
-std::string replaceAll(std::string str, const std::string& from, const std::string& to) {
-    size_t start_pos = 0;
-    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
-        str.replace(start_pos, from.length(), to);
-        start_pos += to.length();
-    }
-    return str;
+std::string replaceAll(std::string str, const std::string &from,
+                       const std::string &to) {
+  size_t start_pos = 0;
+  while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+    str.replace(start_pos, from.length(), to);
+    start_pos += to.length();
+  }
+  return str;
 }
 
 ScritModDef *LoadScritModule(const std::string &name, const std::string &path,
@@ -68,10 +69,10 @@ ScritModDef *LoadScritModule(const std::string &name, const std::string &path,
   if (!out_handle) {
     throw std::runtime_error(dlerror());
   }
-  
+
   auto replaced = std::string(name);
   replaced = replaceAll(replaced, "::", "_SR_");
-  
+
   auto fnName = "InitScritModule_" + replaced;
   void *func = dlsym(out_handle, fnName.c_str());
   if (!func) {
@@ -87,7 +88,7 @@ ScritModDef *LoadScritModule(const std::string &name, const std::string &path,
   }
 
   auto mod = function();
-  
+
   return mod;
 #else
   HMODULE handle = LoadLibraryA(path.c_str());
@@ -116,7 +117,7 @@ ScritModDef *LoadScritModule(const std::string &name, const std::string &path,
 }
 ScritModDef *CreateModDef() {
   ScritModDef *mod = (ScritModDef *)malloc(sizeof(ScritModDef));
-  mod->scopes = new std::vector<shared_ptr<Scope_T>> {make_shared<Scope_T>()};
+  mod->scopes = new std::vector<shared_ptr<Scope_T>>{make_shared<Scope_T>()};
   mod->description = new string();
   mod->functions =
       new std::unordered_map<std::string, shared_ptr<NativeFunction>>();

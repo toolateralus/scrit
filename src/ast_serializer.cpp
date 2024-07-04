@@ -431,7 +431,6 @@ void ASTSerializer::visit(BinExpr *binExpr) {
 void ASTSerializer::visit(Using *usingStmt) {
   Write("Using: {");
   {
-    
   }
   Write("}");
 }

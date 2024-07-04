@@ -2,6 +2,7 @@
 #include <scrit/native.hpp>
 #include <scrit/scritmod.hpp>
 #include <scrit/type.hpp>
+#include <scrit/ctx.hpp>
 
 #pragma clang diagnostic ignored "-Wunused-parameter"
 
@@ -317,7 +318,7 @@ extern "C" ScritModDef *InitScritModule_std_SR_string() {
   ScritModDef *def = CreateModDef();
   *def->description = "your description here";
   auto type = make_shared<StringType>();
-  
+
   type->Set("isalpha", CREATE_CALLABLE(isalpha, "bool", {"string"}));
   type->Set("ispunct", CREATE_CALLABLE(ispunct, "bool", {"string"}));
   type->Set("isdigit", CREATE_CALLABLE(isdigit, "bool", {"string"}));
@@ -341,25 +342,34 @@ extern "C" ScritModDef *InitScritModule_std_SR_string() {
   type->Set("without",
             CREATE_CALLABLE(without, "string", {"string", "string"}));
   def->AddType("string", type);
-  
+
   def->AddFunction("isalpha", CREATE_FUNCTION(isalpha, "bool", {"string"}));
   def->AddFunction("ispunct", CREATE_FUNCTION(ispunct, "bool", {"string"}));
   def->AddFunction("isdigit", CREATE_FUNCTION(isdigit, "bool", {"string"}));
   def->AddFunction("isalnum", CREATE_FUNCTION(isalnum, "bool", {"string"}));
-  def->AddFunction("split", CREATE_FUNCTION(split, "array", {"string", "string"}));
-  def->AddFunction("substring", CREATE_FUNCTION(substring, "string", {"string", "int", "int"}));
-  def->AddFunction("indexOf", CREATE_FUNCTION(indexOf, "int", {"string", "string"}));
+  def->AddFunction("split",
+                   CREATE_FUNCTION(split, "array", {"string", "string"}));
+  def->AddFunction("substring", CREATE_FUNCTION(substring, "string",
+                                                {"string", "int", "int"}));
+  def->AddFunction("indexOf",
+                   CREATE_FUNCTION(indexOf, "int", {"string", "string"}));
   def->AddFunction("front", CREATE_FUNCTION(front, "string", {"string"}));
   def->AddFunction("back", CREATE_FUNCTION(back, "string", {"string"}));
   def->AddFunction("pop", CREATE_FUNCTION(pop, "string", {"string"}));
-  def->AddFunction("push", CREATE_FUNCTION(push, "undefined", {"string", "string"}));
+  def->AddFunction("push",
+                   CREATE_FUNCTION(push, "undefined", {"string", "string"}));
   def->AddFunction("len", CREATE_FUNCTION(len, "int", {"string"}));
-  def->AddFunction("insert", CREATE_FUNCTION(insert, "string", {"string", "int", "string"}));
-  def->AddFunction("contains", CREATE_FUNCTION(contains, "bool", {"string", "string"}));
-  def->AddFunction("replace", CREATE_FUNCTION(replace, "string", {"string", "string", "string"}));
-  def->AddFunction("remove", CREATE_FUNCTION(remove, "string", {"string", "string"}));
-  def->AddFunction("without", CREATE_FUNCTION(without, "string", {"string", "string"}));
-  
+  def->AddFunction(
+      "insert", CREATE_FUNCTION(insert, "string", {"string", "int", "string"}));
+  def->AddFunction("contains",
+                   CREATE_FUNCTION(contains, "bool", {"string", "string"}));
+  def->AddFunction("replace", CREATE_FUNCTION(replace, "string",
+                                              {"string", "string", "string"}));
+  def->AddFunction("remove",
+                   CREATE_FUNCTION(remove, "string", {"string", "string"}));
+  def->AddFunction("without",
+                   CREATE_FUNCTION(without, "string", {"string", "string"}));
+
   def->SetNamespace("std::string");
   return def;
 }

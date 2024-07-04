@@ -114,17 +114,18 @@ Token Lexer::LexIden() noexcept {
   stringstream stream = std::stringstream{};
   int startLoc = loc;
   int startCol = col;
-  
+
   while (isalnum(input[pos]) || input[pos] == '_') {
     stream << input[pos];
     pos++;
     col++;
   }
-  
+
   auto value = stream.str();
-  
+
   if (keywords.count(value) > 0) {
-    return Token(startLoc, startCol, value, keywords.at(value), TFamily::Keyword);
+    return Token(startLoc, startCol, value, keywords.at(value),
+                 TFamily::Keyword);
   } else {
     return Token(startLoc, startCol, value, TType::Identifier,
                  TFamily::Identifier);
@@ -256,7 +257,8 @@ Token Lexer::LexOp() {
       return Token(startLoc, startCol, op.first, op.second, TFamily::Operator);
     }
   }
-  // TODO improve this error. It prints nonsensical values which makes it harder to debug.
+  // TODO improve this error. It prints nonsensical values which makes it harder
+  // to debug.
   auto ch = std::string() + input[startLoc];
   throw std::runtime_error("failed to parse operator " + ch);
 }

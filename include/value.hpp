@@ -397,5 +397,3 @@ template <typename T> T *Value_T::Cast() {
 }
 
 } // namespace Values
-
-

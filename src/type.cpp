@@ -1,7 +1,7 @@
-#include "ctx.hpp"
 #include "type.hpp"
 #include "ast.hpp"
 #include "context.hpp"
+#include "ctx.hpp"
 #include "error.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
@@ -236,18 +236,17 @@ Type Parser::ParseType() {
   if (!tokens.empty() && Peek().type == TType::Func) {
     return Parser::ParseFunctionType();
   }
-  
+
   if (!tokens.empty() && Peek().type == TType::LParen) {
     return ParseTupleType();
   }
-  
+
   auto tname = Expect(TType::Identifier).value;
   auto type = TypeSystem::Current().Find(tname);
   // template types.
   if (!tokens.empty() && Peek().type == TType::Less) {
     return Parser::ParseTemplateType(type);
   }
- 
 
   return type;
 }
@@ -306,15 +305,15 @@ Value CallableType::Default() { return Ctx::Undefined(); }
 Value ArrayType::Default() { return Ctx::CreateArray(); }
 Value AnyType::Default() { return Ctx::Undefined(); }
 
-StructType::StructType(const string &name, vector<std::unique_ptr<Declaration>> &&fields, vector<string> &template_args)
-    : Type_T(name), template_args(template_args), fields(std::move(fields)) {
-    
-}
+StructType::StructType(const string &name,
+                       vector<std::unique_ptr<Declaration>> &&fields,
+                       vector<string> &template_args)
+    : Type_T(name), template_args(template_args), fields(std::move(fields)) {}
 
 Value StructType::Default() {
   auto object = Ctx::CreateObject();
   ASTNode::context.PushScope(object->scope);
-  for (const auto &field: fields) {
+  for (const auto &field : fields) {
     field->Execute();
   }
   ASTNode::context.PopScope();

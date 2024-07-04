@@ -9,9 +9,9 @@
 
 class ASTVisitor;
 
+using std::shared_ptr;
 using std::string;
 using std::vector;
-using std::shared_ptr;
 
 enum class Mutability {
   Const = 0,
@@ -22,10 +22,10 @@ enum struct TType;
 struct Context;
 
 namespace Values {
-  struct Value_T;
-  struct Type_T;
-  struct Callable_T;
-  enum class PrimitiveType;
+struct Value_T;
+struct Type_T;
+struct Callable_T;
+enum class PrimitiveType;
 } // namespace Values
 
 using Type = std::shared_ptr<Values::Type_T>;
@@ -151,12 +151,9 @@ struct Identifier : Expression {
 };
 
 struct TypeIdentifier : Expression {
-  TypeIdentifier(SourceInfo &info, Type type) : Expression(info, type) {
-    
-  }
+  TypeIdentifier(SourceInfo &info, Type type) : Expression(info, type) {}
   Value Evaluate() override;
 };
-
 
 struct Arguments : Expression {
   Arguments(SourceInfo &info, vector<ExpressionPtr> &&args);
@@ -187,7 +184,7 @@ struct Parameters : Statement {
     Type type;
     Mutability mutability;
   };
-  
+
   Parameters(SourceInfo &info);
   auto ParamTypes() -> vector<Type> {
     vector<Type> types;
@@ -200,23 +197,19 @@ struct Parameters : Statement {
 
   void Apply(Scope scope, vector<ExpressionPtr> &values);
   void Apply(Scope scope, vector<Value> &values);
-  
+
   void ForwardDeclare(Scope scope);
 
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;
-  
+
   auto Clone() -> unique_ptr<Parameters>;
-  
-  auto Params() -> vector<Param>& {
-    return params;
-  }
-  
-  private:
+
+  auto Params() -> vector<Param> & { return params; }
+
+private:
   std::vector<Param> params;
 };
-
-
 
 struct Continue : Statement {
   Continue(SourceInfo &info) : Statement(info) {}
@@ -246,6 +239,7 @@ struct Delete : Statement {
   void Accept(ASTVisitor *visitor) override;
 };
 struct Block : Statement {
+  ~Block();
   Block(SourceInfo &info, vector<StatementPtr> &&statements, Scope scope);
   vector<StatementPtr> statements;
   Scope scope;
@@ -407,7 +401,8 @@ struct FunctionDecl : Statement {
   const string name;
   const Type returnType;
   shared_ptr<Values::Callable_T> callable;
-  FunctionDecl(SourceInfo &info, string &name, const shared_ptr<Values::Callable_T> &callable);
+  FunctionDecl(SourceInfo &info, string &name,
+               const shared_ptr<Values::Callable_T> &callable);
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;
 };
@@ -489,7 +484,7 @@ struct Using : Statement {
 
   // TODO: make this cross platform.
   const string moduleRoot = "/usr/local/scrit/modules/";
-  
+
   ExecutionResult Execute() override;
   void Accept(ASTVisitor *visitor) override;
 };
@@ -526,14 +521,14 @@ struct Match : Expression {
 };
 
 struct StructDeclaration : Statement {
-  
-  
+
   string type_name;
   vector<string> template_args;
-  
+
   StructDeclaration(SourceInfo &info, const string &name,
-                    vector<StatementPtr> &&statements, vector<string> &template_args);
-  
+                    vector<StatementPtr> &&statements,
+                    vector<string> &template_args);
+
   ExecutionResult Execute() override;
 };
 
@@ -543,7 +538,6 @@ struct ScopeResolution : Expression {
   ScopeResolution(SourceInfo &info, vector<string> &identifiers);
   Value Evaluate() override;
 };
-
 
 struct Constructor : Expression {
   ArgumentsPtr args;

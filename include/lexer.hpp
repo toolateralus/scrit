@@ -17,10 +17,10 @@ struct SourceInfo final {
   SourceInfo &operator=(const SourceInfo &) = default;
   SourceInfo &operator=(SourceInfo &&) = default;
   ~SourceInfo() {}
-  
+
   explicit SourceInfo(const int loc, const int col, const std::string &source)
       : loc(loc), col(col), source(source) {}
-      
+
   std::string ToString() const noexcept {
     return string("{\n   ") + "line: " + std::to_string(loc) +
            "\n   col: " + std::to_string(col) + "\n   source: " + source +
@@ -123,7 +123,7 @@ struct Token {
   Token(Token &&) = default;
   Token &operator=(const Token &) = default;
   Token &operator=(Token &&) = default;
-  
+
   explicit Token(const int &loc, const int &col, const string &value,
                  const TType type, const TFamily family);
   SourceInfo info;
@@ -131,7 +131,7 @@ struct Token {
   int loc = 0, col = 0;
   TType type;
   TFamily family;
-  
+
   string ToString() const noexcept;
 };
 struct Lexer final {
