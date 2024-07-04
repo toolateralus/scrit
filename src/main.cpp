@@ -69,6 +69,22 @@ static std::vector<Token> &PreProcessUseStatements(std::vector<Token> &tokens) {
   return tokens;
 }
 
+void serialize_ast(unique_ptr<Program> &ast) {
+  auto serializer = ASTSerializer();
+  ast->Accept(&serializer);
+
+  // Check if the log directory exists, create it if it doesn't
+  if (!std::filesystem::exists(logDir)) {
+    std::filesystem::create_directory(logDir);
+  }
+  std::fstream out("log/ast.txt", std::ios::out);
+  if (out.is_open()) {
+    out << serializer.stream.str();
+    out.close();
+  } else {
+    std::cout << "Failed to open file: ast.txt\n";
+  }
+}
 int main(int argc, char **argv) {
   Lexer lexer;
   Parser parser;
@@ -91,20 +107,9 @@ int main(int argc, char **argv) {
       InsertCmdLineArgs(argc, argv);
 
       if (ast) {
-        auto serializer = ASTSerializer();
-        ast->Accept(&serializer);
-
-        // Check if the log directory exists, create it if it doesn't
-        if (!std::filesystem::exists(logDir)) {
-          std::filesystem::create_directory(logDir);
-        }
-        std::fstream out("log/ast.txt", std::ios::out);
-        if (out.is_open()) {
-          out << serializer.stream.str();
-          out.close();
-        } else {
-          std::cout << "Failed to open file: ast.txt\n";
-        }
+        
+        //serialize_ast(ast);
+        
         ast->Execute();
       } else {
         std::cout << "Parsing failed\n";
