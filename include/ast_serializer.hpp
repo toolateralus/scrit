@@ -32,6 +32,7 @@ struct ASTSerializer : ASTVisitor {
   void visit(Operand *operand) override;
   void visit(Identifier *identifier) override;
   void visit(Arguments *arguments) override;
+  void visit(TypeArguments *type_args) override;
   void visit(TupleInitializer *tupleInitializer) override;
   void visit(Property *property) override;
   void visit(Parameters *parameters) override;

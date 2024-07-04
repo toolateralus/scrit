@@ -13,6 +13,7 @@ struct ASTVisitor {
   virtual void visit(Operand *operand) = 0;
   virtual void visit(Identifier *identifier) = 0;
   virtual void visit(Arguments *arguments) = 0;
+  virtual void visit(TypeArguments *type_args) = 0;
   virtual void visit(TupleInitializer *tupleInitializer) = 0;
   virtual void visit(Property *property) = 0;
   virtual void visit(Parameters *parameters) = 0;

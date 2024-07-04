@@ -9,6 +9,7 @@
 #include "parser.hpp"
 #include "value.hpp"
 #include <algorithm>
+#include <cstddef>
 #include <iostream>
 #include <memory>
 #include <ranges>
@@ -57,6 +58,10 @@ Arguments::Arguments(SourceInfo &info, vector<ExpressionPtr> &&args)
     : Expression(info, TypeSystem::Current().Undefined) {
   this->values = std::move(args);
 }
+TypeArguments::TypeArguments(SourceInfo &info, vector<Type> &&types)
+    : Expression(info, TypeSystem::Current().Undefined) {
+  this->types = std::move(types);
+}
 Parameters::Parameters(SourceInfo &info, std::vector<Param> &&params)
     : Statement(info) {
   this->params = std::move(params);
@@ -84,9 +89,8 @@ ObjectInitializer::ObjectInitializer(SourceInfo &info, const Type &type,
     : Expression(info, type) {
   this->block = std::move(block);
 }
-Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
+Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args, TypeArgsPtr &&type_args)
     : Expression(info, operand->type), Statement(info) {
-
   auto value = operand->Evaluate();
 
   if (!value) {
@@ -105,7 +109,7 @@ Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args)
   if (callable_type && callable_type->returnType) {
     this->type = callable_type->returnType;
   }
-
+  this->type_args = std::move(type_args);
   this->operand = std::move(operand);
   this->args = std::move(args);
 }
@@ -386,6 +390,9 @@ Value Arguments::Evaluate() {
   }
   return make_shared<Tuple_T>(values);
 }
+Value TypeArguments::Evaluate() {
+  return Ctx::Undefined();
+}
 ExecutionResult Parameters::Execute() { return ExecutionResult::None; }
 ExecutionResult TypeParameters::Execute() { return ExecutionResult::None; }
 ExecutionResult Continue::Execute() { return ExecutionResult::Continue; }
@@ -559,7 +566,7 @@ Value Call::Evaluate() {
   auto lvalue = operand->Evaluate();
   if (lvalue->GetPrimitiveType() == PrimitiveType::Callable) {
     auto callable = std::static_pointer_cast<Callable_T>(lvalue);
-    auto result = callable->Call(args);
+    auto result = callable->Call(args, type_args);
     return result;
   } else {
     // TODO: put this somewhere where it makes sense. maybe it's own node for
@@ -1171,6 +1178,7 @@ void Expression::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Operand::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Identifier::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Arguments::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void TypeArguments::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void TupleInitializer::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Property::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Parameters::Accept(ASTVisitor *visitor) { visitor->visit(this); }
@@ -1213,12 +1221,12 @@ TypeAlias::TypeAlias(SourceInfo &info, const string &alias, const Type &type)
   context.ImmediateScope()->InsertType(alias, type);
 }
 
-Value MethodCall::Evaluate() { return callable->Call(this->args); }
+Value MethodCall::Evaluate() { return callable->Call(this->args, this->type_args); }
 
 MethodCall::MethodCall(SourceInfo &info, const Type &type,
-                       ExpressionPtr &&operand, ArgumentsPtr &&args)
+    ExpressionPtr &&operand, ArgumentsPtr &&args, TypeArgsPtr &&type_args)
     : Statement(info), Expression(info, type), args(std::move(args)),
-      operand(std::move(operand)) {
+      operand(std::move(operand)), type_args(std::move(type_args)) {
   callable = FindCallable();
   auto t = std::dynamic_pointer_cast<CallableType>(callable->type);
   this->type = t->returnType;
@@ -1352,7 +1360,15 @@ void Parameters::Apply(Scope scope, std::vector<ExpressionPtr> &values) {
       throw std::runtime_error("too few args provided to function");
   }
 }
-
+void TypeParameters::Apply(vector<Type> &type_args) {
+  auto types_size = type_args.size();
+  if (types_size != params.size()) {
+    throw std::runtime_error("wrong number of type args passed to type parameters");
+  } 
+  for (size_t i = 0; i < types_size; i++) {
+    params[i]->type = type_args[i];
+  }
+}
 void Parameters::Apply(Scope scope, std::vector<Value> &values) {
   for (size_t i = 0; i < params.size(); ++i) {
     auto &param = params[i];

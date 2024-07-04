@@ -58,7 +58,7 @@ void Writer::Map(const Value_T *val) {
 // references.
 void Writer::Write(const Value_T *val) {
   if (val == nullptr) {
-    throw new std::runtime_error(
+    throw std::runtime_error(
         "nullptr contained in value passed to serializer");
   }
 
@@ -141,7 +141,7 @@ void Writer::Write(const Value_T *val) {
     } else {
       // obviously something really went wrong if GetPrimitiveType() retuns
       // a type mismatched from what dynamic_cast thinks it is
-      throw new std::runtime_error("Value failed to cast as marked type in "
+      throw std::runtime_error("Value failed to cast as marked type in "
                                    "serializer, this is a language bug.");
     }
 

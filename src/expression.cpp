@@ -154,25 +154,16 @@ ExpressionPtr Parser::ParsePostfix() {
     }
 
     if (next.type != TType::LParen && next.type != TType::SubscriptLeft &&
-        next.type != TType::Dot) {
+        next.type != TType::Dot && next.type != TType::Less) {
       break;
     }
     // Templated function call
     if (next.type == TType::Less && Peek(1).type == TType::Identifier &&
         TypeSystem::Current().Exists(Peek(1).value)) {
-      // // auto template_params = ParseTemplateParams();
-      // auto args= ParseArguments();
-
-      // auto type_iden = dynamic_cast<TypeIdentifier *>(expr.get());
-
-      // if (type_iden) {
-      //   expr =  make_unique<Constructor>(info, type_iden->type,
-      //   std::move(args)); continue;
-      // }
-
-      // expr = std::make_unique<Call>(info, std::move(expr), std::move(args));
-    }
-    if (next.type == TType::LParen) {
+      auto type_args = ParseTypeArgs();
+      auto arguments = ParseArguments();
+      expr = make_unique<Call>(info, std::move(expr), std::move(arguments), std::move(type_args));
+    } else if (next.type == TType::LParen) {
 
       auto args = ParseArguments();
 
@@ -200,7 +191,7 @@ ExpressionPtr Parser::ParsePostfix() {
         auto call = ParseCall(std::move(iden));
         call->args->values.insert(call->args->values.begin(), std::move(expr));
         expr = make_unique<MethodCall>(
-            info, call->type, std::move(call->operand), std::move(call->args));
+            info, call->type, std::move(call->operand), std::move(call->args), std::move(call->type_args));
       } else {
         auto right = ParseExpression();
         expr = std::make_unique<DotExpr>(info, right->type, std::move(expr),
