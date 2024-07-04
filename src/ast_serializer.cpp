@@ -21,17 +21,17 @@ void ASTSerializer::visit(Program *program) {
 }
 void ASTSerializer::visit(Expression *_) {
   Write("Expression");
-  Write("type: " + _->type->name);
+  Write("type: " + _->type->GetName());
 }
 void ASTSerializer::visit(Operand *operand) {
   auto _ = Indenter(this);
   Write("Operand: {\n" + operand->Evaluate()->ToString() +
-        " type: " + operand->type->name + "\n}");
+        " type: " + operand->type->GetName() + "\n}");
 }
 void ASTSerializer::visit(Identifier *identifier) {
   if (identifier->type)
     Write("Identifier: " + identifier->name +
-          " type: " + identifier->type->name);
+          " type: " + identifier->type->GetName());
   else
     Write("Identifier: " + identifier->name + " type: unknown");
 }
@@ -45,7 +45,7 @@ void ASTSerializer::visit(Arguments *arguments) {
   Write("}");
 }
 void ASTSerializer::visit(TupleInitializer *tupleInitializer) {
-  Write("TupleInitializer: " + tupleInitializer->type->name + "{");
+  Write("TupleInitializer: " + tupleInitializer->type->GetName() + "{");
   auto _ = Indenter(this);
   for (auto &arg : tupleInitializer->values) {
     arg->Accept(this);
@@ -54,7 +54,7 @@ void ASTSerializer::visit(TupleInitializer *tupleInitializer) {
   Write("}");
 }
 void ASTSerializer::visit(Property *property) {
-  Write("Property: " + property->lambda->type->name + "{");
+  Write("Property: " + property->lambda->type->GetName() + "{");
   auto _ = Indenter(this);
   property->lambda->Accept(this);
 
@@ -64,7 +64,7 @@ void ASTSerializer::visit(Parameters *parameters) {
   Write("Parameters: {");
   auto _ = Indenter(this);
   for (auto &param : parameters->Params()) {
-    stream << Indent() << param.name << ": " << param.type->name << "";
+    stream << Indent() << param.name << ": " << param.type->GetName() << "";
   }
 
   Write("}");
@@ -108,7 +108,7 @@ void ASTSerializer::visit(ObjectInitializer *objInit) {
   Write("}");
 }
 void ASTSerializer::visit(Call *call) {
-  Write("Call: " + call->type->name + " {");
+  Write("Call: " + call->type->GetName() + " {");
   {
     auto _ = Indenter(this);
     Write("Operand: {");
@@ -216,7 +216,7 @@ void ASTSerializer::visit(RangeBasedFor *rangeFor) {
   Write("}");
 }
 void ASTSerializer::visit(Declaration *del) {
-  Write("Declaration: " + del->type->name + " {");
+  Write("Declaration: " + del->type->GetName() + " {");
   {
     auto _ = Indenter(this);
 
@@ -256,7 +256,7 @@ void ASTSerializer::visit(TupleDeconstruction *tupleDec) {
   Write("}");
 }
 void ASTSerializer::visit(CompAssignExpr *compAssignExpr) {
-  Write("CompAssignExpr: " + compAssignExpr->type->name + " {");
+  Write("CompAssignExpr: " + compAssignExpr->type->GetName() + " {");
   {
     auto _ = Indenter(this);
     Write("Operand: {");
@@ -288,7 +288,7 @@ void ASTSerializer::visit(FunctionDecl *funcDecl) {
         TypeSystem::Current()
             .FromCallable(funcDecl->returnType,
                           funcDecl->parameters->ParamTypes())
-            ->name +
+            ->GetName() +
         " {");
   {
     auto _ = Indenter(this);
@@ -303,7 +303,7 @@ void ASTSerializer::visit(Noop *_) {
         "declarations from the ast");
 }
 void ASTSerializer::visit(DotExpr *dotExpr) {
-  Write("DotExpr: " + dotExpr->type->name + " {");
+  Write("DotExpr: " + dotExpr->type->GetName() + " {");
   {
     auto _ = Indenter(this);
     Write("Operand: {");
@@ -499,7 +499,7 @@ void ASTSerializer::visit(MatchStatement *matchStmt) {
   Write("}");
 }
 void ASTSerializer::visit(Literal *literal) {
-  if (literal->type->name == "string") {
+  if (literal->type->GetName() == "string") {
     Write("\"" + literal->Evaluate()->ToString() + "\"");
   } else {
     Write(literal->Evaluate()->ToString());

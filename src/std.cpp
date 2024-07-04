@@ -72,7 +72,7 @@ REGISTER_FUNCTION(get_type, "string", {"any"}) {
   }
 
   if (args[0]->type) {
-    auto v = args[0]->type->name;
+    auto v = args[0]->type->GetName();
     return Ctx::CreateString(v);
   }
   return Ctx::CreateString("undefined -- this is a language bug.");

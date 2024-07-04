@@ -256,8 +256,8 @@ StatementPtr Parser::ParseDeclaration(SourceInfo &info, const string &iden,
     auto lambda = ParseLambda();
     if (type && type != lambda->type) {
       throw std::runtime_error(
-          "explicit type: " + type->name +
-          " did not match the property's type: " + lambda->type->name);
+          "explicit type: " + type->GetName() +
+          " did not match the property's type: " + lambda->type->GetName());
     }
     return make_unique<Property>(info, iden, std::move(lambda), mut);
   }
@@ -322,8 +322,8 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
 
     if (type && type != value->type) {
       throw std::runtime_error(
-          "explicit type: " + type->name +
-          " did not match the expressions type: " + value->type->name);
+          "explicit type: " + type->GetName() +
+          " did not match the expressions type: " + value->type->GetName());
     }
 
     return make_unique<CompoundAssignment>(
@@ -338,13 +338,27 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
 unique_ptr<FunctionDecl> Parser::ParseFunctionDeclaration() {
   auto info = this->info;
   auto name = Expect(TType::Identifier).value;
+
+  //using temp scope to define generic types for params and retrun
+  ASTNode::context.PushScope();
+  TypeParamsPtr type_params;
+  if (Peek().type == TType::Less) {
+    type_params = ParseTypeParameters();
+    type_params->DeclareTypes();
+  }
   auto parameters = ParseParameters();
   auto returnType = ParseReturnType();
+  ASTNode::context.PopScope();
+  
   auto param_clone = parameters->Clone();
-  auto callable =
-      make_shared<Callable_T>(returnType, nullptr, std::move(parameters));
+  auto type_param_clone = type_params->Clone();
+  
+  auto callable = make_shared<Callable_T>
+    (returnType, nullptr, std::move(parameters), std::move(type_params));
   ASTNode::context.ImmediateScope()->Set(name, callable, Mutability::Mut);
-  auto block = ParseBlock(param_clone);
+  
+  auto block = ParseBlock(param_clone, std::move(type_param_clone));
+
   callable->block = std::move(block);
   return make_unique<FunctionDecl>(info, name, callable);
 }
@@ -546,6 +560,25 @@ ParametersPtr Parser::ParseParameters() {
   Expect(TType::RParen);
   return make_unique<Parameters>(info, std::move(params));
 }
+TypeParamsPtr Parser::ParseTypeParameters() {
+  Expect(TType::Less);
+  auto next = Peek();
+  std::vector<TypeParam> params = {};
+  while (tokens.size() > 0 && next.type != TType::Greater) {
+
+    auto name = Expect(TType::Identifier).value;
+    auto param = make_shared<TypeParam_T>(name, make_shared<NamedType_T>(name));
+
+    params.push_back(param);
+
+    if (Peek().type == TType::Comma) {
+      Eat();
+    }
+    next = Peek();
+  }
+  Expect(TType::Greater);
+  return make_unique<TypeParameters>(info, std::move(params));
+}
 
 // TODO: add support for named parameters in arguments.
 // some_func(iden: 0, is_something: false)
@@ -574,12 +607,16 @@ ArgumentsPtr Parser::ParseArguments() {
   return make_unique<Arguments>(info, std::move(values));
 }
 
-BlockPtr Parser::ParseBlock(ParametersPtr &params) {
-
+BlockPtr Parser::ParseBlock(ParametersPtr &params, TypeParamsPtr &&type_params) {
+  
   auto scope = ASTNode::context.PushScope();
 
   params->ForwardDeclare(scope);
 
+  if (type_params) {
+    type_params->DeclareTypes();
+  }
+  
   auto info = this->info;
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};

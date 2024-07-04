@@ -28,7 +28,7 @@ struct Parser final {
   Token Eat() noexcept;
   unique_ptr<Program> Parse(vector<Token> &&tokens);
   BlockPtr ParseBlock();
-  BlockPtr ParseBlock(ParametersPtr &params);
+  BlockPtr ParseBlock(ParametersPtr &params, TypeParamsPtr &&type_params = nullptr);
   StatementPtr ParseAnonFuncInlineCall();
   StatementPtr ParseStatement();
   StatementPtr ParseKeyword(Token keyword);
@@ -36,6 +36,7 @@ struct Parser final {
   Type ParseTupleType();
   Type ParseType();
   Type ParseTemplateType(const Type &base_type);
+  std::vector<Type> ParseTypeArgs();
 
   StatementPtr ParseTupleDeconstruction(IdentifierPtr &&iden);
 
@@ -62,6 +63,7 @@ struct Parser final {
   StatementPtr ParseMatchStatement();
 
   ParametersPtr ParseParameters();
+  TypeParamsPtr ParseTypeParameters();
   ArgumentsPtr ParseArguments();
 
   DeletePtr ParseDelete();

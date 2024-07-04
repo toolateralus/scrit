@@ -61,6 +61,11 @@ Parameters::Parameters(SourceInfo &info, std::vector<Param> &&params)
     : Statement(info) {
   this->params = std::move(params);
 }
+TypeParameters::TypeParameters(SourceInfo &info, std::vector<TypeParam> &&params)
+    : Statement(info) {
+  this->params = std::move(params);
+}
+TypeParameters::TypeParameters(SourceInfo &info) : Statement(info) {}
 Identifier::Identifier(SourceInfo &info, const Type &type, const string &name)
     : Expression(info, type), name(name) {}
 Operand::Operand(SourceInfo &info, const Type &type, ExpressionPtr &&expr)
@@ -382,6 +387,7 @@ Value Arguments::Evaluate() {
   return make_shared<Tuple_T>(values);
 }
 ExecutionResult Parameters::Execute() { return ExecutionResult::None; }
+ExecutionResult TypeParameters::Execute() { return ExecutionResult::None; }
 ExecutionResult Continue::Execute() { return ExecutionResult::Continue; }
 ExecutionResult Break::Execute() { return ExecutionResult::Break; }
 ExecutionResult Return::Execute() {
@@ -1134,7 +1140,7 @@ void Using::Load(const std::string &moduleName) {
     if (TypeSystem::Current().Exists(name)) {
       TypeSystem::Current().RegisterType(t, true);
     } else {
-      ASTNode::context.ImmediateScope()->InsertType(t->name, t);
+      ASTNode::context.ImmediateScope()->InsertType(t->GetName(), t);
     }
   }
 
@@ -1168,6 +1174,7 @@ void Arguments::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void TupleInitializer::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Property::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Parameters::Accept(ASTVisitor *visitor) { visitor->visit(this); }
+void TypeParameters::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Continue::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Break::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 void Return::Accept(ASTVisitor *visitor) { visitor->visit(this); }
@@ -1312,6 +1319,14 @@ auto Parameters::Clone() -> unique_ptr<Parameters> {
   }
   return clone;
 }
+auto TypeParameters::Clone() -> unique_ptr<TypeParameters> {
+  auto clone = std::make_unique<TypeParameters>(this->srcInfo);
+  clone->params.reserve(params.size());
+  for (const auto &param : params) {
+    clone->params.push_back(param);
+  }
+  return clone;
+}
 
 Parameters::Parameters(SourceInfo &info) : Statement(info) {}
 
@@ -1390,3 +1405,9 @@ FunctionDecl::FunctionDecl(SourceInfo &info, string &name,
   this->callable = callable;
 }
 Block::~Block() {}
+void TypeParameters::DeclareTypes() {
+  for (auto &param : params) {
+    auto type = make_shared<GenericType_T>(param);
+    ASTNode::context.ImmediateScope()->InsertType(param->name, type);
+  }
+}

@@ -314,13 +314,13 @@ string Callable_T::ToString() const {
 
   ss << "(";
   for (const auto &param : params->Params()) {
-    ss << param.name << ": " << param.type->name;
+    ss << param.name << ": " << param.type->GetName();
     if (&param != &params->Params().back()) {
       ss << ", ";
     }
   }
   ss << ")";
-  auto returnType = type->returnType->name;
+  auto returnType = type->returnType->GetName();
   ss << " -> " << returnType;
   return ss.str();
 }
@@ -329,7 +329,7 @@ string NativeCallable_T::ToString() const {
   stringstream ss = {};
   ss << TypeSystem::Current()
             .FromCallable(function->returnType, function->parameterTypes)
-            ->name;
+            ->GetName();
   return ss.str();
 }
 
@@ -618,11 +618,11 @@ Float_T::Float_T(float value) : Value_T(TypeSystem::Current().Float) {
 }
 
 Callable_T::Callable_T(const Type &returnType, BlockPtr &&block,
-                       ParametersPtr &&params)
-    : Value_T(nullptr), block(std::move(block)), params(std::move(params)) {
+    ParametersPtr &&params,TypeParamsPtr &&type_params)
+    : Value_T(nullptr), block(std::move(block)), params(std::move(params)),
+    type_params(std::move(type_params)) {
   if (!this->type) {
-    this->type = TypeSystem::Current().FromCallable(returnType,
-                                                    this->params->ParamTypes());
+    this->type = TypeSystem::Current().FromCallable(returnType, this->params->ParamTypes());
   }
 }
 String_T::String_T(const string &value)
@@ -642,7 +642,7 @@ Array_T::Array_T(vector<Value> init) : Value_T(nullptr) {
   this->values = init;
   if (init.size() != 0) {
     this->type = TypeSystem::Current().FindOrCreateTemplate(
-        "array<" + init[0]->type->name + ">",
+        "array<" + init[0]->type->GetName() + ">",
         TypeSystem::Current().Find("array"), {init[0]->type});
   } else {
     this->type = TypeSystem::Current().Find("array");
