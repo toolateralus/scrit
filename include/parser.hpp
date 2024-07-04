@@ -36,7 +36,7 @@ struct Parser final {
   Type ParseTupleType();
   Type ParseType();
   Type ParseTemplateType(const Type &base_type);
-  std::vector<Type> ParseTypeArgs();
+  TypeArgsPtr ParseTypeArgs();
 
   StatementPtr ParseTupleDeconstruction(IdentifierPtr &&iden);
 

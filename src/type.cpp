@@ -7,6 +7,7 @@
 #include "parser.hpp"
 #include "value.hpp"
 #include <iostream>
+#include <memory>
 #include <ostream>
 #include <stdexcept>
 #include <vector>
@@ -167,7 +168,7 @@ Type Parser::ParseReturnType() {
   }
   return returnType;
 }
-vector<Type> Parser::ParseTypeArgs() {
+TypeArgsPtr Parser::ParseTypeArgs() {
   Expect(TType::Less);
   vector<Type> types;
   while (!tokens.empty()) {
@@ -187,11 +188,11 @@ vector<Type> Parser::ParseTypeArgs() {
   }
 
   Expect(TType::Greater);
-  return types;
+  return std::make_unique<TypeArguments>(info, std::move(types));
 }
 Type Parser::ParseTemplateType(const Type &base_type) {
 
-  auto types = ParseTypeArgs();
+  auto types = ParseTypeArgs()->types;
 
   auto name = base_type->GetName() + "<";
   for (size_t i = 0; i < types.size(); ++i) {
@@ -363,7 +364,7 @@ Value StructType::Construct(ArgumentsPtr &args) {
   return object;
 }
 auto NamedType_T::Scope() -> Scope_T & {
-  throw new std::runtime_error(
+  throw std::runtime_error(
       "scope of this type should not be accessed ever");
 }
 const string NamedType_T::GetName() const { return name; }

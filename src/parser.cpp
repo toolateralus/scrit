@@ -417,7 +417,7 @@ StatementPtr Parser::ParseLValuePostFix(ExpressionPtr &expr) {
   }
   if (auto call = dynamic_cast<Call *>(expr.get())) {
     return make_unique<Call>(info, std::move(call->operand),
-                             std::move(call->args));
+                             std::move(call->args), std::move(call->type_args));
   }
 
   if (auto call = dynamic_cast<MethodCall *>(expr.get())) {

@@ -168,8 +168,8 @@ struct Arguments : Expression {
   void Accept(ASTVisitor *visitor) override;
 };
 struct TypeArguments : Expression {
-  TypeArguments(SourceInfo &info, vector<ExpressionPtr> &&args);
-  vector<ExpressionPtr> values;
+  TypeArguments(SourceInfo &info, vector<Type> &&types);
+  vector<Type> types;
   Value Evaluate() override;
   void Accept(ASTVisitor *visitor) override;
 };
@@ -225,6 +225,7 @@ private:
 struct TypeParameters : Statement {
   ExecutionResult Execute() override;
   TypeParameters(SourceInfo &info, std::vector<TypeParam> &&params);
+  void Apply(vector<Type> &types);
   void Accept(ASTVisitor *visitor) override;
   void DeclareTypes();
   auto Clone() -> unique_ptr<TypeParameters>;
@@ -295,8 +296,9 @@ struct Callable_T;
 }
 struct Call : virtual Expression, virtual Statement {
   ExpressionPtr operand;
+  TypeArgsPtr type_args;
   ArgumentsPtr args;
-  Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args);
+  Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args, TypeArgsPtr &&type_args = nullptr);
   static vector<Value> GetArgsValueList(ArgumentsPtr &args);
   Value Evaluate() override;
   ExecutionResult Execute() override;
@@ -305,10 +307,11 @@ struct Call : virtual Expression, virtual Statement {
 struct MethodCall : virtual Expression, virtual Statement {
   ExpressionPtr operand;
   ArgumentsPtr args;
+  TypeArgsPtr type_args;
   shared_ptr<Values::Callable_T> callable;
   shared_ptr<Values::Callable_T> FindCallable();
   MethodCall(SourceInfo &info, const Type &type, ExpressionPtr &&operand,
-             ArgumentsPtr &&args);
+             ArgumentsPtr &&args, TypeArgsPtr &&type_args);
   ExecutionResult Execute() override {
     Evaluate();
     return ExecutionResult::None;

@@ -12,11 +12,12 @@ void ASTSerializer::visit(Executable *_) { Write("Executable"); }
 void ASTSerializer::visit(Statement *_) { Write("Statement"); }
 void ASTSerializer::visit(Program *program) {
   Write("Program: {");
-  auto _ = Indenter(this);
-  for (auto &stmt : program->statements) {
-    stmt->Accept(this);
+  {
+    auto _ = Indenter(this);
+    for (auto &stmt : program->statements) {
+      stmt->Accept(this);
+    }
   }
-
   Write("}");
 }
 void ASTSerializer::visit(Expression *_) {
@@ -37,74 +38,93 @@ void ASTSerializer::visit(Identifier *identifier) {
 }
 void ASTSerializer::visit(Arguments *arguments) {
   Write("Arguments: {");
-  auto _ = Indenter(this);
-  for (auto &arg : arguments->values) {
-    arg->Accept(this);
+  {
+    auto _ = Indenter(this);
+    for (auto &arg : arguments->values) {
+      arg->Accept(this);
+    }
   }
-
+  Write("}");
+}
+void ASTSerializer::visit(TypeArguments *type_args) {
+  Write("TypeArguments: {");
+  {
+    auto _ = Indenter(this);
+    for (auto &type : type_args->types) {
+      Write(type->GetName());
+    }
+  }
   Write("}");
 }
 void ASTSerializer::visit(TupleInitializer *tupleInitializer) {
   Write("TupleInitializer: " + tupleInitializer->type->GetName() + "{");
-  auto _ = Indenter(this);
-  for (auto &arg : tupleInitializer->values) {
-    arg->Accept(this);
+  {
+    auto _ = Indenter(this);
+    for (auto &arg : tupleInitializer->values) {
+      arg->Accept(this);
+    }
   }
-
   Write("}");
 }
 void ASTSerializer::visit(Property *property) {
   Write("Property: " + property->lambda->type->GetName() + "{");
-  auto _ = Indenter(this);
-  property->lambda->Accept(this);
-
+  {
+    auto _ = Indenter(this);
+    property->lambda->Accept(this);
+  }
   Write("}");
 }
 void ASTSerializer::visit(Parameters *parameters) {
   Write("Parameters: {");
-  auto _ = Indenter(this);
-  for (auto &param : parameters->Params()) {
-    stream << Indent() << param.name << ": " << param.type->GetName() << "";
+  {
+    auto _ = Indenter(this);
+    for (auto &param : parameters->Params()) {
+      stream << Indent() << param.name << ": " << param.type->GetName() << "";
+    }
   }
-
   Write("}");
 }
 void ASTSerializer::visit(Continue *_) { Write("Continue"); }
 void ASTSerializer::visit(Break *_) { Write("Break"); }
 void ASTSerializer::visit(Return *ret) {
   Write("Return: {");
-  auto _ = Indenter(this);
-  ret->value->Accept(this);
+  {
+    auto _ = Indenter(this);
+    ret->value->Accept(this);
+  }
   Write("}");
 }
 void ASTSerializer::visit(Delete *del) {
   Write("Delete: {");
-  auto _ = Indenter(this);
-  if (del->iden != nullptr) {
-    del->iden->Accept(this);
+  {
+    auto _ = Indenter(this);
+    if (del->iden != nullptr) {
+      del->iden->Accept(this);
+    }
+    if (del->dot != nullptr) {
+      del->dot->Accept(this);
+    }
   }
-  if (del->dot != nullptr) {
-    del->dot->Accept(this);
-  }
-
   Write("}");
 }
 void ASTSerializer::visit(Block *block) {
   Write("Block: {");
-  auto _ = Indenter(this);
-  for (auto &stmt : block->statements) {
-    stmt->Accept(this);
+  {
+    auto _ = Indenter(this);
+    for (auto &stmt : block->statements) {
+      stmt->Accept(this);
+    }
   }
-
   Write("}");
 }
 void ASTSerializer::visit(ObjectInitializer *objInit) {
   Write("ObjectInitializer: {");
-  auto _ = Indenter(this);
-  for (auto &stmt : objInit->block->statements) {
-    stmt->Accept(this);
+  { 
+    auto _ = Indenter(this);
+    for (auto &stmt : objInit->block->statements) {
+      stmt->Accept(this);
+    }
   }
-
   Write("}");
 }
 void ASTSerializer::visit(Call *call) {
@@ -118,6 +138,9 @@ void ASTSerializer::visit(Call *call) {
     }
     Write("}");
     call->args->Accept(this);
+    if (call->type_args) {
+      call->type_args->Accept(this);
+    }
   }
   Write("}");
 }
@@ -485,8 +508,10 @@ void ASTSerializer::visit(Match *match) {
     Write("}");
     if (match->branch_default != nullptr) {
       Write("Default: {");
-      auto _ = Indenter(this);
-      match->branch_default->Accept(this);
+      {
+        auto _ = Indenter(this);
+        match->branch_default->Accept(this);
+      }
       Write("}");
     }
   }

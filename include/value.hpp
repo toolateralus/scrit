@@ -3,6 +3,7 @@
 #include "context.hpp"
 #include "lexer.hpp"
 #include "native.hpp"
+#include "type.hpp"
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -265,7 +266,7 @@ struct Callable_T : Value_T {
   BlockPtr block;
   ParametersPtr params;
   TypeParamsPtr type_params;
-  virtual Value Call(ArgumentsPtr &args);
+  virtual Value Call(ArgumentsPtr &args, TypeArgsPtr &type_args);
   virtual Value Call(std::vector<Value> &args);
   string ToString() const override;
   bool Equals(Value value) override;
@@ -284,7 +285,7 @@ struct NativeCallable_T : Callable_T {
 
   void CheckParameterTypes(vector<Value> &values);
   void CheckReturnType(Value &result);
-  Value Call(ArgumentsPtr &args) override;
+  Value Call(ArgumentsPtr &args, TypeArgsPtr &type_args) override;
   Value Call(std::vector<Value> &args) override;
   string ToString() const override;
   bool Equals(Value value) override;

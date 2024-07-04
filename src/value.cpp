@@ -17,10 +17,11 @@ Bool Value_T::False = Bool_T::New(false);
 Null Value_T::VNULL = make_shared<Null_T>();
 Undefined Value_T::UNDEFINED = make_shared<::Undefined_T>();
 
-Value Callable_T::Call(ArgumentsPtr &args) {
+Value Callable_T::Call(ArgumentsPtr &args, TypeArgsPtr &type_args) {
   auto scope = ASTNode::context.PushScope();
   auto values = Call::GetArgsValueList(args);
 
+  type_params->Apply(type_args->types);
   params->Apply(scope, args->values);
   auto result = block->Execute();
   
@@ -38,7 +39,7 @@ Value Callable_T::Call(ArgumentsPtr &args) {
     // TODO: remove runtime type checking. this should be done at parse time.
     if (!this_type ||
         !result.value->type->Equals(this_type->returnType.get())) {
-      throw TypeError(this_type, result.value->type, "invalid return type");
+      throw TypeError(this_type->returnType, result.value->type, "invalid return type");
     }
     return result.value;
   }
@@ -141,7 +142,7 @@ void NativeCallable_T::CheckReturnType(Value &result) {
                     "Invalid return type from function " + function->name);
   }
 }
-Value NativeCallable_T::Call(unique_ptr<Arguments> &args) {
+Value NativeCallable_T::Call(unique_ptr<Arguments> &args, TypeArgsPtr &type_args) {
   ASTNode::context.PushScope();
 
   auto values = Call::GetArgsValueList(args);
