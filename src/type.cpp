@@ -8,22 +8,21 @@
 #include <iostream>
 #include <ostream>
 #include <stdexcept>
+#include <vector>
 
 using namespace Values;
 
-Type_T::Type_T(const std::string &name) : name(name) {}
-
 auto TypeSystem::RegisterType(const Type &type,
                               const bool module_type) -> void {
-  const auto exists = global_types.contains(type->name);
+  const auto exists = global_types.contains(type->GetName());
   // if a type exists && this comes from a module, we supplement members.
   if (exists && module_type) {
-    auto t = global_types[type->name];
+    auto t = global_types[type->GetName()];
     for (const auto &[name, member] : type->Scope().Members()) {
       t->Scope().Members()[name] = member;
     }
   } else if (!exists) {
-    global_types[type->name] = type;
+    global_types[type->GetName()] = type;
   }
 }
 
@@ -39,10 +38,10 @@ auto TypeSystem::FromPrimitive(const PrimitiveType &t) -> Type {
 
 auto TypeSystem::FromTuple(const vector<Type> &types) -> Type {
   auto type = make_shared<TupleType>(types);
-  if (this->global_types.contains(type->name)) {
-    return this->global_types[type->name];
+  if (this->global_types.contains(type->GetName())) {
+    return this->global_types[type->GetName()];
   }
-  this->global_types[type->name] = type;
+  this->global_types[type->GetName()] = type;
   return type;
 }
 
@@ -50,10 +49,10 @@ auto TypeSystem::FromCallable(const Type returnType,
                               const vector<Type> paramTypes) -> Type {
   // todo: make this more efficient.
   auto type = make_shared<CallableType>(returnType, paramTypes);
-  if (global_types.contains(type->name)) {
-    return global_types[type->name];
+  if (global_types.contains(type->GetName())) {
+    return global_types[type->GetName()];
   }
-  global_types[type->name] = type;
+  global_types[type->GetName()] = type;
   return type;
 }
 
@@ -131,9 +130,11 @@ auto TemplateType::Get(const string &name) -> Value {
   return nullptr;
 }
 
+GenericType_T::GenericType_T(const TypeParam type_param) : type_param(type_param) {}
+
 TemplateType::TemplateType(const string &name, const Type &base_type,
                            const vector<Type> &typenames)
-    : Type_T(name), typenames(typenames), base_type(base_type),
+    : name(name), typenames(typenames), base_type(base_type),
       scope(Scope_T::Create()) {}
 
 auto TypeSystem::DumpInfo() -> void {
@@ -165,7 +166,7 @@ Type Parser::ParseReturnType() {
   }
   return returnType;
 }
-Type Parser::ParseTemplateType(const Type &base_type) {
+vector<Type> Parser::ParseTypeArgs() {
   Expect(TType::Less);
   vector<Type> types;
   while (!tokens.empty()) {
@@ -185,10 +186,15 @@ Type Parser::ParseTemplateType(const Type &base_type) {
   }
 
   Expect(TType::Greater);
+  return types;
+}
+Type Parser::ParseTemplateType(const Type &base_type) {
 
-  auto name = base_type->name + "<";
+  auto types = ParseTypeArgs();
+
+  auto name = base_type->GetName() + "<";
   for (size_t i = 0; i < types.size(); ++i) {
-    name += types[i]->name;
+    name += types[i]->GetName();
     if (i < types.size() - 1) { // Check if it's not the last element
       name += ", ";
     }
@@ -284,7 +290,7 @@ Value IntType::Default() { return Ctx::CreateInt(); }
 Value TemplateType::Default() {
   // todo: figure out how we'll ever default construct various template types.
 
-  if (base_type->name == "array") {
+  if (base_type->GetName() == "array") {
     auto array = Ctx::CreateArray();
     array->type = shared_from_this();
     return array;
@@ -302,12 +308,14 @@ Value TupleType::Default() {
   return make_shared<Tuple_T>(values);
 }
 Value CallableType::Default() { return Ctx::Undefined(); }
+Value GenericType_T::Default() { return Ctx::Undefined(); }
+Value NamedType_T::Default() { return Ctx::Undefined(); }
 Value ArrayType::Default() { return Ctx::CreateArray(); }
 Value AnyType::Default() { return Ctx::Undefined(); }
 
 StructType::StructType(const string &name,
                        std::unique_ptr<ObjectInitializer> &&ctor_obj, vector<string> &template_args)
-    : Type_T(name), ctor_obj(std::move(ctor_obj)), template_args(template_args) {
+    : name(name), ctor_obj(std::move(ctor_obj)), template_args(template_args) {
   // this happens during forward declaration during parsing of struct so they
   // can reference their own type.
   if (this->ctor_obj == nullptr) {
@@ -328,7 +336,7 @@ Value StructType::Default() {
 }
 
 bool StructType::Equals(const Type_T *other) {
-  return other != nullptr && other->name == "object" || *other == *this;
+  return other != nullptr && other->GetName() == "object" || *other == *this;
 }
 Scope_T &StructType::Scope() {
   static Scope_T scope;
@@ -355,4 +363,83 @@ Value StructType::Construct(ArgumentsPtr &args) {
     ++i;
   }
   return object;
+}
+auto NamedType_T::Scope() -> Scope_T & {
+  throw new std::runtime_error(
+      "scope of this type should not be accessed ever");
+}
+const string NamedType_T::GetName() const { return name; }
+auto GenericType_T::Scope() -> Scope_T & {
+  return type_param->type->Scope();
+}
+const string GenericType_T::GetName() const {
+  return type_param->type->GetName();
+}
+const string ArrayType::GetName() const { return "array"; }
+const string AnyType::GetName() const { return "any"; }
+const string StructType::GetName() const { return name; }
+const string CallableType::GetName() const { return name; }
+CallableType::CallableType(const Type returnType,
+                                   const std::vector<Type> paramTypes)
+    : returnType(returnType), paramTypes(paramTypes) {
+  name =
+      "func" + TupleType(paramTypes).GetName() + " -> " + returnType->GetName();
+}
+const string TupleType::GetName() const { return name; }
+TupleType::TupleType(const std::vector<Type> &in_subtypes)
+    : subtypes(in_subtypes) {
+  std::stringstream ss;
+  ss << "(";
+  for (size_t i = 0; i < subtypes.size(); ++i) {
+    ss << subtypes[i]->GetName();
+    if (i != subtypes.size() - 1) {
+      ss << ", ";
+    }
+  }
+  ss << ")";
+  name = ss.str();
+}
+const string BoolType::GetName() const { return "bool"; }
+const string FloatType::GetName() const { return "float"; }
+const string ObjectType::GetName() const { return "object"; }
+const string TemplateType::GetName() const { return name; }
+bool TemplateType::Equals(const Type_T *other) {
+  return other != nullptr && (*other == *this || *other == *base_type);
+}
+auto Type_T::Equals(const Type_T *other) -> bool {
+  if (!other) {
+    return false;
+  }
+  // TODO: improve the any type.
+  return *other == *this || other->GetName() == "any" || GetName() == "any";
+}
+const string NullType::GetName() const { return "null"; }
+const string UndefinedType::GetName() const { return "undefined"; }
+const string StringType::GetName() const { return "string"; }
+const string IntType::GetName() const { return "int"; }
+auto TemplateType::Scope() -> Scope_T & { return *scope; }
+NamedType_T::NamedType_T(const string name) : name(name) {}
+auto TypeSystem::Initialize() -> void {
+  Null = std::make_shared<NullType>();
+  Undefined = std::make_shared<UndefinedType>();
+  Int = std::make_shared<IntType>();
+  Float = std::make_shared<FloatType>();
+  Bool = std::make_shared<BoolType>();
+  NativeCallable = std::make_shared<CallableType>(make_shared<AnyType>(),
+                                                  std::vector<Type>({}));
+  String = std::make_shared<StringType>();
+  Any = make_shared<AnyType>();
+  global_types = {{"null", Null},
+                  {"undefined", Undefined},
+                  {"int", Int},
+                  {"float", Float},
+                  {"bool", Bool},
+                  {"native_callable", NativeCallable},
+                  {"string", String},
+                  {"array", make_shared<ArrayType>()},
+                  {"object", make_shared<ObjectType>()},
+                  {"any", Any}};
+}
+bool Type_T::operator==(const Type_T &other) const {
+  return GetName() == other.GetName();
 }

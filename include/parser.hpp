@@ -21,7 +21,7 @@ struct Parser {
   Token Expect(const TType ttype);
   unique_ptr<Program> Parse(vector<Token> &&tokens);
   BlockPtr ParseBlock();
-  BlockPtr ParseBlock(ParametersPtr &params);
+  BlockPtr ParseBlock(ParametersPtr &params, TypeParamsPtr &&type_params = nullptr);
   StatementPtr ParseAnonFuncInlineCall();
   StatementPtr ParseStatement();
   StatementPtr ParseKeyword(Token keyword);
@@ -29,6 +29,7 @@ struct Parser {
   Type ParseTupleType();
   Type ParseType();
   Type ParseTemplateType(const Type &base_type);
+  std::vector<Type> ParseTypeArgs();
 
   StatementPtr ParseTupleDeconstruction(IdentifierPtr &&iden);
 
@@ -53,6 +54,7 @@ struct Parser {
   StatementPtr ParseMatchStatement();
   
   ParametersPtr ParseParameters();
+  TypeParamsPtr ParseTypeParameters();
   ArgumentsPtr ParseArguments();
 
   DeletePtr ParseDelete();

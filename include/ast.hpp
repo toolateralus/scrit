@@ -42,10 +42,12 @@ struct Statement;
 struct Expression;
 struct Block;
 struct Arguments;
+struct TypeArguments;
 struct If;
 struct Else;
 struct Identifier;
 struct Parameters;
+struct TypeParameters;
 struct Operand;
 struct Using;
 struct Lambda;
@@ -66,10 +68,12 @@ using StatementPtr = std::unique_ptr<Statement>;
 using ExpressionPtr = std::unique_ptr<Expression>;
 using BlockPtr = std::unique_ptr<Block>;
 using ArgumentsPtr = std::unique_ptr<Arguments>;
+using TypeArgsPtr = std::unique_ptr<TypeArguments>;
 using IfPtr = std::unique_ptr<If>;
 using ElsePtr = std::unique_ptr<Else>;
 using IdentifierPtr = std::unique_ptr<Identifier>;
 using ParametersPtr = std::unique_ptr<Parameters>;
+using TypeParamsPtr = std::unique_ptr<TypeParameters>;
 using OperandPtr = std::unique_ptr<Operand>;
 using FunctionDeclPtr = std::unique_ptr<FunctionDecl>;
 
@@ -163,6 +167,12 @@ struct Arguments : Expression {
   Value Evaluate() override;
   void Accept(ASTVisitor *visitor) override;
 };
+struct TypeArguments : Expression {
+  TypeArguments(SourceInfo &info, vector<ExpressionPtr> &&args);
+  vector<ExpressionPtr> values;
+  Value Evaluate() override;
+  void Accept(ASTVisitor *visitor) override;
+};
 struct TupleInitializer : Expression {
   vector<ExpressionPtr> values;
   vector<Type> types;
@@ -214,7 +224,16 @@ struct Parameters : Statement {
   private:
   std::vector<Param> params;
 };
-
+struct TypeParameters : Statement {
+  ExecutionResult Execute() override;
+  TypeParameters(SourceInfo &info, std::vector<Values::TypeParam> &&params);
+  void Accept(ASTVisitor *visitor) override;
+  void DeclareTypes();
+  auto Clone() -> unique_ptr<TypeParameters>;
+  TypeParameters(SourceInfo &info);
+private:
+  std::vector<Values::TypeParam> params;
+};
 
 
 struct Continue : Statement {
@@ -274,7 +293,7 @@ struct ArrayInitializer : Expression {
 };
 namespace Values {
 struct Callable_T;
-}
+} // namespace Values
 struct Call : virtual Expression, virtual Statement {
   ExpressionPtr operand;
   ArgumentsPtr args;

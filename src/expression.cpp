@@ -458,7 +458,7 @@ OperandPtr Parser::ParseArrayInitializer() {
     }
     Expect(TType::SubscriptRight);
     auto type = TypeSystem::Current().FindOrCreateTemplate(
-        "array<" + inner_type->name + ">", TypeSystem::Current().Find("array"),
+        "array<" + inner_type->GetName() + ">", TypeSystem::Current().Find("array"),
         {inner_type});
     return make_unique<Operand>(
         info, type,
