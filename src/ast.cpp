@@ -304,7 +304,7 @@ Declaration::Declaration(SourceInfo &info, const string &name,
                          ExpressionPtr &&expr, const Mutability &mut,
                          const Type &type)
     : Statement(info), name(name), expr(std::move(expr)), mut(mut), type(type) {
-
+  
   context.CurrentScope()->ForwardDeclare(name, type, mut);
 }
 
@@ -505,26 +505,28 @@ ExecutionResult Block::Execute(Scope scope) {
   return ExecutionResult::None;
 }
 ExecutionResult Block::Execute() {
-  scope->ClearVariables();
+  auto last_scope = context.CurrentScope();
+  context.SetCurrentScope(scope);
+  
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     auto result = statement->Execute();
+    
     switch (result.controlChange) {
     case ControlChange::Continue:
     case ControlChange::Break:
     case ControlChange::Return:
+      context.SetCurrentScope(last_scope);
       if (result.value != nullptr) {
         ApplyCopySemantics(result);
         return result;
       }
-
       return result;
     case ControlChange::None:
       continue;
     }
   }
-  
-  
+  context.SetCurrentScope(last_scope);
   return ExecutionResult::None;
 }
 Value ObjectInitializer::Evaluate() {
@@ -1086,6 +1088,7 @@ ExecutionResult Declaration::Execute() {
         "cannot re-define an already existing variable.\noffending variable: " +
         name);
   }
+  
   auto value = this->expr->Evaluate();
   
   // copy where needed
@@ -1266,8 +1269,11 @@ StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
     : Statement(info), type_name(name), template_args(template_args), scope(scope) {
   
   
+  auto last_scope = ASTNode::context.CurrentScope();
+  ASTNode::context.SetCurrentScope(scope);
+  
   vector<unique_ptr<Declaration>> declarations;
-
+  
   for (auto &statement : statements) {
     if (auto decl = dynamic_cast<Declaration *>(statement.get())) {
       declarations.push_back(std::unique_ptr<Declaration>(
@@ -1276,14 +1282,16 @@ StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
   }
   auto type =
       make_shared<StructType>(name, std::move(declarations), template_args, scope);
-
+  
   for (auto &statement : statements) {
     if (auto decl = dynamic_cast<FunctionDecl *>(statement.get())) {
       type->Scope().Set(decl->name, decl->callable, Mutability::Const);
     }
   }
-
+  
+  context.SetCurrentScope(last_scope);
   context.CurrentScope()->OverwriteType(name, type);
+  
 }
 ExecutionResult StructDeclaration::Execute() { return ExecutionResult::None; }
 Constructor::Constructor(SourceInfo &info, const Type &type,

@@ -17,40 +17,7 @@ Bool Value_T::False = Bool_T::New(false);
 Null Value_T::VNULL = make_shared<Null_T>();
 Undefined Value_T::UNDEFINED = make_shared<::Undefined_T>();
 
-Value Callable_T::Call(ArgumentsPtr &args, TypeArgsPtr &type_args) {
-  
-  auto last_scope = ASTNode::context.CurrentScope();
-  ASTNode::context.SetCurrentScope(scope);
-  
-  auto values = Call::GetArgsValueList(args);
-  
-  if (type_params)
-    type_params->Apply(type_args->types);
-  
-  params->Apply(block->scope, args->values);
-  auto result = block->Execute();
-  
-  switch (result.controlChange) {
-  case ControlChange::None:
-    ASTNode::context.SetCurrentScope(last_scope);
-    return Value_T::VNULL;
-  case ControlChange::Return: {
-    auto this_type = std::dynamic_pointer_cast<CallableType>(type);
-    
-    // TODO: remove runtime type checking. this should be done at parse time.
-    if (!this_type ||
-        !result.value->type->Equals(this_type->returnType.get())) {
-      ASTNode::context.SetCurrentScope(last_scope);
-      throw TypeError(this_type->returnType, result.value->type, "invalid return type");
-    }
-    ASTNode::context.SetCurrentScope(last_scope);
-    return result.value;
-  }
-  default:
-    ASTNode::context.SetCurrentScope(last_scope);
-    throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
-  }
-}
+
 
 Value Array_T::At(Int index) {
   if (values.size() <= (size_t)index->value) {
@@ -125,6 +92,39 @@ Value NativeCallable_T::Call(std::vector<Value> &args) {
     return result;
   }
 }
+Value Callable_T::Call(ArgumentsPtr &args, TypeArgsPtr &type_args) {
+  auto values = Call::GetArgsValueList(args);
+  
+  auto last_scope = ASTNode::context.CurrentScope();
+  ASTNode::context.SetCurrentScope(scope);
+  
+  if (type_params)
+    type_params->Apply(type_args->types);
+  
+  params->Apply(block->scope, args->values);
+  auto result = block->Execute();
+  
+  switch (result.controlChange) {
+  case ControlChange::None:
+    ASTNode::context.SetCurrentScope(last_scope);
+    return Value_T::VNULL;
+  case ControlChange::Return: {
+    auto this_type = std::dynamic_pointer_cast<CallableType>(type);
+    
+    // TODO: remove runtime type checking. this should be done at parse time.
+    if (!this_type ||
+        !result.value->type->Equals(this_type->returnType.get())) {
+      ASTNode::context.SetCurrentScope(last_scope);
+      throw TypeError(this_type->returnType, result.value->type, "invalid return type");
+    }
+    ASTNode::context.SetCurrentScope(last_scope);
+    return result.value;
+  }
+  default:
+    ASTNode::context.SetCurrentScope(last_scope);
+    throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
+  }
+}
 void NativeCallable_T::CheckParameterTypes(vector<Value> &values) {
   for (auto i = 0; i < values.size(); ++i) {
     if (function->parameterTypes.size() <= i) {
@@ -151,10 +151,10 @@ Value NativeCallable_T::Call(unique_ptr<Arguments> &args, TypeArgsPtr &type_args
   Value result;
 
   CheckParameterTypes(values);
-
+  
   if (function->ptr)
     result = function->ptr(values);
-
+  
   CheckReturnType(result);
 
   

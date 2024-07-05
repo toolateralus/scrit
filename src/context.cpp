@@ -9,37 +9,40 @@ Context::Context() {}
 
 
 void Namespace::Erase(const string &name) {
-  root_scope->Erase(name);
+  current_scope->Erase(name);
 }
 
 void Namespace::Insert(const Scope_T::Key &key, Value value) {
-  root_scope->Set(key, value);
+  current_scope->Set(key, value);
 }
 
 void Namespace::Insert(const string &name, Value value,
                        const Mutability &mutability) {
-  root_scope->Set(name, value, mutability);
+  current_scope->Set(name, value, mutability);
 }
 
 auto Namespace::FindIter(const string &name) const -> VarIter {
-  return root_scope->Find(name);
+  return current_scope->Find(name);
 }
 
 auto Namespace::Find(const string &name) const -> Value {
-  auto value = root_scope->Find(name);
+  auto value = current_scope->Find(name);
   
-  if (value != root_scope->End()) {
+  // TODO: figure ou why scope->Find() returns invalid iterators when it's
+  // called and the searched for symbol does not exist.
+  
+  if (value != current_scope->Members().end() && value->first.value == name) {
     return value->second;
   }
-  
   for (const auto &[_, importedNs] : imported_namespaces) {
     auto found = importedNs->Find(name);
     if (found)
       return found;
   }
   
-  // TODO: search parent ns's
-
+  if (parent.lock())
+    return parent.lock()->Find(name);
+  
   return nullptr;
 }
 
@@ -85,7 +88,6 @@ auto Scope_T::Set(const string &name, Value value,
 
   // a forward declaration is being fulfilled.
   if (key.forward_declared) {
-    Erase(key.value);
     auto new_key = Key(key.value, key.mutability, false);
     variables[new_key] = value;
     return;
@@ -123,7 +125,7 @@ ScritModHandle::~ScritModHandle() noexcept {
 ScritModHandle::ScritModHandle(void *handle) noexcept : handle(handle) {}
 
 void Namespace::RegisterModuleHandle(void *handle) {
-  root_scope->PushModule(ScritModHandle(handle));
+  current_scope->PushModule(ScritModHandle(handle));
 }
 ScritModHandle::ScritModHandle(ScritModHandle &&move) noexcept {
   this->handle = move.handle;
@@ -134,16 +136,25 @@ auto Scope_T::Find(const std::string &name) -> VarIter {
   auto it =
       std::find_if(variables.begin(), variables.end(),
                    [&](const auto &pair) { return name == pair.first.value; });
-
+  
+  
+  if (it == variables.end() && parent.lock()) {
+    return parent.lock()->Find(name);
+  }
+  
+  if (it == variables.end()) {
+    return variables.end();
+  }
+  
   return it;
 }
 
 auto Namespace::FindType(const string &name) -> Type {
-  return root_scope->FindType(name);
+  return current_scope->FindType(name);
 }
 
 auto Namespace::TypeExists(const string &name) -> bool {
-  return root_scope->TypeExists(name);
+  return current_scope->TypeExists(name);
 }
 
 auto Scope_T::ClearVariables() -> void {
@@ -175,11 +186,15 @@ Context::ResolvedPath Context::Resolve(ScopeResolution *res) {
 }
 
 auto Context::Find(const string &name) const -> Value {
-  auto result = current_namespace->Find(name);
-  if (!result && FunctionRegistry::Exists(name)) {
+  if (FunctionRegistry::Exists(name)) {
     return FunctionRegistry::GetCallable(name);
+  }  
+  
+  auto result = current_namespace->Find(name);
+  if (result) {
+    return result;
   }
-  return result;
+  return nullptr;
 }
 auto Scope_T::InsertType(const string &name, const Type &type) -> void {
   if (TypeExists(name) && FindType(name) != nullptr) {
