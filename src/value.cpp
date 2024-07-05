@@ -20,8 +20,10 @@ Undefined Value_T::UNDEFINED = make_shared<::Undefined_T>();
 Value Callable_T::Call(ArgumentsPtr &args, TypeArgsPtr &type_args) {
   auto scope = ASTNode::context.PushScope();
   auto values = Call::GetArgsValueList(args);
-
-  type_params->Apply(type_args->types);
+  
+  if (type_params)
+    type_params->Apply(type_args->types);
+  
   params->Apply(scope, args->values);
   auto result = block->Execute();
   
