@@ -21,14 +21,15 @@ struct Parser final {
   explicit Parser(vector<Token> tokens) : tokens(tokens) {}
   vector<Token> tokens;
   SourceInfo info = SourceInfo(0, 0, "");
-
+  
   Token Peek(size_t lookahead = 0);
   Token Expect(const TType ttype);
-
+  
   Token Eat() noexcept;
   unique_ptr<Program> Parse(vector<Token> &&tokens);
   BlockPtr ParseBlock();
   BlockPtr ParseBlock(ParametersPtr &params, TypeParamsPtr &&type_params = nullptr);
+  unique_ptr<StructDeclaration> ParseStructDeclaration();
   StatementPtr ParseAnonFuncInlineCall();
   StatementPtr ParseStatement();
   StatementPtr ParseKeyword(Token keyword);

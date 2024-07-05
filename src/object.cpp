@@ -81,12 +81,12 @@ Value Object_T::CallOpOverload(Value &arg, const string &op_key) {
   if (!type->Scope().Contains(op_key)) {
     throw std::runtime_error("Couldn't find operator overload: " + op_key);
   }
-  auto member = type->Scope().Find(op_key)->second;
+  auto [it, found] = type->Scope().Find(op_key);
   
-  if (member == nullptr ||
-      member->GetPrimitiveType() != PrimitiveType::Callable) {
+  if (!found || it->second->GetPrimitiveType() != PrimitiveType::Callable) {
     throw std::runtime_error("Operator overload was not a callable");
   }
+  auto member = it->second;
   auto callable = static_cast<Callable_T *>(member.get());
   auto args = std::vector<Value>{shared_from_this(), arg};
   auto result = callable->Call(args);

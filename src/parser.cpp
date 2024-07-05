@@ -126,11 +126,9 @@ StatementPtr Parser::ParseStatement() {
   throw std::runtime_error("Unexpected end of input");
 }
 
-StatementPtr Parser::ParseKeyword(Token token) {
-  switch (token.type) {
-  case TType::Struct: {
-    auto name = Expect(TType::Identifier).value;
-
+unique_ptr<StructDeclaration> Parser::ParseStructDeclaration() {
+  auto name = Expect(TType::Identifier).value;
+    
     vector<string> template_args;
     if (Peek().type == TType::Less) {
       Eat();
@@ -145,15 +143,21 @@ StatementPtr Parser::ParseKeyword(Token token) {
       }
       Expect(TType::Greater);
     }
-
+    
     ASTNode::context.CurrentScope()->InsertType(
         name, make_shared<StructType>(
                   name, std::vector<unique_ptr<Declaration>>(), template_args,  nullptr));
-
+    
     auto obj = ParseObjectInitializer();
-
+    
     return make_unique<StructDeclaration>(
         info, name, std::move(obj->block->statements), template_args, obj->block->scope);
+}
+
+StatementPtr Parser::ParseKeyword(Token token) {
+  switch (token.type) {
+  case TType::Struct: {
+    return ParseStructDeclaration();
   }
 
   case TType::Namespace: {

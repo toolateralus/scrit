@@ -21,19 +21,17 @@ void Namespace::Insert(const string &name, Value value,
   current_scope->Set(name, value, mutability);
 }
 
-auto Namespace::FindIter(const string &name) const -> VarIter {
+auto Namespace::FindIter(const string &name) const -> std::pair<VarIter, bool> {
   return current_scope->Find(name);
 }
 
 auto Namespace::Find(const string &name) const -> Value {
-  auto value = current_scope->Find(name);
+  auto [value, found] = current_scope->Find(name);
   
-  // TODO: figure ou why scope->Find() returns invalid iterators when it's
-  // called and the searched for symbol does not exist.
-  
-  if (value != current_scope->Members().end() && value->first.value == name) {
+  if (found) {
     return value->second;
   }
+  
   for (const auto &[_, importedNs] : imported_namespaces) {
     auto found = importedNs->Find(name);
     if (found)
@@ -46,73 +44,6 @@ auto Namespace::Find(const string &name) const -> Value {
   return nullptr;
 }
 
-auto Scope_T::Clone() -> Scope {
-  std::map<Key, Value> variables = {};
-
-  for (const auto &[k, v] : this->variables) {
-    variables[k] = v->Clone();
-  }
-  
-  auto scope = make_shared<Scope_T>(this->parent.lock());
-  scope->variables = variables;
-  return scope;
-}
-auto Scope_T::Get(const string &name) -> Value {
-  auto it = Find(name);
-  if (it == variables.end()) {
-    return Value_T::UNDEFINED;
-  }
-  return variables[it->first];
-}
-
-auto Scope_T::Set(const Scope_T::Key &key, Value value) -> void {
-  variables[key] = value;
-}
-
-auto Scope_T::Set(const string &name, Value value,
-                  const Mutability &mutability) -> void {
-  
-  if (TypeSystem::Current().Exists(name)) {
-    throw std::runtime_error("cannot declare a variable of an existing type: " +
-                             name);
-  }
-  
-  auto it = Find(name);
-  auto &[key, var] = *it;
-  
-  // variable didn't exist, we freely declare it.
-  if (it == variables.end()) {
-    variables[Key(name, mutability, false)] = value;
-    return;
-  }
-
-  // a forward declaration is being fulfilled.
-  if (key.forward_declared) {
-    auto new_key = Key(key.value, key.mutability, false);
-    variables[new_key] = value;
-    return;
-  }
-
-  // the variable is being assigned,
-  if (key.mutability == Mutability::Mut) {
-    variables[key] = value;
-    return;
-  }
-
-  throw std::runtime_error("Cannot set a const value.. identifier: " + name);
-}
-auto Scope_T::Contains(const string &name) -> bool {
-  return Find(name) != variables.end();
-}
-auto Scope_T::Erase(const string &name) -> size_t {
-  auto it = Find(name);
-  if (it != variables.end()) {
-    variables.erase(it);
-    return 1;
-  }
-  return 0;
-}
-auto Scope_T::Members() -> std::map<Key, Value> & { return variables; }
 
 ScritModHandle::~ScritModHandle() noexcept {
   // was moved or already disposed.
@@ -132,22 +63,6 @@ ScritModHandle::ScritModHandle(ScritModHandle &&move) noexcept {
   move.handle = nullptr;
 }
 
-auto Scope_T::Find(const std::string &name) -> VarIter {
-  auto it =
-      std::find_if(variables.begin(), variables.end(),
-                   [&](const auto &pair) { return name == pair.first.value; });
-  
-  
-  if (it == variables.end() && parent.lock()) {
-    return parent.lock()->Find(name);
-  }
-  
-  if (it == variables.end()) {
-    return variables.end();
-  }
-  
-  return it;
-}
 
 auto Namespace::FindType(const string &name) -> Type {
   return current_scope->FindType(name);
@@ -196,6 +111,20 @@ auto Context::Find(const string &name) const -> Value {
   }
   return nullptr;
 }
+
+
+auto Scope_T::Find(const std::string &name) -> std::pair<VarIter, bool> {
+  auto it =
+      std::find_if(variables.begin(), variables.end(),
+                   [&](const auto &pair) { return name == pair.first.value; });
+  if (it == variables.end() && parent.lock()) {
+    return parent.lock()->Find(name);
+  }
+  if (it == variables.end()) {
+    return std::pair<VarIter, bool>(nullptr, false);
+  }
+  return std::pair<VarIter, bool>(it, true);
+}
 auto Scope_T::InsertType(const string &name, const Type &type) -> void {
   if (TypeExists(name) && FindType(name) != nullptr) {
     throw std::runtime_error("re-definition of type: " + name);
@@ -208,7 +137,12 @@ auto Scope_T::OverwriteType(const string &name, const Type &type) -> void {
 auto Scope_T::FindType(const string &name) -> Type {
   if (types.contains(name)) {
     return types[name];
+  } 
+  
+  if (parent.lock()) {
+    return parent.lock()->FindType(name);
   }
+  
   throw std::runtime_error("couldn't find type: " + name + " in this scope");
 }
 auto Scope_T::PushModule(ScritModHandle &&handle) -> void {
@@ -216,3 +150,68 @@ auto Scope_T::PushModule(ScritModHandle &&handle) -> void {
 }
 auto Scope_T::End() -> VarIter{ return variables.end(); }
 
+auto Scope_T::Clone() -> Scope {
+  std::map<Key, Value> variables = {};
+
+  for (const auto &[k, v] : this->variables) {
+    variables[k] = v->Clone();
+  }
+  
+  auto scope = make_shared<Scope_T>(this->parent.lock());
+  scope->variables = variables;
+  return scope;
+}
+auto Scope_T::Get(const string &name) -> Value {
+  auto [it, found] = Find(name);
+  if (!found) {
+    return Value_T::UNDEFINED;
+  }
+  return variables[it->first];
+}
+auto Scope_T::Set(const Scope_T::Key &key, Value value) -> void {
+  variables[key] = value;
+}
+auto Scope_T::Set(const string &name, Value value,
+                  const Mutability &mutability) -> void {
+  
+  if (TypeSystem::Current().Exists(name)) {
+    throw std::runtime_error("cannot declare a variable of an existing type: " +
+                             name);
+  }
+  
+  auto [it, found] = Find(name);
+  
+  // variable didn't exist, we freely declare it.
+  if (!found) {
+    variables[Key(name, mutability, false)] = value;
+    return;
+  }
+  
+  auto &[key, var] = *it;
+  // a forward declaration is being fulfilled.
+  if (key.forward_declared) {
+    auto new_key = Key(key.value, key.mutability, false);
+    variables[new_key] = value;
+    return;
+  }
+
+  // the variable is being assigned,
+  if (key.mutability == Mutability::Mut) {
+    variables[key] = value;
+    return;
+  }
+
+  throw std::runtime_error("Cannot set a const value.. identifier: " + name);
+}
+auto Scope_T::Contains(const string &name) -> bool {
+  return Find(name).second;
+}
+auto Scope_T::Erase(const string &name) -> size_t {
+  auto [it, found] = Find(name);
+  if (found) {
+    variables.erase(it);
+    return 1;
+  }
+  return 0;
+}
+auto Scope_T::Members() -> std::map<Key, Value> & { return variables; }

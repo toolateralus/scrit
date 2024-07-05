@@ -81,7 +81,7 @@ struct Scope_T {
           std::pair<const Scope_T::Key, std::shared_ptr<Values::Value_T>>>;
   
   auto Find(const std::string &name)
-      -> VarIter;
+      -> std::pair<VarIter, bool>;
       
   auto Contains(const string &name) -> bool;
   auto Erase(const string &name) -> size_t;
@@ -96,7 +96,13 @@ struct Scope_T {
   auto OverwriteType(const string &name, const Type &type) -> void;
   auto InsertType(const string &name, const Type &type) -> void;
   auto FindType(const string &name) -> Type;
-  auto TypeExists(const string &name) -> bool { return types.contains(name); }
+  auto TypeExists(const string &name) -> bool { 
+    auto exists = types.contains(name);
+    if (!exists && parent.lock()){
+      return parent.lock()->TypeExists(name);
+    }
+    return exists;
+  }
   
   auto Get(const string &name) -> Value;
   auto Set(const Key &name, Value value) -> void;
@@ -122,7 +128,7 @@ struct Namespace {
   Namespace(Namespace &&) = default;
   Namespace &operator=(const Namespace &) = delete;
   Namespace &operator=(Namespace &&) = delete;
-
+  
   explicit Namespace(string name, shared_ptr<Namespace> parent)
       : name(name), parent(parent) {
         current_scope = root_scope;
@@ -150,7 +156,7 @@ struct Namespace {
   auto TypeExists(const string &name) -> bool;
   auto FindType(const string &name) -> Type;
   auto Find(const string &name) const -> Value;
-  auto FindIter(const string &name) const -> VarIter;
+  auto FindIter(const string &name) const -> std::pair<VarIter, bool>;
   void Insert(const string &name, Value value, const Mutability &mutability);
   void Insert(const Scope_T::Key &key, Value value);
 
@@ -276,7 +282,7 @@ struct Context {
     return ns->Find(identifiers.back());
   }
   auto Find(const string &name) const -> Value;
-  auto FindIter(const string &name) const -> VarIter {
+  auto FindIter(const string &name) const -> std::pair<VarIter, bool> {
     return current_namespace->FindIter(name);
   }
   void Insert(const string &name, Value value, const Mutability &mutability) {

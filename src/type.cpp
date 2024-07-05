@@ -352,7 +352,7 @@ Value StructType::Construct(ArgumentsPtr &args) {
         throw TypeError(field_type, arg->type);
       }
       if (object->scope->Contains(name)) {
-        auto it = object->scope->Find(name);
+        auto [it, _] = object->scope->Find(name);
         object->scope->Erase(name);
         object->scope->Set(it->first, value);
       } else {

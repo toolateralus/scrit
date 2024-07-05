@@ -675,7 +675,12 @@ ExecutionResult Assignment::Execute() {
   ApplyCopySemantics(result);
 
   // TODO: find a better way to query mutability of a variable.
-  auto iter = ASTNode::context.FindIter(iden->name);
+  auto [iter, found] = ASTNode::context.FindIter(iden->name);
+  
+  if (!found) {
+    throw std::runtime_error("unable to find variable : " + iden->name);
+  }
+  
   context.Insert(iden->name, result, iter->first.mutability);
   return ExecutionResult::None;
 }
@@ -923,9 +928,9 @@ Value CompAssignExpr::Evaluate() {
 
   auto iden = dynamic_cast<Identifier *>(left.get());
 
-  auto it = context.FindIter(iden->name);
-
-  if (it->second == nullptr) {
+  auto [it, found] = context.FindIter(iden->name);
+  
+  if (!found || it->second == nullptr) {
     throw std::runtime_error("variable did not exist: cannot compound assign");
   }
 
@@ -1083,7 +1088,8 @@ ExecutionResult Property::Execute() {
 ExecutionResult Declaration::Execute() {
   auto &scope = ASTNode::context.CurrentScope();
   
-  if (scope->Contains(name) && !scope->Find(name)->first.forward_declared) {
+  auto [it, found] = scope->Find(name);
+  if (found && !it->first.forward_declared) {
     throw std::runtime_error(
         "cannot re-define an already existing variable.\noffending variable: " +
         name);

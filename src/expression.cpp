@@ -326,6 +326,11 @@ unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
   
   auto last_scope = ASTNode::context.CurrentScope();
   auto scope = ASTNode::context.CreateScope();
+  
+  if (!scope->parent.lock()) {
+    scope->parent = last_scope;
+  }
+  
   ASTNode::context.SetCurrentScope(scope);
   
   while (tokens.size() > 0) {
