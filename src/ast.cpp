@@ -1200,12 +1200,15 @@ TypeAlias::TypeAlias(SourceInfo &info, const string &alias, const Type &type)
   context.CurrentScope()->InsertType(alias, type);
 }
 
-Value MethodCall::Evaluate() { return callable->Call(this->args, this->type_args); }
+Value MethodCall::Evaluate() { 
+  return callable->Call(this->args, this->type_args); 
+}
 
 MethodCall::MethodCall(SourceInfo &info, const Type &type,
     ExpressionPtr &&operand, ArgumentsPtr &&args, TypeArgsPtr &&type_args)
     : Statement(info), Expression(info, type), args(std::move(args)),
       operand(std::move(operand)), type_args(std::move(type_args)) {
+        
   callable = FindCallable();
   auto t = std::dynamic_pointer_cast<CallableType>(callable->type);
   this->type = t->returnType;

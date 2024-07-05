@@ -311,6 +311,7 @@ struct MethodCall : virtual Expression, virtual Statement {
   TypeArgsPtr type_args;
   shared_ptr<Values::Callable_T> callable;
   shared_ptr<Values::Callable_T> FindCallable();
+  
   MethodCall(SourceInfo &info, const Type &type, ExpressionPtr &&operand,
              ArgumentsPtr &&args, TypeArgsPtr &&type_args);
   ExecutionResult Execute() override {
