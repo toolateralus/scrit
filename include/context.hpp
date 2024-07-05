@@ -61,13 +61,16 @@ struct Scope_T {
     }
   };
   
-  Scope_T() {}
+  Scope_T(Scope scope) {
+    parent = scope;
+  }
   
   Scope_T(const Scope_T &) = delete;
   Scope_T(Scope_T &&) = delete;
   Scope_T &operator=(const Scope_T &) = delete;
   Scope_T &operator=(Scope_T &&) = delete;
-  Scope_T(Scope_T *scope);
+  
+  std::weak_ptr<Scope_T> parent;
   
   ~Scope_T() {
     variables.clear();
@@ -103,8 +106,6 @@ struct Scope_T {
   auto Clear() -> void { variables.clear(); }
   auto Clone() -> Scope;
   auto PushModule(ScritModHandle &&handle) -> void;
-  static auto Create() -> Scope;
-  static auto Create(Scope_T *scope) -> Scope;
   auto End() -> VarIter;
   
 
@@ -123,19 +124,28 @@ struct Namespace {
   Namespace &operator=(Namespace &&) = delete;
 
   explicit Namespace(string name, shared_ptr<Namespace> parent)
-      : name(name), parent(parent) {}
-
+      : name(name), parent(parent) {
+        current_scope = root_scope;
+      }
+  
   const string name;
-  // every namespace has to have a root scope by default.
-  vector<Scope> scopes = {make_shared<Scope_T>()};
-
+  
+  Scope root_scope = make_shared<Scope_T>(nullptr);
+  Scope current_scope;
+  
+  
+  Scope CreateScope() {
+    return make_shared<Scope_T>(this->current_scope);
+  }
+  void SetCurrentScope(Scope scope) {
+    current_scope = scope;
+  }
+  
   std::weak_ptr<Namespace> parent;
   std::unordered_map<string, shared_ptr<Namespace>> imported_namespaces;
   std::unordered_map<string, shared_ptr<Namespace>> nested_namespaces;
 
   void RegisterModuleHandle(void *handle);
-  Scope PushScope(Scope scope = nullptr);
-  Scope PopScope();
   void Erase(const string &name);
   auto TypeExists(const string &name) -> bool;
   auto FindType(const string &name) -> Type;
@@ -169,8 +179,15 @@ struct Context {
       make_shared<Namespace>("global", nullptr);
 
   shared_ptr<Namespace> current_namespace = root_namespace;
-
-  Scope &ImmediateScope() { return current_namespace->scopes.back(); }
+  
+  
+  Scope &CurrentScope() { return current_namespace->current_scope; }
+  Scope CreateScope() {
+    return current_namespace->CreateScope();
+  }
+  void SetCurrentScope(Scope scope) {
+    current_namespace->current_scope = scope;
+  }
 
   void CreateNamespace(const vector<string> &identifiers) {
     shared_ptr<Namespace> current = root_namespace;
@@ -239,10 +256,7 @@ struct Context {
   void RegisterModuleHandle(void *handle) {
     current_namespace->RegisterModuleHandle(handle);
   }
-  Scope PushScope(Scope scope = nullptr) {
-    return current_namespace->PushScope(scope);
-  }
-  Scope PopScope() { return current_namespace->PopScope(); }
+  
   void Erase(const string &name) { current_namespace->Erase(name); }
   auto TypeExists(const string &name) -> bool {
     return current_namespace->TypeExists(name);

@@ -305,7 +305,7 @@ Declaration::Declaration(SourceInfo &info, const string &name,
                          const Type &type)
     : Statement(info), name(name), expr(std::move(expr)), mut(mut), type(type) {
 
-  context.ImmediateScope()->ForwardDeclare(name, type, mut);
+  context.CurrentScope()->ForwardDeclare(name, type, mut);
 }
 
 // ##############################################
@@ -317,7 +317,7 @@ ExecutionResult Program::Execute() {
 
   // create an object called global, so we can bypass any shadowed variables.
   auto global =
-      Object_T::New(ASTNode::context.current_namespace->scopes.front());
+      Object_T::New(ASTNode::context.current_namespace->root_scope);
 
   // include all of the native functions in this global object.
   for (const auto &[name, _] : FunctionRegistry::GetRegistry()) {
@@ -475,7 +475,6 @@ void ApplyCopySemantics(ExecutionResult &result) {
   }
 }
 ExecutionResult Block::Execute(Scope scope) {
-  ASTNode::context.PushScope(scope);
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
@@ -484,8 +483,6 @@ ExecutionResult Block::Execute(Scope scope) {
       case ControlChange::Continue:
       case ControlChange::Break:
       case ControlChange::Return:
-        ASTNode::context.PopScope();
-
         if (result.value != nullptr) {
           ApplyCopySemantics(result);
           return result;
@@ -499,12 +496,10 @@ ExecutionResult Block::Execute(Scope scope) {
       std::cout << statement->srcInfo.ToString() << err.what() << std::endl;
     }
   }
-  ASTNode::context.PopScope();
   return ExecutionResult::None;
 }
 ExecutionResult Block::Execute() {
   scope->ClearVariables();
-  ASTNode::context.PushScope(scope);
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     auto result = statement->Execute();
@@ -512,8 +507,6 @@ ExecutionResult Block::Execute() {
     case ControlChange::Continue:
     case ControlChange::Break:
     case ControlChange::Return:
-      ASTNode::context.PopScope();
-
       if (result.value != nullptr) {
         ApplyCopySemantics(result);
         return result;
@@ -524,16 +517,13 @@ ExecutionResult Block::Execute() {
       continue;
     }
   }
-  scope->Clear();
-  ASTNode::context.PopScope();
+  
+  
   return ExecutionResult::None;
 }
 Value ObjectInitializer::Evaluate() {
   static auto _this = Object_T::New();
-
-  _this->scope->Clear();
-  _this->scope->Set("this", _this, Mutability::Mut);
-
+  
   const auto exec_result = block->Execute(_this->scope);
   const auto controlChange = exec_result.controlChange;
 
@@ -607,7 +597,7 @@ ExecutionResult For::Execute() {
     return ExecutionResult::None;
   }
 
-  context.PushScope(scope);
+  
   if (decl) {
     auto _ = decl->Execute();
   }
@@ -623,7 +613,7 @@ ExecutionResult For::Execute() {
       auto conditionResult = condition->Evaluate();
 
       if (conditionResult->Equals(Bool_T::False)) {
-        context.PopScope();
+        
         return ExecutionResult::None;
       }
 
@@ -634,7 +624,7 @@ ExecutionResult For::Execute() {
         break;
       case ControlChange::Return:
       case ControlChange::Break:
-        context.PopScope();
+        
         return ExecutionResult::None;
       }
 
@@ -653,11 +643,11 @@ ExecutionResult For::Execute() {
       continue;
     case ControlChange::Return:
     case ControlChange::Break:
-      context.PopScope();
+      
       return ExecutionResult::None;
     }
   }
-  context.PopScope();
+  
   return ExecutionResult::None;
 }
 ExecutionResult Assignment::Execute() {
@@ -680,16 +670,12 @@ ExecutionResult Assignment::Execute() {
   return ExecutionResult::None;
 }
 Value EvaluateWithinObject(Scope &scope, Value object, ExpressionPtr &expr) {
-  ASTNode::context.PushScope(scope);
   auto result = expr->Evaluate();
-  ASTNode::context.PopScope();
   return result;
 }
 Value EvaluateWithinObject(Scope &scope, Value object,
                            std::function<Value()> lambda) {
-  ASTNode::context.PushScope(scope);
   auto result = lambda();
-  ASTNode::context.PopScope();
   return result;
 }
 Value DotExpr::Evaluate() {
@@ -719,9 +705,9 @@ void DotExpr::Assign(Value value) {
   auto obj = static_cast<Object_T *>(lvalue.get());
 
   if (auto dotExpr = dynamic_cast<DotExpr *>(right.get())) {
-    ASTNode::context.PushScope(obj->scope);
+    
     dotExpr->Assign(value);
-    ASTNode::context.PopScope();
+    
   }
   if (auto identifier = dynamic_cast<Identifier *>(right.get())) {
     obj->SetMember(identifier->name, value);
@@ -838,7 +824,7 @@ ExecutionResult RangeBasedFor::Execute() {
 
   const auto SetVariable = [&](const Value &value) -> void {
     if (lhs) {
-      context.ImmediateScope()->Set(lhs->name, value, Mutability::Const);
+      context.CurrentScope()->Set(lhs->name, value, Mutability::Const);
     } else if (auto tuple = std::dynamic_pointer_cast<Tuple_T>(value);
                !names.empty()) {
       tuple->Deconstruct(names);
@@ -856,16 +842,11 @@ ExecutionResult RangeBasedFor::Execute() {
     throw std::runtime_error("invalid range-based for loop: the target "
                              "container must be an array, object or string.");
   }
-  auto scope = ASTNode::context.PushScope();
 
   if (array) {
     for (auto &v : array->values) {
-      scope->Clear();
-
       SetVariable(v);
-
       auto result = block->Execute();
-
       switch (result.controlChange) {
       case ControlChange::None:
         break;
@@ -883,7 +864,7 @@ ExecutionResult RangeBasedFor::Execute() {
     for (auto &[key, val] : obj->scope->Members()) {
       tuple->values = {Ctx::CreateString(key.value), val};
       tuple->type = TypeSystem::Current().FromTuple(tuple->values);
-      scope->Clear();
+      
 
       SetVariable(tuple);
 
@@ -902,7 +883,7 @@ ExecutionResult RangeBasedFor::Execute() {
     }
   } else if (isString) {
     for (auto c : string) {
-      scope->Clear();
+      
       SetVariable(Ctx::CreateString(std::string() + c));
       auto result = block->Execute();
 
@@ -919,8 +900,8 @@ ExecutionResult RangeBasedFor::Execute() {
     }
   }
 breakLoops:
-  scope->Clear();
-  ASTNode::context.PopScope();
+  
+  
   return ExecutionResult::None;
 }
 ExecutionResult CompoundAssignment::Execute() {
@@ -1031,10 +1012,7 @@ Value Lambda::Evaluate() {
   }
 }
 ExecutionResult FunctionDecl::Execute() {
-  ASTNode::context.Insert(name,
-                          make_shared<Callable_T>(returnType, std::move(block),
-                                                  std::move(parameters)),
-                          Mutability::Const);
+  ASTNode::context.Insert(name, callable, Mutability::Const);
   return ExecutionResult::None;
 }
 ExecutionResult Delete::Execute() {
@@ -1094,7 +1072,7 @@ ExecutionResult Property::Execute() {
 }
 ExecutionResult Declaration::Execute() {
 
-  auto &scope = ASTNode::context.ImmediateScope();
+  auto &scope = ASTNode::context.CurrentScope();
 
   if (scope->Contains(name) && !scope->Find(name)->first.forward_declared) {
     throw std::runtime_error(
@@ -1112,7 +1090,7 @@ ExecutionResult Declaration::Execute() {
   // copy where needed
   ApplyCopySemantics(value);
 
-  ASTNode::context.ImmediateScope()->Set(name, value, mut);
+  ASTNode::context.CurrentScope()->Set(name, value, mut);
 
   return ExecutionResult::None;
 }
@@ -1147,12 +1125,12 @@ void Using::Load(const std::string &moduleName) {
     if (TypeSystem::Current().Exists(name)) {
       TypeSystem::Current().RegisterType(t, true);
     } else {
-      ASTNode::context.ImmediateScope()->InsertType(t->GetName(), t);
+      ASTNode::context.CurrentScope()->InsertType(t->GetName(), t);
     }
   }
 
   for (const auto &symbol : *module->functions) {
-    ASTNode::context.ImmediateScope()->Set(
+    ASTNode::context.CurrentScope()->Set(
         symbol.first, FunctionRegistry::MakeCallable(symbol.second),
         Mutability::Const);
   }
@@ -1218,7 +1196,7 @@ void Literal::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 
 TypeAlias::TypeAlias(SourceInfo &info, const string &alias, const Type &type)
     : Statement(info), type(type), alias(alias) {
-  context.ImmediateScope()->InsertType(alias, type);
+  context.CurrentScope()->InsertType(alias, type);
 }
 
 Value MethodCall::Evaluate() { return callable->Call(this->args, this->type_args); }
@@ -1300,7 +1278,7 @@ StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
     }
   }
 
-  context.ImmediateScope()->OverwriteType(name, type);
+  context.CurrentScope()->OverwriteType(name, type);
 }
 ExecutionResult StructDeclaration::Execute() { return ExecutionResult::None; }
 Constructor::Constructor(SourceInfo &info, const Type &type,
@@ -1424,6 +1402,7 @@ Block::~Block() {}
 void TypeParameters::DeclareTypes() {
   for (auto &param : params) {
     auto type = make_shared<GenericType_T>(param);
-    ASTNode::context.ImmediateScope()->InsertType(param->name, type);
+    ASTNode::context.CurrentScope()->InsertType(param->name, type);
   }
 }
+

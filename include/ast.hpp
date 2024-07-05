@@ -127,6 +127,7 @@ struct Expression : ASTNode {
   void Accept(ASTVisitor *visitor) override;
 };
 
+
 struct DefaultValue : Expression {
   DefaultValue(SourceInfo &info, const Type &type) : Expression(info, type) {};
   Value Evaluate() override;

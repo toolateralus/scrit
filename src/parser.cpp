@@ -146,7 +146,7 @@ StatementPtr Parser::ParseKeyword(Token token) {
       Expect(TType::Greater);
     }
 
-    ASTNode::context.ImmediateScope()->InsertType(
+    ASTNode::context.CurrentScope()->InsertType(
         name, make_shared<StructType>(
                   name, std::vector<unique_ptr<Declaration>>(), template_args));
 
@@ -339,8 +339,11 @@ unique_ptr<FunctionDecl> Parser::ParseFunctionDeclaration() {
   auto info = this->info;
   auto name = Expect(TType::Identifier).value;
 
-  //using temp scope to define generic types for params and retrun
-  ASTNode::context.PushScope();
+  
+  auto scope = ASTNode::context.CreateScope();
+  auto last_scope = ASTNode::context.CurrentScope();
+  ASTNode::context.SetCurrentScope(scope);
+  
   TypeParamsPtr type_params;
   if (Peek().type == TType::Less) {
     type_params = ParseTypeParameters();
@@ -348,7 +351,7 @@ unique_ptr<FunctionDecl> Parser::ParseFunctionDeclaration() {
   }
   auto parameters = ParseParameters();
   auto returnType = ParseReturnType();
-  ASTNode::context.PopScope();
+  
   
   auto param_clone = parameters->Clone();
   
@@ -356,14 +359,16 @@ unique_ptr<FunctionDecl> Parser::ParseFunctionDeclaration() {
   if (type_params) {
     type_param_clone = type_params->Clone();
   }
-  
   auto callable = make_shared<Callable_T>
-    (returnType, nullptr, std::move(parameters), std::move(type_params));
-  ASTNode::context.ImmediateScope()->Set(name, callable, Mutability::Mut);
+    (returnType, nullptr, std::move(parameters), scope, std::move(type_params));
+  
+  // forward declare this, we will add the block later.
+  last_scope->Set(name, callable, Mutability::Mut);
   
   auto block = ParseBlock(param_clone, std::move(type_param_clone));
-
+  ASTNode::context.SetCurrentScope(last_scope);
   callable->block = std::move(block);
+  
   return make_unique<FunctionDecl>(info, name, callable);
 }
 // for statements like
@@ -509,14 +514,22 @@ StatementPtr Parser::ParseTupleDeconstruction(IdentifierPtr &&iden) {
 */
 StatementPtr Parser::ParseAnonFuncInlineCall() {
   auto info = this->info;
+  
+  auto last_scope = ASTNode::context.CurrentScope();
+  auto scope = ASTNode::context.CreateScope();
+  
   auto parameters = ParseParameters();
   auto returnType = ParseReturnType();
   auto body = ParseBlock(parameters);
   auto arguments = ParseArguments();
+  
   auto type = Values::TypeSystem::Current().FromCallable(
       returnType, parameters->ParamTypes());
+      
+  ASTNode::context.SetCurrentScope(last_scope);
+  
   auto callable = make_shared<Callable_T>(returnType, std::move(body),
-                                          std::move(parameters));
+                                          std::move(parameters), scope);
   auto op = make_unique<AnonymousFunction>(info, type, callable);
   return make_unique<Call>(info, std::move(op), std::move(arguments));
 }
@@ -613,8 +626,10 @@ ArgumentsPtr Parser::ParseArguments() {
 
 BlockPtr Parser::ParseBlock(ParametersPtr &params, TypeParamsPtr &&type_params) {
   
-  auto scope = ASTNode::context.PushScope();
-
+  auto last_scope = ASTNode::context.CurrentScope();
+  auto scope = ASTNode::context.CreateScope();
+  ASTNode::context.SetCurrentScope(scope);
+  
   params->ForwardDeclare(scope);
 
   if (type_params) {
@@ -629,7 +644,7 @@ BlockPtr Parser::ParseBlock(ParametersPtr &params, TypeParamsPtr &&type_params) 
   // Empty block.
   if (next.type == TType::RCurly) {
     Eat();
-    ASTNode::context.PopScope();
+    ASTNode::context.SetCurrentScope(last_scope);
     return make_unique<Block>(info, std::move(statements), scope);
   }
 
@@ -672,22 +687,25 @@ BlockPtr Parser::ParseBlock(ParametersPtr &params, TypeParamsPtr &&type_params) 
   }
 
   Expect(TType::RCurly);
-  ASTNode::context.PopScope();
+  ASTNode::context.SetCurrentScope(last_scope);
   return make_unique<Block>(info, std::move(statements), scope);
 }
 
 BlockPtr Parser::ParseBlock() {
-  auto scope = ASTNode::context.PushScope();
-
+  
+  auto scope = ASTNode::context.CreateScope();
+  auto last_scope = ASTNode::context.CurrentScope();
+  ASTNode::context.SetCurrentScope(scope);
+  
   auto info = this->info;
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};
   auto next = Peek();
-
+  
   // Empty block.
   if (next.type == TType::RCurly) {
     Eat();
-    ASTNode::context.PopScope();
+    
     return make_unique<Block>(info, std::move(statements), scope);
   }
 
@@ -730,7 +748,7 @@ BlockPtr Parser::ParseBlock() {
   }
 
   Expect(TType::RCurly);
-  ASTNode::context.PopScope();
+  ASTNode::context.SetCurrentScope(last_scope);
   return make_unique<Block>(info, std::move(statements), scope);
 }
 
@@ -759,9 +777,11 @@ ElsePtr Parser::ParseElse() {
 }
 StatementPtr Parser::ParseFor() {
   auto info = this->info;
-
-  auto scope = ASTNode::context.PushScope();
-
+  
+  auto scope = ASTNode::context.CreateScope();
+  auto last_scope = ASTNode::context.CurrentScope();
+  ASTNode::context.SetCurrentScope(scope);
+  
   if (!tokens.empty() && Peek().type == TType::LParen) {
     Eat();
   }
@@ -772,9 +792,9 @@ StatementPtr Parser::ParseFor() {
   // for {}
   if (Peek().type == TType::LCurly) {
     return make_unique<For>(info, nullptr, nullptr, nullptr, ParseBlock(),
-                            ASTNode::context.PopScope());
+                            scope);
   }
-
+  
   if (Peek().type == TType::Let) {
     decl = ParseStatement();
     Expect(TType::Comma);
@@ -783,7 +803,7 @@ StatementPtr Parser::ParseFor() {
     inc = ParseStatement();
     return make_unique<For>(info, std::move(decl), std::move(condition),
                             std::move(inc), ParseBlock(),
-                            ASTNode::context.PopScope());
+                            scope);
   }
 
   auto expr = ParseExpression();
@@ -792,6 +812,7 @@ StatementPtr Parser::ParseFor() {
   if (Peek().type == TType::Colon) {
     Eat();
     auto rhs = ParseExpression();
+    ASTNode::context.SetCurrentScope(last_scope);
     return make_unique<RangeBasedFor>(info, std::move(expr), std::move(rhs),
                                       ParseBlock());
   }
@@ -818,14 +839,16 @@ StatementPtr Parser::ParseFor() {
     Expect(TType::Colon);
 
     auto target = ParseExpression();
+    ASTNode::context.SetCurrentScope(last_scope);
     return make_unique<RangeBasedFor>(info, names, std::move(target),
                                       ParseBlock());
   }
-
+  
+  ASTNode::context.SetCurrentScope(last_scope);
   // for CONDITION {}
   return make_unique<For>(info, std::move(decl), std::move(expr),
                           std::move(inc), ParseBlock(),
-                          ASTNode::context.PopScope());
+                          scope);
 }
 StatementPtr Parser::ParseContinue() { return make_unique<Continue>(info); }
 

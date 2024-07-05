@@ -6,81 +6,39 @@
 
 Context::Context() {}
 
-Scope Namespace::PushScope(Scope scope) {
-  if (scope == nullptr) {
-    scope = std::make_shared<Scope_T>();
-  }
-  scopes.push_back(scope);
-  return scope;
-}
-Scope Namespace::PopScope() {
-  if (scopes.empty()) {
-    throw std::runtime_error("Cannot pop: Scope stack is empty");
-  }
-  auto scope = scopes.back();
-  scopes.pop_back();
-  return scope;
-}
+
 
 void Namespace::Erase(const string &name) {
-  for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
-    if ((*it)->Contains(name)) {
-      (*it)->Erase(name);
-      return;
-    }
-  }
+  root_scope->Erase(name);
 }
 
 void Namespace::Insert(const Scope_T::Key &key, Value value) {
-  for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
-    if ((*it)->Contains(key.value)) {
-      (*it)->Set(key, value);
-      return;
-    }
-  }
-  scopes.back()->Set(key, value);
+  root_scope->Set(key, value);
 }
 
 void Namespace::Insert(const string &name, Value value,
                        const Mutability &mutability) {
-  for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
-    if ((*it)->Contains(name)) {
-      (*it)->Set(name, value, mutability);
-      return;
-    }
-  }
-  scopes.back()->Set(name, value, mutability);
+  root_scope->Set(name, value, mutability);
 }
 
 auto Namespace::FindIter(const string &name) const -> VarIter {
-  for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
-    if ((*it)->Contains(name)) {
-      return (*it)->Find(name);
-    }
-  }
-  return scopes.back()->End();
+  return root_scope->Find(name);
 }
 
 auto Namespace::Find(const string &name) const -> Value {
-  // First, search in the current namespace's scopes
-  for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
-    for (const auto &[key, var] : (*it)->Members()) {
-      if (key.value == name) {
-        if (var->GetPrimitiveType() == PrimitiveType::Lambda) {
-          if (auto lambda = std::dynamic_pointer_cast<Lambda_T>(var)) {
-            return lambda->Evaluate();
-          }
-        }
-        return var;
-      }
-    }
+  auto value = root_scope->Find(name);
+  
+  if (value != root_scope->End()) {
+    return value->second;
   }
-
+  
   for (const auto &[_, importedNs] : imported_namespaces) {
     auto found = importedNs->Find(name);
     if (found)
       return found;
   }
+  
+  // TODO: search parent ns's
 
   return nullptr;
 }
@@ -91,8 +49,8 @@ auto Scope_T::Clone() -> Scope {
   for (const auto &[k, v] : this->variables) {
     variables[k] = v->Clone();
   }
-
-  auto scope = make_shared<Scope_T>();
+  
+  auto scope = make_shared<Scope_T>(this->parent.lock());
   scope->variables = variables;
   return scope;
 }
@@ -163,7 +121,7 @@ ScritModHandle::~ScritModHandle() noexcept {
 ScritModHandle::ScritModHandle(void *handle) noexcept : handle(handle) {}
 
 void Namespace::RegisterModuleHandle(void *handle) {
-  scopes.back()->PushModule(ScritModHandle(handle));
+  root_scope->PushModule(ScritModHandle(handle));
 }
 ScritModHandle::ScritModHandle(ScritModHandle &&move) noexcept {
   this->handle = move.handle;
@@ -179,24 +137,13 @@ auto Scope_T::Find(const std::string &name) -> VarIter {
 }
 
 auto Namespace::FindType(const string &name) -> Type {
-  for (auto it = scopes.rbegin(); it != scopes.rend(); it++) {
-    auto scope = *it;
-    if (scope->TypeExists(name)) {
-      return scope->FindType(name);
-    }
-  }
-  throw std::runtime_error("couldn't find type " + name);
+  return root_scope->FindType(name);
 }
 
 auto Namespace::TypeExists(const string &name) -> bool {
-  for (auto it = scopes.rbegin(); it != scopes.rend(); it++) {
-    auto scope = *it;
-    if (scope->TypeExists(name)) {
-      return true;
-    }
-  }
-  return false;
+  return root_scope->TypeExists(name);
 }
+
 auto Scope_T::ClearVariables() -> void {
   auto it = variables.begin();
   while (it != variables.end()) {
@@ -250,12 +197,5 @@ auto Scope_T::FindType(const string &name) -> Type {
 auto Scope_T::PushModule(ScritModHandle &&handle) -> void {
   module_handles.push_back(std::move(handle));
 }
-auto Scope_T::Create() -> Scope { return std::make_shared<Scope_T>(); }
-auto Scope_T::Create(Scope_T *scope) -> Scope {
-  return std::make_shared<Scope_T>(scope);
-}
 auto Scope_T::End() -> VarIter{ return variables.end(); }
-Scope_T::Scope_T(Scope_T *scope) {
-  variables = scope->variables;
-  types = scope->types;
-}
+

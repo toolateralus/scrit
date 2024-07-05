@@ -116,7 +116,7 @@ void Debug::m_setBreakpoint(std::string &line, const string &breakpointKey) {
   Debug::InsertBreakpoint(index, false);
 }
 void Debug::m_printScope() {
-  auto &scope = ASTNode::context.ImmediateScope();
+  auto &scope = ASTNode::context.CurrentScope();
   if (scope->Members().size() == 0) {
     std::cout << "scope empty." << '\n';
   }

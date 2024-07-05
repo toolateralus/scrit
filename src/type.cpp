@@ -76,47 +76,47 @@ auto Type_T::Set(const string &name, Value value) -> void {
   this->Scope().Set(name, value, Mutability::Const);
 }
 auto NullType::Scope() -> Scope_T & {
-  static Scope_T scope = Scope_T();
+  static Scope_T scope = Scope_T(nullptr);
   return scope;
 }
 auto UndefinedType::Scope() -> Scope_T & {
-  static Scope_T scope = Scope_T();
+  static Scope_T scope = Scope_T(nullptr);
   return scope;
 }
 auto CallableType::Scope() -> Scope_T & {
-  static Scope_T scope = Scope_T();
+  static Scope_T scope = Scope_T(nullptr);
   return scope;
 }
 auto TupleType::Scope() -> Scope_T & {
-  static Scope_T scope = Scope_T();
+  static Scope_T scope = Scope_T(nullptr);
   return scope;
 }
 auto BoolType::Scope() -> Scope_T & {
-  static Scope_T scope = Scope_T();
+  static Scope_T scope = Scope_T(nullptr);
   return scope;
 }
 auto FloatType::Scope() -> Scope_T & {
-  static Scope_T scope = Scope_T();
+  static Scope_T scope = Scope_T(nullptr);
   return scope;
 }
 auto ObjectType::Scope() -> Scope_T & {
-  static Scope_T scope = Scope_T();
+  static Scope_T scope = Scope_T(nullptr);
   return scope;
 }
 auto AnyType::Scope() -> Scope_T & {
-  static Scope_T scope = Scope_T();
+  static Scope_T scope = Scope_T(nullptr);
   return scope;
 }
 auto ArrayType::Scope() -> Scope_T & {
-  static Scope_T scope = Scope_T();
+  static Scope_T scope = Scope_T(nullptr);
   return scope;
 }
 auto StringType::Scope() -> Scope_T & {
-  static Scope_T scope = Scope_T();
+  static Scope_T scope = Scope_T(nullptr);
   return scope;
 }
 auto IntType::Scope() -> Scope_T & {
-  static Scope_T scope = Scope_T();
+  static Scope_T scope = Scope_T(nullptr);
   return scope;
 }
 
@@ -137,7 +137,7 @@ GenericType_T::GenericType_T(const TypeParam type_param) : type_param(type_param
 TemplateType::TemplateType(const string &name, const Type &base_type,
                            const vector<Type> &typenames)
     : name(name), typenames(typenames), base_type(base_type),
-      scope(Scope_T::Create()) {}
+      scope(make_shared<Scope_T>(nullptr)) {}
 
 auto TypeSystem::DumpInfo() -> void {
   for (const auto &[name, type] : global_types) {
@@ -323,11 +323,10 @@ StructType::StructType(const string &name,
 
 Value StructType::Default() {
   auto object = Ctx::CreateObject();
-  ASTNode::context.PushScope(object->scope);
+  ASTNode::context.SetCurrentScope(make_shared<Scope_T>(nullptr));
   for (const auto &field : fields) {
     field->Execute();
   }
-  ASTNode::context.PopScope();
   object->type = shared_from_this();
   return object;
 }

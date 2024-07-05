@@ -31,7 +31,7 @@ using Int = shared_ptr<Int_T>;
 using namespace Values;
 struct Ctx final {
   Ctx() = delete;
-
+  
   Ctx(const Ctx &) = default;
   Ctx(Ctx &&) = default;
   Ctx &operator=(const Ctx &) = default;

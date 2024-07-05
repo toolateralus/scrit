@@ -298,14 +298,23 @@ ExpressionPtr Parser::ParseOperand() {
 ExpressionPtr Parser::ParseAnonFunc() {
   auto info = this->info;
   Eat(); // eat the 'func' keyword.
+  
+  auto last_scope = ASTNode::context.CurrentScope();
+  auto scope = ASTNode::context.CreateScope();
+  ASTNode::context.SetCurrentScope(scope);
+  
   auto params = ParseParameters();
   auto returnType = ParseReturnType();
   auto body = ParseBlock(params);
   auto types = params->ParamTypes();
+  
+  ASTNode::context.SetCurrentScope(last_scope);
+  
   auto callable =
-      make_shared<Callable_T>(returnType, std::move(body), std::move(params));
+      make_shared<Callable_T>(returnType, std::move(body), std::move(params), scope);
+      
   auto type = TypeSystem::Current().FromCallable(returnType, types);
-
+  
   if (!type) {
     throw std::runtime_error("unable to get type for anonymous function");
   }
@@ -314,7 +323,11 @@ ExpressionPtr Parser::ParseAnonFunc() {
 unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};
-  auto scope = ASTNode::context.PushScope();
+  
+  auto last_scope = ASTNode::context.CurrentScope();
+  auto scope = ASTNode::context.CreateScope();
+  ASTNode::context.SetCurrentScope(scope);
+  
   while (tokens.size() > 0) {
     auto next = Peek();
 
@@ -332,7 +345,7 @@ unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
     case TType::Func: {
       Eat(); // eat keyword.
       auto stmnt = ParseFunctionDeclaration();
-      ASTNode::context.ImmediateScope()->Set(stmnt->name, stmnt->callable,
+      ASTNode::context.CurrentScope()->Set(stmnt->name, stmnt->callable,
                                              Mutability::Const);
       statements.push_back(std::move(stmnt));
       break;
@@ -360,8 +373,10 @@ unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
 endloop:
 
   Expect(TType::RCurly);
-
-  ASTNode::context.PopScope();
+  
+  
+  ASTNode::context.SetCurrentScope(last_scope);
+  
   // todo: redo the object system and type it.
   auto type = TypeSystem::Current().Find("object");
   return make_unique<ObjectInitializer>(
@@ -455,7 +470,7 @@ OperandPtr Parser::ParseArrayInitializer() {
                                     info, type, std::vector<ExpressionPtr>()));
   } else {
     vector<ExpressionPtr> init_expressions = {};
-
+    
     Type inner_type;
     while (Peek().type != TType::RBrace) {
       auto val = ParseExpression();
@@ -476,9 +491,11 @@ OperandPtr Parser::ParseArrayInitializer() {
       }
     }
     Expect(TType::RBrace);
-    auto type = TypeSystem::Current().FindOrCreateTemplate(
-        "array<" + inner_type->GetName() + ">", TypeSystem::Current().Find("array"),
-        {inner_type});
+    
+    auto name = "array<" + inner_type->GetName() + ">";
+    auto array_t = TypeSystem::Current().Find("array");
+    
+    auto type = TypeSystem::Current().FindOrCreateTemplate(name, array_t, {inner_type});
     return make_unique<Operand>(
         info, type,
         make_unique<ArrayInitializer>(info, type, std::move(init_expressions)));

@@ -18,34 +18,36 @@ Null Value_T::VNULL = make_shared<Null_T>();
 Undefined Value_T::UNDEFINED = make_shared<::Undefined_T>();
 
 Value Callable_T::Call(ArgumentsPtr &args, TypeArgsPtr &type_args) {
-  auto scope = ASTNode::context.PushScope();
+  
+  auto last_scope = ASTNode::context.CurrentScope();
+  ASTNode::context.SetCurrentScope(scope);
+  
   auto values = Call::GetArgsValueList(args);
   
   if (type_params)
     type_params->Apply(type_args->types);
   
-  params->Apply(scope, args->values);
+  params->Apply(block->scope, args->values);
   auto result = block->Execute();
   
-  block->scope->Clear();
-  scope->Clear();
-  
-  ASTNode::context.PopScope();
-
   switch (result.controlChange) {
   case ControlChange::None:
+    ASTNode::context.SetCurrentScope(last_scope);
     return Value_T::VNULL;
   case ControlChange::Return: {
     auto this_type = std::dynamic_pointer_cast<CallableType>(type);
-
+    
     // TODO: remove runtime type checking. this should be done at parse time.
     if (!this_type ||
         !result.value->type->Equals(this_type->returnType.get())) {
+      ASTNode::context.SetCurrentScope(last_scope);
       throw TypeError(this_type->returnType, result.value->type, "invalid return type");
     }
+    ASTNode::context.SetCurrentScope(last_scope);
     return result.value;
   }
   default:
+    ASTNode::context.SetCurrentScope(last_scope);
     throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
   }
 }
@@ -106,7 +108,7 @@ Array Array_T::New() {
   return make_shared<Array_T>(values);
 }
 Value NativeCallable_T::Call(std::vector<Value> &args) {
-  ASTNode::context.PushScope();
+  
   Value result;
 
   CheckParameterTypes(args);
@@ -116,7 +118,7 @@ Value NativeCallable_T::Call(std::vector<Value> &args) {
   
   CheckReturnType(result);
 
-  ASTNode::context.PopScope();
+  
   if (result == nullptr) {
     return UNDEFINED;
   } else {
@@ -145,8 +147,6 @@ void NativeCallable_T::CheckReturnType(Value &result) {
   }
 }
 Value NativeCallable_T::Call(unique_ptr<Arguments> &args, TypeArgsPtr &type_args) {
-  ASTNode::context.PushScope();
-
   auto values = Call::GetArgsValueList(args);
   Value result;
 
@@ -157,7 +157,7 @@ Value NativeCallable_T::Call(unique_ptr<Arguments> &args, TypeArgsPtr &type_args
 
   CheckReturnType(result);
 
-  ASTNode::context.PopScope();
+  
   if (result == nullptr) {
     return UNDEFINED;
   } else {
@@ -582,8 +582,9 @@ bool Lambda_T::Equals(Value other) {
 }
 
 Object Object_T::New(Scope scope) {
+  // todo: validate this.
   if (!scope)
-    scope = make_shared<Scope_T>();
+    scope = make_shared<Scope_T>(ASTNode::context.CurrentScope());
   return make_shared<Object_T>(scope);
 }
 
@@ -598,14 +599,12 @@ Tuple_T::Tuple_T(vector<Value> values) : Value_T(nullptr), values(values) {
 }
 
 Value Callable_T::Call(std::vector<Value> &values) {
-  auto scope = ASTNode::context.PushScope();
   size_t i = 0;
-
-  params->Apply(scope, values);
+  auto last_scope = ASTNode::context.CurrentScope();
+  ASTNode::context.SetCurrentScope(scope);
+  params->Apply(block->scope, values);
   auto result = block->Execute();
-  scope->Clear();
-  block->scope->Clear();
-  ASTNode::context.PopScope();
+  ASTNode::context.SetCurrentScope(last_scope); 
   
   switch (result.controlChange) {
   case ControlChange::None:
@@ -621,9 +620,9 @@ Float_T::Float_T(float value) : Value_T(TypeSystem::Current().Float) {
 }
 
 Callable_T::Callable_T(const Type &returnType, BlockPtr &&block,
-    ParametersPtr &&params,TypeParamsPtr &&type_params)
+    ParametersPtr &&params, Scope scope, TypeParamsPtr &&type_params)
     : Value_T(nullptr), block(std::move(block)), params(std::move(params)),
-    type_params(std::move(type_params)) {
+    type_params(std::move(type_params)), scope(scope) {
   if (!this->type) {
     this->type = TypeSystem::Current().FromCallable(returnType, this->params->ParamTypes());
   }

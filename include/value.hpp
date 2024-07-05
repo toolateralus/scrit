@@ -262,10 +262,11 @@ struct Callable_T : Value_T {
   ~Callable_T() override;
   Callable_T(); // for native callables only.
   Callable_T(const Type &returnType, BlockPtr &&block,
-    ParametersPtr &&params, TypeParamsPtr &&type_params = nullptr);
+    ParametersPtr &&params, Scope scope, TypeParamsPtr &&type_params = nullptr);
   BlockPtr block;
   ParametersPtr params;
   TypeParamsPtr type_params;
+  Scope scope;
   virtual Value Call(ArgumentsPtr &args, TypeArgsPtr &type_args);
   virtual Value Call(std::vector<Value> &args);
   string ToString() const override;

@@ -117,7 +117,8 @@ ScritModDef *LoadScritModule(const std::string &name, const std::string &path,
 }
 ScritModDef *CreateModDef() {
   ScritModDef *mod = (ScritModDef *)malloc(sizeof(ScritModDef));
-  mod->scopes = new std::vector<shared_ptr<Scope_T>>{make_shared<Scope_T>()};
+  // TODO: make this use the new scoping model.
+  mod->scopes = new std::vector<shared_ptr<Scope_T>>{make_shared<Scope_T>(nullptr)};
   mod->description = new string();
   mod->functions =
       new std::unordered_map<std::string, shared_ptr<NativeFunction>>();

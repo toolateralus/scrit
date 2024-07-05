@@ -136,7 +136,7 @@ struct AnyType : Type_T {
 };
 struct StructType : Type_T, std::enable_shared_from_this<StructType> {
   ~StructType();
-  shared_ptr<Scope_T> scope = make_shared<Scope_T>();
+  shared_ptr<Scope_T> scope = make_shared<Scope_T>(nullptr);
   vector<std::unique_ptr<Declaration>> fields;
   vector<string> template_args;
   StructType(const string &name, vector<std::unique_ptr<Declaration>> &&fields,

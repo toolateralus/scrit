@@ -57,7 +57,7 @@ Value Object_T::SubscriptAssign(Value key, Value value) {
 
 // Deep clone.
 Value Object_T::Clone() {
-  Scope scope = make_shared<Scope_T>();
+  Scope scope = make_shared<Scope_T>(this->scope->parent.lock());
   for (const auto &[key, var] : this->scope->Members()) {
     scope->Set(key, var->Clone());
   }
