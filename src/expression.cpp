@@ -350,7 +350,7 @@ unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
     case TType::Func: {
       Eat(); // eat keyword.
       auto stmnt = ParseFunctionDeclaration();
-      scope->Set(stmnt->name, stmnt->callable,  Mutability::Const);
+      scope->Declare(stmnt->name, stmnt->callable,  Mutability::Const);
       statements.push_back(std::move(stmnt));
       break;
     }
@@ -495,7 +495,7 @@ OperandPtr Parser::ParseArrayInitializer() {
     }
     Expect(TType::RBrace);
     
-    auto name = "array<" + inner_type->GetName() + ">";
+    auto name = "array<" + inner_type->Name() + ">";
     auto array_t = TypeSystem::Current().Find("array");
     
     auto type = TypeSystem::Current().FindOrCreateTemplate(name, array_t, {inner_type});

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ast.hpp"
+#include <iostream>
 #include <stdexcept>
 #include <unordered_map>
 #ifdef __linux__
@@ -48,13 +49,9 @@ struct Scope_T {
   struct Key {
     const std::string value;
     const Mutability mutability;
-    bool forward_declared;
     Key() = delete;
-    Key(const std::string &value, const Mutability &mutability,
-        const bool forward_declared = false)
-        : value(value), mutability(mutability),
-          forward_declared(forward_declared) {}
-
+    Key(const std::string &value, const Mutability &mutability)
+        : value(value), mutability(mutability) {}
     bool operator<(const Key &other) const { return value < other.value; }
     bool operator==(const Key &other) const {
       return value == other.value && mutability == other.mutability;
@@ -86,10 +83,7 @@ struct Scope_T {
   auto Contains(const string &name) -> bool;
   auto Erase(const string &name) -> size_t;
   auto Members() -> std::map<Key, Value> &;
-
-  auto ForwardDeclare(const string &name, const Type &type,
-                      const Mutability &mut) -> void;
-
+  
   auto ClearVariables() -> void;
   
   // Used to patch fwd declared types during struct decls.
@@ -104,11 +98,12 @@ struct Scope_T {
     return exists;
   }
   
-  auto Get(const string &name) -> Value;
-  auto Set(const Key &name, Value value) -> void;
-  auto Set(const string &name, Value value,
-           const Mutability &mutability = Mutability::Const) -> void;
+  auto GetValue(const string &name) -> Value;
   
+  auto Assign(const string &name, Value value) -> void;
+  auto Declare(const string &name, Value value, const Mutability &mutability)
+      -> void;
+
   auto Clear() -> void { variables.clear(); }
   auto Clone() -> Scope;
   auto PushModule(ScritModHandle &&handle) -> void;
@@ -155,11 +150,10 @@ struct Namespace {
   void Erase(const string &name);
   auto TypeExists(const string &name) -> bool;
   auto FindType(const string &name) -> Type;
-  auto Find(const string &name) const -> Value;
+  
+  auto GetValue(const string &name) const -> Value;
   auto FindIter(const string &name) const -> std::pair<VarIter, bool>;
-  void Insert(const string &name, Value value, const Mutability &mutability);
-  void Insert(const Scope_T::Key &key, Value value);
-
+  
   static std::vector<std::string> split(const std::string &input) {
     std::vector<std::string> result;
     std::string::size_type start = 0;
@@ -237,40 +231,23 @@ struct Context {
 
   ResolvedPath Resolve(ScopeResolution *res);
 
-  bool NamespaceExists(const vector<std::string> &identifiers) {
-    return FindNamespace(identifiers) != nullptr;
-  }
+  bool NamespaceExists(const vector<std::string> &identifiers);
   std::shared_ptr<Namespace>
-  FindNamespace(const vector<std::string> &identifiers) {
-    if (identifiers.empty()) {
-      return nullptr;
-    }
-
-    std::shared_ptr<Namespace> ns = root_namespace;
-
-    for (size_t i = 0; i < identifiers.size() && ns; ++i) {
-      const std::string &currentPart = identifiers[i];
-      if (ns->nested_namespaces.contains(currentPart)) {
-        ns = ns->nested_namespaces[currentPart];
-      } else {
-        break;
-      }
-    }
-    return ns;
-  }
+  FindNamespace(const vector<std::string> &identifiers);
 
   void RegisterModuleHandle(void *handle) {
     current_namespace->RegisterModuleHandle(handle);
   }
   
   void Erase(const string &name) { current_namespace->Erase(name); }
+  
   auto TypeExists(const string &name) -> bool {
     return current_namespace->TypeExists(name);
   }
   auto FindType(const string &name) -> Type {
     return current_namespace->FindType(name);
   }
-  auto Find(const vector<string> &identifiers) -> Value {
+  auto GetValue(const vector<string> &identifiers) -> Value {
     vector<string> _namespace = identifiers;
     _namespace.pop_back();
     auto ns = FindNamespace(_namespace);
@@ -279,16 +256,39 @@ struct Context {
       throw std::runtime_error("couldn't find namespace");
     }
 
-    return ns->Find(identifiers.back());
+    return ns->GetValue(identifiers.back());
   }
+  
+ 
+  
   auto Find(const string &name) const -> Value;
   auto FindIter(const string &name) const -> std::pair<VarIter, bool> {
     return current_namespace->FindIter(name);
   }
-  void Insert(const string &name, Value value, const Mutability &mutability) {
-    current_namespace->Insert(name, value, mutability);
+  
+  
+  auto PushStackFrame(Call *call) {
+    call_stack.push_back({call});
   }
-  void Insert(const Scope_T::Key &key, Value value) {
-    current_namespace->Insert(key, value);
+  auto PopStackFrame() {
+    call_stack.pop_back();
   }
+  auto PrintLastCall() {
+    if (!call_stack.empty())
+      std::cout << call_stack.back().ToString() << std::endl;
+  }
+  auto UnwindCallStack() {
+    while (!call_stack.empty()) {
+      std::cout << call_stack.back().ToString() << std::endl;
+      call_stack.pop_back();
+    }
+  }
+  
+  private: 
+  struct StackFrame {
+    Call *call;
+    
+    string ToString();
+  };
+  vector<StackFrame> call_stack = {};
 };

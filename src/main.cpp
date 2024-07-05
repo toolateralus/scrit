@@ -35,7 +35,7 @@ void InsertCmdLineArgs(int argc, char **argv) {
       }
     }
   }
-  ASTNode::context.Insert("args", args, Mutability::Const);
+  ASTNode::context.CurrentScope()->Declare("args", args, Mutability::Const);
 }
 
 static std::vector<Token> &PreProcessUseStatements(std::vector<Token> &tokens) {

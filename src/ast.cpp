@@ -305,7 +305,7 @@ Declaration::Declaration(SourceInfo &info, const string &name,
                          const Type &type)
     : Statement(info), name(name), expr(std::move(expr)), mut(mut), type(type) {
   
-  context.CurrentScope()->ForwardDeclare(name, type, mut);
+  context.CurrentScope()->Declare(name, Value_T::UndefinedOfType(type), mut);
 }
 
 // ##############################################
@@ -314,18 +314,18 @@ Declaration::Declaration(SourceInfo &info, const string &name,
 // ##############################################
 
 ExecutionResult Program::Execute() {
-
+  
   // create an object called global, so we can bypass any shadowed variables.
   auto global =
       Object_T::New(ASTNode::context.current_namespace->root_scope);
-
+  
   // include all of the native functions in this global object.
   for (const auto &[name, _] : FunctionRegistry::GetRegistry()) {
     global->SetMember(name, FunctionRegistry::GetCallable(name));
   }
-
-  ASTNode::context.Insert("global", global, Mutability::Mut);
-
+  
+  ASTNode::context.CurrentScope()->Declare("global", global, Mutability::Mut);
+  
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
@@ -337,13 +337,11 @@ ExecutionResult Program::Execute() {
         throw std::runtime_error("Uncaught " +
                                  CC_ToString(result.controlChange));
       }
-    } catch (TypeError err) {
-      std::cout << "\033[1;31m" << err.what() << "\n"
-                << statement->srcInfo.ToString() << std::endl;
-      std::cout << "\033[0m";
     } catch (std::runtime_error err) {
+      
       std::cout << "\033[1;31m" << err.what() << "\n"
                 << statement->srcInfo.ToString() << std::endl;
+      ASTNode::context.PrintLastCall(); // todo; figure out if we want to unwind the whole call stack every error.
       std::cout << "\033[0m";
     }
   }
@@ -563,16 +561,18 @@ Value ArrayInitializer::Evaluate() {
   return array;
 }
 Value Call::Evaluate() {
+  ASTNode::context.PushStackFrame(this);
   auto lvalue = operand->Evaluate();
   if (lvalue->GetPrimitiveType() == PrimitiveType::Callable) {
     auto callable = std::static_pointer_cast<Callable_T>(lvalue);
     auto result = callable->Call(args, type_args);
+    ASTNode::context.PopStackFrame();
     return result;
   } else {
     // TODO: put this somewhere where it makes sense. maybe it's own node for
     // operator overloads where an operator is directly applied to a type like
     // an object.
-
+    
     // Here we overload the () operator. this is done in a special case because
     // we don't treat invocation of callables like a binary expression, it's its
     // own binary expr node.
@@ -583,10 +583,12 @@ Value Call::Evaluate() {
       if (callable) {
         auto args_values = GetArgsValueList(args);
         args_values.insert(args_values.begin(), obj);
+        ASTNode::context.PopStackFrame();
         return callable->Call(args_values);
       }
     }
   }
+  ASTNode::context.PopStackFrame();
   return Value_T::UNDEFINED;
 }
 ExecutionResult Call::Execute() {
@@ -661,36 +663,29 @@ ExecutionResult For::Execute() {
   return ExecutionResult::None;
 }
 ExecutionResult Assignment::Execute() {
-  auto var = ASTNode::context.Find(iden->name);
-  if (!var) {
-    throw std::runtime_error(
-        "cannot assign a non-existent identifier.\nuse 'let ___ = "
-        "...'\nor\nlet "
-        "___ : type = ...' syntax. \n offending variable: " +
-        iden->name);
-  }
-
   auto result = expr->Evaluate();
-  result->type = type;
-  ApplyCopySemantics(result);
-
-  // TODO: find a better way to query mutability of a variable.
-  auto [iter, found] = ASTNode::context.FindIter(iden->name);
   
-  if (!found) {
-    throw std::runtime_error("unable to find variable : " + iden->name);
+  if (!result->type->Equals(this->type.get())) {
+    throw TypeError(result->type, this->type, "invalid assignment");
   }
   
-  context.Insert(iden->name, result, iter->first.mutability);
+  ApplyCopySemantics(result);
+  context.CurrentScope()->Assign(iden->name, result);
   return ExecutionResult::None;
 }
 Value EvaluateWithinObject(Scope &scope, Value object, ExpressionPtr &expr) {
+  auto last_scope = ASTNode::context.CurrentScope();
+  ASTNode::context.SetCurrentScope(scope);
   auto result = expr->Evaluate();
+  ASTNode::context.SetCurrentScope(last_scope);
   return result;
 }
 Value EvaluateWithinObject(Scope &scope, Value object,
-                           std::function<Value()> lambda) {
-  auto result = lambda();
+                           std::function<Value()> function) {
+  auto last_scope = ASTNode::context.CurrentScope();
+  ASTNode::context.SetCurrentScope(scope);
+  auto result = function();
+  ASTNode::context.SetCurrentScope(last_scope);
   return result;
 }
 Value DotExpr::Evaluate() {
@@ -706,7 +701,7 @@ Value DotExpr::Evaluate() {
   auto scope = object->scope;
 
   auto result = EvaluateWithinObject(scope, lvalue, right);
-
+  
   return result;
 }
 void DotExpr::Assign(Value value) {
@@ -839,7 +834,7 @@ ExecutionResult RangeBasedFor::Execute() {
 
   const auto SetVariable = [&](const Value &value) -> void {
     if (lhs) {
-      context.CurrentScope()->Set(lhs->name, value, Mutability::Const);
+      context.CurrentScope()->Declare(lhs->name, value, Mutability::Const);
     } else if (auto tuple = std::dynamic_pointer_cast<Tuple_T>(value);
                !names.empty()) {
       tuple->Deconstruct(names);
@@ -928,20 +923,13 @@ Value CompAssignExpr::Evaluate() {
 
   auto iden = dynamic_cast<Identifier *>(left.get());
 
-  auto [it, found] = context.FindIter(iden->name);
-  
-  if (!found || it->second == nullptr) {
-    throw std::runtime_error("variable did not exist: cannot compound assign");
-  }
-
-  Mutability mut = it->first.mutability;
   auto rvalue = right->Evaluate();
-
+  
   switch (op) {
   case TType::AddEq: {
     auto result = lvalue->Add(rvalue);
     if (iden) {
-      context.Insert(iden->name, result, mut);
+      context.CurrentScope()->Assign(iden->name, result);
     } else {
       lvalue->Set(result);
     }
@@ -950,7 +938,7 @@ Value CompAssignExpr::Evaluate() {
   case TType::DivEq: {
     auto result = lvalue->Divide(rvalue);
     if (iden) {
-      context.Insert(iden->name, result, mut);
+      context.CurrentScope()->Assign(iden->name, result);
     } else {
       lvalue->Set(result);
     }
@@ -959,7 +947,7 @@ Value CompAssignExpr::Evaluate() {
   case TType::SubEq: {
     auto result = lvalue->Subtract(rvalue);
     if (iden) {
-      context.Insert(iden->name, result, mut);
+      context.CurrentScope()->Assign(iden->name, result);
     } else {
       lvalue->Set(result);
     }
@@ -968,7 +956,7 @@ Value CompAssignExpr::Evaluate() {
   case TType::MulEq: {
     auto result = lvalue->Multiply(rvalue);
     if (iden) {
-      context.Insert(iden->name, result, mut);
+      context.CurrentScope()->Assign(iden->name, result);
     } else {
       lvalue->Set(result);
     }
@@ -979,7 +967,7 @@ Value CompAssignExpr::Evaluate() {
         lvalue->GetPrimitiveType() == PrimitiveType::Null) {
       auto result = rvalue;
       if (iden) {
-        context.Insert(iden->name, rvalue, mut);
+        context.CurrentScope()->Assign(iden->name, result);
       } else {
         lvalue->Set(rvalue);
       }
@@ -1027,7 +1015,7 @@ Value Lambda::Evaluate() {
   }
 }
 ExecutionResult FunctionDecl::Execute() {
-  ASTNode::context.Insert(name, callable, Mutability::Const);
+  ASTNode::context.CurrentScope()->Declare(name, callable, Mutability::Const);
   return ExecutionResult::None;
 }
 ExecutionResult Delete::Execute() {
@@ -1080,28 +1068,20 @@ ExecutionResult TupleDeconstruction::Execute() {
 }
 ExecutionResult Property::Execute() {
   if (lambda) {
-    Scope_T::Key key = Scope_T::Key(name, mutability);
-    context.Insert(key, make_shared<Lambda_T>(std::move(lambda)));
+    context.CurrentScope()->Declare(name, make_shared<Lambda_T>(std::move(lambda)), mutability);
   }
   return ExecutionResult::None;
 }
 ExecutionResult Declaration::Execute() {
   auto &scope = ASTNode::context.CurrentScope();
-  
-  auto [it, found] = scope->Find(name);
-  if (found && !it->first.forward_declared) {
-    throw std::runtime_error(
-        "cannot re-define an already existing variable.\noffending variable: " +
-        name);
-  }
-  
   auto value = this->expr->Evaluate();
   
-  // copy where needed
+  if (!type->Equals(value->type.get())) {
+    throw TypeError(type, value->type);
+  }
+  
   ApplyCopySemantics(value);
-
-  ASTNode::context.CurrentScope()->Set(name, value, mut);
-
+  ASTNode::context.CurrentScope()->Declare(name, value, mut);
   return ExecutionResult::None;
 }
 
@@ -1135,12 +1115,12 @@ void Using::Load(const std::string &moduleName) {
     if (TypeSystem::Current().Exists(name)) {
       TypeSystem::Current().RegisterType(t, true);
     } else {
-      ASTNode::context.CurrentScope()->InsertType(t->GetName(), t);
+      ASTNode::context.CurrentScope()->InsertType(t->Name(), t);
     }
   }
 
   for (const auto &symbol : *module->functions) {
-    ASTNode::context.CurrentScope()->Set(
+    ASTNode::context.CurrentScope()->Declare(
         symbol.first, FunctionRegistry::MakeCallable(symbol.second),
         Mutability::Const);
   }
@@ -1291,7 +1271,7 @@ StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
   
   for (auto &statement : statements) {
     if (auto decl = dynamic_cast<FunctionDecl *>(statement.get())) {
-      type->Scope().Set(decl->name, decl->callable, Mutability::Const);
+      type->Scope().Declare(decl->name, decl->callable, Mutability::Const);
     }
   }
   
@@ -1348,11 +1328,9 @@ void Parameters::Apply(Scope scope, std::vector<ExpressionPtr> &values) {
     const auto has_value = i < values.size();
 
     if (has_value) {
-      scope->Set(Scope_T::Key(param.name, param.mutability),
-                 values[i]->Evaluate());
+      scope->Declare(param.name, values[i]->Evaluate(), param.mutability);
     } else if (has_default) {
-      scope->Set(Scope_T::Key(param.name, param.mutability),
-                 param.default_value);
+      scope->Declare(param.name, param.default_value, param.mutability);
     } else
       throw std::runtime_error("too few args provided to function");
   }
@@ -1374,10 +1352,9 @@ void Parameters::Apply(Scope scope, std::vector<Value> &values) {
     const auto has_value = i < values.size();
 
     if (has_value) {
-      scope->Set(Scope_T::Key(param.name, param.mutability), values[i]);
+      scope->Declare(param.name, values[i], param.mutability);
     } else if (has_default) {
-      scope->Set(Scope_T::Key(param.name, param.mutability),
-                 param.default_value);
+      scope->Declare(param.name, param.default_value, param.mutability);
     } else
       throw std::runtime_error("too few args provided to function");
   }
@@ -1385,7 +1362,7 @@ void Parameters::Apply(Scope scope, std::vector<Value> &values) {
 
 void Parameters::ForwardDeclare(Scope scope) {
   for (const auto &param : params) {
-    scope->ForwardDeclare(param.name, param.type, param.mutability);
+    scope->Declare(param.name, Value_T::UndefinedOfType(param.type), param.mutability);
   }
 }
 Value TypeIdentifier::Evaluate() { return Ctx::Undefined(); }

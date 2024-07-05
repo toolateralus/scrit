@@ -122,6 +122,8 @@ struct Value_T : std::enable_shared_from_this<Value_T> {
   Value_T(Value_T &&) = delete;
   Value_T &operator=(const Value_T &) = delete;
   Value_T &operator=(Value_T &&) = delete;
+
+  static Value UndefinedOfType(const Type &type);
 };
 
 struct Null_T : Value_T {

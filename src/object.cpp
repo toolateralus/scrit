@@ -8,14 +8,14 @@
 
 Value Object_T::GetMember(const string &name) {
   if (scope->Contains(name))
-    return scope->Get(name);
+    return scope->GetValue(name);
   else
     return Value_T::UNDEFINED;
 }
 
 void Object_T::SetMember(const string &name, Value value,
                          Mutability mutability) {
-    scope->Set(name, value, mutability);
+    scope->Declare(name, value, mutability);
 }
 
 string Object_T::ToString() const { return Writer::ToString(this, {}); }
@@ -44,7 +44,7 @@ Value Object_T::SubscriptAssign(Value key, Value value) {
   string strKey;
   int idx;
   if (Ctx::TryGetString(key, strKey)) {
-    scope->Set(strKey, value);
+    scope->Assign(strKey, value);
   } else if (Ctx::TryGetInt(key, idx)) {
     auto it = scope->Members().begin();
     std::advance(it, idx);
@@ -59,7 +59,7 @@ Value Object_T::SubscriptAssign(Value key, Value value) {
 Value Object_T::Clone() {
   Scope scope = make_shared<Scope_T>(this->scope->parent.lock());
   for (const auto &[key, var] : this->scope->Members()) {
-    scope->Set(key, var->Clone());
+    scope->Declare(key.value, var->Clone(), key.mutability);
   }
   auto clone = Ctx::CreateObject(scope);
   clone->type = this->type;

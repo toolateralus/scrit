@@ -260,8 +260,8 @@ StatementPtr Parser::ParseDeclaration(SourceInfo &info, const string &iden,
     auto lambda = ParseLambda();
     if (type && type != lambda->type) {
       throw std::runtime_error(
-          "explicit type: " + type->GetName() +
-          " did not match the property's type: " + lambda->type->GetName());
+          "explicit type: " + type->Name() +
+          " did not match the property's type: " + lambda->type->Name());
     }
     return make_unique<Property>(info, iden, std::move(lambda), mut);
   }
@@ -326,8 +326,8 @@ StatementPtr Parser::ParseAssignment(IdentifierPtr identifier) {
 
     if (type && type != value->type) {
       throw std::runtime_error(
-          "explicit type: " + type->GetName() +
-          " did not match the expressions type: " + value->type->GetName());
+          "explicit type: " + type->Name() +
+          " did not match the expressions type: " + value->type->Name());
     }
 
     return make_unique<CompoundAssignment>(
@@ -367,7 +367,7 @@ unique_ptr<FunctionDecl> Parser::ParseFunctionDeclaration() {
     (returnType, nullptr, std::move(parameters), scope, std::move(type_params));
   
   // forward declare this, we will add the block later.
-  last_scope->Set(name, callable, Mutability::Mut);
+  last_scope->Declare(name, callable, Mutability::Const);
   
   auto block = ParseBlock(param_clone, std::move(type_param_clone));
   ASTNode::context.SetCurrentScope(last_scope);

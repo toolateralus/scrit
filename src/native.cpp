@@ -25,7 +25,7 @@ Object ScritModDefAsObject(ScritModDef *mod) {
 
 void m_InstantiateCallables(ScritModDef *module) {
   for (const auto &[key, func] : *module->functions) {
-    module->scopes->front()->Set(key, FunctionRegistry::MakeCallable(func),
+    module->scopes->front()->Declare(key, FunctionRegistry::MakeCallable(func),
                                  Mutability::Const);
   }
 }
@@ -145,7 +145,7 @@ void ScritModDef::AddFunction(const std::string &name,
 }
 void ScritModDef::AddVariable(const std::string &name, Value value,
                               const Mutability &mutability) {
-  scopes->back()->Set(name, value, mutability);
+  scopes->back()->Declare(name, value, mutability);
 }
 ScritModDef::~ScritModDef() {
   delete description;

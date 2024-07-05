@@ -211,7 +211,7 @@ void ASTSerializer::visit(RangeBasedFor *rangeFor) {
   Write("RangeBasedFor: {");
   {
     auto _ = Indenter(this);
-
+    
     if (rangeFor->lhs) {
       rangeFor->lhs->Accept(this);
     } else if (!rangeFor->names.empty()) {

@@ -83,7 +83,9 @@ Value NativeCallable_T::Call(std::vector<Value> &args) {
   if (function->ptr)
     result = function->ptr(args);
   
-  CheckReturnType(result);
+  
+  // we shouldn't need to do this
+  // CheckReturnType(result);
 
   
   if (result == nullptr) {
@@ -109,14 +111,6 @@ Value Callable_T::Call(ArgumentsPtr &args, TypeArgsPtr &type_args) {
     ASTNode::context.SetCurrentScope(last_scope);
     return Value_T::VNULL;
   case ControlChange::Return: {
-    auto this_type = std::dynamic_pointer_cast<CallableType>(type);
-    
-    // TODO: remove runtime type checking. this should be done at parse time.
-    if (!this_type ||
-        !result.value->type->Equals(this_type->returnType.get())) {
-      ASTNode::context.SetCurrentScope(last_scope);
-      throw TypeError(this_type->returnType, result.value->type, "invalid return type");
-    }
     ASTNode::context.SetCurrentScope(last_scope);
     return result.value;
   }
@@ -155,8 +149,10 @@ Value NativeCallable_T::Call(unique_ptr<Arguments> &args, TypeArgsPtr &type_args
   if (function->ptr)
     result = function->ptr(values);
   
-  CheckReturnType(result);
-
+  
+  // We don't really need to do this: the caller should type check the evaluation of the expression anyway.
+  //CheckReturnType(result);
+  
   
   if (result == nullptr) {
     return UNDEFINED;
@@ -317,13 +313,13 @@ string Callable_T::ToString() const {
 
   ss << "(";
   for (const auto &param : params->Params()) {
-    ss << param.name << ": " << param.type->GetName();
+    ss << param.name << ": " << param.type->Name();
     if (&param != &params->Params().back()) {
       ss << ", ";
     }
   }
   ss << ")";
-  auto returnType = type->returnType->GetName();
+  auto returnType = type->returnType->Name();
   ss << " -> " << returnType;
   return ss.str();
 }
@@ -332,7 +328,7 @@ string NativeCallable_T::ToString() const {
   stringstream ss = {};
   ss << TypeSystem::Current()
             .FromCallable(function->returnType, function->parameterTypes)
-            ->GetName();
+            ->Name();
   return ss.str();
 }
 
@@ -513,12 +509,12 @@ auto Tuple_T::Deconstruct(vector<string> &idens) const -> void {
   for (size_t i = 0; i < max; ++i) {
     auto &iden = idens[i];
     auto &value = values[i];
-    ASTNode::context.Insert(iden, value, Mutability::Mut);
+    ASTNode::context.CurrentScope()->Declare(iden, value, Mutability::Mut);
   }
-
+  
   for (size_t i = max; i < idens.size(); ++i) {
     auto &iden = idens[i];
-    ASTNode::context.Insert(iden, Ctx::Undefined(), Mutability::Mut);
+    ASTNode::context.CurrentScope()->Declare(iden, Ctx::Undefined(), Mutability::Mut);
   }
 }
 
@@ -644,7 +640,7 @@ Array_T::Array_T(vector<Value> init) : Value_T(nullptr) {
   this->values = init;
   if (init.size() != 0) {
     this->type = TypeSystem::Current().FindOrCreateTemplate(
-        "array<" + init[0]->type->GetName() + ">",
+        "array<" + init[0]->type->Name() + ">",
         TypeSystem::Current().Find("array"), {init[0]->type});
   } else {
     this->type = TypeSystem::Current().Find("array");
@@ -664,4 +660,9 @@ Lambda_T::~Lambda_T() {}
 Value Undefined_T::Clone() { return Ctx::Undefined(); }
 Value Null_T::Clone() { return Ctx::Null(); }
 
+Value Value_T::UndefinedOfType(const Type &type) {
+  auto undefined = Ctx::Undefined();
+  undefined->type = type;
+  return undefined;
+}
 } // namespace Values

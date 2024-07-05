@@ -3,6 +3,7 @@
 #include "type.hpp"
 #include "value.hpp"
 #include <stdexcept>
+#include "ast_serializer.hpp"
 
 Context::Context() {}
 
@@ -12,20 +13,11 @@ void Namespace::Erase(const string &name) {
   current_scope->Erase(name);
 }
 
-void Namespace::Insert(const Scope_T::Key &key, Value value) {
-  current_scope->Set(key, value);
-}
-
-void Namespace::Insert(const string &name, Value value,
-                       const Mutability &mutability) {
-  current_scope->Set(name, value, mutability);
-}
-
 auto Namespace::FindIter(const string &name) const -> std::pair<VarIter, bool> {
   return current_scope->Find(name);
 }
 
-auto Namespace::Find(const string &name) const -> Value {
+auto Namespace::GetValue(const string &name) const -> Value {
   auto [value, found] = current_scope->Find(name);
   
   if (found) {
@@ -33,13 +25,13 @@ auto Namespace::Find(const string &name) const -> Value {
   }
   
   for (const auto &[_, importedNs] : imported_namespaces) {
-    auto found = importedNs->Find(name);
+    auto found = importedNs->GetValue(name);
     if (found)
       return found;
   }
   
   if (parent.lock())
-    return parent.lock()->Find(name);
+    return parent.lock()->GetValue(name);
   
   return nullptr;
 }
@@ -83,17 +75,12 @@ auto Scope_T::ClearVariables() -> void {
   }
 }
 
-auto Scope_T::ForwardDeclare(const string &name, const Type &type,
-                             const Mutability &mut) -> void {
-  auto val = make_shared<Undefined_T>();
-  val->type = type;
-  variables[Key(name, mut, true)] = val;
-}
+
 
 Context::ResolvedPath Context::Resolve(ScopeResolution *res) {
   auto ns = FindNamespace(res->identifiers);
-  if (ns && ns->Find(res->identifiers.back())) {
-    return {.value = ns->Find(res->identifiers.back())};
+  if (ns && ns->GetValue(res->identifiers.back())) {
+    return {.value = ns->GetValue(res->identifiers.back())};
   } else if (ns) {
     return {._namespace = ns};
   }
@@ -105,7 +92,7 @@ auto Context::Find(const string &name) const -> Value {
     return FunctionRegistry::GetCallable(name);
   }  
   
-  auto result = current_namespace->Find(name);
+  auto result = current_namespace->GetValue(name);
   if (result) {
     return result;
   }
@@ -161,57 +148,82 @@ auto Scope_T::Clone() -> Scope {
   scope->variables = variables;
   return scope;
 }
-auto Scope_T::Get(const string &name) -> Value {
+auto Scope_T::GetValue(const string &name) -> Value {
   auto [it, found] = Find(name);
   if (!found) {
     return Value_T::UNDEFINED;
   }
   return variables[it->first];
 }
-auto Scope_T::Set(const Scope_T::Key &key, Value value) -> void {
-  variables[key] = value;
-}
-auto Scope_T::Set(const string &name, Value value,
-                  const Mutability &mutability) -> void {
-  
-  if (TypeSystem::Current().Exists(name)) {
-    throw std::runtime_error("cannot declare a variable of an existing type: " +
-                             name);
-  }
-  
-  auto [it, found] = Find(name);
-  
-  // variable didn't exist, we freely declare it.
-  if (!found) {
-    variables[Key(name, mutability, false)] = value;
-    return;
-  }
-  
-  auto &[key, var] = *it;
-  // a forward declaration is being fulfilled.
-  if (key.forward_declared) {
-    auto new_key = Key(key.value, key.mutability, false);
-    variables[new_key] = value;
-    return;
-  }
 
-  // the variable is being assigned,
+auto Scope_T::Assign(const string &name, Value value) -> void {
+  auto it = std::find_if(variables.begin(), variables.end(), [name](const auto &pair) {
+    return pair.first.value == name;
+  });
+  if (it == variables.end()) {
+    if (parent.lock()) {
+      return parent.lock()->Assign(name, value);
+    }
+    throw std::runtime_error("Cannot assign non-existent variable: " + name);
+  }
+  auto &[key, var] = *it;
   if (key.mutability == Mutability::Mut) {
     variables[key] = value;
     return;
   }
-
   throw std::runtime_error("Cannot set a const value.. identifier: " + name);
 }
+
 auto Scope_T::Contains(const string &name) -> bool {
   return Find(name).second;
 }
+
 auto Scope_T::Erase(const string &name) -> size_t {
-  auto [it, found] = Find(name);
-  if (found) {
+  auto it = std::find_if(variables.begin(), variables.end(), [name](const auto &pair) {
+    return pair.first.value == name;
+  });
+  if (it != variables.end()) {
     variables.erase(it);
     return 1;
   }
   return 0;
 }
+
 auto Scope_T::Members() -> std::map<Key, Value> & { return variables; }
+
+string Context::StackFrame::ToString() {
+  ASTSerializer visitor = {}; 
+  if (!call || call->type == nullptr) {
+    return "cannot print stack information.";
+  }
+  visitor.visit(call);
+  return visitor.stream.str();
+}
+
+auto Scope_T::Declare(const string &name, Value value,
+                      const Mutability &mutability) -> void {
+  Erase(name); // erase any pre-existing variable with this signature.
+  variables[Key(name, mutability)] = value;
+}
+                      
+std::shared_ptr<Namespace>
+Context::FindNamespace(const vector<std::string> &identifiers) {
+  if (identifiers.empty()) {
+    return nullptr;
+  }
+
+  std::shared_ptr<Namespace> ns = root_namespace;
+
+  for (size_t i = 0; i < identifiers.size() && ns; ++i) {
+    const std::string &currentPart = identifiers[i];
+    if (ns->nested_namespaces.contains(currentPart)) {
+      ns = ns->nested_namespaces[currentPart];
+    } else {
+      break;
+    }
+  }
+  return ns;
+}
+bool Context::NamespaceExists(const vector<std::string> &identifiers) {
+  return FindNamespace(identifiers) != nullptr;
+}

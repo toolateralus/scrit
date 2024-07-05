@@ -23,7 +23,7 @@ using Value = shared_ptr<Value_T>;
 
 struct Type_T {
   virtual ~Type_T() {};
-  virtual const string GetName() const = 0;
+  virtual const string Name() const = 0;
   Type_T() {};
   Type_T(const Type_T &) = delete;
   Type_T(Type_T &&) = delete;
@@ -40,22 +40,22 @@ struct Type_T {
 using Type = shared_ptr<Type_T>;
 
 struct NullType : Type_T {
-  const string GetName() const override;
+  const string Name() const override;
   auto Scope() -> Scope_T & override;
   Value Default() override;
 };
 struct UndefinedType : Type_T {
-  const string GetName() const override;
+  const string Name() const override;
   auto Scope() -> Scope_T & override;
   Value Default() override;
 };
 struct StringType : Type_T {
-  const string GetName() const override;
+  const string Name() const override;
   auto Scope() -> Scope_T & override;
   Value Default() override;
 };
 struct IntType : Type_T {
-  const string GetName() const override;
+  const string Name() const override;
   auto Scope() -> Scope_T & override;
   Value Default() override;
 };
@@ -69,22 +69,22 @@ struct TemplateType : Type_T, std::enable_shared_from_this<TemplateType> {
   auto Scope() -> Scope_T & override;
   auto Get(const string &name) -> Value override;
   bool Equals(const Type_T *other) override;
-  const string GetName() const override;
+  const string Name() const override;
   Value Default() override;
 };
 
 struct ObjectType : Type_T {
-  const string GetName() const override;
+  const string Name() const override;
   auto Scope() -> Scope_T & override;
   Value Default() override;
 };
 struct FloatType : Type_T {
-  const string GetName() const override;
+  const string Name() const override;
   auto Scope() -> Scope_T & override;
   Value Default() override;
 };
 struct BoolType : Type_T {
-  const string GetName() const override;
+  const string Name() const override;
   auto Scope() -> Scope_T & override;
   Value Default() override;
 };
@@ -94,7 +94,7 @@ struct TupleType : Type_T {
   auto Scope() -> Scope_T & override;
   Value Default() override;
   string name;
-  const string GetName() const override;
+  const string Name() const override;
 };
 struct CallableType : Type_T {
   const Type returnType;
@@ -103,7 +103,7 @@ struct CallableType : Type_T {
   CallableType(const Type returnType, const std::vector<Type> paramTypes);
   Value Default() override;
   string name;
-  const string GetName() const override;
+  const string Name() const override;
 };
 struct TypeParam_T {
   string name;
@@ -112,25 +112,25 @@ struct TypeParam_T {
 using TypeParam = std::shared_ptr<TypeParam_T>;
 struct GenericType_T : Type_T {
   const TypeParam type_param;
-  const string GetName() const override;
+  const string Name() const override;
   GenericType_T(const TypeParam type_param);
   auto Scope() -> Scope_T & override;
   Value Default() override;
 };
 struct NamedType_T : Type_T {
   const string name;
-  const string GetName() const override;
+  const string Name() const override;
   NamedType_T(const string name);
   auto Scope() -> Scope_T & override;
   Value Default() override;
 };
 struct ArrayType : Type_T {
-  const string GetName() const override;
+  const string Name() const override;
   auto Scope() -> Scope_T & override;
   Value Default() override;
 };
 struct AnyType : Type_T {
-  const string GetName() const override;
+  const string Name() const override;
   auto Scope() -> Scope_T & override;
   Value Default() override;
 };
@@ -152,7 +152,7 @@ struct StructType : Type_T, std::enable_shared_from_this<StructType> {
   Value Construct(ArgumentsPtr &args);
   Scope_T &Scope() override;
   string name;
-  const string GetName() const override;
+  const string Name() const override;
 };
 
 struct TypeSystem {
