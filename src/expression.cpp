@@ -345,8 +345,7 @@ unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
     case TType::Func: {
       Eat(); // eat keyword.
       auto stmnt = ParseFunctionDeclaration();
-      ASTNode::context.CurrentScope()->Set(stmnt->name, stmnt->callable,
-                                             Mutability::Const);
+      scope->Set(stmnt->name, stmnt->callable,  Mutability::Const);
       statements.push_back(std::move(stmnt));
       break;
     }
@@ -373,7 +372,6 @@ unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
 endloop:
 
   Expect(TType::RCurly);
-  
   
   ASTNode::context.SetCurrentScope(last_scope);
   

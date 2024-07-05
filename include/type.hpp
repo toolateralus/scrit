@@ -136,11 +136,17 @@ struct AnyType : Type_T {
 };
 struct StructType : Type_T, std::enable_shared_from_this<StructType> {
   ~StructType();
-  shared_ptr<Scope_T> scope = make_shared<Scope_T>(nullptr);
+  shared_ptr<Scope_T> scope;
   vector<std::unique_ptr<Declaration>> fields;
   vector<string> template_args;
+  
+  StructType(const StructType &) = delete;
+  StructType(StructType &&) = delete;
+  StructType &operator=(const StructType &) = delete;
+  StructType &operator=(StructType &&) = delete;
+  
   StructType(const string &name, vector<std::unique_ptr<Declaration>> &&fields,
-             vector<string> &template_args);
+             vector<string> &template_args, shared_ptr<Scope_T> scope);
   bool Equals(const Type_T *other) override;
   Value Default() override;
   Value Construct(ArgumentsPtr &args);

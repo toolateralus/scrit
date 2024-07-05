@@ -316,18 +316,19 @@ Value AnyType::Default() { return Ctx::Undefined(); }
 
 StructType::StructType(const string &name,
                        vector<std::unique_ptr<Declaration>> &&fields,
-                       vector<string> &template_args)
-    : name(name), template_args(template_args), fields(std::move(fields)) {
+                       vector<string> &template_args, shared_ptr<Scope_T> scope)
+    : name(name), template_args(template_args), fields(std::move(fields)), scope(scope) {
       
 }
 
 Value StructType::Default() {
-  auto object = Ctx::CreateObject();
-  ASTNode::context.SetCurrentScope(make_shared<Scope_T>(nullptr));
+  ASTNode::context.SetCurrentScope(scope);
   for (const auto &field : fields) {
     field->Execute();
   }
+  auto object = Ctx::CreateObject(scope->Clone());
   object->type = shared_from_this();
+  scope->Clear();
   return object;
 }
 

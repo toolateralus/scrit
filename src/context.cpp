@@ -84,6 +84,7 @@ auto Scope_T::Set(const string &name, Value value,
 
   // a forward declaration is being fulfilled.
   if (key.forward_declared) {
+    Erase(key.value);
     auto new_key = Key(key.value, key.mutability, false);
     variables[new_key] = value;
     return;

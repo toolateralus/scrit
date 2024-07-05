@@ -475,6 +475,10 @@ void ApplyCopySemantics(ExecutionResult &result) {
   }
 }
 ExecutionResult Block::Execute(Scope scope) {
+  
+  auto last_scope = ASTNode::context.CurrentScope();
+  ASTNode::context.SetCurrentScope(scope);
+  
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
@@ -485,9 +489,10 @@ ExecutionResult Block::Execute(Scope scope) {
       case ControlChange::Return:
         if (result.value != nullptr) {
           ApplyCopySemantics(result);
+          context.SetCurrentScope(last_scope);
           return result;
         }
-
+        
         return result;
       case ControlChange::None:
         continue;
@@ -496,6 +501,7 @@ ExecutionResult Block::Execute(Scope scope) {
       std::cout << statement->srcInfo.ToString() << err.what() << std::endl;
     }
   }
+  context.SetCurrentScope(last_scope);
   return ExecutionResult::None;
 }
 ExecutionResult Block::Execute() {
@@ -522,20 +528,22 @@ ExecutionResult Block::Execute() {
   return ExecutionResult::None;
 }
 Value ObjectInitializer::Evaluate() {
-  static auto _this = Object_T::New();
   
-  const auto exec_result = block->Execute(_this->scope);
+  // pass the block it's own scope to prevent it from being cleared.
+  // post execution.
+  const auto exec_result = block->Execute(block->scope);
   const auto controlChange = exec_result.controlChange;
-
+  
   if (controlChange != ControlChange::None) {
     throw std::runtime_error(
         CC_ToString(controlChange) +
         " not allowed in object initialization. did you mean to use a lambda? "
         ".. => { some body of code returning a value ..}");
   }
-  _this->scope->Erase("this");
-
-  auto object = Object_T::New(_this->scope->Clone());
+  
+  auto object = Object_T::New(block->scope->Clone());
+  block->scope->Clear();
+  
   object->type = type;
   return object;
 }
@@ -1071,22 +1079,15 @@ ExecutionResult Property::Execute() {
   return ExecutionResult::None;
 }
 ExecutionResult Declaration::Execute() {
-
   auto &scope = ASTNode::context.CurrentScope();
-
+  
   if (scope->Contains(name) && !scope->Find(name)->first.forward_declared) {
     throw std::runtime_error(
         "cannot re-define an already existing variable.\noffending variable: " +
         name);
   }
   auto value = this->expr->Evaluate();
-
-  // We should not need to type check declarations at run time.
-  // if (!value->type->Equals(this->type.get())) {
-  //   if (value->type && this->type)
-  //     throw TypeError(value->type, this->type);
-  // }
-
+  
   // copy where needed
   ApplyCopySemantics(value);
 
@@ -1258,9 +1259,10 @@ void MethodCall::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 
 StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
                                      vector<StatementPtr> &&statements,
-                                     vector<string> &template_args)
-    : Statement(info), type_name(name), template_args(template_args) {
-
+                                     vector<string> &template_args, Scope scope)
+    : Statement(info), type_name(name), template_args(template_args), scope(scope) {
+  
+  
   vector<unique_ptr<Declaration>> declarations;
 
   for (auto &statement : statements) {
@@ -1270,7 +1272,7 @@ StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
     }
   }
   auto type =
-      make_shared<StructType>(name, std::move(declarations), template_args);
+      make_shared<StructType>(name, std::move(declarations), template_args, scope);
 
   for (auto &statement : statements) {
     if (auto decl = dynamic_cast<FunctionDecl *>(statement.get())) {

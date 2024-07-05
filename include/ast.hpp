@@ -550,14 +550,13 @@ struct Match : Expression {
 };
 
 struct StructDeclaration : Statement {
-
   string type_name;
   vector<string> template_args;
-
+  Scope scope;
   StructDeclaration(SourceInfo &info, const string &name,
                     vector<StatementPtr> &&statements,
-                    vector<string> &template_args);
-
+                    vector<string> &template_args, Scope scope);
+  
   ExecutionResult Execute() override;
 };
 

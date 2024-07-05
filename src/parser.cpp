@@ -148,12 +148,12 @@ StatementPtr Parser::ParseKeyword(Token token) {
 
     ASTNode::context.CurrentScope()->InsertType(
         name, make_shared<StructType>(
-                  name, std::vector<unique_ptr<Declaration>>(), template_args));
+                  name, std::vector<unique_ptr<Declaration>>(), template_args,  nullptr));
 
     auto obj = ParseObjectInitializer();
 
     return make_unique<StructDeclaration>(
-        info, name, std::move(obj->block->statements), template_args);
+        info, name, std::move(obj->block->statements), template_args, obj->block->scope);
   }
 
   case TType::Namespace: {
