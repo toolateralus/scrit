@@ -37,7 +37,6 @@ struct Ctx final {
   Ctx &operator=(const Ctx &) = default;
   Ctx &operator=(Ctx &&) = default;
   static Value Null();
-  static Value Undefined();
   static Bool CreateBool(const bool value = false);
   static String CreateString(const string value = std::string(""));
   static Int CreateInt(const int value = 0);
@@ -57,6 +56,5 @@ struct Ctx final {
   static bool TryGetBool(Value value, bool &result);
   static bool TryGetObject(Value value, Object &result);
   static bool TryGetArray(Value value, Array &result);
-  static bool IsUndefined(Value value);
   static bool IsNull(Value value);
 };

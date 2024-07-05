@@ -7,7 +7,7 @@
 
 #pragma clang diagnostic ignored "-Wunused-parameter"
 
-#define undefined Ctx::Undefined()
+#define undefined Ctx::Null()
 #define null Ctx::Null()
 
 REGISTER_FUNCTION(where, "array", {"any", "any"}) {

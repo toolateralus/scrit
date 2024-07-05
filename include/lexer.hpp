@@ -92,7 +92,6 @@ enum class TType {
   False,
   True,
   Null,
-  Undefined,
   // TODO: add try & catch.
 
   Match,

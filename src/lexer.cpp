@@ -283,7 +283,6 @@ Lexer::Lexer()
           {"false", TType::False},
           {"true", TType::True},
           {"null", TType::Null},
-          {"undefined", TType::Undefined},
           {"using", TType::Using},
           {"from", TType::From},
           {"import", TType::Import},
@@ -435,8 +434,6 @@ string TTypeToString(const TType &type) {
     return "True";
   case TType::Null:
     return "Null";
-  case TType::Undefined:
-    return "Undefined";
   case TType::Using:
     return "Using";
   case TType::From:

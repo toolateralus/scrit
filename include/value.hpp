@@ -42,13 +42,11 @@ struct Float_T;
 struct String_T;
 struct Object_T;
 struct Array_T;
-struct Undefined_T;
 struct Null_T;
 
 // ease of use typedef.
 typedef shared_ptr<Value_T> Value;
 typedef shared_ptr<Null_T> Null;
-typedef shared_ptr<Undefined_T> Undefined;
 typedef shared_ptr<Bool_T> Bool;
 typedef shared_ptr<String_T> String;
 typedef shared_ptr<Array_T> Array;
@@ -59,7 +57,6 @@ typedef shared_ptr<Object_T> Object;
 enum class PrimitiveType {
   Invalid,
   Null,
-  Undefined,
   Float,
   Int,
   Bool,
@@ -74,8 +71,7 @@ enum class PrimitiveType {
 string TypeToString(PrimitiveType type);
 
 struct Value_T : std::enable_shared_from_this<Value_T> {
-  static Null VNULL;
-  static Undefined UNDEFINED;
+  static Null Null;
   static Bool False;
   static Bool True;
 
@@ -89,16 +85,16 @@ struct Value_T : std::enable_shared_from_this<Value_T> {
   virtual string ToString() const = 0;
   virtual bool Equals(Value) = 0;
   virtual Value Add(Value) {
-    return std::static_pointer_cast<Value_T>(UNDEFINED);
+    return std::static_pointer_cast<Value_T>(Null);
   }
   virtual Value Subtract(Value) {
-    return std::static_pointer_cast<Value_T>(UNDEFINED);
+    return std::static_pointer_cast<Value_T>(Null);
   }
   virtual Value Multiply(Value) {
-    return std::static_pointer_cast<Value_T>(UNDEFINED);
+    return std::static_pointer_cast<Value_T>(Null);
   }
   virtual Value Divide(Value) {
-    return std::static_pointer_cast<Value_T>(UNDEFINED);
+    return std::static_pointer_cast<Value_T>(Null);
   }
   virtual Bool Or(Value) { return False; }
   virtual Bool And(Value) { return False; }
@@ -106,7 +102,7 @@ struct Value_T : std::enable_shared_from_this<Value_T> {
   virtual Bool Greater(Value) { return False; }
   virtual Bool Not() { return False; }
   virtual Value Negate() {
-    return std::static_pointer_cast<Value_T>(UNDEFINED);
+    return std::static_pointer_cast<Value_T>(Null);
   }
   virtual Value Subscript(Value key);
   virtual Value SubscriptAssign(Value key, Value value);
@@ -132,16 +128,6 @@ struct Null_T : Value_T {
   }
   Null_T();
   ~Null_T() override;
-  string ToString() const override;
-  bool Equals(Value value) override;
-  Value Clone() override;
-};
-struct Undefined_T : Value_T {
-  PrimitiveType GetPrimitiveType() const override {
-    return PrimitiveType::Undefined;
-  }
-  Undefined_T();
-  ~Undefined_T() override;
   string ToString() const override;
   bool Equals(Value value) override;
   Value Clone() override;
@@ -271,6 +257,7 @@ struct Callable_T : Value_T {
   Scope scope;
   virtual Value Call(ArgumentsPtr &args, TypeArgsPtr &type_args);
   virtual Value Call(std::vector<Value> &args);
+  void CheckReturnType(Value &result);
   string ToString() const override;
   bool Equals(Value value) override;
   Value Clone() override;

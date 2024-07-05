@@ -28,7 +28,7 @@ Value Int_T::Add(Value other) {
         Float_T::New(this->value + static_cast<Float_T *>(other.get())->value);
     return i;
   }
-  return Value_T::VNULL;
+  return Value_T::Null;
 }
 Value Int_T::Subtract(Value other) {
   if (other->GetPrimitiveType() == PrimitiveType::Int) {
@@ -39,7 +39,7 @@ Value Int_T::Subtract(Value other) {
         Float_T::New(this->value - static_cast<Float_T *>(other.get())->value);
     return i;
   }
-  return Value_T::VNULL;
+  return Value_T::Null;
 }
 Value Int_T::Multiply(Value other) {
   if (other->GetPrimitiveType() == PrimitiveType::Int) {
@@ -50,7 +50,7 @@ Value Int_T::Multiply(Value other) {
         Float_T::New(this->value * static_cast<Float_T *>(other.get())->value);
     return i;
   }
-  return Value_T::VNULL;
+  return Value_T::Null;
 }
 Value Int_T::Divide(Value other) {
   if (other->GetPrimitiveType() == PrimitiveType::Int) {
@@ -61,7 +61,7 @@ Value Int_T::Divide(Value other) {
         Float_T::New(this->value / static_cast<Float_T *>(other.get())->value);
     return i;
   }
-  return Value_T::VNULL;
+  return Value_T::Null;
 }
 void Int_T::Set(Value newValue) {
   if (newValue->GetPrimitiveType() == PrimitiveType::Int) {

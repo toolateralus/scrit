@@ -151,7 +151,7 @@ auto Scope_T::Clone() -> Scope {
 auto Scope_T::GetValue(const string &name) -> Value {
   auto [it, found] = Find(name);
   if (!found) {
-    return Value_T::UNDEFINED;
+    return Value_T::Null;
   }
   return variables[it->first];
 }

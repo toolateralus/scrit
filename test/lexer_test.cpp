@@ -56,8 +56,8 @@ TEST(LexerTest, LexOpTest) {
   ASSERT_EQ(tokens[15].type, TType::RParen);
   ASSERT_EQ(tokens[16].type, TType::LCurly);
   ASSERT_EQ(tokens[17].type, TType::RCurly);
-  ASSERT_EQ(tokens[18].type, TType::SubscriptLeft);
-  ASSERT_EQ(tokens[19].type, TType::SubscriptRight);
+  ASSERT_EQ(tokens[18].type, TType::LBrace);
+  ASSERT_EQ(tokens[19].type, TType::RBrace);
   ASSERT_EQ(tokens[20].type, TType::Comma);
   ASSERT_EQ(tokens[21].type, TType::Assign);
 
@@ -117,7 +117,7 @@ TEST(LexerTest, LexKeywordTest) {
   ASSERT_EQ(tokens[7].value, "false");
   ASSERT_EQ(tokens[8].value, "true");
   ASSERT_EQ(tokens[9].value, "null");
-  ASSERT_EQ(tokens[10].value, "undefined");
+  ASSERT_EQ(tokens[10].value, "null");
   ASSERT_EQ(tokens[11].value, "using");
   ASSERT_EQ(tokens[12].value, "from");
 }

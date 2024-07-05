@@ -17,28 +17,28 @@
 
 static Value fexists(std::vector<Value> values) {
   if (values.size() == 0) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   auto filename = values[0];
   if (filename->GetPrimitiveType() != PrimitiveType::String) {
-    return Value_T::UNDEFINED;
+    return Ctx::Null();
   }
   auto fname = static_cast<String_T *>(filename.get());
 
   if (fname == nullptr) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   return Ctx::CreateBool(std::filesystem::exists(fname->value));
 }
 static Value fcreate(std::vector<Value> values) {
   if (values.size() == 0) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   auto filename = values[0];
   if (filename->GetPrimitiveType() != PrimitiveType::String) {
-    return Value_T::UNDEFINED;
+    return Ctx::Null();
   }
   auto fname = static_cast<String_T *>(filename.get());
   std::ofstream file(fname->value);
@@ -48,12 +48,12 @@ static Value fcreate(std::vector<Value> values) {
     return Ctx::CreateString("Unable to open file");
   }
 
-  return Value_T::UNDEFINED;
+  return Ctx::Null();
 }
 static Value fwrite(std::vector<Value> values) {
 
   if (values.size() < 2) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   auto filename = values[0];
   auto content = values[1];
@@ -73,15 +73,15 @@ static Value fwrite(std::vector<Value> values) {
     return Ctx::CreateString("Unable to open file");
   }
 
-  return Value_T::UNDEFINED;
+  return Ctx::Null();
 }
 static Value fread(std::vector<Value> values) {
   if (values.size() == 0) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   auto filename = values[0];
   if (filename->GetPrimitiveType() != PrimitiveType::String) {
-    return Value_T::UNDEFINED;
+    return Ctx::Null();
   }
   auto fname = static_cast<String_T *>(filename.get());
 
@@ -97,16 +97,16 @@ static Value fread(std::vector<Value> values) {
 }
 static Value fdelete(std::vector<Value> values) {
   if (values.size() == 0) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   auto filename = values[0];
   if (filename->GetPrimitiveType() != PrimitiveType::String) {
-    return Value_T::UNDEFINED;
+    return Ctx::Null();
   }
   auto fname = static_cast<String_T *>(filename.get());
 
   if (std::filesystem::remove(fname->value)) {
-    return Value_T::UNDEFINED;
+    return Ctx::Null();
   } else {
     return Ctx::CreateString("Unable to delete file");
   }
@@ -114,22 +114,22 @@ static Value fdelete(std::vector<Value> values) {
 
 static Value dir_exists(std::vector<Value> values) {
   if (values.size() == 0) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   auto dirname = values[0];
   if (dirname->GetPrimitiveType() != PrimitiveType::String) {
-    return Value_T::UNDEFINED;
+    return Ctx::Null();
   }
   auto dname = static_cast<String_T *>(dirname.get());
   return Ctx::CreateBool(std::filesystem::exists(dname->value));
 }
 static Value dir_create(std::vector<Value> values) {
   if (values.size() == 0) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   auto dirname = values[0];
   if (dirname->GetPrimitiveType() != PrimitiveType::String) {
-    return Value_T::UNDEFINED;
+    return Ctx::Null();
   }
   auto dname = static_cast<String_T *>(dirname.get());
 
@@ -145,11 +145,11 @@ static Value cwd(std::vector<Value>) {
 }
 static Value dir_getfiles(std::vector<Value> values) {
   if (values.size() == 0) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   auto dirname = values[0];
   if (dirname->GetPrimitiveType() != PrimitiveType::String) {
-    return Value_T::UNDEFINED;
+    return Ctx::Null();
   }
   auto dname = static_cast<String_T *>(dirname.get());
   std::vector<Value> files;
@@ -162,16 +162,16 @@ static Value dir_getfiles(std::vector<Value> values) {
 }
 static Value dir_delete(std::vector<Value> values) {
   if (values.size() == 0) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   auto dirname = values[0];
   if (dirname->GetPrimitiveType() != PrimitiveType::String) {
-    return Value_T::UNDEFINED;
+    return Ctx::Null();
   }
   auto dname = static_cast<String_T *>(dirname.get());
 
   if (std::filesystem::remove_all(dname->value)) {
-    return Value_T::UNDEFINED;
+    return Ctx::Null();
   } else {
     return Ctx::CreateString("Unable to delete directory");
   }
@@ -198,43 +198,43 @@ static Value sleep(std::vector<Value> args) {
       std::this_thread::sleep_for(std::chrono::seconds(1));
     }
   }
-  return Value_T::UNDEFINED;
+  return Ctx::Null();
 }
 
 static Value syscall(std::vector<Value> values) {
   if (values.size() == 0) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   auto cmd = values[0];
   if (cmd->GetPrimitiveType() != PrimitiveType::String) {
-    return Value_T::UNDEFINED;
+    return Ctx::Null();
   }
   auto command = static_cast<String_T *>(cmd.get());
   return Ctx::CreateInt(system(command->value.c_str()));
 }
 static Value exit(std::vector<Value>) {
   std::exit(0);
-  return Value_T::UNDEFINED;
+  return Ctx::Null();
 }
 
 static void file(ScritModDef *mod) {
   mod->AddFunction("file_read", CREATE_FUNCTION(fread, "string", {"string"}));
   mod->AddFunction("file_write",
-                   CREATE_FUNCTION(fwrite, "undefined", {"string", "string"}));
+                   CREATE_FUNCTION(fwrite, "null", {"string", "string"}));
   mod->AddFunction("file_create",
-                   CREATE_FUNCTION(fcreate, "undefined", {"string"}));
+                   CREATE_FUNCTION(fcreate, "null", {"string"}));
   mod->AddFunction("file_exists", CREATE_FUNCTION(fexists, "bool", {"string"}));
   mod->AddFunction("file_delete",
-                   CREATE_FUNCTION(fdelete, "undefined", {"string"}));
+                   CREATE_FUNCTION(fdelete, "null", {"string"}));
 }
 
 static void directory(ScritModDef *mod) {
   mod->AddFunction("dir_exists",
                    CREATE_FUNCTION(dir_exists, "bool", {"string"}));
   mod->AddFunction("dir_create",
-                   CREATE_FUNCTION(dir_create, "undefined", {"string"}));
+                   CREATE_FUNCTION(dir_create, "null", {"string"}));
   mod->AddFunction("dir_delete",
-                   CREATE_FUNCTION(dir_delete, "undefined", {"string"}));
+                   CREATE_FUNCTION(dir_delete, "null", {"string"}));
   mod->AddFunction("dir_files",
                    CREATE_FUNCTION(dir_getfiles, "array", {"string"}));
   mod->AddFunction("dir_current", CREATE_FUNCTION(cwd, "string", {}));
@@ -243,8 +243,8 @@ static void directory(ScritModDef *mod) {
 static void general(ScritModDef *def) {
   auto time = CREATE_FUNCTION(::time, "float", {});
   auto syscall = CREATE_FUNCTION(::syscall, "int", {"string"});
-  auto exit = CREATE_FUNCTION(::exit, "undefined", {"int"});
-  auto sleep = CREATE_FUNCTION(::sleep, "undefined", {"float"});
+  auto exit = CREATE_FUNCTION(::exit, "null", {"int"});
+  auto sleep = CREATE_FUNCTION(::sleep, "null", {"float"});
   def->AddFunction("time", time);
   def->AddFunction("syscall", syscall);
   def->AddFunction("exit", exit);

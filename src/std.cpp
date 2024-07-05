@@ -18,7 +18,7 @@
 
 #pragma clang diagnostic ignored "-Wunused-parameter"
 
-#define undefined Ctx::Undefined()
+#define undefined Ctx::Null()
 #define null Ctx::Null()
 
 REGISTER_FUNCTION(mod, "int", {"int", "int"}) {
@@ -45,14 +45,14 @@ REGISTER_FUNCTION(fmod, "float", {"float", "float"}) {
 // Create a deep clone of any value.
 REGISTER_FUNCTION(clone, "any", {"any"}) {
   if (args.size() == 0) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   return args[0]->Clone();
 }
 
 // have to do this obnoxiously since it just auto-conflicts.
 #undef assert
-REGISTER_FUNCTION(assert, "undefined", {"bool", "any"}) {
+REGISTER_FUNCTION(assert, "null", {"bool", "any"}) {
   if (args.empty()) {
     return Bool_T::False;
   }
@@ -62,13 +62,13 @@ REGISTER_FUNCTION(assert, "undefined", {"bool", "any"}) {
     }
     throw std::runtime_error("assertion failed: " + args[0]->ToString());
   }
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 
 // typeof
 REGISTER_FUNCTION(get_type, "string", {"any"}) {
   if (args.empty()) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   if (args[0]->type) {
@@ -114,17 +114,17 @@ REGISTER_FUNCTION(serialize, "string", {"any", "object"}) {
 // strings & chars
 REGISTER_FUNCTION(tostr, "string", {"any"}) {
   if (args.empty()) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   return Ctx::CreateString(args[0]->ToString());
 }
 REGISTER_FUNCTION(atoi, "int", {"string"}) {
   if (args.size() == 0) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   string str;
   if (!Ctx::TryGetString(args[0], str)) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   return Ctx::CreateInt(std::atoi(str.c_str()));
 }
@@ -135,7 +135,7 @@ REGISTER_FUNCTION(get, "any", {"any", "int"}) {
     auto index = args[1]->Cast<Int_T>();
     return tuple->values[index->value];
   }
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 
 REGISTER_FUNCTION(cbrt, "float", {"any"}) {
@@ -146,22 +146,22 @@ REGISTER_FUNCTION(cbrt, "float", {"any"}) {
   } else if (Ctx::TryGetInt(args[0], i)) {
     return Ctx::CreateFloat(std::cbrt(i));
   }
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 
 // terminal
-REGISTER_FUNCTION(println, "undefined", {"any"}) {
+REGISTER_FUNCTION(println, "null", {"any"}) {
   for (const auto &arg : args) {
     printf("%s\n", arg->ToString().c_str());
     ;
   }
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
-REGISTER_FUNCTION(print, "undefined", {"any"}) {
+REGISTER_FUNCTION(print, "null", {"any"}) {
   for (const auto &arg : args) {
     printf("%s", arg->ToString().c_str());
   }
-  return Undefined_T::UNDEFINED;
+  return Ctx::Null();
 }
 
 REGISTER_FUNCTION(readln, "string", {}) {
@@ -171,17 +171,17 @@ REGISTER_FUNCTION(readln, "string", {}) {
 }
 
 static struct termios orig_termios;
-REGISTER_FUNCTION(enter_raw_mode, "undefined", {}) {
+REGISTER_FUNCTION(enter_raw_mode, "null", {}) {
    struct termios raw;
   tcgetattr(STDIN_FILENO, &orig_termios);
   raw = orig_termios;
   raw.c_lflag &= ~(ICANON | ECHO);
   tcsetattr(STDIN_FILENO, TCSANOW, &raw);
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
-REGISTER_FUNCTION(exit_raw_mode, "undefined", {}) {
+REGISTER_FUNCTION(exit_raw_mode, "null", {}) {
   tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 
 REGISTER_FUNCTION(readch, "string", {}) {

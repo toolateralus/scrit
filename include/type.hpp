@@ -159,7 +159,6 @@ struct TypeSystem {
   std::unordered_map<string, Type> global_types;
 
   Type Null;
-  Type Undefined;
   Type Int;
   Type Float;
   Type Bool;

@@ -15,7 +15,7 @@ ParseError::ParseError(const SourceInfo &info)
 
 TypeError::TypeError(const Type &type, const std::string message)
     : std::runtime_error("Type Error: " + message +
-                         "\noffending type: " + type->GetName()) {}
+                         "\noffending type: " + type->Name()) {}
 
 // use this immediately-invoked lambda to do some checking on the init.
 TypeError::TypeError(const Type &type_a, const Type &type_b)
@@ -24,7 +24,7 @@ TypeError::TypeError(const Type &type_a, const Type &type_b)
           return "Type Error: One or more type arguments are null.";
         }
         return "Type Error: incompatible types.\noffending types:\n" +
-               type_a->GetName() + "\n" + type_b->GetName();
+               type_a->Name() + "\n" + type_b->Name();
       }()) {}
 
 TypeError::TypeError(const Type &type_a, const Type &type_b,
@@ -34,5 +34,5 @@ TypeError::TypeError(const Type &type_a, const Type &type_b,
           return "Type Error: One or more type arguments are null.." + message;
         }
         return "Type Error: incompatible types.\noffending types:\n" +
-               type_a->GetName() + "\n" + type_b->GetName() + "\n" + message;
+               type_a->Name() + "\n" + type_b->Name() + "\n" + message;
       }()) {}

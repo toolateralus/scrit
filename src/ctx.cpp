@@ -29,8 +29,7 @@ Values::Array Ctx::FromIntVector(vector<int> &values) {
   }
   return array;
 }
-Value Ctx::Undefined() { return Value_T::UNDEFINED; }
-Value Ctx::Null() { return Value_T::VNULL; }
+Value Ctx::Null() { return Value_T::Null; }
 
 Bool Ctx::CreateBool(const bool value) { return Bool_T::New(value); }
 String Ctx::CreateString(const string value) { return String_T::New(value); }
@@ -81,7 +80,6 @@ bool Ctx::TryGetString(Value value, string &result) {
   }
   return false;
 }
-bool Ctx::IsUndefined(Value value) { return value->Equals(Value_T::UNDEFINED); }
-bool Ctx::IsNull(Value value) { return value->Equals(Value_T::VNULL); }
+bool Ctx::IsNull(Value value) { return value->Equals(Value_T::Null); }
 
 Values::Array Ctx::CreateArray() { return Array_T::New(); }

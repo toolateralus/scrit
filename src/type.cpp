@@ -161,7 +161,7 @@ auto TypeSystem::GetVector(const vector<string> &names) -> vector<Type> {
 Type Parser::ParseReturnType() {
   Type returnType = nullptr;
   if (Peek().type == TType::LCurly) {
-    returnType = TypeSystem::Current().Undefined;
+    returnType = TypeSystem::Current().Null;
   } else {
     Expect(TType::Arrow);
     returnType = ParseType();
@@ -285,7 +285,7 @@ auto TypeSystem::Find(const string &name) -> Type {
   throw std::runtime_error("use of undeclared type: " + name);
 }
 Value NullType::Default() { return Ctx::Null(); }
-Value UndefinedType::Default() { return Ctx::Undefined(); }
+Value UndefinedType::Default() { return Ctx::Null(); }
 Value StringType::Default() { return Ctx::CreateString(); }
 Value IntType::Default() { return Ctx::CreateInt(); }
 Value TemplateType::Default() {
@@ -296,7 +296,7 @@ Value TemplateType::Default() {
     array->type = shared_from_this();
     return array;
   }
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 Value ObjectType::Default() { return Ctx::CreateObject(); }
 Value FloatType::Default() { return Ctx::CreateFloat(); }
@@ -308,11 +308,11 @@ Value TupleType::Default() {
   }
   return make_shared<Tuple_T>(values);
 }
-Value CallableType::Default() { return Ctx::Undefined(); }
-Value GenericType_T::Default() { return Ctx::Undefined(); }
-Value NamedType_T::Default() { return Ctx::Undefined(); }
+Value CallableType::Default() { return Ctx::Null(); }
+Value GenericType_T::Default() { return Ctx::Null(); }
+Value NamedType_T::Default() { return Ctx::Null(); }
 Value ArrayType::Default() { return Ctx::CreateArray(); }
-Value AnyType::Default() { return Ctx::Undefined(); }
+Value AnyType::Default() { return Ctx::Null(); }
 
 StructType::StructType(const string &name,
                        vector<std::unique_ptr<Declaration>> &&fields,
@@ -412,14 +412,13 @@ auto Type_T::Equals(const Type_T *other) -> bool {
   return *other == *this || other->Name() == "any" || Name() == "any";
 }
 const string NullType::Name() const { return "null"; }
-const string UndefinedType::Name() const { return "undefined"; }
+const string UndefinedType::Name() const { return "null"; }
 const string StringType::Name() const { return "string"; }
 const string IntType::Name() const { return "int"; }
 auto TemplateType::Scope() -> Scope_T & { return *scope; }
 NamedType_T::NamedType_T(const string name) : name(name) {}
 auto TypeSystem::Initialize() -> void {
   Null = std::make_shared<NullType>();
-  Undefined = std::make_shared<UndefinedType>();
   Int = std::make_shared<IntType>();
   Float = std::make_shared<FloatType>();
   Bool = std::make_shared<BoolType>();
@@ -428,7 +427,6 @@ auto TypeSystem::Initialize() -> void {
   String = std::make_shared<StringType>();
   Any = make_shared<AnyType>();
   global_types = {{"null", Null},
-                  {"undefined", Undefined},
                   {"int", Int},
                   {"float", Float},
                   {"bool", Bool},

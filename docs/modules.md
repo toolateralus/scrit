@@ -56,7 +56,7 @@ The actual function pointer signature looks as follows:
 
 `Value myFunction(std::vector<Value> args) {...}`
 
-All functions must return a value. Void functions return `Value_T::UNDEFINED`
+All functions must return a value. Void functions return `Value_T::VNULL`
 
 
 #### Using the arguments vector & writing a simple `floor` function
@@ -72,7 +72,7 @@ Value floor(std::vector<Value> args) {
     // undefined for improper arguments, but in most cases 
     // its preferable to return a string that can be handled as
     // 'err' or something.
-    return Value_T::UNDEFINED;
+    return Value_T::VNULL;
   }
   
   float value;
@@ -80,7 +80,7 @@ Value floor(std::vector<Value> args) {
   // the ref / out value remains uninitialized, or as it was.
   // `value` is only mutated if this returns true.
   if (!Ctx::TryGetFloat(args[0], value)) {
-    return Value_T::UNDEFINED;
+    return Value_T::VNULL;
   }
   
   // use Create*typename* for most value initializations.

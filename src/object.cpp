@@ -10,7 +10,7 @@ Value Object_T::GetMember(const string &name) {
   if (scope->Contains(name))
     return scope->GetValue(name);
   else
-    return Value_T::UNDEFINED;
+    return Value_T::Null;
 }
 
 void Object_T::SetMember(const string &name, Value value,
@@ -37,7 +37,7 @@ Value Object_T::Subscript(Value key) {
     return GetMember(strKey);
   }
 
-  return UNDEFINED;
+  return Null;
 }
 
 Value Object_T::SubscriptAssign(Value key, Value value) {
@@ -52,7 +52,7 @@ Value Object_T::SubscriptAssign(Value key, Value value) {
       it->second = value;
     }
   }
-  return UNDEFINED;
+  return Null;
 }
 
 // Deep clone.

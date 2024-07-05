@@ -4,7 +4,8 @@
 #include <scrit/ctx.hpp>
 
 #define function(name) Value name(std::vector<Value> args)
-#define undefined Ctx::Undefined()
+
+#define undefined Ctx::Null()
 
 function(contains) {
   if (args.size() < 2) {
@@ -54,18 +55,18 @@ function(remove) {
 
 function(clear) {
   if (args.size() == 0) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   if (args[0]->GetPrimitiveType() == PrimitiveType::Array) {
     auto array = dynamic_cast<Array_T *>(args[0].get());
     array->values.clear();
   }
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 
 function(expand) {
-  static auto __undefined = Ctx::Undefined();
+  static auto __undefined = Ctx::Null();
   auto array = args[0]->Cast<Array_T>();
   auto count = args[1]->Cast<Int_T>()->value;
   Callable_T *callable = nullptr;
@@ -77,11 +78,11 @@ function(expand) {
 
 function(push) {
   if (args.empty()) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   if (args[0]->GetPrimitiveType() != PrimitiveType::Array) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   auto array = static_cast<Array_T *>(args[0].get());
 
@@ -89,38 +90,38 @@ function(push) {
     array->Push(args[i]);
   }
 
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 
 function(front) {
   if (args.size() == 0 || args[0]->GetPrimitiveType() != PrimitiveType::Array) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   auto array = static_cast<Array_T *>(args[0].get());
   if (array->values.size() != 0) {
     return array->values.front();
   }
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 
 function(back) {
   if (args.size() == 0 || args[0]->GetPrimitiveType() != PrimitiveType::Array) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   auto array = static_cast<Array_T *>(args[0].get());
   if (array->values.size() != 0) {
     return array->values.back();
   }
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 
 function(pop) {
   if (args.empty()) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   if (args[0]->GetPrimitiveType() != PrimitiveType::Array) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   auto array = static_cast<Array_T *>(args[0].get());
   return array->Pop();
@@ -128,7 +129,7 @@ function(pop) {
 
 function(len) {
   if (args.empty()) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   Array array;
@@ -136,7 +137,7 @@ function(len) {
     return Int_T::New(array->values.size());
   }
 
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 
 extern "C" ScritModDef *InitScritModule_std_SR_array() {
@@ -144,11 +145,11 @@ extern "C" ScritModDef *InitScritModule_std_SR_array() {
   *def->description = "provide functionality for the array type.";
   auto array = make_shared<ArrayType>();
   
-  array->Set("remove", CREATE_CALLABLE(remove, "undefined", {"any", "any"}));
+  array->Set("remove", CREATE_CALLABLE(remove, "null", {"any", "any"}));
   array->Set("contains", CREATE_CALLABLE(contains, "bool", {"any", "any"}));
-  array->Set("clear", CREATE_CALLABLE(clear, "undefined", {"any"}));
+  array->Set("clear", CREATE_CALLABLE(clear, "null", {"any"}));
   array->Set("expand", CREATE_CALLABLE(expand, "array", {"any", "int"}));
-  array->Set("push", CREATE_CALLABLE(push, "undefined", {"any", "any"}));
+  array->Set("push", CREATE_CALLABLE(push, "null", {"any", "any"}));
   array->Set("front", CREATE_CALLABLE(front, "any", {"any"}));
   array->Set("back", CREATE_CALLABLE(back, "any", {"any"}));
   array->Set("pop", CREATE_CALLABLE(pop, "any", {"any"}));

@@ -241,14 +241,10 @@ ExpressionPtr Parser::ParseOperand() {
     Eat();
     return make_unique<Literal>(info, TypeSystem::Current().Bool,
                                 Value_T::False);
-  case TType::Undefined:
-    Eat();
-    return make_unique<Literal>(info, TypeSystem::Current().Undefined,
-                                Value_T::UNDEFINED);
   case TType::Null:
     Eat();
     return make_unique<Literal>(info, TypeSystem::Current().Null,
-                                Value_T::VNULL);
+                                Value_T::Null);
   case TType::Float:
     Eat();
     return make_unique<Literal>(info, TypeSystem::Current().Float,

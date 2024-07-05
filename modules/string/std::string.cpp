@@ -17,7 +17,7 @@ function(isalnum) {
     }
     return Ctx::CreateBool(std::isalnum(value[0]));
   }
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 function(isdigit) {
   auto arg = args[0];
@@ -28,7 +28,7 @@ function(isdigit) {
     }
     return Ctx::CreateBool(std::isdigit(value[0]));
   }
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 function(ispunct) {
   auto arg = args[0];
@@ -39,7 +39,7 @@ function(ispunct) {
     }
     return Ctx::CreateBool(std::ispunct(value[0]));
   }
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 function(isalpha) {
   auto arg = args[0];
@@ -50,23 +50,23 @@ function(isalpha) {
     }
     return Ctx::CreateBool(std::isalpha(value[0]));
   }
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 function(split) {
   if (args.size() < 2 ||
       args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
       args[1]->GetPrimitiveType() != Values::PrimitiveType::String) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   string s;
   if (!Ctx::TryGetString(args[0], s)) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   string delim;
   if (!Ctx::TryGetString(args[1], delim)) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   if (!s.contains(delim)) {
@@ -85,7 +85,7 @@ function(split) {
   return Ctx::FromStringVector(tokens);
 }
 function(substring) {
-#define undefined Ctx::Undefined()
+#define undefined Ctx::Null()
   if (args.size() < 3 ||
       args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return undefined;
@@ -103,7 +103,7 @@ function(substring) {
   return Ctx::CreateString(str->value.substr(indices.first, indices.second));
 }
 function(indexOf) {
-#define undefined Ctx::Undefined()
+#define undefined Ctx::Null()
   if (args.size() < 2 ||
       args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
     return undefined;
@@ -118,7 +118,7 @@ function(indexOf) {
 }
 function(push) {
   if (args.empty()) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   if (args[0]->GetPrimitiveType() == PrimitiveType::String) {
     auto arg = static_cast<String_T *>(args[0].get());
@@ -126,38 +126,38 @@ function(push) {
       arg->value += args[i]->ToString();
     }
   }
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 function(front) {
   if (args.size() == 0 ||
       args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   string str;
   if (Ctx::TryGetString(args[0], str) && str.length() != 0) {
     return Ctx::CreateString(string(1, str.front()));
   }
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 function(back) {
   if (args.size() == 0 ||
       args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
   string str;
   if (Ctx::TryGetString(args[0], str) && str.length() != 0) {
     return Ctx::CreateString(string(1, str.back()));
   }
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 function(pop) {
   if (args.empty() || args[0]->GetPrimitiveType() != PrimitiveType::String) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   auto str_value = static_cast<String_T *>(args[0].get());
   if (str_value->value.empty()) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   string character = std::string(1, str_value->value.back());
@@ -167,7 +167,7 @@ function(pop) {
 function(len) {
   if (args.empty() ||
       args[0]->GetPrimitiveType() != Values::PrimitiveType::String) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   string result;
@@ -175,7 +175,7 @@ function(len) {
     return Int_T::New(result.length());
   }
 
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 
 function(insert) {
@@ -208,7 +208,7 @@ function(insert) {
 
 function(contains) {
   if (args.size() < 2) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   string result;
@@ -233,22 +233,22 @@ function(replace) {
       args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
       args[1]->GetPrimitiveType() != Values::PrimitiveType::String ||
       args[2]->GetPrimitiveType() != Values::PrimitiveType::String) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   string str;
   if (!Ctx::TryGetString(args[0], str)) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   string pattern;
   if (!Ctx::TryGetString(args[1], pattern)) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   string replacement;
   if (!Ctx::TryGetString(args[2], replacement)) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   size_t pos = 0;
@@ -262,19 +262,19 @@ function(replace) {
 
 function(remove) {
   if (args.empty()) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   if (args[0]->GetPrimitiveType() == Values::PrimitiveType::String) {
     string str;
     if (!Ctx::TryGetString(args[0], str)) {
-      return Ctx::Undefined();
+      return Ctx::Null();
     }
 
     if (args[1]->GetPrimitiveType() == Values::PrimitiveType::String) {
       string pattern;
       if (!Ctx::TryGetString(args[1], pattern)) {
-        return Ctx::Undefined();
+        return Ctx::Null();
       }
 
       size_t pos = 0;
@@ -285,24 +285,24 @@ function(remove) {
     }
     return Ctx::CreateString(str);
   }
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 
 function(without) {
   if (args.empty() ||
       args[0]->GetPrimitiveType() != Values::PrimitiveType::String ||
       args[1]->GetPrimitiveType() != Values::PrimitiveType::String) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   string target;
   if (!Ctx::TryGetString(args[0], target)) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   string pattern;
   if (!Ctx::TryGetString(args[1], pattern)) {
-    return Ctx::Undefined();
+    return Ctx::Null();
   }
 
   size_t pos = 0;
@@ -330,7 +330,7 @@ extern "C" ScritModDef *InitScritModule_std_SR_string() {
   type->Set("front", CREATE_CALLABLE(front, "string", {"string"}));
   type->Set("back", CREATE_CALLABLE(back, "string", {"string"}));
   type->Set("pop", CREATE_CALLABLE(pop, "string", {"string"}));
-  type->Set("push", CREATE_CALLABLE(push, "undefined", {"string", "string"}));
+  type->Set("push", CREATE_CALLABLE(push, "null", {"string", "string"}));
   type->Set("len", CREATE_CALLABLE(len, "int", {"string"}));
   type->Set("insert",
             CREATE_CALLABLE(insert, "string", {"string", "int", "string"}));
@@ -357,7 +357,7 @@ extern "C" ScritModDef *InitScritModule_std_SR_string() {
   def->AddFunction("back", CREATE_FUNCTION(back, "string", {"string"}));
   def->AddFunction("pop", CREATE_FUNCTION(pop, "string", {"string"}));
   def->AddFunction("push",
-                   CREATE_FUNCTION(push, "undefined", {"string", "string"}));
+                   CREATE_FUNCTION(push, "null", {"string", "string"}));
   def->AddFunction("len", CREATE_FUNCTION(len, "int", {"string"}));
   def->AddFunction(
       "insert", CREATE_FUNCTION(insert, "string", {"string", "int", "string"}));

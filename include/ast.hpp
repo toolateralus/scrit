@@ -247,7 +247,9 @@ struct Break : Statement {
   void Accept(ASTVisitor *visitor) override;
 };
 struct Return : Statement {
-  Return(SourceInfo &info) : Statement(info) {}
+  Return(SourceInfo &info) : Statement(info) {
+    value = nullptr;
+  }
   Return(SourceInfo &info, ExpressionPtr &&value);
   ExpressionPtr value;
   ExecutionResult Execute() override;

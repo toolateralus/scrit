@@ -11,7 +11,7 @@ return "#include <scrit/scritmod.hpp>
 // provide your function and object definitions here.
 // Note that these will stay alive in the language until the using ... statement goes out of scope.
 static Value doSomething(std::vector<Value> values) {
-  return Value_T::UNDEFINED;
+  return Value_T::VNULL;
 }
 
 // Link your module with your definitions here

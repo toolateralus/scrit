@@ -661,35 +661,22 @@ BlockPtr Parser::ParseBlock(ParametersPtr &params, TypeParamsPtr &&type_params) 
     // a match or complex expression etc.
     if (Peek(1).type == TType::RCurly &&
         (Peek().family == TFamily::Identifier ||
-         Peek().family == TFamily::Literal || Peek().type == TType::Undefined ||
+         Peek().family == TFamily::Literal || 
          Peek().type == TType::Null || Peek().type == TType::False ||
-         Peek().type == TType::True)) {
+         Peek().type == TType::True || Peek().type == TType::LCurly || Peek().type == TType::LBrace)) {
       statements.push_back(make_unique<Return>(info, ParseExpression()));
       break;
     }
-
     // add each statement to the block.
     auto statement = ParseStatement();
-    statements.push_back(std::move(statement));
     next = Peek();
-
-    // If we get a return statement, we just discard any unreachable code.
-    // this reduces some memory usage and simplifies the AST.
-    if (dynamic_cast<Return *>(statement.get())) {
-      // eat up the remainder of the block following the return statement we
-      // just paresed.
-      while (!tokens.empty() && next.type != TType::RCurly) {
-        next = Eat();
-      }
-      // break the parse loop.
-      break;
-    }
-
+    statements.push_back(std::move(statement));
+    
     if (next.type == TType::RCurly) {
       break;
     }
   }
-
+  
   Expect(TType::RCurly);
   ASTNode::context.SetCurrentScope(last_scope);
   return make_unique<Block>(info, std::move(statements), scope);
@@ -722,7 +709,7 @@ BlockPtr Parser::ParseBlock() {
     // a match or complex expression etc.
     if (Peek(1).type == TType::RCurly &&
         (Peek().family == TFamily::Identifier ||
-         Peek().family == TFamily::Literal || Peek().type == TType::Undefined ||
+         Peek().family == TFamily::Literal ||
          Peek().type == TType::Null || Peek().type == TType::False ||
          Peek().type == TType::True)) {
       statements.push_back(make_unique<Return>(info, ParseExpression()));
@@ -858,7 +845,7 @@ StatementPtr Parser::ParseContinue() { return make_unique<Continue>(info); }
 
 StatementPtr Parser::ParseReturn() {
   auto next = Peek();
-  if (tokens.empty() || IsLiteralOrExpression(next)) {
+  if (tokens.empty() || !IsLiteralOrExpression(next)) {
     return make_unique<Return>(info);
   }
   return make_unique<Return>(info, ParseExpression());

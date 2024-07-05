@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
 
   Value_T::False.reset();
   Value_T::True.reset();
-  Value_T::UNDEFINED.reset();
-  Value_T::VNULL.reset();
+  Value_T::Null.reset();
+  Value_T::Null.reset();
   TypeSystem::Current().global_types.clear();
 }

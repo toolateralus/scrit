@@ -68,18 +68,16 @@ struct Parser final {
   ArgumentsPtr ParseArguments();
 
   DeletePtr ParseDelete();
-
-  // This riduculous function is to check if the next token is a part of an
-  // expression. this is how we judge whether to parse a return expression or
-  // not. We should probably make a better way to do this, just don't know how.
-  static bool IsLiteralOrExpression(const Token &next) {
-    return (next.family == TFamily::Keyword && next.type != TType::Null &&
-            next.type != TType::Undefined && next.type != TType::False &&
-            next.type != TType::True && next.type != TType::Match) ||
-           (next.family == TFamily::Operator && next.type != TType::LParen &&
-            next.type != TType::LCurly &&
-            (next.type != TType::Sub && next.type != TType::Not));
-  }
+  
+// This function checks if the next token is part of an expression to decide
+// whether to parse a return expression or not. A better implementation is needed.
+static bool IsLiteralOrExpression(const Token &next) {
+  const auto literal = next.family == TFamily::Literal;
+  const auto literal_kw = next.family == TFamily::Keyword && (next.type == TType::False || next.type == TType::True || next.type == TType::Null);
+  const auto iden = next.family == TFamily::Identifier;
+  const auto valid_op = next.type == TType::LCurly || next.type == TType::LBrace;
+  return literal || literal_kw || iden || valid_op;
+}
 
   Type ParseReturnType();
 

@@ -15,24 +15,7 @@ TEST(EqTest, StrEquals) {
   ASSERT_TRUE(NOT_EMPTY->Equals(OTHER_NOT_EMPTY));
   ASSERT_FALSE(EMPTY->Equals(NOT_EMPTY));
 }
-TEST(EqTest, UndefinedNullEquals) {
-  Undefined UNDEFINED = Value_T::UNDEFINED;
-  Null NULLT = Value_T::VNULL;
-  ASSERT_TRUE(UNDEFINED->Equals(UNDEFINED));
-  ASSERT_TRUE(NULLT->Equals(NULLT));
-  ASSERT_FALSE(UNDEFINED->Equals(NULLT));
-  ASSERT_FALSE(NULLT->Equals(UNDEFINED));
-}
-TEST(EqTest, UndefinedNullEqualsUpcasted) {
-  Undefined UNDEFINED = Value_T::UNDEFINED;
-  Null NULLT = Value_T::VNULL;
-  Value UNDEFINED_V = UNDEFINED;
-  Value NULL_V = NULLT;
-  ASSERT_TRUE(UNDEFINED_V->Equals(UNDEFINED_V));
-  ASSERT_TRUE(NULL_V->Equals(NULL_V));
-  ASSERT_FALSE(UNDEFINED_V->Equals(NULL_V));
-  ASSERT_FALSE(NULL_V->Equals(UNDEFINED_V));
-}
+
 TEST(EqTest, IntEquals) {
   Int ZERO = Int_T::New(0);
   Int ONE = Int_T::New(1);

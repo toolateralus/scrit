@@ -14,10 +14,7 @@
 
 Bool Value_T::True = Bool_T::New(true);
 Bool Value_T::False = Bool_T::New(false);
-Null Value_T::VNULL = make_shared<Null_T>();
-Undefined Value_T::UNDEFINED = make_shared<::Undefined_T>();
-
-
+Null Value_T::Null = make_shared<Null_T>();
 
 Value Array_T::At(Int index) {
   if (values.size() <= (size_t)index->value) {
@@ -74,51 +71,7 @@ Array Array_T::New() {
   auto values = vector<Value>{};
   return make_shared<Array_T>(values);
 }
-Value NativeCallable_T::Call(std::vector<Value> &args) {
-  
-  Value result;
 
-  CheckParameterTypes(args);
-
-  if (function->ptr)
-    result = function->ptr(args);
-  
-  
-  // we shouldn't need to do this
-  // CheckReturnType(result);
-
-  
-  if (result == nullptr) {
-    return UNDEFINED;
-  } else {
-    return result;
-  }
-}
-Value Callable_T::Call(ArgumentsPtr &args, TypeArgsPtr &type_args) {
-  auto values = Call::GetArgsValueList(args);
-  
-  auto last_scope = ASTNode::context.CurrentScope();
-  ASTNode::context.SetCurrentScope(scope);
-  
-  if (type_params)
-    type_params->Apply(type_args->types);
-  
-  params->Apply(block->scope, args->values);
-  auto result = block->Execute();
-  
-  switch (result.controlChange) {
-  case ControlChange::None:
-    ASTNode::context.SetCurrentScope(last_scope);
-    return Value_T::VNULL;
-  case ControlChange::Return: {
-    ASTNode::context.SetCurrentScope(last_scope);
-    return result.value;
-  }
-  default:
-    ASTNode::context.SetCurrentScope(last_scope);
-    throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
-  }
-}
 void NativeCallable_T::CheckParameterTypes(vector<Value> &values) {
   for (auto i = 0; i < values.size(); ++i) {
     if (function->parameterTypes.size() <= i) {
@@ -134,32 +87,21 @@ void NativeCallable_T::CheckParameterTypes(vector<Value> &values) {
     }
   }
 }
+
+void Callable_T::CheckReturnType(Value &result) {
+  if (!result->type->Equals(std::dynamic_pointer_cast<CallableType>(type)->returnType.get())) {
+    throw TypeError(result->type, type,
+                    "Invalid return type from function");
+  }
+}
+
 void NativeCallable_T::CheckReturnType(Value &result) {
   if (!result->type->Equals(function->returnType.get())) {
     throw TypeError(result->type, function->returnType,
                     "Invalid return type from function " + function->name);
   }
 }
-Value NativeCallable_T::Call(unique_ptr<Arguments> &args, TypeArgsPtr &type_args) {
-  auto values = Call::GetArgsValueList(args);
-  Value result;
 
-  CheckParameterTypes(values);
-  
-  if (function->ptr)
-    result = function->ptr(values);
-  
-  
-  // We don't really need to do this: the caller should type check the evaluation of the expression anyway.
-  //CheckReturnType(result);
-  
-  
-  if (result == nullptr) {
-    return UNDEFINED;
-  } else {
-    return result;
-  }
-}
 NativeCallable_T::NativeCallable_T(const shared_ptr<NativeFunction> &function)
     : function(function) {
   type = TypeSystem::Current().FromCallable(function->returnType,
@@ -176,7 +118,7 @@ Value Float_T::Add(Value other) {
         Float_T::New(this->value + static_cast<Int_T *>(other.get())->value);
     return i;
   }
-  return Value_T::VNULL;
+  return Value_T::Null;
 }
 Value Float_T::Subtract(Value other) {
   if (other->GetPrimitiveType() == PrimitiveType::Float) {
@@ -188,7 +130,7 @@ Value Float_T::Subtract(Value other) {
         Float_T::New(this->value - static_cast<Int_T *>(other.get())->value);
     return i;
   }
-  return Value_T::VNULL;
+  return Value_T::Null;
 }
 Value Float_T::Multiply(Value other) {
   if (other->GetPrimitiveType() == PrimitiveType::Float) {
@@ -200,7 +142,7 @@ Value Float_T::Multiply(Value other) {
         Float_T::New(this->value * static_cast<Int_T *>(other.get())->value);
     return i;
   }
-  return Value_T::VNULL;
+  return Value_T::Null;
 }
 Value Float_T::Divide(Value other) {
   if (other->GetPrimitiveType() == PrimitiveType::Float) {
@@ -212,7 +154,7 @@ Value Float_T::Divide(Value other) {
         Float_T::New(this->value / static_cast<Int_T *>(other.get())->value);
     return i;
   }
-  return Value_T::VNULL;
+  return Value_T::Null;
 }
 void Float_T::Set(Value newValue) {
   if (newValue->GetPrimitiveType() == PrimitiveType::Float) {
@@ -341,10 +283,7 @@ string Bool_T::ToString() const {
   static string _FALSE = "false";
   return value ? _TRUE : _FALSE;
 }
-string Undefined_T::ToString() const {
-  static string undefined = "undefined";
-  return undefined;
-}
+
 string Null_T::ToString() const {
   static string null = "null";
   return null;
@@ -380,12 +319,8 @@ bool Array_T::Equals(Value value) { return value.get() == this; }
 bool NativeCallable_T::Equals(Value value) { return value.get() == this; }
 bool Callable_T::Equals(Value value) { return value.get() == this; }
 
-bool Undefined_T::Equals(Value value) {
-  return value.get() == this ||
-         value->GetPrimitiveType() == PrimitiveType::Undefined;
-}
 bool Null_T::Equals(Value value) {
-  return value == Value_T::VNULL ||
+  return value == Value_T::Null ||
          value->GetPrimitiveType() == PrimitiveType::Null;
 }
 
@@ -399,22 +334,22 @@ Value String_T::SubscriptAssign(Value key, Value value) {
       this->value.insert(idx, string);
     }
   }
-  return UNDEFINED;
+  return Null;
 }
-Value Value_T::Subscript(Value) { return UNDEFINED; }
+Value Value_T::Subscript(Value) { return Null; }
 Value String_T::Subscript(Value key) {
   int index;
   if (!Ctx::TryGetInt(key, index) || (size_t)index > value.length()) {
-    return UNDEFINED;
+    return Null;
   }
   return Ctx::CreateString(std::string() + this->value[index]);
 }
 
-Value Value_T::SubscriptAssign(Value, Value) { return UNDEFINED; }
+Value Value_T::SubscriptAssign(Value, Value) { return Null; }
 Value Array_T::Subscript(Value key) {
   int index;
   if (!Ctx::TryGetInt(key, index)) {
-    return UNDEFINED;
+    return Null;
   }
   BoundsCheck(index);
   return values[index];
@@ -447,19 +382,17 @@ Value Array_T::SubscriptAssign(Value key, Value value) {
     BoundsCheck(idx);
     values[idx] = value;
   }
-  return UNDEFINED;
+  return Null;
 }
 
 namespace Values {
 string TypeToString(PrimitiveType type) {
   switch (type) {
-
+  
   case PrimitiveType::Invalid:
     return "invalid";
   case PrimitiveType::Null:
     return "null";
-  case PrimitiveType::Undefined:
-    return "undefined";
   case PrimitiveType::Float:
     return "float";
   case PrimitiveType::Int:
@@ -482,7 +415,7 @@ string TypeToString(PrimitiveType type) {
   return "";
 }
 
-Value Value_T::Clone() { return Value_T::UNDEFINED; }
+Value Value_T::Clone() { return Value_T::Null; }
 
 Value Float_T::Clone() { return Ctx::CreateFloat(value); }
 Value String_T::Clone() { return Ctx::CreateString(string(value)); }
@@ -514,7 +447,7 @@ auto Tuple_T::Deconstruct(vector<string> &idens) const -> void {
   
   for (size_t i = max; i < idens.size(); ++i) {
     auto &iden = idens[i];
-    ASTNode::context.CurrentScope()->Declare(iden, Ctx::Undefined(), Mutability::Mut);
+    ASTNode::context.CurrentScope()->Declare(iden, Ctx::Null(), Mutability::Mut);
   }
 }
 
@@ -568,7 +501,7 @@ string Tuple_T::ToString() const {
     return "()";
   }
 }
-Value Lambda_T::Clone() { return Ctx::Undefined(); }
+Value Lambda_T::Clone() { return Ctx::Null(); }
 bool Lambda_T::Equals(Value other) {
   auto o = std::dynamic_pointer_cast<Lambda_T>(other);
   if (o) {
@@ -594,6 +527,71 @@ Tuple_T::Tuple_T(vector<Value> values) : Value_T(nullptr), values(values) {
   this->type = TypeSystem::Current().FromTuple(types);
 }
 
+Value NativeCallable_T::Call(std::vector<Value> &args) {
+  
+  Value result;
+
+  CheckParameterTypes(args);
+
+  if (function->ptr)
+    result = function->ptr(args);
+  
+  
+  // we shouldn't need to do this
+  CheckReturnType(result);
+
+  
+  if (result == nullptr) {
+    return Null;
+  } else {
+    return result;
+  }
+}
+Value Callable_T::Call(ArgumentsPtr &args, TypeArgsPtr &type_args) {
+  auto values = Call::GetArgsValueList(args);
+  
+  auto last_scope = ASTNode::context.CurrentScope();
+  ASTNode::context.SetCurrentScope(scope);
+  
+  if (type_params)
+    type_params->Apply(type_args->types);
+  
+  params->Apply(block->scope, args->values);
+  auto result = block->Execute();
+  
+  
+  
+  ASTNode::context.SetCurrentScope(last_scope);
+  switch (result.controlChange) {
+  case ControlChange::None:
+    return Value_T::Null;
+  case ControlChange::Return: {
+    CheckReturnType(result.value);
+    return result.value;
+  }
+  default:
+    throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
+  }
+}
+
+Value NativeCallable_T::Call(unique_ptr<Arguments> &args, TypeArgsPtr &type_args) {
+  auto values = Call::GetArgsValueList(args);
+  Value result;
+  
+  CheckParameterTypes(values);
+  
+  if (function->ptr)
+    result = function->ptr(values);
+  
+  CheckReturnType(result);
+  
+  
+  if (result == nullptr) {
+    return Null;
+  } else {
+    return result;
+  }
+}
 Value Callable_T::Call(std::vector<Value> &values) {
   size_t i = 0;
   auto last_scope = ASTNode::context.CurrentScope();
@@ -604,13 +602,14 @@ Value Callable_T::Call(std::vector<Value> &values) {
   
   switch (result.controlChange) {
   case ControlChange::None:
-    return Value_T::VNULL;
+    return Value_T::Null;
   case ControlChange::Return:
     return result.value;
   default:
     throw std::runtime_error("Uncaught " + CC_ToString(result.controlChange));
   }
 }
+
 Float_T::Float_T(float value) : Value_T(TypeSystem::Current().Float) {
   this->value = value;
 }
@@ -632,7 +631,6 @@ String_T::String_T(const string &value)
 Callable_T::Callable_T() : Value_T(TypeSystem::Current().NativeCallable) {}
 
 Null_T::Null_T() : Value_T(TypeSystem::Current().Null) {}
-Undefined_T::Undefined_T() : Value_T(TypeSystem::Current().Undefined) {}
 Bool_T::Bool_T(bool value) : Value_T(TypeSystem::Current().Bool) {
   this->value = value;
 }
@@ -653,15 +651,13 @@ Tuple_T::~Tuple_T() {}
 NativeCallable_T::~NativeCallable_T() {}
 Object_T::~Object_T() {}
 Bool_T::~Bool_T() {}
-Undefined_T::~Undefined_T() {}
 Null_T::~Null_T() {}
 Lambda_T::~Lambda_T() {}
 
-Value Undefined_T::Clone() { return Ctx::Undefined(); }
 Value Null_T::Clone() { return Ctx::Null(); }
 
 Value Value_T::UndefinedOfType(const Type &type) {
-  auto undefined = Ctx::Undefined();
+  auto undefined = Ctx::Null();
   undefined->type = type;
   return undefined;
 }

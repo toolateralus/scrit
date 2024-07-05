@@ -27,11 +27,11 @@ std::vector<string> Using::activeModules = {};
 
 Context ASTNode::context = {};
 ExecutionResult ExecutionResult::None =
-    ExecutionResult(ControlChange::None, Value_T::UNDEFINED);
+    ExecutionResult(ControlChange::None, Value_T::Null);
 ExecutionResult ExecutionResult::Break =
-    ExecutionResult(ControlChange::Break, Value_T::UNDEFINED);
+    ExecutionResult(ControlChange::Break, Value_T::Null);
 ExecutionResult ExecutionResult::Continue =
-    ExecutionResult(ControlChange::Continue, Value_T::UNDEFINED);
+    ExecutionResult(ControlChange::Continue, Value_T::Null);
 
 // ##############################################
 // ##### CONSTRUCTORS AND DECONSTRUCTORS ########
@@ -55,11 +55,11 @@ If::If(SourceInfo &info, ExpressionPtr &&condition, BlockPtr &&block)
   this->block = std::move(block);
 }
 Arguments::Arguments(SourceInfo &info, vector<ExpressionPtr> &&args)
-    : Expression(info, TypeSystem::Current().Undefined) {
+    : Expression(info, TypeSystem::Current().Null) {
   this->values = std::move(args);
 }
 TypeArguments::TypeArguments(SourceInfo &info, vector<Type> &&types)
-    : Expression(info, TypeSystem::Current().Undefined) {
+    : Expression(info, TypeSystem::Current().Null) {
   this->types = std::move(types);
 }
 Parameters::Parameters(SourceInfo &info, std::vector<Param> &&params)
@@ -377,7 +377,7 @@ Value Operand::Evaluate() { return expression->Evaluate(); }
 Value Identifier::Evaluate() {
   auto var = context.Find(name);
   if (var == nullptr) {
-    var = Ctx::Undefined();
+    var = Ctx::Null();
   }
   return var;
 }
@@ -389,7 +389,7 @@ Value Arguments::Evaluate() {
   return make_shared<Tuple_T>(values);
 }
 Value TypeArguments::Evaluate() {
-  return Ctx::Undefined();
+  return Ctx::Null();
 }
 ExecutionResult Parameters::Execute() { return ExecutionResult::None; }
 ExecutionResult TypeParameters::Execute() { return ExecutionResult::None; }
@@ -401,13 +401,12 @@ ExecutionResult Return::Execute() {
     return ExecutionResult(ControlChange::Return, value->Evaluate());
   // return undefined implicitly.
   else
-    return ExecutionResult(ControlChange::Return, Value_T::UNDEFINED);
+    return ExecutionResult(ControlChange::Return, Value_T::Null);
 }
 Value ReturnCopyIfNeeded(Value result) {
   switch (result->GetPrimitiveType()) {
   case Values::PrimitiveType::Invalid:
   case Values::PrimitiveType::Null:
-  case Values::PrimitiveType::Undefined:
   case Values::PrimitiveType::Object:
   case Values::PrimitiveType::Array:
   case Values::PrimitiveType::Callable:
@@ -430,7 +429,6 @@ void ApplyCopySemantics(Value &result) {
   switch (result->GetPrimitiveType()) {
   case Values::PrimitiveType::Invalid:
   case Values::PrimitiveType::Null:
-  case Values::PrimitiveType::Undefined:
   case Values::PrimitiveType::Object:
   case Values::PrimitiveType::Array:
   case Values::PrimitiveType::Callable:
@@ -453,7 +451,6 @@ void ApplyCopySemantics(ExecutionResult &result) {
   switch (result.value->GetPrimitiveType()) {
   case Values::PrimitiveType::Invalid:
   case Values::PrimitiveType::Null:
-  case Values::PrimitiveType::Undefined:
   case Values::PrimitiveType::Object:
   case Values::PrimitiveType::Array:
   case Values::PrimitiveType::Callable:
@@ -589,7 +586,7 @@ Value Call::Evaluate() {
     }
   }
   ASTNode::context.PopStackFrame();
-  return Value_T::UNDEFINED;
+  return Value_T::Null;
 }
 ExecutionResult Call::Execute() {
   Evaluate();
@@ -765,7 +762,7 @@ Value UnaryExpr::Evaluate() {
     throw std::runtime_error("invalid operator in unary expression " +
                              TTypeToString(op));
   }
-  return Value_T::UNDEFINED;
+  return Value_T::Null;
 }
 Value BinExpr::Evaluate() {
   auto left = this->left->Evaluate();
@@ -777,8 +774,7 @@ Value BinExpr::Evaluate() {
   
   switch (op) {
   case TType::NullCoalescing: {
-    if (left->GetPrimitiveType() == PrimitiveType::Null ||
-        left->GetPrimitiveType() == PrimitiveType::Undefined) {
+    if (left->GetPrimitiveType() == PrimitiveType::Null) {
       return right;
     }
     return left;
@@ -963,8 +959,7 @@ Value CompAssignExpr::Evaluate() {
     return lvalue;
   }
   case TType::NullCoalescingEq: {
-    if (lvalue->GetPrimitiveType() == PrimitiveType::Undefined ||
-        lvalue->GetPrimitiveType() == PrimitiveType::Null) {
+    if (lvalue->GetPrimitiveType() == PrimitiveType::Null) {
       auto result = rvalue;
       if (iden) {
         context.CurrentScope()->Assign(iden->name, result);
@@ -998,14 +993,14 @@ Value Match::Evaluate() {
   if (branch_default)
     return branch_default->Evaluate();
   else
-    return Value_T::UNDEFINED;
+    return Value_T::Null;
 }
 Value Lambda::Evaluate() {
   if (block) {
     auto result = block->Execute();
     if (result.controlChange != ControlChange::Return ||
         result.value == nullptr) {
-      return Value_T::UNDEFINED;
+      return Value_T::Null;
     }
     return result.value;
   } else if (expr) {
@@ -1365,7 +1360,7 @@ void Parameters::ForwardDeclare(Scope scope) {
     scope->Declare(param.name, Value_T::UndefinedOfType(param.type), param.mutability);
   }
 }
-Value TypeIdentifier::Evaluate() { return Ctx::Undefined(); }
+Value TypeIdentifier::Evaluate() { return Ctx::Null(); }
 
 Value ScopeResolution::Evaluate() {
   auto resolution = context.Resolve(this);
@@ -1378,7 +1373,7 @@ Value ScopeResolution::Evaluate() {
 }
 
 ScopeResolution::ScopeResolution(SourceInfo &info, vector<string> &identifiers)
-    : Expression(info, TypeSystem::Current().Undefined) {
+    : Expression(info, TypeSystem::Current().Null) {
   for (const auto &iden : identifiers) {
     full_path += iden;
 
