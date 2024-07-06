@@ -1,6 +1,6 @@
+#include "type.hpp"
 #include "context.hpp"
 #include "ast.hpp"
-#include "type.hpp"
 #include "value.hpp"
 #include <stdexcept>
 #include "ast_serializer.hpp"
