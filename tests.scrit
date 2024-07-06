@@ -203,21 +203,15 @@ struct Tests {
   }
   // TODO:
   func test_recursion(self: Tests) {
-    // TODO: fix recursion
     func count_down(n: int) -> int {
       if n > 0 { return count_down(n - 1) }
       return n
     }
-    // symbol lookup fails.
-    // when count_down(n - 1) is called,
-    // it gets null as n, even though
-    // seperating n - 1 into a local var and printing it
-    // prints the actual result of n - 1 
-    //assert(false, "recursion doesnt work right now")
+    assert(count_down(10) == 0, "recursion test failed")
   }
   func run(self: Tests) {
     // self.test_op_overload() :: FAILING
-    // self.test_recursion()   :: FAILING
+    self.test_recursion()
     
     self.test_fn_ptr()
     self.test_conditionals()
