@@ -37,7 +37,13 @@ Token Parser::Expect(const TType ttype) {
 }
 
 unique_ptr<Program> Parser::Parse(vector<Token> &&tokens) {
-
+  
+  // TODO: figure out how to do this without causing cyclic pointer references.
+  auto scope = ASTNode::context.CurrentScope();  
+  auto global = make_shared<Object_T>(scope);
+  scope->Declare("global", global, Mutability::Mut);
+  
+  
   std::reverse(tokens.begin(), tokens.end());
   this->tokens = std::move(tokens);
   vector<StatementPtr> statements;
@@ -371,8 +377,9 @@ unique_ptr<FunctionDecl> Parser::ParseFunctionDeclaration() {
   last_scope->Declare(name, callable, Mutability::Const);
   
   auto block = ParseBlock(param_clone, std::move(type_param_clone));
-  ASTNode::context.SetCurrentScope(last_scope);
   callable->block = std::move(block);
+  
+  ASTNode::context.SetCurrentScope(last_scope);
   
   return make_unique<FunctionDecl>(info, name, callable);
 }

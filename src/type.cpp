@@ -324,6 +324,7 @@ StructType::StructType(const string &name,
 }
 
 Value StructType::Default() {
+  scope->Clear();
   ASTNode::context.SetCurrentScope(scope);
   for (const auto &field : fields) {
     field->Execute();

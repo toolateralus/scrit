@@ -6,54 +6,110 @@ Thanks.
 
 
 ## declarations
-  `i = 0`
-   
-  `array = []`
+
+Variables without mutability modifiers are const by default.
+
+in the below examples, to make any of these mutable,
+we would just use
+
+`let mut ...`
+
+or to explicitly declare const
+
+`let const ...`
+
+### type inferred declarations:
+
+
+`let i = 0` : `type= int`
+
+`let b = false` : `type= bool`
+
+`let f = 0.0` : `type= float`
   
-  `array = [0,1,2,3]`
+`let arr = []` : `type= array`
+
+`let arr = [0,1,2,3]` : `type= array<int>`
+
+`let obj = {}` : `type= object`
   
-  `object = {}`
+### explicitly typed declarations:
   
+`let i: int = 0`
+
+`let f: float = 0.0`
+
+`let b: bool = false`
+
+`let a: array = []`
+
+`let a: array<int> = [0,1,2,3]`
+
+`let obj: object = {}`
+
+### re-definition of variables
+
+```rust
+let x = 0
+let x = false
+```
+
+This is valid syntax. 
+re-defining a variable will destroy any existing variables
+that exist with that name in this scope, and provide the new definition.
+
+variable shadowing works, so doing the below will create a new local
+not overwrite the existing variable in the parent scope.
+```rust
+let something = 10
+func f() {
+  let something = 20
+  println(something)
+}
+```
+
+
 
 ## arrays
 
 ### Pushing values 
-```ts
+This is one example of the many functions provided by `std::array`
+Check the module's documentation for more info.
 
-array = []
+```rust
+
+// include the array methods from the std::array
+// module. 
+using std::array
+
+let mut arr = []
 
 // invalid, out of range.
-array[0] = 10
+arr[0] = 10
 
-// expand array (since its empty)
-push(array, 10)
-
-```
-
-### Popping values
-```ts
-
-array = [0,1,2]
-
-
-x = pop(array)
-
-// x == 2
+// after this, arr[0] == 10.
+arr.push(10)
 
 ```
 
 ### Indexing & Subscript
-```ts
 
-array = [1]
+```rust 
 
-array[0] = 10
+let mut arr = [1]
 
-println(array[0])
+// prints 1
+println(arr[0])
 
-array = [func(arg) { println(arg)}]
+arr[0] = 10
 
-array[0]("Hello")
+// prints 10
+println(arr[0])
+
+// place a function pointer in the array
+arr = [func(f : any) { println(arg)}]
+
+arr[0]("Hello")
 
 // prints hello
 ```
@@ -62,32 +118,47 @@ array[0]("Hello")
 ### objects
 
 regular object.
-```ts
+```rust
 
-object = {
-  member = 10
-  func method() {
-    // both of these are valid.
-    // methods are executed from the object's context.
-    println(this.member)
-    println(member)
+let object = {
+  member = 10 // if this were to be mutated, it would need
+  mut member = 10
+  
+  // for methods, we need to explicitly take self as a parameter.
+  // If not, the interpeter will pass it to it, and it will throw an error complaining about too many arguments being passed to a function.
+  func method(self: object) {
+    println(self.member)
+  }
+  
+  // to make mutations to self, simply declare a mut param.
+  func method1(mut self: object) {
+    self.member = 100
   }
 }
 
+// only works if its declared in the object as mut.
 object.member = 200
 
+// call the methods.
 object.method()
+
+object.method1()
 
 ```
 
-map-style (kvps with [] access)
+map-style (key-value pairs with [] access)
 ```ts
-map = {}
+let map = {}
 
 value = 10
 
+// this fails, because we have a strict type system.
+// we cannot declare variables in this fashion.
+// this is to be worked on, to make dictionaries cheap and easy.
 map["myKey"] = value
 
+
+// prints null or throws an error complaining about not finding the variable.
 println(map["myKey"])
 
 // prints 10
@@ -95,28 +166,77 @@ println(map["myKey"])
 
 
 
-## compound assignment
-- += , -= etc for arithmetic
-- ++ and --
-  
-## free functions 
+## structs
 
-parameterless
-  
-`func funcName() {}`
-  
-  
-parameterized function
-``` go
-func funcName(param, param1) {
-  println(param, param1)
+structs are currently the only way to define a custom type.
+They do not have oop features like inheritance, but they do have member methods.
+
+They work just like [objects](#objects), except they are strongly typed, and not treated as a generic object.
+
+```rust
+
+struct MyStruct {
+  func print_members(self: MyStruct) {
+    // this return tuples, key being a string, and v being 
+    // whatever type that field is.
+    for k,v : self {
+      println(k + ": " + v.tostr())
+    }
+  }
 }
+
 ```
 
 
-default values; 
+## compound assignment
+
+- += , -= etc for arithmetic
+- ++ and --
+
+these are all valid statements.
+```rust
+let mut i = 0
+i += 10
+i -= 10
+i++
+++i
+--i
+i++
+```
+  
+#
+  
+## free functions 
+
+### function typing & inferred 'null' return type.
+
+function declarations have many modes
+
+`func someFunc() {}`
+
+has a type of `func() -> null`
+
+`func someFunc() -> int { 0 }`
+
+has a type of `func() -> int`
+
+  
+### parameterized function
+
+#### for const (immutable) parameters..
 ``` go
-func funcName(param = {}, param1 = [], param2 = SomeConstructorFunction()) {
+func funcName(param : paramType, param1: paramType) {
+  println(param, param1)
+}
+```
+#### for mutable parameters..
+```go 
+func funcName(mut param: paramType, ...) {...}
+```
+
+#### default values; 
+``` go
+func funcName(param: object = {}, param1: array = [], param2: someType = someType()) {
   println(param, param1, param2)
 } 
 
@@ -129,14 +249,53 @@ funcName(0,1,2)
 // it would print 0, 1 and 2 because we provided those arguments.
 
 
-funcName(undefined, undefined, 2)
+funcName(null, null, 2)
 // would still print 
 // undefined, undefined, 2
 // because values were provided.
 
 ```
 
-  
+
+## type constructors
+
+all types can be default constructed with this syntax
+
+`let i : int` 
+
+or in an object 
+```go
+{ 
+  i : int,
+  v : int,
+}
+```
+
+however, explicit constructors can be used.
+
+`let i = int() // defaults to 0`
+
+`let instance = MyStruct()`
+
+and for structs, explicit constructors will instantiate members in the order they were declared. so, for this struct:
+
+also, note that const fields can be set with constructors, but they cannot be set again after instantiation.
+```rust
+struct Some {
+  const n: int, 
+  const v = false,
+}
+
+let instance = Some(10, true)
+
+println(instance)
+
+// prints 
+// { "n": 10, "v": true }
+
+```
+
+
 ## anonymous function
 ``` go
 // this executes in place.
@@ -144,7 +303,7 @@ func() {
   
 }()
 
-// assign the func to a var
+// assign the func to a var, a fn pointer.
 
 f = func() {
   
@@ -199,7 +358,7 @@ o = {
 
 ## Null coalescing
 
-if you want to assign an object that may be null or undefined only when it is null or undefined you may use `??=`
+if you want to assign an object that may be null  only when it is null you may use `??=`
 
 ``` js
 myObject = { someThing = 20 }
@@ -210,10 +369,10 @@ println(myObject)
 
 // this will print
 // { someThing = 20 }
-// because myObject was not null or undefined when ??= was used
+// because myObject was not null when ??= was used
 
 
-myObject = undefined
+myObject = null
 
 
 myObject ??=  {
@@ -224,7 +383,7 @@ println(myObject)
 
 // this will print
 // {}
-// because myObject was null or undefined (undefined in this case)
+// because myObject was null
 // when ??= was used.
 
 ```
@@ -233,11 +392,11 @@ for within expressions, you may use the same logic, but with `??`
 
 ``` js
 
-myValue = undefined ?? 10
+myValue = null ?? 10
 
 println(myValue)
 
-// this will print 10 because the lhs was undefined
+// this will print 10 because the lhs was null
 
 
 myValue = 10
@@ -246,7 +405,7 @@ myOtherValue = myValue ?? 200
 
 println(myValue)
 
-// this will print 10 because the lhs was not null or undefined when ?? was used.
+// this will print 10 because the lhs was not null when ?? was used.
 
 ```
 
@@ -348,6 +507,53 @@ println(vec2.mag)
 ```
 
 
+## Range based for loops 
+
+Range based for loops can be used to iterate over a collection of elements.
+
+A collection could be
+- an array
+- an object or struct instance.
+  
+the syntax goes as follows:
+
+```rust
+for LOCAL_VARIABLE : MY_COLLECTION {...}
+
+// OR
+
+for tuple, deconstructed, here : MY_OBJECT_OR_TUPLE_ARRAY { ... }
+```
+
+For more readable examples
+
+```rust
+
+
+// Tuples deconstructed from an array
+let n = [(0,0), (1,1)]
+for k,v : n {
+  println(k)
+  println(v)
+}
+// tuple deconstruct from an object's key value pairs
+let obj =  {
+  some: int,
+  other: int,
+}
+
+for k,v: obj {
+  ...
+}
+
+// just iterating over a normal array
+let arr =  [0,1,2,3,4]
+for i : arr {
+  ...
+}
+```
+
+
 ## Tuples
 
 simple tuples are supported with `(v, v1, ...)` syntax.
@@ -359,11 +565,6 @@ it can be any tuple identifier or return value.
 ## Lambdas
 
 we have a `=> expression` and `=> { block returning some value}` syntax for 'lambda's.
-
-right now, it's a bit clunky, and lambdas are just basically a way to either
-
-1. Avoid using the return keyword in single-expression match cases
-2. Assign a variable to the result of a block.
 
 So, as we saw in [Pattern matching](#pattern-matching), this is fairly clean and very `rust-like`. However, for assigning a variable, currently (subject to change), this is what we are looking at.
 
@@ -396,7 +597,7 @@ Just like rust, you can return a value by placing a single operand at the end of
 So, for example, we can change this function
 
 ```go
-func get_something(state) {
+func get_something(state: MyStateType) -> int{
   if state.entities >= 100 {
     return 2.0
   }
@@ -408,7 +609,7 @@ To look more like this
 
 
 ```go
-func get_something(state) {
+func get_something(state: MyStateType) -> int {
   if state.entities >= 100 {
     2.0
   }
@@ -419,6 +620,9 @@ It does the same thing, but the return is implicit.
 
 ## Modules
 
+This documentation is totally obsolete.
+The module system is undergoing a full rework and is to be determined
+just exactly how it will work.
 For defining modules, see the [modules.md](modules.md) file.
 ### using a module as an object
 the module will be available as an object represented by the module name
@@ -457,96 +661,5 @@ functions like `println`, `readln`, `push` and `pop` are available without using
 
 
 
-# Todo: 
-
-## language features.
-
-#### null propagation, coalescing assignment
-- value ?? default, value ??= valueifWasNull and obj?.func() or obj?.Value
-
-
-#### try, catch , finally & throw keywords
-- typical try {} catch (e) {} finally {}
-- throw OBJECT/VALUE
-
-#### breakpoint debugging & language server
-
-## pattern matching
-
-
-#### operator overloading for objects
-
-similar to python, if theres a function named `add` or `divide` etc, 
-we invoke that in an object instead of just not doing anything
-
-```
-func Vector2() {
-  return {
-    x = 0.0,
-    y = 0.0,
-    
-    func add(other) {
-      if (typeof(other.x) == "float" && typeof(other.y) == "float") {
-        return {
-          x = other.x + this.x,
-          y = other.y + this.y
-        }
-      }
-    }
-  }
-}
-
-
-```
-
-#### event functions
-
-a C# style event to simply event handlers. 
-
-would simply be a list of functions that get invoked when the () is used on an event type.
-
-``` go
-event myEvent
-
-func subscriber() {
-  println("My event was invoked")
-}
-
-myEvent += subscriber
-
-myEvent()
-
-```
-
-#### coroutines
-
-go style coroutines. this would require some significant changes tothe interpreter to allow multi threading,
-or a special subset of features limited to async. like mutex / locked variable access when coming from a coroutien,
-a special scope maybe?
-``` 
-start func() {
-  // coroutine body
-}()
-```
-
-#### switch statements
-C# style switch statements, can compare any value
-``` C#
-switch ("") {
-  case "":
-  break
-  case "1":
-  ...etc
-}
-
-```
-
-
-
-
-
-## interpreter features
-
-#### call stack & better debugging info
 
 

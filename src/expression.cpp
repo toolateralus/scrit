@@ -420,9 +420,9 @@ ExpressionPtr Parser::ParseLambda() {
         t = ret->value->type;
       }
     }
-
+    
     if (!t) {
-      throw std::runtime_error("Lambda propertys must return a value.");
+      t = TypeSystem::Current().Find("null");
     }
 
     return make_unique<Lambda>(info, t, std::move(block));

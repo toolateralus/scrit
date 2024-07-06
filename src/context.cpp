@@ -104,13 +104,13 @@ auto Scope_T::Find(const std::string &name) -> std::pair<VarIter, bool> {
   auto it =
       std::find_if(variables.begin(), variables.end(),
                    [&](const auto &pair) { return name == pair.first.value; });
-  if (it == variables.end() && parent.lock()) {
+  if (it != variables.end()) {
+    return {it, true};
+  }
+  if (parent.lock()) {
     return parent.lock()->Find(name);
   }
-  if (it == variables.end()) {
-    return std::pair<VarIter, bool>(nullptr, false);
-  }
-  return std::pair<VarIter, bool>(it, true);
+  return {variables.end(), false};
 }
 auto Scope_T::InsertType(const string &name, const Type &type) -> void {
   if (TypeExists(name) && FindType(name) != nullptr) {
