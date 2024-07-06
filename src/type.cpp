@@ -289,8 +289,6 @@ Value UndefinedType::Default() { return Ctx::Null(); }
 Value StringType::Default() { return Ctx::CreateString(); }
 Value IntType::Default() { return Ctx::CreateInt(); }
 Value TemplateType::Default() {
-  // todo: figure out how we'll ever default construct various template types.
-
   if (base_type->Name() == "array") {
     auto array = Ctx::CreateArray();
     array->type = shared_from_this();
@@ -308,7 +306,7 @@ Value TupleType::Default() {
   }
   return make_shared<Tuple_T>(values);
 }
-Value CallableType::Default() { return Ctx::Null(); }
+Value CallableType::Default() { return Value_T::NullOfType(shared_from_this()); }
 Value GenericType_T::Default() { return Ctx::Null(); }
 Value NamedType_T::Default() { return Ctx::Null(); }
 Value ArrayType::Default() { return Ctx::CreateArray(); }

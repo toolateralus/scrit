@@ -118,10 +118,5 @@ int main(int argc, char **argv) {
       std::cout << "Failed to open file: " << filename << "\n";
     }
   }
-
-  Value_T::False.reset();
-  Value_T::True.reset();
-  Value_T::Null.reset();
-  Value_T::Null.reset();
   TypeSystem::Current().global_types.clear();
 }

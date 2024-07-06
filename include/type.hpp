@@ -96,7 +96,7 @@ struct TupleType : Type_T {
   string name;
   const string Name() const override;
 };
-struct CallableType : Type_T {
+struct CallableType : Type_T, std::enable_shared_from_this<CallableType> {
   const Type returnType;
   const std::vector<Type> paramTypes;
   auto Scope() -> Scope_T & override;

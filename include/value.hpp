@@ -71,15 +71,15 @@ enum class PrimitiveType {
 string TypeToString(PrimitiveType type);
 
 struct Value_T : std::enable_shared_from_this<Value_T> {
-  static Null Null;
-  static Bool False;
-  static Bool True;
-
+  const static Null Null;
+  const static Bool False;
+  const static Bool True;
+  
   Type type;
 
   virtual PrimitiveType GetPrimitiveType() const = 0;
   virtual ~Value_T() {}
-
+  
   Value_T(const Type &type) : type(type) {}
 
   virtual string ToString() const = 0;
@@ -119,7 +119,7 @@ struct Value_T : std::enable_shared_from_this<Value_T> {
   Value_T &operator=(const Value_T &) = delete;
   Value_T &operator=(Value_T &&) = delete;
 
-  static Value UndefinedOfType(const Type &type);
+  static Value NullOfType(const Type &type);
 };
 
 struct Null_T : Value_T {
@@ -248,7 +248,8 @@ struct Object_T : Value_T {
 
 struct Callable_T : Value_T {
   ~Callable_T() override;
-  Callable_T(); // for native callables only.
+  Callable_T(const Type &returnType,
+             const vector<Type> &paramTypes); // for native callables only.
   Callable_T(const Type &returnType, BlockPtr &&block,
     ParametersPtr &&params, Scope scope, TypeParamsPtr &&type_params = nullptr);
   BlockPtr block;
