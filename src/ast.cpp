@@ -1064,9 +1064,6 @@ ExecutionResult Declaration::Execute() {
   auto &scope = ASTNode::context.CurrentScope();
   auto value = this->expr->Evaluate();
   
-  std::cout << value->type->Name() << std::endl;
-  std::cout << type->Name() << std::endl;
-  
   if (!type->Equals(value->type.get())) {
     throw TypeError(type, value->type);
   }
