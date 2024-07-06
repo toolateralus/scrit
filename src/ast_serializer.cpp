@@ -25,9 +25,13 @@ void ASTSerializer::visit(Expression *_) {
   Write("type: " + _->type->Name());
 }
 void ASTSerializer::visit(Operand *operand) {
-  auto _ = Indenter(this);
-  Write("Operand: {\n" + operand->Evaluate()->ToString() +
-        " type: " + operand->type->Name() + "\n}");
+  Write("Operand: {");
+  {
+    auto _ = Indenter(this);
+    Write("type: " + operand->type->Name());
+    Write("value: " + operand->Evaluate()->ToString());
+  }
+  Write("}");
 }
 void ASTSerializer::visit(Identifier *identifier) {
   if (identifier->type)
@@ -176,9 +180,8 @@ void ASTSerializer::visit(Else *elseStmt) {
 void ASTSerializer::visit(For *forStmt) {
   Write("For: {");
   {
-
+    auto _ = Indenter(this);
     if (forStmt->decl) {
-      auto _ = Indenter(this);
       Write("Init: {");
       {
         auto _ = Indenter(this);
@@ -202,7 +205,6 @@ void ASTSerializer::visit(For *forStmt) {
       }
       Write("}");
     }
-
     forStmt->block->Accept(this);
   }
   Write("}");
@@ -242,7 +244,7 @@ void ASTSerializer::visit(Declaration *del) {
   Write("Declaration: " + del->type->Name() + " {");
   {
     auto _ = Indenter(this);
-
+    Write("Name: " + del->name);
     Write("Expression: {");
     {
       auto _ = Indenter(this);
@@ -532,10 +534,13 @@ void ASTSerializer::visit(Literal *literal) {
 }
 
 void ASTSerializer::visit(MethodCall *method) {
-  auto _ = Indenter(this);
-  Write("Method Call: ");
-  method->operand->Accept(this);
-  method->args->Accept(this);
+  Write("Method Call: {");
+  {
+    auto _ = Indenter(this);
+    method->operand->Accept(this);
+    method->args->Accept(this);
+  }
+  Write("}");
 }
 
 // The auto indenter.
