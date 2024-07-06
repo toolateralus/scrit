@@ -20,12 +20,12 @@ std::unordered_map<std::string, NativeCallable>
     FunctionRegistry::cachedCallables = {};
 
 Object ScritModDefAsObject(ScritModDef *mod) {
-  return Ctx::CreateObject(mod->scopes->front());
+  return Ctx::CreateObject(*mod->scope);
 }
 
 void m_InstantiateCallables(ScritModDef *module) {
   for (const auto &[key, func] : *module->functions) {
-    module->scopes->front()->Declare(key, FunctionRegistry::MakeCallable(func),
+    (*module->scope)->Declare(key, FunctionRegistry::MakeCallable(func),
                                  Mutability::Const);
   }
 }
@@ -117,8 +117,10 @@ ScritModDef *LoadScritModule(const std::string &name, const std::string &path,
 }
 ScritModDef *CreateModDef() {
   ScritModDef *mod = (ScritModDef *)malloc(sizeof(ScritModDef));
+  
   // TODO: make this use the new scoping model.
-  mod->scopes = new std::vector<shared_ptr<Scope_T>>{make_shared<Scope_T>(nullptr)};
+  mod->scope = new shared_ptr<Scope_T>(nullptr);
+  
   mod->description = new string();
   mod->functions =
       new std::unordered_map<std::string, shared_ptr<NativeFunction>>();
@@ -145,11 +147,11 @@ void ScritModDef::AddFunction(const std::string &name,
 }
 void ScritModDef::AddVariable(const std::string &name, Value value,
                               const Mutability &mutability) {
-  scopes->back()->Declare(name, value, mutability);
+  (*scope)->Declare(name, value, mutability);
 }
 ScritModDef::~ScritModDef() {
   delete description;
-  delete scopes;
+  delete scope;
   delete types;
   delete functions;
 }

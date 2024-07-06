@@ -1086,20 +1086,22 @@ void Using::Load(const std::string &moduleName) {
   }
 
   activeModules.push_back(moduleName);
-
+  
   auto path = moduleRoot + moduleName + ".dll";
 
   void *handle;
+  
   auto module = LoadScritModule(moduleName, path, handle);
-
-  auto _namespace = context.current_namespace;
-
+  
+  auto current_ns = context.current_namespace;
+  
   if (module->_namespace) {
     auto idens = Namespace::split(*module->_namespace);
     context.CreateNamespace(idens);
+    context.current_namespace->parent = (shared_ptr<Namespace>)nullptr;
     context.SetCurrentNamespace(idens);
   }
-
+  
   for (const auto &[name, t] : *module->types) {
     if (TypeSystem::Current().Exists(name)) {
       TypeSystem::Current().RegisterType(t, true);
@@ -1107,15 +1109,16 @@ void Using::Load(const std::string &moduleName) {
       ASTNode::context.CurrentScope()->InsertType(t->Name(), t);
     }
   }
-
+  
   for (const auto &symbol : *module->functions) {
     ASTNode::context.CurrentScope()->Declare(
         symbol.first, FunctionRegistry::MakeCallable(symbol.second),
         Mutability::Const);
   }
-
+  
   // revert to the original namespace.
-  context.current_namespace = _namespace;
+  context.current_namespace = current_ns;
+  
   if (module->_namespace) {
     context.ImportNamespace(Namespace::split(*module->_namespace));
   }

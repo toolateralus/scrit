@@ -45,7 +45,7 @@ struct NativeFunction {
 
 extern "C" struct ScritModDef {
   std::string *description;
-  vector<shared_ptr<Scope_T>> *scopes;
+  shared_ptr<Scope_T> *scope;
 
   std::string *_namespace = nullptr;
   std::unordered_map<std::string, shared_ptr<NativeFunction>> *functions =

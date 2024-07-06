@@ -24,12 +24,6 @@ auto Namespace::GetValue(const string &name) const -> Value {
     return value->second;
   }
   
-  for (const auto &[_, importedNs] : imported_namespaces) {
-    auto found = importedNs->GetValue(name);
-    if (found)
-      return found;
-  }
-  
   if (parent.lock())
     return parent.lock()->GetValue(name);
   
