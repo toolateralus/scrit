@@ -20,6 +20,7 @@ struct Tests {
     let n = 0
     let i = false
     let v = 0.0
+    let arr : array<int> = [0,1,2]
     assert(true, "literals")
   }
   func test_for_loop(self: Tests) {
@@ -83,10 +84,13 @@ struct Tests {
     }
   }
   func test_nested_func(self: Tests) {
-    func something() -> bool {
-      true
+    func another(b: bool) -> bool {
+      b
     }
-    assert(something() == true, "implicit return nested function")
+    func something(b: bool) -> bool {
+      return another(b)
+    }
+    assert(something(true) == true, "implicit return nested function")
   }
   func test_ctor(self: Tests) {
     struct Something {
@@ -194,6 +198,7 @@ struct Tests {
     assert(instance - instance == 0, "sub overload failed")
     assert(instance * instance == 0, "mul overload failed")
     assert(instance / instance == 0, "div overload failed")
+    
     assert(instance(10)  == 0, "call overload failed")
   }
   // TODO:

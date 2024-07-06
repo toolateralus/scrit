@@ -142,22 +142,25 @@ ExpressionPtr Parser::ParseFactor() {
 
   return left;
 }
+
 ExpressionPtr Parser::ParsePostfix() {
   auto expr = ParseOperand();
   while (!tokens.empty()) {
     Token next = Peek();
-
+    
     if (next.type == TType::Increment || next.type == TType::Decrement) {
       Eat();
-      return make_unique<UnaryExpr>(info, expr->type, std::move(expr),
+      expr = make_unique<UnaryExpr>(info, expr->type, std::move(expr),
                                     next.type);
+      continue;
     }
-
+    
     if (next.type != TType::LParen && next.type != TType::LBrace &&
         next.type != TType::Dot && next.type != TType::Less) {
       break;
     }
-    if (next.type == TType::Less && (Peek(1).type != TType::Identifier || TypeSystem::Current().Exists(Peek(1).value))) {
+    https://www.twitch.tv/wirtual
+    if (next.type == TType::Less && (Peek(1).type != TType::Identifier || !TypeSystem::Current().Exists(Peek(1).value))) {
       break;
     }
     
@@ -170,16 +173,15 @@ ExpressionPtr Parser::ParsePostfix() {
     } else if (next.type == TType::LParen) {
       
       auto args = ParseArguments();
-
       // Type constructors.
       auto type_iden = dynamic_cast<TypeIdentifier *>(expr.get());
-
+      
       if (type_iden) {
         expr = make_unique<Constructor>(info, type_iden->type, std::move(args));
         continue;
       }
-
       expr = std::make_unique<Call>(info, std::move(expr), std::move(args));
+      
     } else if (next.type == TType::LBrace) {
       Eat();
       auto index = ParseExpression();
@@ -203,7 +205,7 @@ ExpressionPtr Parser::ParsePostfix() {
       }
     }
   }
-
+  
   return expr;
 }
 ExpressionPtr Parser::ParseOperand() {

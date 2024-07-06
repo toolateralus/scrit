@@ -556,7 +556,7 @@ Value Callable_T::Call(ArgumentsPtr &args, TypeArgsPtr &type_args) {
   if (type_params)
     type_params->Apply(type_args->types);
   
-  params->Apply(block->scope, args->values);
+  params->Apply(block->scope, values);
   auto result = block->Execute();
   
   
