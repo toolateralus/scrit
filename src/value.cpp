@@ -12,9 +12,9 @@
 #include <stdexcept>
 #include <string>
 
-Bool Value_T::True = Bool_T::New(true);
-Bool Value_T::False = Bool_T::New(false);
-Null Value_T::Null = make_shared<Null_T>();
+const Bool Value_T::True = Bool_T::New(true);
+const Bool Value_T::False = Bool_T::New(false);
+const Null Value_T::Null = make_shared<Null_T>();
 
 Value Array_T::At(Int index) {
   if (values.size() <= (size_t)index->value) {
@@ -103,9 +103,7 @@ void NativeCallable_T::CheckReturnType(Value &result) {
 }
 
 NativeCallable_T::NativeCallable_T(const shared_ptr<NativeFunction> &function)
-    : function(function) {
-  type = TypeSystem::Current().FromCallable(function->returnType,
-                                            function->parameterTypes);
+    : Callable_T(function->returnType, function->parameterTypes), function(function) {
 }
 
 Value Float_T::Add(Value other) {
@@ -415,7 +413,7 @@ string TypeToString(PrimitiveType type) {
   return "";
 }
 
-Value Value_T::Clone() { return Value_T::Null; }
+Value Value_T::Clone() { return make_shared<Null_T>(); }
 
 Value Float_T::Clone() { return Ctx::CreateFloat(value); }
 Value String_T::Clone() { return Ctx::CreateString(string(value)); }
@@ -616,33 +614,28 @@ Float_T::Float_T(float value) : Value_T(TypeSystem::Current().Float) {
 
 Callable_T::Callable_T(const Type &returnType, BlockPtr &&block,
     ParametersPtr &&params, Scope scope, TypeParamsPtr &&type_params)
-    : Value_T(nullptr), block(std::move(block)), params(std::move(params)),
+    : Value_T(TypeSystem::Current().FromCallable(returnType, params->ParamTypes())), block(std::move(block)), params(std::move(params)),
     type_params(std::move(type_params)), scope(scope) {
-  if (!this->type) {
-    this->type = TypeSystem::Current().FromCallable(returnType, this->params->ParamTypes());
-  }
 }
 String_T::String_T(const string &value)
     : Value_T(TypeSystem::Current().String) {
   this->value = value;
 }
-// this is only for native callables.
-// Todo: implement native callable type.
-Callable_T::Callable_T() : Value_T(TypeSystem::Current().NativeCallable) {}
 
 Null_T::Null_T() : Value_T(TypeSystem::Current().Null) {}
 Bool_T::Bool_T(bool value) : Value_T(TypeSystem::Current().Bool) {
   this->value = value;
 }
-Array_T::Array_T(vector<Value> init) : Value_T(nullptr) {
-  this->values = init;
+Array_T::Array_T(vector<Value> init) : Value_T([&](){
   if (init.size() != 0) {
-    this->type = TypeSystem::Current().FindOrCreateTemplate(
+    return TypeSystem::Current().FindOrCreateTemplate(
         "array<" + init[0]->type->Name() + ">",
         TypeSystem::Current().Find("array"), {init[0]->type});
   } else {
-    this->type = TypeSystem::Current().Find("array");
+    return TypeSystem::Current().Find("array");
   }
+}()) {
+  values = init;
 }
 
 Callable_T::~Callable_T() {}
@@ -656,9 +649,13 @@ Lambda_T::~Lambda_T() {}
 
 Value Null_T::Clone() { return Ctx::Null(); }
 
-Value Value_T::UndefinedOfType(const Type &type) {
-  auto undefined = Ctx::Null();
-  undefined->type = type;
-  return undefined;
+Value Value_T::NullOfType(const Type &type) {
+  auto null = make_shared<Null_T>();
+  null->type = type;
+  return null;
+}
+
+Callable_T::Callable_T(const Type &returnType, const vector<Type> &paramTypes) : Value_T(TypeSystem::Current().FromCallable(returnType,  paramTypes)) {
+  
 }
 } // namespace Values

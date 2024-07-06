@@ -157,6 +157,6 @@ extern "C" ScritModDef *InitScritModule_std_SR_array() {
   
   def->AddType("array", array);
   def->SetNamespace("std::array");
-
+  
   return def;
 }

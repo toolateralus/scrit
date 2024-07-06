@@ -305,7 +305,7 @@ Declaration::Declaration(SourceInfo &info, const string &name,
                          const Type &type)
     : Statement(info), name(name), expr(std::move(expr)), mut(mut), type(type) {
   
-  context.CurrentScope()->Declare(name, Value_T::UndefinedOfType(type), mut);
+  context.CurrentScope()->Declare(name, Value_T::NullOfType(type), mut);
 }
 
 // ##############################################
@@ -542,7 +542,6 @@ vector<Value> Call::GetArgsValueList(ArgumentsPtr &args) {
 }
 Value ArrayInitializer::Evaluate() {
   auto array = Array_T::New(init);
-  ;
   array->type = type;
   return array;
 }
@@ -1065,6 +1064,9 @@ ExecutionResult Declaration::Execute() {
   auto &scope = ASTNode::context.CurrentScope();
   auto value = this->expr->Evaluate();
   
+  std::cout << value->type->Name() << std::endl;
+  std::cout << type->Name() << std::endl;
+  
   if (!type->Equals(value->type.get())) {
     throw TypeError(type, value->type);
   }
@@ -1206,20 +1208,16 @@ shared_ptr<Callable_T> MethodCall::FindCallable() {
     throw std::runtime_error("Too few arguments for a method call: the caller "
                              "object was not in the argument list");
   }
-
-  // This causes a double evaulation if we do
-  // obj.somemethod().println()
-  // or something to that effect.
-
+  
   Type type;
   auto &caller = args[0];
-
+  
   if (!caller->type) {
-    type = caller->Evaluate()->type;
+    throw std::runtime_error("unable to find type for method caller");
   } else {
     type = caller->type;
   }
-
+  
   if (auto method = type->Get(identifier->name);
       auto callable = std::dynamic_pointer_cast<Callable_T>(method)) {
     if (callable != nullptr) {
@@ -1354,7 +1352,7 @@ void Parameters::Apply(Scope scope, std::vector<Value> &values) {
 
 void Parameters::ForwardDeclare(Scope scope) {
   for (const auto &param : params) {
-    scope->Declare(param.name, Value_T::UndefinedOfType(param.type), param.mutability);
+    scope->Declare(param.name, Value_T::NullOfType(param.type), param.mutability);
   }
 }
 Value TypeIdentifier::Evaluate() { return Ctx::Null(); }
