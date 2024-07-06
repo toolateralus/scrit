@@ -371,9 +371,8 @@ struct For : Statement {
 };
 struct RangeBasedFor : Statement {
   RangeBasedFor(SourceInfo &info, vector<string> &names, ExpressionPtr &&rhs,
-                BlockPtr &&block)
-      : Statement(info), names(names), rhs(std::move(rhs)),
-        block(std::move(block)) {}
+                BlockPtr &&block);
+  
   RangeBasedFor(SourceInfo &info, ExpressionPtr &&lhs, ExpressionPtr &&rhs,
                 BlockPtr &&block);
 

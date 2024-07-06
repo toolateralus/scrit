@@ -44,12 +44,12 @@ struct Ctx final {
   static Object CreateObject(shared_ptr<Scope_T> scope = nullptr);
   static Array CreateArray(vector<Value> values);
   static Array CreateArray();
-
+  
   static Array FromFloatVector(vector<float> &values);
   static Array FromStringVector(vector<string> &values);
   static Array FromBoolVector(vector<bool> &values);
   static Array FromIntVector(vector<int> &values);
-
+  
   static bool TryGetString(Value str, string &result);
   static bool TryGetInt(Value value, int &result);
   static bool TryGetFloat(Value value, float &result);

@@ -315,17 +315,6 @@ Declaration::Declaration(SourceInfo &info, const string &name,
 
 ExecutionResult Program::Execute() {
   
-  // create an object called global, so we can bypass any shadowed variables.
-  auto global =
-      Object_T::New(ASTNode::context.current_namespace->root_scope);
-  
-  // include all of the native functions in this global object.
-  for (const auto &[name, _] : FunctionRegistry::GetRegistry()) {
-    global->SetMember(name, FunctionRegistry::GetCallable(name));
-  }
-  
-  ASTNode::context.CurrentScope()->Declare("global", global, Mutability::Mut);
-  
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
@@ -601,17 +590,20 @@ ExecutionResult Else::Execute() {
   }
 }
 ExecutionResult For::Execute() {
-
+  auto last_scope = ASTNode::context.CurrentScope();
+  
   if (block->statements.empty()) {
     return ExecutionResult::None;
   }
-
   
+  ASTNode::context.SetCurrentScope(scope);
   if (decl) {
     auto _ = decl->Execute();
   }
-
+  
+  
   if (condition && condition->Evaluate()->Equals(Ctx::CreateBool(false))) {
+    ASTNode::context.SetCurrentScope(last_scope);
     return ExecutionResult::None;
   }
 
@@ -620,20 +612,21 @@ ExecutionResult For::Execute() {
   if (condition) {
     while (true) {
       auto conditionResult = condition->Evaluate();
-
+      
       if (conditionResult->Equals(Bool_T::False)) {
-        
+        ASTNode::context.SetCurrentScope(last_scope);
         return ExecutionResult::None;
       }
 
       auto result = block->Execute();
       switch (result.controlChange) {
       case ControlChange::None:
-      case ControlChange::Continue:
         break;
+      case ControlChange::Continue:
+        continue;
       case ControlChange::Return:
       case ControlChange::Break:
-        
+        ASTNode::context.SetCurrentScope(last_scope);
         return ExecutionResult::None;
       }
 
@@ -642,7 +635,7 @@ ExecutionResult For::Execute() {
       }
     }
   }
-
+  
   // for {..}
   while (true) {
     auto result = block->Execute();
@@ -652,11 +645,12 @@ ExecutionResult For::Execute() {
       continue;
     case ControlChange::Return:
     case ControlChange::Break:
-      
+      ASTNode::context.SetCurrentScope(last_scope);
       return ExecutionResult::None;
     }
   }
   
+  ASTNode::context.SetCurrentScope(last_scope);
   return ExecutionResult::None;
 }
 ExecutionResult Assignment::Execute() {
@@ -1261,8 +1255,8 @@ StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
           static_cast<Declaration *>(statement.release())));
     }
   }
-  auto type =
-      make_shared<StructType>(name, std::move(declarations), template_args, scope);
+  
+  auto type = make_shared<StructType>(name, std::move(declarations), template_args, scope);
   
   for (auto &statement : statements) {
     if (auto decl = dynamic_cast<FunctionDecl *>(statement.get())) {
@@ -1397,3 +1391,7 @@ void TypeParameters::DeclareTypes() {
   }
 }
 
+RangeBasedFor::RangeBasedFor(SourceInfo &info, vector<string> &names,
+                             ExpressionPtr &&rhs, BlockPtr &&block)
+    : Statement(info), names(names), rhs(std::move(rhs)),
+      block(std::move(block)) {}

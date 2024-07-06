@@ -144,9 +144,10 @@ unique_ptr<StructDeclaration> Parser::ParseStructDeclaration() {
       Expect(TType::Greater);
     }
     
-    ASTNode::context.CurrentScope()->InsertType(
-        name, make_shared<StructType>(
-                  name, std::vector<unique_ptr<Declaration>>(), template_args,  nullptr));
+    auto type =  make_shared<StructType>(
+                  name, std::vector<unique_ptr<Declaration>>(), template_args,  make_shared<Scope_T>(nullptr));
+                  
+    ASTNode::context.CurrentScope()->InsertType(name, type);
     
     auto obj = ParseObjectInitializer();
     
@@ -779,7 +780,7 @@ StatementPtr Parser::ParseFor() {
   StatementPtr decl = nullptr;
   ExpressionPtr condition = nullptr;
   StatementPtr inc = nullptr;
-
+  
   // for {}
   if (Peek().type == TType::LCurly) {
     return make_unique<For>(info, nullptr, nullptr, nullptr, ParseBlock(),
@@ -796,9 +797,9 @@ StatementPtr Parser::ParseFor() {
                             std::move(inc), ParseBlock(),
                             scope);
   }
-
+  
   auto expr = ParseExpression();
-
+  
   // for expr : array/obj {}
   if (Peek().type == TType::Colon) {
     Eat();
@@ -807,11 +808,11 @@ StatementPtr Parser::ParseFor() {
     return make_unique<RangeBasedFor>(info, std::move(expr), std::move(rhs),
                                       ParseBlock());
   }
-
+  
   if (Peek().type == TType::Comma) {
     Eat();
     auto name = dynamic_cast<Identifier *>(expr.get());
-
+    
     if (!name) {
       throw std::runtime_error(
           "invalid tuple deconstruction in range based for loop");
@@ -828,8 +829,9 @@ StatementPtr Parser::ParseFor() {
       }
     }
     Expect(TType::Colon);
-
+    
     auto target = ParseExpression();
+    
     ASTNode::context.SetCurrentScope(last_scope);
     return make_unique<RangeBasedFor>(info, names, std::move(target),
                                       ParseBlock());

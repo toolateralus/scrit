@@ -318,7 +318,9 @@ StructType::StructType(const string &name,
                        vector<std::unique_ptr<Declaration>> &&fields,
                        vector<string> &template_args, shared_ptr<Scope_T> scope)
     : name(name), template_args(template_args), fields(std::move(fields)), scope(scope) {
-      
+      if (!scope) {
+        throw std::runtime_error("Failed to get scope for struct type.");
+      }
 }
 
 Value StructType::Default() {

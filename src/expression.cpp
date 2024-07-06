@@ -157,6 +157,10 @@ ExpressionPtr Parser::ParsePostfix() {
         next.type != TType::Dot && next.type != TType::Less) {
       break;
     }
+    if (next.type == TType::Less && (Peek(1).type != TType::Identifier || TypeSystem::Current().Exists(Peek(1).value))) {
+      break;
+    }
+    
     // Templated function call
     if (next.type == TType::Less && Peek(1).type == TType::Identifier &&
         TypeSystem::Current().Exists(Peek(1).value)) {
@@ -164,7 +168,7 @@ ExpressionPtr Parser::ParsePostfix() {
       auto arguments = ParseArguments();
       expr = make_unique<Call>(info, std::move(expr), std::move(arguments), std::move(type_args));
     } else if (next.type == TType::LParen) {
-
+      
       auto args = ParseArguments();
 
       // Type constructors.

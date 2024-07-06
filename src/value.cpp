@@ -538,7 +538,7 @@ Value NativeCallable_T::Call(std::vector<Value> &args) {
   
   
   // we shouldn't need to do this
-  CheckReturnType(result);
+  //CheckReturnType(result);
 
   
   if (result == nullptr) {
@@ -583,7 +583,7 @@ Value NativeCallable_T::Call(unique_ptr<Arguments> &args, TypeArgsPtr &type_args
   if (function->ptr)
     result = function->ptr(values);
   
-  CheckReturnType(result);
+  //CheckReturnType(result);
   
   
   if (result == nullptr) {
