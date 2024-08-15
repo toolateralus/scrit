@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <scrit/ast.hpp>
 #include <scrit/native.hpp>
 #include <scrit/scritmod.hpp>
@@ -187,8 +188,8 @@ static Value time(std::vector<Value>) {
 }
 static Value sleep(std::vector<Value> args) {
   if (!args.empty()) {
-    float milliseconds;
-    int seconds = 1;
+    double milliseconds;
+    int64_t seconds = 1;
     if (Ctx::TryGetInt(args[0], seconds)) {
       std::this_thread::sleep_for(std::chrono::seconds(seconds));
     } else if (Ctx::TryGetFloat(args[0], milliseconds)) {

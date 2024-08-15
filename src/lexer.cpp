@@ -102,6 +102,11 @@ vector<Token> Lexer::Lex(const string &input) {
     } else if (isalpha(cur) || cur == '_') {
       tokens.push_back(LexIden());
     } else if (ispunct(cur)) {
+      // ignore semi colons for c style programmers :D
+      if (cur == ';') {
+        pos++;
+        continue;
+      }
       tokens.push_back(LexOp());
     } else {
       throw std::runtime_error(string("failed to parse character ") + cur);
@@ -257,6 +262,7 @@ Token Lexer::LexOp() {
       return Token(startLoc, startCol, op.first, op.second, TFamily::Operator);
     }
   }
+  
   // TODO improve this error. It prints nonsensical values which makes it harder
   // to debug.
   auto ch = std::string() + input[startLoc];

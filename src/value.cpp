@@ -323,7 +323,7 @@ bool Null_T::Equals(Value value) {
 }
 
 Value String_T::SubscriptAssign(Value key, Value value) {
-  int idx;
+  int64_t idx;
   string string;
   if (Ctx::TryGetInt(key, idx) && Ctx::TryGetString(value, string)) {
     if (string.length() == 0) {
@@ -336,7 +336,7 @@ Value String_T::SubscriptAssign(Value key, Value value) {
 }
 Value Value_T::Subscript(Value) { return Null; }
 Value String_T::Subscript(Value key) {
-  int index;
+  int64_t index;
   if (!Ctx::TryGetInt(key, index) || (size_t)index > value.length()) {
     return Null;
   }
@@ -345,7 +345,7 @@ Value String_T::Subscript(Value key) {
 
 Value Value_T::SubscriptAssign(Value, Value) { return Null; }
 Value Array_T::Subscript(Value key) {
-  int index;
+  int64_t index;
   if (!Ctx::TryGetInt(key, index)) {
     return Null;
   }
@@ -353,7 +353,7 @@ Value Array_T::Subscript(Value key) {
   return values[index];
 }
 Value Array_T::SubscriptAssign(Value key, Value value) {
-  int idx;
+  int64_t idx;
 
   Type element_type;
   
@@ -608,7 +608,7 @@ Value Callable_T::Call(std::vector<Value> &values) {
   }
 }
 
-Float_T::Float_T(float value) : Value_T(TypeSystem::Current().Float) {
+Float_T::Float_T(double value) : Value_T(TypeSystem::Current().Float) {
   this->value = value;
 }
 

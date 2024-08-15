@@ -1,7 +1,6 @@
-#include <scrit/native.hpp>
+#include <cstdint>
+#include <memory>
 #include <scrit/scritmod.hpp>
-#include <scrit/type.hpp>
-#include <scrit/ctx.hpp>
 
 #define function(name) Value name(std::vector<Value> args)
 
@@ -30,7 +29,7 @@ function(remove) {
 
   // Erase array element.
   if (args[0]->GetPrimitiveType() == Values::PrimitiveType::Array) {
-    int i;
+    int64_t i;
     Array_T *a = static_cast<Array_T *>(args[0].get());
     if (args[1]->GetPrimitiveType() == Values::PrimitiveType::Callable) {
       // Predicate.
@@ -66,12 +65,24 @@ function(clear) {
 }
 
 function(expand) {
-  static auto __undefined = Ctx::Null();
   auto array = args[0]->Cast<Array_T>();
   auto count = args[1]->Cast<Int_T>()->value;
+  auto default_value = args[2];
   Callable_T *callable = nullptr;
+  
+  if (default_value->GetPrimitiveType() == PrimitiveType::Callable) {
+    callable = dynamic_cast<Callable_T*>(default_value.get());
+  }
+  
+  static std::vector<Value> _args = {Ctx::CreateInt(0)};
+  
   for (int i = array->values.size(); i < count; i++) {
-    array->Push(__undefined);
+    if (callable) {
+      args[0] = Ctx::CreateInt(i);
+      auto value = callable->Call(_args);
+      array->Push(value);
+    }
+    else array->Push(Ctx::Null());
   }
   return args[0];
 }
@@ -148,7 +159,7 @@ extern "C" ScritModDef *InitScritModule_std_SR_array() {
   array->Set("remove", CREATE_CALLABLE(remove, "null", {"any", "any"}));
   array->Set("contains", CREATE_CALLABLE(contains, "bool", {"any", "any"}));
   array->Set("clear", CREATE_CALLABLE(clear, "null", {"any"}));
-  array->Set("expand", CREATE_CALLABLE(expand, "array", {"any", "int"}));
+  array->Set("expand", CREATE_CALLABLE(expand, "array", {"any", "int", "any"}));
   array->Set("push", CREATE_CALLABLE(push, "null", {"any", "any"}));
   array->Set("front", CREATE_CALLABLE(front, "any", {"any"}));
   array->Set("back", CREATE_CALLABLE(back, "any", {"any"}));

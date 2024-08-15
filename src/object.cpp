@@ -42,7 +42,7 @@ Value Object_T::Subscript(Value key) {
 
 Value Object_T::SubscriptAssign(Value key, Value value) {
   string strKey;
-  int idx;
+  int64_t idx;
   if (Ctx::TryGetString(key, strKey)) {
     scope->Assign(strKey, value);
   } else if (Ctx::TryGetInt(key, idx)) {

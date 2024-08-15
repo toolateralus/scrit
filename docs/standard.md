@@ -13,7 +13,7 @@ This works for any free-function, which includes all standard functions _listed 
 
 ## General
 
-### typeof
+### get_type
 get a string representing the type of the object passed in.
 
 #### returns 
@@ -25,12 +25,12 @@ any object as reference.
 #### usage
 ```go
 println(
-  typeof(1),
-  typeof(1.0),
-  typeof({}),
-  typeof([]),
-  typeof(false),
-  typeof(func() {})
+  get_type(1),
+  get_type(1.0),
+  get_type({}),
+  get_type([]),
+  get_type(false),
+  get_type(func() {})
 )
 // output: 
 // "int"
@@ -42,7 +42,7 @@ println(
 ```
 
   Note that builtin functions like println and anything listed here, or from an
-  `using` library, will be typeof `"native_callable"`, indicating it was written in C++.
+  `using` library, will be get_type `"native_callable"`, indicating it was written in C++.
 
 ## Terminal / IO
 

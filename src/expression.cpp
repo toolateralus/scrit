@@ -254,11 +254,11 @@ ExpressionPtr Parser::ParseOperand() {
   case TType::Float:
     Eat();
     return make_unique<Literal>(info, TypeSystem::Current().Float,
-                                Float_T::New(stof(token.value)));
+                                Float_T::New(stod(token.value)));
   case TType::Int:
     Eat();
     return make_unique<Literal>(info, TypeSystem::Current().Int,
-                                Int_T::New(stoi(token.value)));
+                                Int_T::New(stol(token.value)));
   case TType::Identifier: {
     Eat();
 

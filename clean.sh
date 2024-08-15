@@ -1,5 +1,6 @@
-echo running make clean '(removes binary and obj files)'
-make clean
+
+echo "deleting build files & binaries."
+sudo rm -r build/*
 
 echo removing all modules
 sudo rm -rf /usr/local/scrit/modules/*
@@ -9,3 +10,5 @@ sudo rm -rf  /usr/local/lib/libscrit.a
 
 echo removing headers from /usr/local/include/scrit
 sudo rm -rf /usr/local/include/scrit/*
+
+

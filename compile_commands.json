@@ -3,59 +3,7 @@
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
-      "-Iinclude",
-      "-g",
-      "-c",
-      "-o",
-      "obj/debug/object.o",
-      "src/object.cpp"
-    ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/object.cpp",
-    "output": "/home/josh/source/c++/lang/obj/debug/object.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/clang++",
-      "-fPIC",
-      "-std=c++2b",
-      "-g",
-      "-Iinclude",
-      "-g",
-      "-c",
-      "-o",
-      "obj/debug/debug.o",
-      "src/debug.cpp"
-    ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/debug.cpp",
-    "output": "/home/josh/source/c++/lang/obj/debug/debug.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/clang++",
-      "-fPIC",
-      "-std=c++2b",
-      "-g",
-      "-Iinclude",
-      "-g",
-      "-c",
-      "-o",
-      "obj/debug/context.o",
-      "src/context.cpp"
-    ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/context.cpp",
-    "output": "/home/josh/source/c++/lang/obj/debug/context.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/clang++",
-      "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-g",
       "-c",
@@ -63,67 +11,79 @@
       "obj/debug/main.o",
       "src/main.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/main.cpp",
-    "output": "/home/josh/source/c++/lang/obj/debug/main.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/main.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/main.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-g",
       "-c",
       "-o",
-      "obj/debug/value.o",
-      "src/value.cpp"
+      "obj/debug/ctx.o",
+      "src/ctx.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/value.cpp",
-    "output": "/home/josh/source/c++/lang/obj/debug/value.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/ctx.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/ctx.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-g",
       "-c",
       "-o",
-      "obj/debug/type.o",
-      "src/type.cpp"
+      "obj/debug/debug.o",
+      "src/debug.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/type.cpp",
-    "output": "/home/josh/source/c++/lang/obj/debug/type.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/debug.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/debug.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-g",
       "-c",
       "-o",
-      "obj/debug/std.o",
-      "src/std.cpp"
+      "obj/debug/object.o",
+      "src/object.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/std.cpp",
-    "output": "/home/josh/source/c++/lang/obj/debug/std.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/object.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/object.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
+      "-std=c++26",
+      "-Iinclude",
       "-g",
+      "-c",
+      "-o",
+      "obj/debug/context.o",
+      "src/context.cpp"
+    ],
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/context.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/context.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++26",
       "-Iinclude",
       "-g",
       "-c",
@@ -131,50 +91,15 @@
       "obj/debug/serializer.o",
       "src/serializer.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/serializer.cpp",
-    "output": "/home/josh/source/c++/lang/obj/debug/serializer.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/serializer.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/serializer.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
-      "-Iinclude",
-      "-g",
-      "-c",
-      "-o",
-      "obj/debug/lexer.o",
-      "src/lexer.cpp"
-    ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/lexer.cpp",
-    "output": "/home/josh/source/c++/lang/obj/debug/lexer.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/clang++",
-      "-fPIC",
-      "-std=c++2b",
-      "-g",
-      "-Iinclude",
-      "-g",
-      "-c",
-      "-o",
-      "obj/debug/int.o",
-      "src/int.cpp"
-    ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/int.cpp",
-    "output": "/home/josh/source/c++/lang/obj/debug/int.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/clang++",
-      "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-g",
       "-c",
@@ -182,16 +107,127 @@
       "obj/debug/native.o",
       "src/native.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/native.cpp",
-    "output": "/home/josh/source/c++/lang/obj/debug/native.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/native.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/native.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
+      "-std=c++26",
+      "-Iinclude",
       "-g",
+      "-c",
+      "-o",
+      "obj/debug/ast_serializer.o",
+      "src/ast_serializer.cpp"
+    ],
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/ast_serializer.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/ast_serializer.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++26",
+      "-Iinclude",
+      "-g",
+      "-c",
+      "-o",
+      "obj/debug/expression.o",
+      "src/expression.cpp"
+    ],
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/expression.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/expression.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++26",
+      "-Iinclude",
+      "-g",
+      "-c",
+      "-o",
+      "obj/debug/type.o",
+      "src/type.cpp"
+    ],
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/type.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/type.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++26",
+      "-Iinclude",
+      "-g",
+      "-c",
+      "-o",
+      "obj/debug/std.o",
+      "src/std.cpp"
+    ],
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/std.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/std.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++26",
+      "-Iinclude",
+      "-g",
+      "-c",
+      "-o",
+      "obj/debug/value.o",
+      "src/value.cpp"
+    ],
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/value.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/value.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++26",
+      "-Iinclude",
+      "-g",
+      "-c",
+      "-o",
+      "obj/debug/error.o",
+      "src/error.cpp"
+    ],
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/error.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/error.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++26",
+      "-Iinclude",
+      "-g",
+      "-c",
+      "-o",
+      "obj/debug/int.o",
+      "src/int.cpp"
+    ],
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/int.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/int.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++26",
       "-Iinclude",
       "-g",
       "-c",
@@ -199,33 +235,31 @@
       "obj/debug/ast.o",
       "src/ast.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/ast.cpp",
-    "output": "/home/josh/source/c++/lang/obj/debug/ast.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/ast.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/ast.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-g",
       "-c",
       "-o",
-      "obj/debug/std-query.o",
-      "src/std-query.cpp"
+      "obj/debug/lexer.o",
+      "src/lexer.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/std-query.cpp",
-    "output": "/home/josh/source/c++/lang/obj/debug/std-query.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/lexer.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/lexer.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-g",
       "-c",
@@ -233,246 +267,330 @@
       "obj/debug/parser.o",
       "src/parser.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/parser.cpp",
-    "output": "/home/josh/source/c++/lang/obj/debug/parser.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/parser.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/parser.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
+      "-std=c++26",
+      "-Iinclude",
       "-g",
+      "-c",
+      "-o",
+      "obj/debug/std-query.o",
+      "src/std-query.cpp"
+    ],
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/std-query.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/debug/std-query.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++26",
       "-Iinclude",
       "-O3",
+      "-flto",
       "-c",
       "-o",
       "obj/release/context.o",
       "src/context.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/context.cpp",
-    "output": "/home/josh/source/c++/lang/obj/release/context.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/context.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/context.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-O3",
+      "-flto",
       "-c",
       "-o",
       "obj/release/main.o",
       "src/main.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/main.cpp",
-    "output": "/home/josh/source/c++/lang/obj/release/main.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/main.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/main.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-O3",
+      "-flto",
+      "-c",
+      "-o",
+      "obj/release/ctx.o",
+      "src/ctx.cpp"
+    ],
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/ctx.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/ctx.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++26",
+      "-Iinclude",
+      "-O3",
+      "-flto",
       "-c",
       "-o",
       "obj/release/debug.o",
       "src/debug.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/debug.cpp",
-    "output": "/home/josh/source/c++/lang/obj/release/debug.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/debug.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/debug.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-O3",
+      "-flto",
       "-c",
       "-o",
       "obj/release/object.o",
       "src/object.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/object.cpp",
-    "output": "/home/josh/source/c++/lang/obj/release/object.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/object.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/object.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-O3",
+      "-flto",
       "-c",
       "-o",
       "obj/release/type.o",
       "src/type.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/type.cpp",
-    "output": "/home/josh/source/c++/lang/obj/release/type.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/type.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/type.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-O3",
+      "-flto",
       "-c",
       "-o",
       "obj/release/value.o",
       "src/value.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/value.cpp",
-    "output": "/home/josh/source/c++/lang/obj/release/value.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/value.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/value.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-O3",
+      "-flto",
       "-c",
       "-o",
       "obj/release/serializer.o",
       "src/serializer.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/serializer.cpp",
-    "output": "/home/josh/source/c++/lang/obj/release/serializer.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/serializer.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/serializer.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-O3",
+      "-flto",
       "-c",
       "-o",
-      "obj/release/std.o",
-      "src/std.cpp"
+      "obj/release/ast_serializer.o",
+      "src/ast_serializer.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/std.cpp",
-    "output": "/home/josh/source/c++/lang/obj/release/std.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/ast_serializer.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/ast_serializer.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-O3",
+      "-flto",
       "-c",
       "-o",
-      "obj/release/int.o",
-      "src/int.cpp"
+      "obj/release/expression.o",
+      "src/expression.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/int.cpp",
-    "output": "/home/josh/source/c++/lang/obj/release/int.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/expression.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/expression.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-O3",
+      "-flto",
       "-c",
       "-o",
       "obj/release/native.o",
       "src/native.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/native.cpp",
-    "output": "/home/josh/source/c++/lang/obj/release/native.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/native.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/native.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-O3",
+      "-flto",
+      "-c",
+      "-o",
+      "obj/release/std.o",
+      "src/std.cpp"
+    ],
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/std.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/std.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++26",
+      "-Iinclude",
+      "-O3",
+      "-flto",
+      "-c",
+      "-o",
+      "obj/release/int.o",
+      "src/int.cpp"
+    ],
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/int.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/int.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++26",
+      "-Iinclude",
+      "-O3",
+      "-flto",
+      "-c",
+      "-o",
+      "obj/release/error.o",
+      "src/error.cpp"
+    ],
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/error.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/error.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-std=c++26",
+      "-Iinclude",
+      "-O3",
+      "-flto",
       "-c",
       "-o",
       "obj/release/lexer.o",
       "src/lexer.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/lexer.cpp",
-    "output": "/home/josh/source/c++/lang/obj/release/lexer.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/lexer.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/lexer.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-O3",
+      "-flto",
       "-c",
       "-o",
       "obj/release/ast.o",
       "src/ast.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/ast.cpp",
-    "output": "/home/josh/source/c++/lang/obj/release/ast.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/ast.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/ast.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-O3",
+      "-flto",
       "-c",
       "-o",
       "obj/release/parser.o",
       "src/parser.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/parser.cpp",
-    "output": "/home/josh/source/c++/lang/obj/release/parser.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/parser.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/parser.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-fPIC",
-      "-std=c++2b",
-      "-g",
+      "-std=c++26",
       "-Iinclude",
       "-O3",
+      "-flto",
       "-c",
       "-o",
       "obj/release/std-query.o",
       "src/std-query.cpp"
     ],
-    "directory": "/home/josh/source/c++/lang",
-    "file": "/home/josh/source/c++/lang/src/std-query.cpp",
-    "output": "/home/josh/source/c++/lang/obj/release/std-query.o"
+    "directory": "/home/josh/source/c++/scrit",
+    "file": "/home/josh/source/c++/scrit/src/std-query.cpp",
+    "output": "/home/josh/source/c++/scrit/obj/release/std-query.o"
   }
 ]

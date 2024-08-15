@@ -92,8 +92,8 @@ function(substring) {
   }
 
   auto str = args[0]->Cast<String_T>();
-  std::pair<int, int> indices;
-
+  std::pair<int64_t, int64_t> indices;
+  
   if (!Ctx::TryGetInt(args[1], indices.first)) {
     return undefined;
   }
@@ -186,8 +186,8 @@ function(insert) {
   }
   auto str = std::static_pointer_cast<String_T>(args[0]);
   auto &value = str->value;
-
-  int index;
+  
+  int64_t index;
   if (!Ctx::TryGetInt(args[1], index)) {
     return undefined;
   }

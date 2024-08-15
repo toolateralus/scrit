@@ -1,18 +1,18 @@
-using * from array
+using std::array
 
 
 global.global = global
 
 let const colors  = {
-  mut black: string = "\e[0;30m",
-  mut white: string = "\e[0;37m",
-  mut red: string = "\e[0;31m",
-  mut green: string = "\e[0;32m",
-  mut yellow: string = "\e[0;33m",
-  mut blue: string = "\e[0;34m",
-  mut magenta: string = "\e[0;35m",
-  mut cyan: string = "\e[0;36m",
-  mut reset: string = "\e[0m"
+  black: string = "\e[0;30m",
+  white: string = "\e[0;37m",
+  red: string = "\e[0;31m",
+  green: string = "\e[0;32m",
+  yellow: string = "\e[0;33m",
+  blue: string = "\e[0;34m",
+  magenta: string = "\e[0;35m",
+  cyan: string = "\e[0;36m",
+  reset: string = "\e[0m"
 }
 
 for {

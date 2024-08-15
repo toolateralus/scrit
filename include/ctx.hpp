@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -39,20 +40,20 @@ struct Ctx final {
   static Value Null();
   static Bool CreateBool(const bool value = false);
   static String CreateString(const string value = std::string(""));
-  static Int CreateInt(const int value = 0);
-  static Float CreateFloat(const float value = 0.0f);
+  static Int CreateInt(const int64_t value = 0);
+  static Float CreateFloat(const double value = 0.0f);
   static Object CreateObject(shared_ptr<Scope_T> scope = nullptr);
   static Array CreateArray(vector<Value> values);
   static Array CreateArray();
   
-  static Array FromFloatVector(vector<float> &values);
+  static Array FromFloatVector(vector<double> &values);
   static Array FromStringVector(vector<string> &values);
   static Array FromBoolVector(vector<bool> &values);
-  static Array FromIntVector(vector<int> &values);
+  static Array FromIntVector(vector<int64_t> &values);
   
   static bool TryGetString(Value str, string &result);
-  static bool TryGetInt(Value value, int &result);
-  static bool TryGetFloat(Value value, float &result);
+  static bool TryGetInt(Value value, int64_t &result);
+  static bool TryGetFloat(Value value, double &result);
   static bool TryGetBool(Value value, bool &result);
   static bool TryGetObject(Value value, Object &result);
   static bool TryGetArray(Value value, Array &result);
