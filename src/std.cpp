@@ -129,6 +129,14 @@ REGISTER_FUNCTION(atoi, "int", {"string"}) {
   return Ctx::CreateInt(std::atoi(str.c_str()));
 }
 
+REGISTER_FUNCTION(atan2, "float", {"float", "float"}) {
+  std::cout << "atan2" << "\n";
+double 
+  a = args[0]->Cast<Float_T>()->value,
+  b = args[1]->Cast<Float_T>()->value;
+ return Ctx::CreateFloat(atan2(a, b));
+}
+
 REGISTER_FUNCTION(get, "any", {"any", "int"}) {
   if (args[0]->GetPrimitiveType() == Values::PrimitiveType::Tuple) {
     auto tuple = args[0]->Cast<Tuple_T>();
@@ -172,7 +180,7 @@ REGISTER_FUNCTION(readln, "string", {}) {
 
 static struct termios orig_termios;
 REGISTER_FUNCTION(enter_raw_mode, "null", {}) {
-   struct termios raw;
+  struct termios raw;
   tcgetattr(STDIN_FILENO, &orig_termios);
   raw = orig_termios;
   raw.c_lflag &= ~(ICANON | ECHO);

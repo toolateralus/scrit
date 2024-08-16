@@ -181,10 +181,10 @@ static Value dir_delete(std::vector<Value> values) {
 static Value time(std::vector<Value>) {
   auto now = std::chrono::high_resolution_clock::now();
   long milliseconds =
-      (double)std::chrono::duration_cast<std::chrono::milliseconds>(
+      (double)std::chrono::duration_cast<std::chrono::nanoseconds>(
           now.time_since_epoch())
           .count();
-  return Ctx::CreateFloat(milliseconds / 1000.0);
+  return Ctx::CreateFloat(milliseconds);
 }
 static Value sleep(std::vector<Value> args) {
   if (!args.empty()) {
@@ -251,6 +251,8 @@ static void general(ScritModDef *def) {
   def->AddFunction("exit", exit);
   def->AddFunction("sleep", sleep);
 }
+
+
 
 extern "C" ScritModDef *InitScritModule_system() {
   ScritModDef *def = CreateModDef();

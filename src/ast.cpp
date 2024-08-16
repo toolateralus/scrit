@@ -66,7 +66,8 @@ Parameters::Parameters(SourceInfo &info, std::vector<Param> &&params)
     : Statement(info) {
   this->params = std::move(params);
 }
-TypeParameters::TypeParameters(SourceInfo &info, std::vector<TypeParam> &&params)
+TypeParameters::TypeParameters(SourceInfo &info,
+                               std::vector<TypeParam> &&params)
     : Statement(info) {
   this->params = std::move(params);
 }
@@ -89,20 +90,23 @@ ObjectInitializer::ObjectInitializer(SourceInfo &info, const Type &type,
     : Expression(info, type) {
   this->block = std::move(block);
 }
-Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args, TypeArgsPtr &&type_args)
+Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args,
+           TypeArgsPtr &&type_args)
     : Expression(info, operand->type), Statement(info) {
+  
   auto value = operand->Evaluate();
-
+  
   if (!value) {
     // a bit of specific code for functor objects.
     if (auto object = std::dynamic_pointer_cast<Object_T>(value);
         object->HasMember("call")) {
       value = object->GetMember("call");
-    } else {
-      throw std::runtime_error("couldnt find function... call at\n" +
-                               operand->srcInfo.ToString());
     }
   }
+  
+  if (!value)
+    throw std::runtime_error("couldnt find function... call at\n" +
+                             operand->srcInfo.ToString());
 
   auto callable_type = std::dynamic_pointer_cast<CallableType>(value->type);
 
@@ -304,7 +308,6 @@ Declaration::Declaration(SourceInfo &info, const string &name,
                          ExpressionPtr &&expr, const Mutability &mut,
                          const Type &type)
     : Statement(info), name(name), expr(std::move(expr)), mut(mut), type(type) {
-  
   context.CurrentScope()->Declare(name, Value_T::NullOfType(type), mut);
 }
 
@@ -314,7 +317,7 @@ Declaration::Declaration(SourceInfo &info, const string &name,
 // ##############################################
 
 ExecutionResult Program::Execute() {
-  
+
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
@@ -327,10 +330,11 @@ ExecutionResult Program::Execute() {
                                  CC_ToString(result.controlChange));
       }
     } catch (std::runtime_error err) {
-      
+
       std::cout << "\033[1;31m" << err.what() << "\n"
                 << statement->srcInfo.ToString() << std::endl;
-      ASTNode::context.PrintLastCall(); // todo; figure out if we want to unwind the whole call stack every error.
+      ASTNode::context.PrintLastCall(); // todo; figure out if we want to unwind
+                                        // the whole call stack every error.
       std::cout << "\033[0m";
     }
   }
@@ -377,9 +381,7 @@ Value Arguments::Evaluate() {
   }
   return make_shared<Tuple_T>(values);
 }
-Value TypeArguments::Evaluate() {
-  return Ctx::Null();
-}
+Value TypeArguments::Evaluate() { return Ctx::Null(); }
 ExecutionResult Parameters::Execute() { return ExecutionResult::None; }
 ExecutionResult TypeParameters::Execute() { return ExecutionResult::None; }
 ExecutionResult Continue::Execute() { return ExecutionResult::Continue; }
@@ -459,10 +461,10 @@ void ApplyCopySemantics(ExecutionResult &result) {
   }
 }
 ExecutionResult Block::Execute(Scope scope) {
-  
+
   auto last_scope = ASTNode::context.CurrentScope();
   ASTNode::context.SetCurrentScope(scope);
-  
+
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     try {
@@ -476,7 +478,7 @@ ExecutionResult Block::Execute(Scope scope) {
           context.SetCurrentScope(last_scope);
           return result;
         }
-        
+
         return result;
       case ControlChange::None:
         continue;
@@ -491,11 +493,11 @@ ExecutionResult Block::Execute(Scope scope) {
 ExecutionResult Block::Execute() {
   auto last_scope = context.CurrentScope();
   context.SetCurrentScope(scope);
-  
+
   for (auto &statement : statements) {
     Debug::m_hangUpOnBreakpoint(this, statement.get());
     auto result = statement->Execute();
-    
+
     switch (result.controlChange) {
     case ControlChange::Continue:
     case ControlChange::Break:
@@ -514,22 +516,22 @@ ExecutionResult Block::Execute() {
   return ExecutionResult::None;
 }
 Value ObjectInitializer::Evaluate() {
-  
+
   // pass the block it's own scope to prevent it from being cleared.
   // post execution.
   const auto exec_result = block->Execute(block->scope);
   const auto controlChange = exec_result.controlChange;
-  
+
   if (controlChange != ControlChange::None) {
     throw std::runtime_error(
         CC_ToString(controlChange) +
         " not allowed in object initialization. did you mean to use a lambda? "
         ".. => { some body of code returning a value ..}");
   }
-  
+
   auto object = Object_T::New(block->scope->Clone());
   block->scope->Clear();
-  
+
   object->type = type;
   return object;
 }
@@ -557,7 +559,7 @@ Value Call::Evaluate() {
     // TODO: put this somewhere where it makes sense. maybe it's own node for
     // operator overloads where an operator is directly applied to a type like
     // an object.
-    
+
     // Here we overload the () operator. this is done in a special case because
     // we don't treat invocation of callables like a binary expression, it's its
     // own binary expr node.
@@ -590,17 +592,16 @@ ExecutionResult Else::Execute() {
 }
 ExecutionResult For::Execute() {
   auto last_scope = ASTNode::context.CurrentScope();
-  
+
   if (block->statements.empty()) {
     return ExecutionResult::None;
   }
-  
+
   ASTNode::context.SetCurrentScope(scope);
   if (decl) {
     auto _ = decl->Execute();
   }
-  
-  
+
   if (condition && condition->Evaluate()->Equals(Ctx::CreateBool(false))) {
     ASTNode::context.SetCurrentScope(last_scope);
     return ExecutionResult::None;
@@ -611,7 +612,7 @@ ExecutionResult For::Execute() {
   if (condition) {
     while (true) {
       auto conditionResult = condition->Evaluate();
-      
+
       if (conditionResult->Equals(Bool_T::False)) {
         ASTNode::context.SetCurrentScope(last_scope);
         return ExecutionResult::None;
@@ -634,7 +635,7 @@ ExecutionResult For::Execute() {
       }
     }
   }
-  
+
   // for {..}
   while (true) {
     auto result = block->Execute();
@@ -648,17 +649,17 @@ ExecutionResult For::Execute() {
       return ExecutionResult::None;
     }
   }
-  
+
   ASTNode::context.SetCurrentScope(last_scope);
   return ExecutionResult::None;
 }
 ExecutionResult Assignment::Execute() {
   auto result = expr->Evaluate();
-  
+
   if (!result->type->Equals(this->type.get())) {
     throw TypeError(result->type, this->type, "invalid assignment");
   }
-  
+
   ApplyCopySemantics(result);
   context.CurrentScope()->Assign(iden->name, result);
   return ExecutionResult::None;
@@ -691,7 +692,7 @@ Value DotExpr::Evaluate() {
   auto scope = object->scope;
 
   auto result = EvaluateWithinObject(scope, lvalue, right);
-  
+
   return result;
 }
 void DotExpr::Assign(Value value) {
@@ -705,9 +706,8 @@ void DotExpr::Assign(Value value) {
   auto obj = static_cast<Object_T *>(lvalue.get());
 
   if (auto dotExpr = dynamic_cast<DotExpr *>(right.get())) {
-    
+
     dotExpr->Assign(value);
-    
   }
   if (auto identifier = dynamic_cast<Identifier *>(right.get())) {
     obj->SetMember(identifier->name, value);
@@ -760,11 +760,11 @@ Value UnaryExpr::Evaluate() {
 Value BinExpr::Evaluate() {
   auto left = this->left->Evaluate();
   auto right = this->right->Evaluate();
-  
+
   if (!left->type->Equals(right->type.get())) {
     throw TypeError(left->type, right->type);
   }
-  
+
   switch (op) {
   case TType::NullCoalescing: {
     if (left->GetPrimitiveType() == PrimitiveType::Null) {
@@ -863,7 +863,6 @@ ExecutionResult RangeBasedFor::Execute() {
     for (auto &[key, val] : obj->scope->Members()) {
       tuple->values = {Ctx::CreateString(key.value), val};
       tuple->type = TypeSystem::Current().FromTuple(tuple->values);
-      
 
       SetVariable(tuple);
 
@@ -882,7 +881,7 @@ ExecutionResult RangeBasedFor::Execute() {
     }
   } else if (isString) {
     for (auto c : string) {
-      
+
       SetVariable(Ctx::CreateString(std::string() + c));
       auto result = block->Execute();
 
@@ -899,8 +898,7 @@ ExecutionResult RangeBasedFor::Execute() {
     }
   }
 breakLoops:
-  
-  
+
   return ExecutionResult::None;
 }
 ExecutionResult CompoundAssignment::Execute() {
@@ -913,7 +911,7 @@ Value CompAssignExpr::Evaluate() {
   auto iden = dynamic_cast<Identifier *>(left.get());
 
   auto rvalue = right->Evaluate();
-  
+
   switch (op) {
   case TType::AddEq: {
     auto result = lvalue->Add(rvalue);
@@ -1056,18 +1054,19 @@ ExecutionResult TupleDeconstruction::Execute() {
 }
 ExecutionResult Property::Execute() {
   if (lambda) {
-    context.CurrentScope()->Declare(name, make_shared<Lambda_T>(std::move(lambda)), mutability);
+    context.CurrentScope()->Declare(
+        name, make_shared<Lambda_T>(std::move(lambda)), mutability);
   }
   return ExecutionResult::None;
 }
 ExecutionResult Declaration::Execute() {
   auto &scope = ASTNode::context.CurrentScope();
   auto value = this->expr->Evaluate();
-  
+
   if (!type->Equals(value->type.get())) {
     throw TypeError(type, value->type);
   }
-  
+
   ApplyCopySemantics(value);
   ASTNode::context.CurrentScope()->Declare(name, value, mut);
   return ExecutionResult::None;
@@ -1085,22 +1084,22 @@ void Using::Load(const std::string &moduleName) {
   }
 
   activeModules.push_back(moduleName);
-  
+
   auto path = moduleRoot + moduleName + ".dll";
 
   void *handle;
-  
+
   auto module = LoadScritModule(moduleName, path, handle);
-  
+
   auto current_ns = context.current_namespace;
-  
+
   if (module->_namespace) {
     auto idens = Namespace::split(*module->_namespace);
     context.CreateNamespace(idens);
     context.current_namespace->parent = (shared_ptr<Namespace>)nullptr;
     context.SetCurrentNamespace(idens);
   }
-  
+
   for (const auto &[name, t] : *module->types) {
     if (TypeSystem::Current().Exists(name)) {
       TypeSystem::Current().RegisterType(t, true);
@@ -1108,16 +1107,16 @@ void Using::Load(const std::string &moduleName) {
       ASTNode::context.CurrentScope()->InsertType(t->Name(), t);
     }
   }
-  
+
   for (const auto &symbol : *module->functions) {
     ASTNode::context.CurrentScope()->Declare(
         symbol.first, FunctionRegistry::MakeCallable(symbol.second),
         Mutability::Const);
   }
-  
+
   // revert to the original namespace.
   context.current_namespace = current_ns;
-  
+
   if (module->_namespace) {
     context.ImportNamespace(Namespace::split(*module->_namespace));
   }
@@ -1180,15 +1179,16 @@ TypeAlias::TypeAlias(SourceInfo &info, const string &alias, const Type &type)
   context.CurrentScope()->InsertType(alias, type);
 }
 
-Value MethodCall::Evaluate() { 
-  return callable->Call(this->args, this->type_args); 
+Value MethodCall::Evaluate() {
+  return callable->Call(this->args, this->type_args);
 }
 
 MethodCall::MethodCall(SourceInfo &info, const Type &type,
-    ExpressionPtr &&operand, ArgumentsPtr &&args, TypeArgsPtr &&type_args)
+                       ExpressionPtr &&operand, ArgumentsPtr &&args,
+                       TypeArgsPtr &&type_args)
     : Statement(info), Expression(info, type), args(std::move(args)),
       operand(std::move(operand)), type_args(std::move(type_args)) {
-        
+
   callable = FindCallable();
   auto t = std::dynamic_pointer_cast<CallableType>(callable->type);
   this->type = t->returnType;
@@ -1205,16 +1205,16 @@ shared_ptr<Callable_T> MethodCall::FindCallable() {
     throw std::runtime_error("Too few arguments for a method call: the caller "
                              "object was not in the argument list");
   }
-  
+
   Type type;
   auto &caller = args[0];
-  
+
   if (!caller->type) {
     throw std::runtime_error("unable to find type for method caller");
   } else {
     type = caller->type;
   }
-  
+
   if (auto method = type->Get(identifier->name);
       auto callable = std::dynamic_pointer_cast<Callable_T>(method)) {
     if (callable != nullptr) {
@@ -1239,47 +1239,54 @@ void MethodCall::Accept(ASTVisitor *visitor) { visitor->visit(this); }
 StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
                                      vector<StatementPtr> &&statements,
                                      vector<string> &template_args, Scope scope)
-    : Statement(info), type_name(name), template_args(template_args), scope(scope) {
-  
-  
+    : Statement(info), type_name(name), template_args(template_args),
+      scope(scope) {
+
   auto last_scope = ASTNode::context.CurrentScope();
   ASTNode::context.SetCurrentScope(scope);
-  
+
   vector<unique_ptr<Declaration>> declarations;
-  
+
   for (auto &statement : statements) {
     if (auto decl = dynamic_cast<Declaration *>(statement.get())) {
       declarations.push_back(std::unique_ptr<Declaration>(
           static_cast<Declaration *>(statement.release())));
     }
   }
-  
-  auto type = make_shared<StructType>(name, std::move(declarations), template_args, scope);
-  
+
+  auto type = make_shared<StructType>(name, std::move(declarations),
+                                      template_args, scope);
+
   for (auto &statement : statements) {
     if (auto decl = dynamic_cast<FunctionDecl *>(statement.get())) {
       type->Scope().Declare(decl->name, decl->callable, Mutability::Const);
     }
   }
-  
+
   context.SetCurrentScope(last_scope);
   context.CurrentScope()->OverwriteType(name, type);
-  
 }
 ExecutionResult StructDeclaration::Execute() { return ExecutionResult::None; }
 Constructor::Constructor(SourceInfo &info, const Type &type,
                          ArgumentsPtr &&args)
     : Expression(info, type), args(std::move(args)) {}
 Value Constructor::Evaluate() {
-
+  
   auto structType = std::dynamic_pointer_cast<StructType>(type);
   if (!structType && args->values.empty()) {
     return type->Default();
-  } else if (!structType) {
-    // todo: provide more global type specific constructors. Tuples, etc.
-    // we can also use this noed to do functional style casting.
+  } else if (!structType && args->values.size() > 0 && type->Equals(args->values[0]->type.get())) {
+    return args->values[0]->Evaluate()->Clone();
+    // todo find a better way to do this comparison.
+  } else if (std::dynamic_pointer_cast<ArrayType>(type)) {
+    auto _array = Array_T::New(args->values);
+    _array->type = type;
+    return _array;
+  } else {
+    throw std::runtime_error("Couldn't construct object: " + type->Name());
   }
-
+  
+  // TODO; figure out why constructing structs results in empty objects.
   return structType->Construct(args);
 }
 auto Parameters::Clone() -> unique_ptr<Parameters> {
@@ -1325,8 +1332,9 @@ void Parameters::Apply(Scope scope, std::vector<ExpressionPtr> &values) {
 void TypeParameters::Apply(vector<Type> &type_args) {
   auto types_size = type_args.size();
   if (types_size != params.size()) {
-    throw std::runtime_error("wrong number of type args passed to type parameters");
-  } 
+    throw std::runtime_error(
+        "wrong number of type args passed to type parameters");
+  }
   for (size_t i = 0; i < types_size; i++) {
     params[i]->type = type_args[i];
   }
@@ -1349,7 +1357,8 @@ void Parameters::Apply(Scope scope, std::vector<Value> &values) {
 
 void Parameters::ForwardDeclare(Scope scope) {
   for (const auto &param : params) {
-    scope->Declare(param.name, Value_T::NullOfType(param.type), param.mutability);
+    scope->Declare(param.name, Value_T::NullOfType(param.type),
+                   param.mutability);
   }
 }
 Value TypeIdentifier::Evaluate() { return Ctx::Null(); }
