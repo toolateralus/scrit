@@ -397,8 +397,7 @@ endloop:
   Expect(TType::RCurly);
 
   ASTNode::context.SetCurrentScope(last_scope);
-
-  // todo: redo the object system and type it.
+  
   auto type = TypeSystem::Current().Find("object");
   return make_unique<ObjectInitializer>(
       info, type, make_unique<Block>(info, std::move(statements), scope));
@@ -424,6 +423,10 @@ ExpressionPtr Parser::ParseTuple(ExpressionPtr &&expr) {
   Expect(TType::RParen);
   return make_unique<TupleInitializer>(info, std::move(values));
 }
+
+// Todo: Work on these 'lambda' functions, and bring in a more functional syntax. Right now, 
+// this is just a crappy property.
+// Also, document this for users, it's basically a hidden feature.
 ExpressionPtr Parser::ParseLambda() {
   Expect(TType::Lambda);
   // here we use the lambda to say this block's result is a value, an expression
@@ -452,6 +455,8 @@ ExpressionPtr Parser::ParseLambda() {
     return make_unique<Lambda>(info, expr->type, std::move(expr));
   }
 }
+
+// todo: document this better.
 ExpressionPtr Parser::ParseMatch() {
   auto expr = ParseExpression();
   Expect(TType::LCurly);
@@ -460,9 +465,9 @@ ExpressionPtr Parser::ParseMatch() {
   std::vector<ExpressionPtr> expressions = {};
 
   ExpressionPtr default_branch = nullptr;
-
+  
   while (!tokens.empty() && Peek().type != TType::RCurly) {
-
+    
     if (Peek().type == TType::Default) {
       Eat();
       default_branch = ParseLambda();
@@ -472,17 +477,20 @@ ExpressionPtr Parser::ParseMatch() {
       statements.push_back(ParseLambda());
     }
   }
-
+  
   Expect(TType::RCurly);
-
-  // TODO: fix this. this restricts a match expression to only return the type
-  // its matching against, which makes literally 0 sense.
-  return make_unique<Match>(info, expr->type, std::move(expr),
+  
+  // Todo: Maybe we should have a better system for determining the return type. Also, we can have
+  // parse-time type checking to guarantee all of the cases return the same kind nof value.
+  auto return_type  = expressions.back()->type;
+  
+  return make_unique<Match>(info, return_type, std::move(expr),
                             std::move(expressions), std::move(statements),
                             std::move(default_branch));
 }
 OperandPtr Parser::ParseArrayInitializer() {
   Eat();
+  // Construct an empty, untyped array, i.e: []
   if (Peek().type == TType::RBrace) {
     Eat();
     auto type = TypeSystem::Current().Find("array");
@@ -490,8 +498,12 @@ OperandPtr Parser::ParseArrayInitializer() {
                                 make_unique<ArrayInitializer>(
                                     info, type, std::vector<ExpressionPtr>()));
   } else {
+    // Construct an array from an initializer list:
+    // [0, 1, 2, 3 4]
+    // The type of the initializer is assumed to be the same as the first element,
+    // So ["", 0] is illegal.
     vector<ExpressionPtr> init_expressions = {};
-
+    
     Type inner_type;
     while (Peek().type != TType::RBrace) {
       auto val = ParseExpression();

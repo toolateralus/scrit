@@ -1271,13 +1271,26 @@ Constructor::Constructor(SourceInfo &info, const Type &type,
                          ArgumentsPtr &&args)
     : Expression(info, type), args(std::move(args)) {}
 Value Constructor::Evaluate() {
-  
   auto structType = std::dynamic_pointer_cast<StructType>(type);
+  
+  if (structType) {
+    // TODO; figure out why constructing structs results in empty objects.
+    return structType->Construct(args);
+  }
+  
+  // default construction, such as
+  // int()
+  // string()
+  // array<int>() ... etc.
   if (!structType && args->values.empty()) {
     return type->Default();
+  // Copy construction.
   } else if (!structType && args->values.size() > 0 && type->Equals(args->values[0]->type.get())) {
     return args->values[0]->Evaluate()->Clone();
-    // todo find a better way to do this comparison.
+  
+  // creating an array type with a constructor
+  // array<string>("", "", "").. etc.
+  // I believe this will elude the type checker, so this needs to be more rigid in checking
   } else if (std::dynamic_pointer_cast<ArrayType>(type)) {
     auto _array = Array_T::New(args->values);
     _array->type = type;
@@ -1286,8 +1299,7 @@ Value Constructor::Evaluate() {
     throw std::runtime_error("Couldn't construct object: " + type->Name());
   }
   
-  // TODO; figure out why constructing structs results in empty objects.
-  return structType->Construct(args);
+  
 }
 auto Parameters::Clone() -> unique_ptr<Parameters> {
   auto clone = std::make_unique<Parameters>(this->srcInfo);
