@@ -15,6 +15,7 @@
 
 std::string logDir = "log";
 
+// This also inserts 'br:line' breakpoints passed through the cmd line.
 void InsertCmdLineArgs(int argc, char **argv) {
   // create an 'args' array in language.
   Array args = Array_T::New();
@@ -35,10 +36,13 @@ void InsertCmdLineArgs(int argc, char **argv) {
       }
     }
   }
+  args->type = TypeSystem::Current().FindOrCreateTemplate(
+      "array<string>", TypeSystem::Current().Find("array"),
+      {TypeSystem::Current().Find("string")});
   ASTNode::context.CurrentScope()->Declare("args", args, Mutability::Const);
 }
 
-static std::vector<Token> &PreProcessUseStatements(std::vector<Token> &tokens) {
+static std::vector<Token> &PreProcess(std::vector<Token> &tokens) {
   size_t i = 0;
   while (i < tokens.size()) {
     const auto &tok = tokens[i];
@@ -55,7 +59,7 @@ static std::vector<Token> &PreProcessUseStatements(std::vector<Token> &tokens) {
           file.close();
           Lexer lexer;
           auto includedTokens = lexer.Lex(code);
-          includedTokens = PreProcessUseStatements(includedTokens);
+          includedTokens = PreProcess(includedTokens);
           tokens.insert(tokens.begin() + i, includedTokens.begin(),
                         includedTokens.end());
         } else {
@@ -85,6 +89,7 @@ void serialize_ast(unique_ptr<Program> &ast) {
     std::cout << "Failed to open file: ast.txt\n";
   }
 }
+
 int main(int argc, char **argv) {
   Lexer lexer;
   Parser parser;
@@ -92,28 +97,41 @@ int main(int argc, char **argv) {
   std::stringstream buffer;
   for (int i = argc - 1; i >= 1; --i) {
     std::string filename = argv[i];
-    std::ifstream file(filename);
-    if (file.is_open()) {
-      buffer << file.rdbuf();
-      file.close();
-    }
-
-    auto tokens = lexer.Lex(buffer.str());
-
-    tokens = PreProcessUseStatements(tokens);
-
-    auto ast = parser.Parse(std::move(tokens));
-
-    InsertCmdLineArgs(argc, argv);
-
-    if (ast) {
-
-      // serialize_ast(ast);
-
-      ast->Execute();
-    } else {
-      std::cout << "Parsing failed\n";
+    if (filename.ends_with(".scrit")) {
+      std::ifstream file(filename);
+      if (file.is_open()) {
+        buffer << file.rdbuf();
+        file.close();
+      }
     }
   }
+  if (buffer.str().empty()) {
+    std::cout << "\e[1;31m"
+              << "scrit"
+              << "\e[0m"
+              << "\e[1;37m"
+              << ": "
+              << "\e[0m"
+              << "\e[4;31m"
+              << "No input files."
+              << "\e[0m" << std::endl;
+  }
+  auto tokens = lexer.Lex(buffer.str());
+
+  tokens = PreProcess(tokens);
+
+  InsertCmdLineArgs(argc, argv);
+
+  auto ast = parser.Parse(std::move(tokens));
+
+  if (ast) {
+
+    // serialize_ast(ast);
+
+    ast->Execute();
+  } else {
+    std::cout << "Parsing failed\n";
+  }
+
   TypeSystem::Current().global_types.clear();
 }

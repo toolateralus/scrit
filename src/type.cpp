@@ -323,13 +323,14 @@ StructType::StructType(const string &name,
 
 Value StructType::Default() {
   scope->Clear();
+  auto last_scope = ASTNode::context.CurrentScope();
   ASTNode::context.SetCurrentScope(scope);
   for (const auto &field : fields) {
     field->Execute();
   }
   auto object = Ctx::CreateObject(scope->Clone());
   object->type = shared_from_this();
-  scope->Clear();
+  ASTNode::context.SetCurrentScope(last_scope);
   return object;
 }
 
@@ -349,8 +350,9 @@ Value StructType::Construct(ArgumentsPtr &args) {
     if (i < fields.size()) {
       auto &name = fields[i]->name;
       auto field_type = object->GetMember(name)->type;
-      if (!field_type->Equals(arg->type.get())) {
-        throw TypeError(field_type, arg->type);
+      
+      if (!field_type->Equals(value->type.get())) {
+        throw TypeError(field_type, value->type, "Mismatched types in constructor.");
       }
       if (object->scope->Contains(name)) {
         auto [it, _] = object->scope->Find(name);

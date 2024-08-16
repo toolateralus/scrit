@@ -23,6 +23,5 @@ struct ParseError : std::runtime_error {
 
 struct TypeError : std::runtime_error {
   TypeError(const Type &type, const std::string message);
-  TypeError(const Type &type_a, const Type &type_b);
   TypeError(const Type &type_a, const Type &type_b, const std::string message);
 };

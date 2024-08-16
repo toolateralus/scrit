@@ -43,8 +43,13 @@ Value Object_T::Subscript(Value key) {
 Value Object_T::SubscriptAssign(Value key, Value value) {
   string strKey;
   int64_t idx;
+  // For map style behaviour, or 'associative arrays'..
   if (Ctx::TryGetString(key, strKey)) {
-    scope->Assign(strKey, value);
+    if (scope->Contains(strKey)) {
+      scope->Assign(strKey, value);
+    } else {
+      scope->Declare(strKey, value, Mutability::Mut);
+    }
   } else if (Ctx::TryGetInt(key, idx)) {
     auto it = scope->Members().begin();
     std::advance(it, idx);

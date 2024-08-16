@@ -38,7 +38,7 @@ println(
 // "object"
 // "array"
 // "bool"
-// "callable"
+// "func () -> null"
 ```
 
   Note that builtin functions like println and anything listed here, or from an

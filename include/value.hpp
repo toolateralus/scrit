@@ -382,6 +382,9 @@ template <typename T> PrimitiveType Value_T::ValueTypeFromType() {
 }
 
 template <typename T> T *Value_T::Cast() {
+  // todo: remove the RTTI from this. I think if the GetPrimitiveType is wrong we're in serious trouble anyway, however,
+  // for custom library objects like say a user-defined StringStream etc, we may need this,
+  // but we could just use dynamic cast in that case.
   if (ValueTypeFromType<T>() == GetPrimitiveType() &&
       typeid(T) == typeid(*this)) {
     return static_cast<T *>(this);

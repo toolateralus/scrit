@@ -365,7 +365,7 @@ Value Array_T::SubscriptAssign(Value key, Value value) {
     auto array_t = template_t->typenames[0];
 
     if (!value->type->Equals(array_t.get())) {
-      throw TypeError(value->type, array_t);
+      throw TypeError(value->type, array_t, "Mismatched types in subscript assignment.");
     }
     // if not a template, this a generic array
     // But, we have to make sure that it's got a valid generic array type.

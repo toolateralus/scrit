@@ -38,7 +38,7 @@ ExpressionPtr Parser::ParseCompoundAssignment() {
     if (dynamic_cast<Literal *>(left.get())) {
       throw std::runtime_error("cannot use compound assignment on a literal");
     }
-    
+
     Eat();
     auto expr = ParseExpression();
     left = make_unique<CompAssignExpr>(info, std::move(left), std::move(expr),
@@ -148,46 +148,59 @@ ExpressionPtr Parser::ParsePostfix() {
   while (!tokens.empty()) {
     Token next = Peek();
     
+    // Unary operations like -- and ++.
     if (next.type == TType::Increment || next.type == TType::Decrement) {
       Eat();
-      expr = make_unique<UnaryExpr>(info, expr->type, std::move(expr),
-                                    next.type);
+      expr =
+          make_unique<UnaryExpr>(info, expr->type, std::move(expr), next.type);
       continue;
     }
     
+    // TODO: make these cases easier to read, or fix the parsing that led to
+    // this much weight resting on parse_postfix. We should be able to handle
+    // this stuff more naturally
     if (next.type != TType::LParen && next.type != TType::LBrace &&
         next.type != TType::Dot && next.type != TType::Less) {
       break;
     }
-    https://www.twitch.tv/wirtual
-    if (next.type == TType::Less && (Peek(1).type != TType::Identifier || !TypeSystem::Current().Exists(Peek(1).value))) {
+    
+    // iden < when <Type> is not present. This distinguishes template args from less than operators.
+    if (next.type == TType::Less &&
+        (Peek(1).type != TType::Identifier ||
+         !TypeSystem::Current().Exists(Peek(1).value))) {
       break;
     }
-    
+
     // Templated function call
     if (next.type == TType::Less && Peek(1).type == TType::Identifier &&
         TypeSystem::Current().Exists(Peek(1).value)) {
       auto type_args = ParseTypeArgs();
       auto arguments = ParseArguments();
-      expr = make_unique<Call>(info, std::move(expr), std::move(arguments), std::move(type_args));
+      expr = make_unique<Call>(info, std::move(expr), std::move(arguments),
+                               std::move(type_args));
+                               
+                               
+    // Constructors!
     } else if (next.type == TType::LParen) {
       
       auto args = ParseArguments();
       // Type constructors.
       auto type_iden = dynamic_cast<TypeIdentifier *>(expr.get());
-      
+
       if (type_iden) {
         expr = make_unique<Constructor>(info, type_iden->type, std::move(args));
         continue;
       }
       expr = std::make_unique<Call>(info, std::move(expr), std::move(args));
-      
+    
+    // Subscript!
     } else if (next.type == TType::LBrace) {
       Eat();
       auto index = ParseExpression();
       Expect(TType::RBrace);
       expr = std::make_unique<Subscript>(info, expr->type, std::move(expr),
                                          std::move(index));
+    // Dot Expressions.
     } else if (next.type == TType::Dot) {
       Eat();
       // call
@@ -197,15 +210,16 @@ ExpressionPtr Parser::ParsePostfix() {
         auto call = ParseCall(std::move(iden));
         call->args->values.insert(call->args->values.begin(), std::move(expr));
         expr = make_unique<MethodCall>(
-            info, call->type, std::move(call->operand), std::move(call->args), std::move(call->type_args));
+            info, call->type, std::move(call->operand), std::move(call->args),
+            std::move(call->type_args));
       } else {
         auto right = ParseExpression();
-        expr = std::make_unique<DotExpr>(info, right->type, std::move(expr),
+        expr = std::make_unique<DotExpr>(info, std::move(expr),
                                          std::move(right));
       }
     }
   }
-  
+
   return expr;
 }
 ExpressionPtr Parser::ParseOperand() {
@@ -262,7 +276,8 @@ ExpressionPtr Parser::ParseOperand() {
   case TType::Identifier: {
     Eat();
 
-    if (Peek().type == TType::ScopeResolution) {
+    // For 'std::array' kinds of scope resolution
+    if (!tokens.empty() && Peek().type == TType::ScopeResolution) {
       tokens.push_back(token);
       return ParseScopeResolution();
     }
@@ -276,6 +291,7 @@ ExpressionPtr Parser::ParseOperand() {
     return make_unique<Identifier>(info, token.value);
   }
   case TType::LParen: {
+    // Parenthesized expressions.
     Eat();
     auto expr = ParseExpression();
 
@@ -300,23 +316,23 @@ ExpressionPtr Parser::ParseOperand() {
 ExpressionPtr Parser::ParseAnonFunc() {
   auto info = this->info;
   Eat(); // eat the 'func' keyword.
-  
+
   auto last_scope = ASTNode::context.CurrentScope();
   auto scope = ASTNode::context.CreateScope();
   ASTNode::context.SetCurrentScope(scope);
-  
+
   auto params = ParseParameters();
   auto returnType = ParseReturnType();
   auto body = ParseBlock(params);
   auto types = params->ParamTypes();
-  
+
   ASTNode::context.SetCurrentScope(last_scope);
-  
-  auto callable =
-      make_shared<Callable_T>(returnType, std::move(body), std::move(params), scope);
-      
+
+  auto callable = make_shared<Callable_T>(returnType, std::move(body),
+                                          std::move(params), scope);
+
   auto type = TypeSystem::Current().FromCallable(returnType, types);
-  
+
   if (!type) {
     throw std::runtime_error("unable to get type for anonymous function");
   }
@@ -325,16 +341,16 @@ ExpressionPtr Parser::ParseAnonFunc() {
 unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};
-  
+
   auto last_scope = ASTNode::context.CurrentScope();
   auto scope = ASTNode::context.CreateScope();
-  
+
   if (!scope->parent.lock()) {
     scope->parent = last_scope;
   }
-  
+
   ASTNode::context.SetCurrentScope(scope);
-  
+
   while (tokens.size() > 0) {
     auto next = Peek();
 
@@ -352,7 +368,7 @@ unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
     case TType::Func: {
       Eat(); // eat keyword.
       auto stmnt = ParseFunctionDeclaration();
-      scope->Declare(stmnt->name, stmnt->callable,  Mutability::Const);
+      scope->Declare(stmnt->name, stmnt->callable, Mutability::Const);
       statements.push_back(std::move(stmnt));
       break;
     }
@@ -379,10 +395,9 @@ unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
 endloop:
 
   Expect(TType::RCurly);
-  
+
   ASTNode::context.SetCurrentScope(last_scope);
   
-  // todo: redo the object system and type it.
   auto type = TypeSystem::Current().Find("object");
   return make_unique<ObjectInitializer>(
       info, type, make_unique<Block>(info, std::move(statements), scope));
@@ -408,6 +423,10 @@ ExpressionPtr Parser::ParseTuple(ExpressionPtr &&expr) {
   Expect(TType::RParen);
   return make_unique<TupleInitializer>(info, std::move(values));
 }
+
+// Todo: Work on these 'lambda' functions, and bring in a more functional syntax. Right now, 
+// this is just a crappy property.
+// Also, document this for users, it's basically a hidden feature.
 ExpressionPtr Parser::ParseLambda() {
   Expect(TType::Lambda);
   // here we use the lambda to say this block's result is a value, an expression
@@ -416,13 +435,13 @@ ExpressionPtr Parser::ParseLambda() {
   if (!tokens.empty() && Peek().type == TType::LCurly) {
     auto block = ParseBlock();
 
-    Type t;
+    Type t = nullptr;
     for (const auto &statement : block->statements) {
       if (auto ret = dynamic_cast<Return *>(statement.get())) {
         t = ret->value->type;
       }
     }
-    
+
     if (!t) {
       t = TypeSystem::Current().Find("null");
     }
@@ -432,10 +451,16 @@ ExpressionPtr Parser::ParseLambda() {
   // here we use lambda as basically an implicit return.
   // let .. => some_expression
   else {
+    // This suffers from the same problem as constructors did; that dot expressions 
+    // are not typed until evaluation!
+    // Really annoying and must be fixed.
     auto expr = ParseExpression();
     return make_unique<Lambda>(info, expr->type, std::move(expr));
   }
 }
+
+// todo: Fix a bug where returning a match statement directly without declaring it's result as a variable causes type errors;
+// return match .. { .. } has a type of null unless it's put into an inferred declaration. very strange.
 ExpressionPtr Parser::ParseMatch() {
   auto expr = ParseExpression();
   Expect(TType::LCurly);
@@ -444,9 +469,9 @@ ExpressionPtr Parser::ParseMatch() {
   std::vector<ExpressionPtr> expressions = {};
 
   ExpressionPtr default_branch = nullptr;
-
+  
   while (!tokens.empty() && Peek().type != TType::RCurly) {
-
+    
     if (Peek().type == TType::Default) {
       Eat();
       default_branch = ParseLambda();
@@ -456,17 +481,24 @@ ExpressionPtr Parser::ParseMatch() {
       statements.push_back(ParseLambda());
     }
   }
-
+  
   Expect(TType::RCurly);
-
-  // TODO: fix this. this restricts a match expression to only return the type
-  // its matching against, which makes literally 0 sense.
-  return make_unique<Match>(info, expr->type, std::move(expr),
+  
+  // Todo: Maybe we should have a better system for determining the return type. Also, we can have
+  // parse-time type checking to guarantee all of the cases return the same kind nof value.
+  auto type = statements.back()->type;
+  
+  if (!type) {
+    std::cout << "Return type of match expression was null.\n";
+  }
+  
+  return make_unique<Match>(info, type, std::move(expr),
                             std::move(expressions), std::move(statements),
                             std::move(default_branch));
 }
 OperandPtr Parser::ParseArrayInitializer() {
   Eat();
+  // Construct an empty, untyped array, i.e: []
   if (Peek().type == TType::RBrace) {
     Eat();
     auto type = TypeSystem::Current().Find("array");
@@ -474,6 +506,10 @@ OperandPtr Parser::ParseArrayInitializer() {
                                 make_unique<ArrayInitializer>(
                                     info, type, std::vector<ExpressionPtr>()));
   } else {
+    // Construct an array from an initializer list:
+    // [0, 1, 2, 3 4]
+    // The type of the initializer is assumed to be the same as the first element,
+    // So ["", 0] is illegal.
     vector<ExpressionPtr> init_expressions = {};
     
     Type inner_type;
@@ -496,11 +532,12 @@ OperandPtr Parser::ParseArrayInitializer() {
       }
     }
     Expect(TType::RBrace);
-    
+
     auto name = "array<" + inner_type->Name() + ">";
     auto array_t = TypeSystem::Current().Find("array");
-    
-    auto type = TypeSystem::Current().FindOrCreateTemplate(name, array_t, {inner_type});
+
+    auto type =
+        TypeSystem::Current().FindOrCreateTemplate(name, array_t, {inner_type});
     return make_unique<Operand>(
         info, type,
         make_unique<ArrayInitializer>(info, type, std::move(init_expressions)));

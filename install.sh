@@ -61,7 +61,7 @@ echo -e "\e[32mStandard modules installed.\e[0m"
 
 # copy the scrit binary to /usr/local/bin
 echo -e "\e[33mCopying 'scrit' binary to /usr/local/bin...\e[0m"
-output=$(sudo cp bin/release/scrit /usr/local/bin/ 2>&1)
+output=$(sudo cp build/bin/release/scrit_release /usr/local/bin/scrit 2>&1)
 if [ $? -ne 0 ]; then
   echo "Error copying 'scrit' binary to /usr/local/bin: $output"
   exit 1
