@@ -318,7 +318,7 @@ extern "C" ScritModDef *InitScritModule_std_SR_string() {
   ScritModDef *def = CreateModDef();
   *def->description = "your description here";
   auto type = make_shared<StringType>();
-
+  
   type->Set("isalpha", CREATE_CALLABLE(isalpha, "bool", {"string"}));
   type->Set("ispunct", CREATE_CALLABLE(ispunct, "bool", {"string"}));
   type->Set("isdigit", CREATE_CALLABLE(isdigit, "bool", {"string"}));
@@ -342,7 +342,7 @@ extern "C" ScritModDef *InitScritModule_std_SR_string() {
   type->Set("without",
             CREATE_CALLABLE(without, "string", {"string", "string"}));
   def->AddType("string", type);
-
+  
   def->AddFunction("isalpha", CREATE_FUNCTION(isalpha, "bool", {"string"}));
   def->AddFunction("ispunct", CREATE_FUNCTION(ispunct, "bool", {"string"}));
   def->AddFunction("isdigit", CREATE_FUNCTION(isdigit, "bool", {"string"}));

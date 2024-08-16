@@ -762,7 +762,7 @@ Value BinExpr::Evaluate() {
   auto right = this->right->Evaluate();
 
   if (!left->type->Equals(right->type.get())) {
-    throw TypeError(left->type, right->type);
+    throw TypeError(left->type, right->type, "Mismatched types in binary expression.");
   }
 
   switch (op) {
@@ -1064,7 +1064,7 @@ ExecutionResult Declaration::Execute() {
   auto value = this->expr->Evaluate();
 
   if (!type->Equals(value->type.get())) {
-    throw TypeError(type, value->type);
+    throw TypeError(type, value->type, "Mismatched types in declaration");
   }
 
   ApplyCopySemantics(value);

@@ -2,7 +2,6 @@
 #include "error.hpp"
 #include "lexer.hpp"
 #include <stdexcept>
-
 #include "type.hpp"
 
 using namespace Values;
@@ -17,21 +16,21 @@ TypeError::TypeError(const Type &type, const std::string message)
     : std::runtime_error("Type Error: " + message +
                          "\noffending type: " + type->Name()) {}
 
-// use this immediately-invoked lambda to do some checking on the init.
-TypeError::TypeError(const Type &type_a, const Type &type_b)
-    : std::runtime_error([type_a, type_b]() -> std::string {
-        if (!type_a || !type_b) {
-          return "Type Error: One or more type arguments are null.";
-        }
-        return "Type Error: incompatible types.\noffending types:\n" +
-               type_a->Name() + "\n" + type_b->Name();
-      }()) {}
+
 
 TypeError::TypeError(const Type &type_a, const Type &type_b,
                      const std::string message)
     : std::runtime_error([message, type_a, type_b]() -> std::string {
         if (!type_a || !type_b) {
-          return "Type Error: One or more type arguments are null.." + message;
+          std::string type_str = "";
+          
+          if (type_a) {
+            type_str += type_a->Name();
+          }
+          if (type_b) {
+            type_str += type_a ? " ," : ""  + type_b->Name();
+          }
+          return "Type error for types: " + type_str + '\n' + message;
         }
         return "Type Error: incompatible types.\noffending types:\n" +
                type_a->Name() + "\n" + type_b->Name() + "\n" + message;
