@@ -89,33 +89,30 @@ int main(int argc, char **argv) {
   Lexer lexer;
   Parser parser;
 
-  if (argc > 1) {
-    std::string filename = argv[1];
+  std::stringstream buffer;
+  for (int i = argc - 1; i >= 1; --i) {
+    std::string filename = argv[i];
     std::ifstream file(filename);
     if (file.is_open()) {
-      std::stringstream buffer;
       buffer << file.rdbuf();
-      std::string code = buffer.str();
       file.close();
+    }
 
-      auto tokens = lexer.Lex(code);
+    auto tokens = lexer.Lex(buffer.str());
 
-      tokens = PreProcessUseStatements(tokens);
+    tokens = PreProcessUseStatements(tokens);
 
-      auto ast = parser.Parse(std::move(tokens));
+    auto ast = parser.Parse(std::move(tokens));
 
-      InsertCmdLineArgs(argc, argv);
+    InsertCmdLineArgs(argc, argv);
 
-      if (ast) {
-        
-        //serialize_ast(ast);
-        
-        ast->Execute();
-      } else {
-        std::cout << "Parsing failed\n";
-      }
+    if (ast) {
+
+      // serialize_ast(ast);
+
+      ast->Execute();
     } else {
-      std::cout << "Failed to open file: " << filename << "\n";
+      std::cout << "Parsing failed\n";
     }
   }
   TypeSystem::Current().global_types.clear();

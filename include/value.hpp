@@ -4,6 +4,7 @@
 #include "lexer.hpp"
 #include "native.hpp"
 #include "type.hpp"
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -134,12 +135,12 @@ struct Null_T : Value_T {
 };
 
 struct Int_T : Value_T {
-  int value = 0;
-  Int_T(int value);
+  int64_t value = 0;
+  Int_T(int64_t value);
   ~Int_T() override {}
   Int_T() = delete;
-
-  static Int New(int value = 0) { return make_shared<Int_T>(value); }
+  
+  static Int New(int64_t value = 0) { return make_shared<Int_T>(value); }
   virtual bool Equals(Value value) override;
   virtual void Set(Value newValue) override;
   virtual Bool Or(Value other) override;
@@ -156,11 +157,11 @@ struct Int_T : Value_T {
   Value Clone() override;
 };
 struct Float_T : Value_T {
-  float value = 0.0f;
-  Float_T(float value);
+  double value = 0.0f;
+  Float_T(double value);
   Float_T() = delete;
   ~Float_T() {}
-  static Float New(float value = 0) { return make_shared<Float_T>(value); }
+  static Float New(double value = 0) { return make_shared<Float_T>(value); }
   virtual bool Equals(Value value) override;
   virtual Value Add(Value other) override;
   virtual Value Subtract(Value other) override;
@@ -292,7 +293,7 @@ struct Array_T : Value_T {
   Array_T() = delete;
   Array_T(vector<Value> init);
   vector<Value> values = {};
-  void BoundsCheck(int idx) {
+  void BoundsCheck(int64_t idx) {
     if (idx >= values.size()) {
       throw std::runtime_error(
           "Index out of bounds.\nindex was: " + std::to_string(idx) +

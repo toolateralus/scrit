@@ -22,8 +22,8 @@
 #define null Ctx::Null()
 
 REGISTER_FUNCTION(mod, "int", {"int", "int"}) {
-  int v;
-  int mod;
+  int64_t v;
+  int64_t mod;
 
   if (args.empty() || !Ctx::TryGetInt(args[0], v) ||
       !Ctx::TryGetInt(args[1], mod)) {
@@ -33,8 +33,8 @@ REGISTER_FUNCTION(mod, "int", {"int", "int"}) {
 }
 
 REGISTER_FUNCTION(fmod, "float", {"float", "float"}) {
-  float v;
-  float mod;
+  double v;
+  double mod;
   if (args.empty() || !Ctx::TryGetFloat(args[0], v) ||
       !Ctx::TryGetFloat(args[1], mod)) {
     return undefined;
@@ -65,7 +65,7 @@ REGISTER_FUNCTION(assert, "null", {"bool", "any"}) {
   return Ctx::Null();
 }
 
-// typeof
+// get_type
 REGISTER_FUNCTION(get_type, "string", {"any"}) {
   if (args.empty()) {
     return Ctx::Null();
@@ -83,8 +83,8 @@ REGISTER_FUNCTION(serialize, "string", {"any", "object"}) {
   Writer::Settings settings = {};
   Object settingsObj;
   if (Ctx::TryGetObject(args[1], settingsObj)) {
-    int indentation = 0;
-    int startingIndent;
+    int64_t indentation = 0;
+    int64_t startingIndent;
     string refHandling;
     if (Ctx::TryGetInt(settingsObj->GetMember("indentSize"), indentation)) {
       settings.IndentSize = indentation;
@@ -139,8 +139,8 @@ REGISTER_FUNCTION(get, "any", {"any", "int"}) {
 }
 
 REGISTER_FUNCTION(cbrt, "float", {"any"}) {
-  float f;
-  int i;
+  double f;
+  int64_t i;
   if (Ctx::TryGetFloat(args[0], f)) {
     return Ctx::CreateFloat(std::cbrt(f));
   } else if (Ctx::TryGetInt(args[0], i)) {

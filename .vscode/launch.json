@@ -9,27 +9,10 @@
       "type": "lldb",
       "request": "launch",
       "name": "Debug",
-      "program": "${workspaceFolder}/bin/debug/scrit",
+      "program": "${workspaceFolder}/build/bin/debug/scrit_debug",
       "args": ["test.scrit", "data"],
       "cwd": "${workspaceFolder}",
       "expressions": "native"
-    },
-    {
-      "preLaunchTask": "release-build",
-      "type": "lldb",
-      "request": "launch",
-      "name": "Release",
-      "program": "${workspaceFolder}/bin/release/scrit",
-      "args": ["test.scrit"],
-      "cwd": "${workspaceFolder}"
-    },
-    {
-      "preLaunchTask": "test-build",
-      "type": "lldb",
-      "request": "launch",
-      "name": "Test",
-      "program": "${workspaceFolder}/bin/test/scrit",
-      "cwd": "${workspaceFolder}",
     },
   ]
 }

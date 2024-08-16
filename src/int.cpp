@@ -3,11 +3,10 @@
 #include "ctx.hpp"
 #include "type.hpp"
 #include "value.hpp"
-
-Int_T::Int_T(int value) : Value_T(TypeSystem::Current().Int) {
+#include <cstdint>
+Int_T::Int_T(int64_t value) : Value_T(TypeSystem::Current().Int) {
   this->value = value;
 }
-
 Value Int_T::Clone() { return Ctx::CreateInt(value); }
 
 bool Int_T::Equals(Value value) {

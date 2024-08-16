@@ -4,7 +4,7 @@ using std::string
 using std::array
 
 func buildScript(name: string) -> string {
-  return "sudo clang++ -std=c++2b -shared -fPIC -o /usr/local/scrit/modules/" + name + ".dll " + name + ".cpp" + " -lscrit"
+  return "sudo clang++ -std=c++26 -shared -fPIC -o /usr/local/scrit/modules/" + name + ".dll " + name + ".cpp" + " -lscrit"
 }
 
 func cppBoilerplate(name: string) -> string {

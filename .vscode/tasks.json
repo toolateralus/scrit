@@ -6,39 +6,14 @@
       "type": "shell",
       "command": "make",
       "args": [
-        "debug",
         "-j24",
-        "-j16"
       ],
       "group": {
         "kind": "build",
         "isDefault": true
-      }
-    },
-    {
-      "label": "release-build",
-      "type": "shell",
-      "command": "make",
-      "args": [
-        "release",
-        "-j24",
-        "-j16"
-      ],
-      "group": {
-        "kind": "build",
-      }
-    },
-    {
-      "label": "test-build",
-      "type": "shell",
-      "command": "make",
-      "args": [
-        "test-build",
-        "-j24",
-        "-j16"
-      ],
-      "group": {
-        "kind": "build",
+      },
+      "options": {
+        "cwd": "${workspaceFolder}/build"
       }
     },
   ]

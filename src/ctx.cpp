@@ -1,7 +1,7 @@
 #include "ctx.hpp"
 #include "value.hpp"
 
-Values::Array Ctx::FromFloatVector(vector<float> &values) {
+Values::Array Ctx::FromFloatVector(vector<double> &values) {
   Array array = CreateArray();
   for (const auto &value : values) {
     array->Push(Ctx::CreateFloat(value));
@@ -22,7 +22,7 @@ Values::Array Ctx::FromBoolVector(vector<bool> &values) {
   }
   return array;
 }
-Values::Array Ctx::FromIntVector(vector<int> &values) {
+Values::Array Ctx::FromIntVector(vector<int64_t> &values) {
   Array array = CreateArray();
   for (const auto &value : values) {
     array->Push(Ctx::CreateInt(value));
@@ -33,8 +33,8 @@ Value Ctx::Null() { return Value_T::Null; }
 
 Bool Ctx::CreateBool(const bool value) { return Bool_T::New(value); }
 String Ctx::CreateString(const string value) { return String_T::New(value); }
-Int Ctx::CreateInt(const int value) { return Int_T::New(value); }
-Float Ctx::CreateFloat(const float value) { return Float_T::New(value); }
+Int Ctx::CreateInt(const int64_t value) { return Int_T::New(value); }
+Float Ctx::CreateFloat(const double value) { return Float_T::New(value); }
 Object Ctx::CreateObject(Scope scope) { return Object_T::New(scope); }
 Array Ctx::CreateArray(vector<Value> values) { return Array_T::New(values); }
 
@@ -59,14 +59,14 @@ bool Ctx::TryGetBool(Value value, bool &result) {
   }
   return false;
 }
-bool Ctx::TryGetFloat(Value value, float &result) {
+bool Ctx::TryGetFloat(Value value, double &result) {
   if (value->GetPrimitiveType() == PrimitiveType::Float) {
     result = static_cast<Float_T *>(value.get())->value;
     return true;
   }
   return false;
 }
-bool Ctx::TryGetInt(Value value, int &result) {
+bool Ctx::TryGetInt(Value value, int64_t &result) {
   if (value->GetPrimitiveType() == PrimitiveType::Int) {
     result = static_cast<Int_T *>(value.get())->value;
     return true;

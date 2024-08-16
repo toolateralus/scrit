@@ -210,9 +210,8 @@ struct Tests {
     assert(count_down(10) == 0, "recursion test failed")
   }
   func run(self: Tests) {
-    // self.test_op_overload() :: FAILING
+    //self.test_op_overload() :: FAILING
     self.test_recursion()
-    
     self.test_fn_ptr()
     self.test_conditionals()
     self.test_control_flow()
@@ -226,6 +225,9 @@ struct Tests {
     self.test_literals()
     self.test_range_based()
   }
+  
+  
+  
 }
 
 let t = Tests()
