@@ -214,7 +214,7 @@ ExpressionPtr Parser::ParsePostfix() {
             std::move(call->type_args));
       } else {
         auto right = ParseExpression();
-        expr = std::make_unique<DotExpr>(info, right->type, std::move(expr),
+        expr = std::make_unique<DotExpr>(info, std::move(expr),
                                          std::move(right));
       }
     }
@@ -435,7 +435,7 @@ ExpressionPtr Parser::ParseLambda() {
   if (!tokens.empty() && Peek().type == TType::LCurly) {
     auto block = ParseBlock();
 
-    Type t;
+    Type t = nullptr;
     for (const auto &statement : block->statements) {
       if (auto ret = dynamic_cast<Return *>(statement.get())) {
         t = ret->value->type;
@@ -451,12 +451,16 @@ ExpressionPtr Parser::ParseLambda() {
   // here we use lambda as basically an implicit return.
   // let .. => some_expression
   else {
+    // This suffers from the same problem as constructors did; that dot expressions 
+    // are not typed until evaluation!
+    // Really annoying and must be fixed.
     auto expr = ParseExpression();
     return make_unique<Lambda>(info, expr->type, std::move(expr));
   }
 }
 
-// todo: document this better.
+// todo: Fix a bug where returning a match statement directly without declaring it's result as a variable causes type errors;
+// return match .. { .. } has a type of null unless it's put into an inferred declaration. very strange.
 ExpressionPtr Parser::ParseMatch() {
   auto expr = ParseExpression();
   Expect(TType::LCurly);
@@ -482,9 +486,13 @@ ExpressionPtr Parser::ParseMatch() {
   
   // Todo: Maybe we should have a better system for determining the return type. Also, we can have
   // parse-time type checking to guarantee all of the cases return the same kind nof value.
-  auto return_type  = expressions.back()->type;
+  auto type = statements.back()->type;
   
-  return make_unique<Match>(info, return_type, std::move(expr),
+  if (!type) {
+    std::cout << "Return type of match expression was null.\n";
+  }
+  
+  return make_unique<Match>(info, type, std::move(expr),
                             std::move(expressions), std::move(statements),
                             std::move(default_branch));
 }

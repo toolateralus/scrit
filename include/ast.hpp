@@ -443,13 +443,15 @@ struct Noop : Statement {
   void Accept(ASTVisitor *visitor) override;
 };
 struct DotExpr : Expression {
-  DotExpr(SourceInfo &info, const Type &type, ExpressionPtr &&left,
+  DotExpr(SourceInfo &info, ExpressionPtr &&left,
           ExpressionPtr &&right);
   ExpressionPtr left;
   ExpressionPtr right;
   Value Evaluate() override;
   void Accept(ASTVisitor *visitor) override;
   void Assign(Value value);
+  
+  Type EvaluateType() const;
 };
 struct DotAssignment : Statement {
   DotAssignment(SourceInfo &info, ExpressionPtr &&dot, ExpressionPtr &&value);

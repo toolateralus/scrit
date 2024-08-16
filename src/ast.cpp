@@ -131,11 +131,12 @@ Assignment::Assignment(SourceInfo &info, const Type &type, IdentifierPtr &&iden,
     : Statement(info), iden(std::move(iden)), expr(std::move(expr)),
       type(type) {}
 
-DotExpr::DotExpr(SourceInfo &info, const Type &type, ExpressionPtr &&left,
+// TODO: see "EvaluateType" for info, but fix the lack of typing on dot expressions at parse time.
+// For now, Match statements must cast their values I guess (might work?)
+DotExpr::DotExpr(SourceInfo &info, ExpressionPtr &&left,
                  ExpressionPtr &&right)
-    : Expression(info, type) {
-  this->left = std::move(left);
-  this->right = std::move(right);
+    : left(std::move(left)), right(std::move(right)), Expression(info, nullptr) {
+    //this->type = EvaluateType();
 }
 DotAssignment::DotAssignment(SourceInfo &info, ExpressionPtr &&dot,
                              ExpressionPtr &&value)
@@ -681,12 +682,12 @@ Value EvaluateWithinObject(Scope &scope, Value object,
 }
 Value DotExpr::Evaluate() {
   auto lvalue = left->Evaluate();
-
+  
   if (lvalue->GetPrimitiveType() != PrimitiveType::Object) {
     throw std::runtime_error("invalid lhs on dot operation : " +
                              TypeToString(lvalue->GetPrimitiveType()));
   }
-
+  
   auto object = static_cast<Object_T *>(lvalue.get());
 
   auto scope = object->scope;
@@ -1064,7 +1065,7 @@ ExecutionResult Declaration::Execute() {
   auto value = this->expr->Evaluate();
 
   if (!type->Equals(value->type.get())) {
-    throw TypeError(type, value->type, "Mismatched types in declaration");
+    throw TypeError(type, value->type, "Mismatched types in declaration :: " + name);
   }
 
   ApplyCopySemantics(value);
@@ -1285,7 +1286,8 @@ Value Constructor::Evaluate() {
   if (!structType && args->values.empty()) {
     return type->Default();
   // Copy construction.
-  } else if (!structType && args->values.size() > 0 && type->Equals(args->values[0]->type.get())) {
+  // Fix this atrocious condition, we shouldn't have to double evaluate arguments.
+  } else if (!structType && args->values.size() > 0 && type->Equals(args->values[0]->Evaluate()->type.get())) {
     return args->values[0]->Evaluate()->Clone();
   
   // creating an array type with a constructor
@@ -1414,3 +1416,23 @@ RangeBasedFor::RangeBasedFor(SourceInfo &info, vector<string> &names,
                              ExpressionPtr &&rhs, BlockPtr &&block)
     : Statement(info), names(names), rhs(std::move(rhs)),
       block(std::move(block)) {}
+
+
+// How can we make this possible? we can't evaluate every dot expression at parse-time.. 
+// Objects are declared but their values are not yet constructed.
+// TODO: fix this
+Type DotExpr::EvaluateType() const {
+  auto left = this->left->Evaluate();
+  auto last_scope = ASTNode::context.CurrentScope();
+  if (auto obj = std::dynamic_pointer_cast<Object_T>(left)) {
+    ASTNode::context.SetCurrentScope(obj->scope);
+    if (auto dot = dynamic_cast<DotExpr *>(right.get())) {
+      return dot->EvaluateType();
+    } else {
+      return right->type;
+    }
+    ASTNode::context.SetCurrentScope(last_scope);
+  } else {
+    throw TypeError(left->type, "Invalid dot expression! must target an object to get a property or field.. got: " + left->type->Name());
+  }
+}
