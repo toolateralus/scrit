@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <vector>
@@ -132,6 +133,6 @@ int main(int argc, char **argv) {
   } else {
     std::cout << "Parsing failed\n";
   }
-
+  
   TypeSystem::Current().global_types.clear();
 }
