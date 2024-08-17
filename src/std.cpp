@@ -7,6 +7,7 @@
 #include "value.hpp"
 #include <cmath>
 #include <iostream>
+#include <ranges>
 #include <vector>
 
 #ifdef __linux__
@@ -62,6 +63,19 @@ REGISTER_FUNCTION(assert, "null", {"bool", "any"}) {
     }
     throw std::runtime_error("assertion failed: " + args[0]->ToString());
   }
+  return Ctx::Null();
+}
+
+
+REGISTER_FUNCTION(eval, "any", {"string"}) {
+  if (args.empty()) 
+    return Ctx::Null();
+  
+   Lexer lexer;
+  Parser parser;
+  auto tokens = lexer.Lex(args[0]->ToString());
+  auto ast = parser.Parse(std::move(tokens));
+  ast->Execute();
   return Ctx::Null();
 }
 
