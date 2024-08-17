@@ -4,9 +4,11 @@
 #include "ctx.hpp"
 #include "value.hpp"
 #include <algorithm>
+#include <cstddef>
 #include <iostream>
 #include <ranges>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 Value eval(std::vector<Value>);
@@ -69,8 +71,16 @@ DebugControlFlow Debug::HandleInput(std::string &line) {
   } else if (command == "print" || command == "p" && args.size() > 0) {
     auto input = "println(" + joinStrings(args, ' ') + ")";
     eval({Ctx::CreateString(input)});
+  } else if (command == "show") {
+    m_printBreakpoints();
+  } else if (command == "rm" && args.size() == 1) {
+    int index = std::stoi(args[0]);
+    m_removeBreakpoint(index);
   } else if (command == "help") {
     std::cout
+      << "\033[1;32mrm:<index>\033[0m - \033[1;30mRemove a breakpoint at a specific index\033[0m" << "\n"
+      << "\033[1;32mshow\033[0m - \033[1;30mShow all breakpoints\033[0m" << "\n"
+      << "\033[1;32mbr:<line>\033[0m - \033[1;30mSet a breakpoint at a specific line number\033[0m" << "\n"
       << "\033[1;32mover | ov\033[0m - \033[1;30mStep over to the next line of code\033[0m" << "\n"
       << "\033[1;32min | i\033[0m - \033[1;30mStep into a function or block\033[0m" << "\n"
       << "\033[1;32mout | o\033[0m - \033[1;30mStep out of the current function or block\033[0m" << "\n"
@@ -152,6 +162,20 @@ void Debug::RemoveBreakpoint(const int &loc, const bool isTemporary) {
 }
 void Debug::InsertBreakpoint(const int &loc, const bool isTemporary = false) {
   breakpoints.push_back({loc, isTemporary});
+}
+
+void Debug::m_removeBreakpoint(int index) {
+  if (index >= 0 && index < breakpoints.size()) {
+    breakpoints.erase(breakpoints.begin() + index);
+  }
+}
+
+void Debug::m_printBreakpoints() {
+  std::cout << "Breakpoints:" << std::endl;
+  for (int i = 0; const auto& breakpoint : breakpoints) {
+    std::cout << i << ": loc: " << breakpoint.loc << std::endl;
+    i++;
+  }
 }
 
 void Debug::m_setBreakpoint(std::string &line, const string &breakpointKey) {

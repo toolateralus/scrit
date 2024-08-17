@@ -36,6 +36,8 @@ struct Debug {
   static void StepIn() { requestedStep = StepKind::In; }
   static void StepOut() { requestedStep = StepKind::Out; }
   static void RemoveBreakpoint(const int &loc, const bool isTemporary);
+  static void m_printBreakpoints();
+  static void m_removeBreakpoint(int index);
 
   static void m_hangUpOnBreakpoint(ASTNode *owner, ASTNode *node);
 
