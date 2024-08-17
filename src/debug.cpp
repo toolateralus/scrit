@@ -7,6 +7,9 @@
 #include <iostream>
 #include <ranges>
 #include <stdexcept>
+#include <vector>
+
+Value eval(std::vector<Value>);
 
 std::vector<std::string> splitString(const std::string &str, char delimiter) {
   std::vector<std::string> tokens;
@@ -20,6 +23,17 @@ std::vector<std::string> splitString(const std::string &str, char delimiter) {
   return tokens;
 }
 
+std::string joinStrings(const std::ranges::view auto &view, char delimiter) {
+  std::ostringstream oss;
+  for (auto it = view.begin(); it != view.end(); ++it) {
+    if (it != view.begin()) {
+      oss << delimiter;
+    }
+    oss << *it;
+  }
+  return oss.str();
+}
+
 std::vector<Breakpoint> Debug::breakpoints = {};
 StepKind Debug::requestedStep = StepKind::None;
 ASTNode *Debug::lastNode = nullptr;
@@ -31,6 +45,7 @@ DebugControlFlow Debug::HandleInput(std::string &line) {
     return DebugControlFlow::None;
   }
   auto tokens = splitString(line, ' ');
+  auto args = tokens | std::ranges::views::drop(1);
   if (line == "over" || line == "ov") {
     StepOver();
     return DebugControlFlow::Break;
@@ -50,10 +65,9 @@ DebugControlFlow Debug::HandleInput(std::string &line) {
     return DebugControlFlow::Break;
   } else if (line == "inspect" || line == "s") {
     m_printScope();
-  } else if (tokens[0] == "var" && tokens.size() >= 2) {
-    auto &scope = ASTNode::context.CurrentScope();
-    auto val = ASTNode::context.Find(tokens[1]);
-    std::cout << val->ToString() << "\n";
+  } else if (tokens[0] == "print" && args.size() > 0) {
+    auto input = "println(" + joinStrings(args, ' ') + ")";
+    eval({Ctx::CreateString(input)});
   }
   return DebugControlFlow::None;
 }
