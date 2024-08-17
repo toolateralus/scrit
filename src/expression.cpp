@@ -213,7 +213,7 @@ ExpressionPtr Parser::ParsePostfix() {
             info, call->type, std::move(call->operand), std::move(call->args),
             std::move(call->type_args));
       } else {
-        auto right = ParseExpression();
+        auto right = ParseOperand();
         expr = std::make_unique<DotExpr>(info, std::move(expr),
                                          std::move(right));
       }
