@@ -5,7 +5,20 @@
 #include "value.hpp"
 #include <algorithm>
 #include <iostream>
+#include <ranges>
 #include <stdexcept>
+
+std::vector<std::string> splitString(const std::string &str, char delimiter) {
+  std::vector<std::string> tokens;
+  std::stringstream ss(str);
+  std::string token;
+
+  while (std::getline(ss, token, delimiter)) {
+    tokens.push_back(token);
+  }
+
+  return tokens;
+}
 
 std::vector<Breakpoint> Debug::breakpoints = {};
 StepKind Debug::requestedStep = StepKind::None;
@@ -14,6 +27,10 @@ int Debug::stepOutIndex = -1;
 std::string Debug::breakpointKey = "br:";
 
 DebugControlFlow Debug::HandleInput(std::string &line) {
+  if (line.empty()) {
+    return DebugControlFlow::None;
+  }
+  auto tokens = splitString(line, ' ');
   if (line == "over" || line == "ov") {
     StepOver();
     return DebugControlFlow::Break;
@@ -33,6 +50,10 @@ DebugControlFlow Debug::HandleInput(std::string &line) {
     return DebugControlFlow::Break;
   } else if (line == "inspect" || line == "s") {
     m_printScope();
+  } else if (tokens[0] == "var" && tokens.size() >= 2) {
+    auto &scope = ASTNode::context.CurrentScope();
+    auto val = ASTNode::context.Find(tokens[1]);
+    std::cout << val->ToString() << "\n";
   }
   return DebugControlFlow::None;
 }
