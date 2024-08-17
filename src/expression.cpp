@@ -341,30 +341,30 @@ ExpressionPtr Parser::ParseAnonFunc() {
 unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
   Expect(TType::LCurly);
   vector<StatementPtr> statements = {};
-
+  
   auto last_scope = ASTNode::context.CurrentScope();
   auto scope = ASTNode::context.CreateScope();
-
+  
   if (!scope->parent.lock()) {
     scope->parent = last_scope;
   }
-
+  
   ASTNode::context.SetCurrentScope(scope);
-
+  
   while (tokens.size() > 0) {
     auto next = Peek();
-
+    
     switch (next.type) {
     //
     case TType::Comma: {
       Eat();
       continue;
     }
-
+    
     // break the loop not the switch.
     case TType::RCurly:
       goto endloop;
-
+    
     case TType::Func: {
       Eat(); // eat keyword.
       auto stmnt = ParseFunctionDeclaration();
@@ -393,7 +393,7 @@ unique_ptr<ObjectInitializer> Parser::ParseObjectInitializer() {
     }
   }
 endloop:
-
+  
   Expect(TType::RCurly);
 
   ASTNode::context.SetCurrentScope(last_scope);

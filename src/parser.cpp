@@ -154,9 +154,7 @@ unique_ptr<StructDeclaration> Parser::ParseStructDeclaration() {
                   name, std::vector<unique_ptr<Declaration>>(), template_args,  make_shared<Scope_T>(nullptr));
                   
     ASTNode::context.CurrentScope()->InsertType(name, type);
-    
     auto obj = ParseObjectInitializer();
-    
     return make_unique<StructDeclaration>(
         info, name, std::move(obj->block->statements), template_args, obj->block->scope);
 }
