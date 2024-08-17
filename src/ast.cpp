@@ -680,12 +680,14 @@ Value EvaluateWithinObject(Scope &scope, Value object,
   ASTNode::context.SetCurrentScope(last_scope);
   return result;
 }
+
 Value DotExpr::Evaluate() {
   auto lvalue = left->Evaluate();
   
   if (lvalue->GetPrimitiveType() != PrimitiveType::Object) {
     throw std::runtime_error("invalid lhs on dot operation : " +
-                             TypeToString(lvalue->GetPrimitiveType()));
+                             TypeToString(lvalue->GetPrimitiveType())
+                            + '\n' + lvalue->ToString());
   }
   
   auto object = static_cast<Object_T *>(lvalue.get());
@@ -693,7 +695,7 @@ Value DotExpr::Evaluate() {
   auto scope = object->scope;
 
   auto result = EvaluateWithinObject(scope, lvalue, right);
-
+  
   return result;
 }
 void DotExpr::Assign(Value value) {
@@ -1064,7 +1066,7 @@ ExecutionResult Declaration::Execute() {
   auto &scope = ASTNode::context.CurrentScope();
   auto value = this->expr->Evaluate();
 
-  if (!type->Equals(value->type.get())) {
+  if (type && !type->Equals(value->type.get())) {
     throw TypeError(type, value->type, "Mismatched types in declaration :: " + name);
   }
 

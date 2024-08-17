@@ -83,10 +83,14 @@ Object_T::Object_T(Scope scope)
 }
 
 Value Object_T::CallOpOverload(Value &arg, const string &op_key) {
-  if (!type->Scope().Contains(op_key)) {
+  if (!type->Scope().Contains(op_key) && !scope->Contains(op_key)) {
     throw std::runtime_error("Couldn't find operator overload: " + op_key);
   }
-  auto [it, found] = type->Scope().Find(op_key);
+  
+  
+  Scope_T &_scope = type->Scope().Contains(op_key) ? type->Scope() : *scope;
+  
+  auto [it, found] = scope->Find(op_key);
   
   if (!found || it->second->GetPrimitiveType() != PrimitiveType::Callable) {
     throw std::runtime_error("Operator overload was not a callable");
