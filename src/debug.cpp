@@ -46,6 +46,7 @@ DebugControlFlow Debug::HandleInput(std::string &line) {
   }
   auto tokens = splitString(line, ' ');
   auto args = tokens | std::ranges::views::drop(1);
+  auto command = tokens[0];
   if (line == "over" || line == "ov") {
     StepOver();
     return DebugControlFlow::Break;
@@ -65,9 +66,19 @@ DebugControlFlow Debug::HandleInput(std::string &line) {
     return DebugControlFlow::Break;
   } else if (line == "inspect" || line == "s") {
     m_printScope();
-  } else if (tokens[0] == "print" && args.size() > 0) {
+  } else if (command == "print" || command == "p" && args.size() > 0) {
     auto input = "println(" + joinStrings(args, ' ') + ")";
     eval({Ctx::CreateString(input)});
+  } else if (command == "help") {
+    std::cout
+      << "\033[1;32mover | ov\033[0m - \033[1;30mStep over to the next line of code\033[0m" << "\n"
+      << "\033[1;32min | i\033[0m - \033[1;30mStep into a function or block\033[0m" << "\n"
+      << "\033[1;32mout | o\033[0m - \033[1;30mStep out of the current function or block\033[0m" << "\n"
+      << "\033[1;32mcontinue | c\033[0m - \033[1;30mContinue execution until the next breakpoint\033[0m" << "\n"
+      << "\033[1;32minspect | s\033[0m - \033[1;30mPrint the current scope variables\033[0m" << "\n"
+      << "\033[1;32mprint | p\033[0m - \033[1;30mPrint the value of an expression\033[0m" << "\n";
+  } else {
+    std::cout << "\033[1;31mCommand not found.\033[0m" << std::endl;
   }
   return DebugControlFlow::None;
 }
@@ -93,6 +104,7 @@ void Debug::m_hangUpOnBreakpoint(ASTNode *owner, ASTNode *node) {
 
   std::cout << "breakpoint hit : line:" << breakpoint.loc << "\n" << std::flush;
   std::cout << "node: " << typeid(*node).name() << "\n";
+  std::cout << "Type \"help\" and press enter to see a list of commands."<< "\n";
 
   while (requestedStep == StepKind::None &&
          breakpoint.loc == node->srcInfo.loc) {
