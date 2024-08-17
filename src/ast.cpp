@@ -1066,7 +1066,7 @@ ExecutionResult Declaration::Execute() {
   auto &scope = ASTNode::context.CurrentScope();
   auto value = this->expr->Evaluate();
 
-  if (!type->Equals(value->type.get())) {
+  if (type && !type->Equals(value->type.get())) {
     throw TypeError(type, value->type, "Mismatched types in declaration :: " + name);
   }
 
