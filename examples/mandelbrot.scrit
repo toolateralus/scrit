@@ -33,7 +33,7 @@ func mandelbrot_iterations(c: Complex) -> int {
   return res
 }
 
-let pos_x = -0.6 
+let pos_x = -0.7
 let pos_y = 0.0
 
 let size_x = 4.0
@@ -48,12 +48,14 @@ for let screen_y = 0.0, screen_y < screen_size_y, screen_y++ {
   for let screen_x = 0.0, screen_x < screen_size_x, screen_x++ {
     let normal_x = screen_x / screen_size_x - 0.5
     let real = normal_x * size_x + pos_x
-    let its = mandelbrot_iterations(Complex(real,  imaginary))
+    let mut its = mandelbrot_iterations(Complex(real,  imaginary))
     if (its == -1) {
-      print("#")
+      print("\e[40m ")
     } else {
-      print(".")
+	    its *= 7
+      its /= 100
+      print("\e[4" + tostr(its + 1) + "m ")
     }
   }
-  println("")
+  println("\e[40m")
 }
