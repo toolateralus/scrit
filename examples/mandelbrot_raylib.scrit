@@ -20,13 +20,9 @@ let buffer_width = 200
 let buffer_height = 100
 let max_iterations = 20
 
-let mut buffer : array<array<int>>
-for let y = 0, y < buffer_height, y++ {
-	let mut line : array<int>
-	for let x = 0, x < buffer_width, x++ {
-		line.push(-1)
-	}
-	buffer.push(line)
+let mut buffer : array<int>
+for let i = 0, i < buffer_height * buffer_width, i++ {
+	buffer.push(-1)
 }
 
 func draw_to_buffer(x: int, y: int) {
@@ -35,21 +31,27 @@ func draw_to_buffer(x: int, y: int) {
 	let real = normal_x * size.x + pos.x
 	let imaginary = normal_y * size.y + pos.y
 	let mut its = mandelbrot_iterations(Complex(real,  imaginary), max_iterations)
-	buffer[y][x] = its
+	buffer[y * buffer_width + x] = its
 }
 
 func render_buffer() {
 	let rect_w = screen_width / buffer_width + 1
 	let rect_h = screen_height / buffer_height + 1
-	for let y = 0, y < buffer_height, y++ {
+	let mut x = 0
+	let mut y = 0
+	for cell : buffer {
 		let screen_y = y * screen_height / buffer_height
-		for let x = 0, x < buffer_width, x++ {
-			let screen_x = x * screen_width / buffer_width
-			let mut color = [255,255,255,255]
-			if buffer[y][x] == -1 {
-				color = [0,0,0,255]
-			}
-			draw_rectangle(screen_x, screen_y, rect_w, rect_h, color)
+		let screen_x = x * screen_width / buffer_width
+		let mut color = [255,255,255,255]
+		if cell == -1 {
+			color = [0,0,0,255]
+		}
+		draw_rectangle(screen_x, screen_y, rect_w, rect_h, color)
+
+		x++
+		if x >= buffer_width {
+			x = 0
+			y++
 		}
 	}
 }
