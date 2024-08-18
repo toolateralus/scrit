@@ -1,5 +1,6 @@
 using system
 using raylib
+using std::array
 import "mandelbrot_lib.scrit"
 if !file_exists("mandelbrot_lib.scrit") {
 	println("please execute from examples directory")
@@ -13,24 +14,66 @@ struct Vec2 {
 
 let pos = Vec2(-0.7, 0.0)
 let size = Vec2(4.0, 2.0)
+let screen_width = 800
+let screen_height = 400
+let buffer_width = 200
+let buffer_height = 100
+let max_iterations = 20
 
-let screen_width = 80.0
-let screen_height = 20.0
-
-for let screen_y = 0.0, screen_y < screen_height, screen_y++ {
-  let normal_y = screen_y / screen_height - 0.5
-  let imaginary = normal_y * size.y + pos.y
-  for let screen_x = 0.0, screen_x < screen_width, screen_x++ {
-    let normal_x = screen_x / screen_width - 0.5
-    let real = normal_x * size.x + pos.x
-    let mut its = mandelbrot_iterations(Complex(real,  imaginary), 100)
-    if (its == -1) {
-      print("\e[40m ")
-    } else {
-	    its *= 7
-      its /= 100
-      print("\e[4" + tostr(its + 1) + "m ")
-    }
-  }
-  println("\e[40m")
+let mut buffer : array<array<int>>
+for let y = 0, y < buffer_height, y++ {
+	let mut line : array<int>
+	for let x = 0, x < buffer_width, x++ {
+		line.push(-1)
+	}
+	buffer.push(line)
 }
+
+func draw_to_buffer(x: int, y: int) {
+	let normal_x = float(x) / float(buffer_width) - 0.5
+	let normal_y = float(y) / float(buffer_height) - 0.5
+	let real = normal_x * size.x + pos.x
+	let imaginary = normal_y * size.y + pos.y
+	let mut its = mandelbrot_iterations(Complex(real,  imaginary), max_iterations)
+	buffer[y][x] = its
+}
+
+func render_buffer() {
+	let rect_w = screen_width / buffer_width + 1
+	let rect_h = screen_height / buffer_height + 1
+	for let y = 0, y < buffer_height, y++ {
+		let screen_y = y * screen_height / buffer_height
+		for let x = 0, x < buffer_width, x++ {
+			let screen_x = x * screen_width / buffer_width
+			let mut color = [255,255,255,255]
+			if buffer[y][x] == -1 {
+				color = [0,0,0,255]
+			}
+			draw_rectangle(screen_x, screen_y, rect_w, rect_h, color)
+		}
+	}
+}
+
+
+func main() {
+	init_window(screen_width, screen_height, "mandelbrot")
+	begin_drawing()
+	clear_background([0,0,0,255])
+	end_drawing()
+	let mut y = 0
+	let mut running = true
+	for running {
+		running = !window_should_close()
+		for let x = 0, x < buffer_width, x++ {
+			draw_to_buffer(x, y)
+		}
+		y++
+		if y >= buffer_height {
+			y = 0
+		}
+		begin_drawing()
+		render_buffer()
+		end_drawing()
+	}
+}
+main()
