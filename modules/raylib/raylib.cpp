@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include <memory>
 #include <scrit/ctx.hpp>
+#include <scrit/native.hpp>
 #include <scrit/scritmod.hpp>
 
 // it's nice to define some helper macros like this to make the module def more concise.
@@ -42,6 +43,23 @@ function(begin_drawing) {
   return Ctx::Null();
 }
 
+function(is_key_down) {
+  auto key = args[0]->Cast<Int_T>()->value;
+  return Ctx::CreateBool(IsKeyDown(key));
+}
+function(is_key_up) {
+  auto key = args[0]->Cast<Int_T>()->value;
+  return Ctx::CreateBool(IsKeyUp(key));
+}
+function(is_key_released) {
+  auto key = args[0]->Cast<Int_T>()->value;
+  return Ctx::CreateBool(IsKeyReleased(key));
+}
+function(is_key_pressed) {
+  auto key = args[0]->Cast<Int_T>()->value;
+  return Ctx::CreateBool(IsKeyPressed(key));
+}
+
 function(end_drawing) {
   EndDrawing();
   return Ctx::Null();
@@ -52,7 +70,6 @@ function(clear_background) {
   ClearBackground(color);
   return Ctx::Null();
 }
-
 
 function(draw_line) {
   int64_t start_x = args[0]->Cast<Int_T>()->value,
@@ -71,6 +88,16 @@ function(draw_circle) {
           
   double radius = args[2]->Cast<Float_T>()->value;
   DrawCircle(start_x, start_y, radius, color);
+  return Ctx::Null();
+}
+
+function(draw_rectangle) {
+  int64_t start_x = args[0]->Cast<Int_T>()->value,
+          start_y = args[1]->Cast<Int_T>()->value,
+          end_x = args[2]->Cast<Int_T>()->value,
+          end_y = args[3]->Cast<Int_T>()->value;
+  Color color = color_from_val(args[4]);
+  DrawRectangle(start_x, start_y, end_x, end_y, color);
   return Ctx::Null();
 }
 
@@ -115,11 +142,17 @@ extern "C" ScritModDef *InitScritModule_raylib() {
   def->AddFunction("begin_drawing", CREATE_FUNCTION(begin_drawing, "null", {}));
   def->AddFunction("end_drawing", CREATE_FUNCTION(end_drawing, "null", {}));
   
-  
-  
   def->AddFunction("draw_line", CREATE_FUNCTION(draw_line, "null", {"int", "int", "int", "int", "any"}));
   def->AddFunction("draw_circle", CREATE_FUNCTION(draw_circle, "null", {"int", "int", "float", "any"}));
+  def->AddFunction("draw_rect", CREATE_FUNCTION(draw_rectangle, "null", {"int", "int", "int", "int", "any"}));
+  
   def->AddFunction("clear_background", CREATE_FUNCTION(clear_background, "null", {"any"}));
+  
+  def->AddFunction("is_key_down", CREATE_FUNCTION(is_key_down, "bool", {"int"}));
+  def->AddFunction("is_key_up", CREATE_FUNCTION(is_key_up, "bool", {"int"}));
+  def->AddFunction("is_key_pressed", CREATE_FUNCTION(is_key_pressed, "bool", {"int"}));
+  def->AddFunction("is_key_released", CREATE_FUNCTION(is_key_released, "bool", {"int"}));
+  
   //def->AddVariable("Colors", colors(), Mutability::Const);
   return def;
 }
