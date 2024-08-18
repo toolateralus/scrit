@@ -205,11 +205,11 @@ REGISTER_FUNCTION(exit_raw_mode, "null", {}) {
   tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
   return Ctx::Null();
 }
-
 REGISTER_FUNCTION(readch, "string", {}) {
   char ch = getchar();
   return Ctx::CreateString(string(1, ch));
 }
+
 
 
 REGISTER_FUNCTION(bitwise_or, "int", {"int", "int"}) {
@@ -219,7 +219,6 @@ REGISTER_FUNCTION(bitwise_or, "int", {"int", "int"}) {
   }
   return Ctx::CreateInt(a | b);
 }
-
 REGISTER_FUNCTION(bitwise_and, "int", {"int", "int"}) {
   int64_t a, b;
   if (args.empty() || !Ctx::TryGetInt(args[0], a) || !Ctx::TryGetInt(args[1], b)) {
@@ -227,7 +226,6 @@ REGISTER_FUNCTION(bitwise_and, "int", {"int", "int"}) {
   }
   return Ctx::CreateInt(a & b);
 }
-
 REGISTER_FUNCTION(shift_right, "int", {"int", "int"}) {
   int64_t a, b;
   if (args.empty() || !Ctx::TryGetInt(args[0], a) || !Ctx::TryGetInt(args[1], b)) {
@@ -235,7 +233,6 @@ REGISTER_FUNCTION(shift_right, "int", {"int", "int"}) {
   }
   return Ctx::CreateInt(a >> b);
 }
-
 REGISTER_FUNCTION(shift_left, "int", {"int", "int"}) {
   int64_t a, b;
   if (args.empty() || !Ctx::TryGetInt(args[0], a) || !Ctx::TryGetInt(args[1], b)) {
@@ -243,7 +240,6 @@ REGISTER_FUNCTION(shift_left, "int", {"int", "int"}) {
   }
   return Ctx::CreateInt(a << b);
 }
-
 REGISTER_FUNCTION(bitwise_not, "int", {"int"}) {
   int64_t a;
   if (args.empty() || !Ctx::TryGetInt(args[0], a)) {
