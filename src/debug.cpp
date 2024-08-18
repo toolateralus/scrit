@@ -78,7 +78,7 @@ DebugControlFlow Debug::HandleInput(std::string &line) {
     m_removeBreakpoint(index);
   } else if (command == "help") {
     std::cout
-      << "\033[1;32mrm:<index>\033[0m - \033[1;30mRemove a breakpoint at a specific index\033[0m" << "\n"
+      << "\033[1;32mrm <index>\033[0m - \033[1;30mRemove a breakpoint at a specific index\033[0m" << "\n"
       << "\033[1;32mshow\033[0m - \033[1;30mShow all breakpoints\033[0m" << "\n"
       << "\033[1;32mbr:<line>\033[0m - \033[1;30mSet a breakpoint at a specific line number\033[0m" << "\n"
       << "\033[1;32mover | ov\033[0m - \033[1;30mStep over to the next line of code\033[0m" << "\n"
@@ -86,7 +86,7 @@ DebugControlFlow Debug::HandleInput(std::string &line) {
       << "\033[1;32mout | o\033[0m - \033[1;30mStep out of the current function or block\033[0m" << "\n"
       << "\033[1;32mcontinue | c\033[0m - \033[1;30mContinue execution until the next breakpoint\033[0m" << "\n"
       << "\033[1;32minspect | s\033[0m - \033[1;30mPrint the current scope variables\033[0m" << "\n"
-      << "\033[1;32mprint | p\033[0m - \033[1;30mPrint the value of an expression\033[0m" << "\n";
+      << "\033[1;32mprint | p <expr>\033[0m - \033[1;30mPrint the value of an expression\033[0m" << "\n";
   } else {
     std::cout << "\033[1;31mCommand not found.\033[0m" << std::endl;
   }
