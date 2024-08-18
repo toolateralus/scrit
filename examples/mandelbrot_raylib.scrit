@@ -88,12 +88,13 @@ func draw_buffer() {
 	let rect_h = screen_height / buffer_height + 1
 	let mut x = 0
 	let mut y = 0
-	for cell : buffer {
+	for its : buffer {
 		let screen_y = y * screen_height / buffer_height
 		let screen_x = x * screen_width / buffer_width
-		let mut color : array<int> = [255,255,255,255]
-		if cell == -1 {
-			color = [0,0,0,255]
+		let mut color : array<int> = [0,0,0,255]
+		if its > -1 {
+			let num = (its * 255) / max_iterations
+			color = [num,num,num,255]
 		}
 		draw_rectangle(screen_x, screen_y, rect_w, rect_h, color)
 		x++
