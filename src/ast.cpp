@@ -1252,6 +1252,7 @@ StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
   
   for (auto &statement : statements) {
     if (auto decl = dynamic_cast<Declaration *>(statement.get())) {
+      decl->Execute();
       declarations.push_back(std::unique_ptr<Declaration>(
           static_cast<Declaration *>(statement.release())));
       decl->Execute();
@@ -1260,8 +1261,7 @@ StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
   
   auto type = make_shared<StructType>(name, std::move(declarations),
                                       template_args, scope);
-  
-    
+
   context.SetCurrentScope(last_scope);
   context.CurrentScope()->OverwriteType(name, type);
 }

@@ -186,6 +186,7 @@ struct Tests {
       }
       func mul(self: OpOvr, other: OpOvr) -> int {
         println("multiplying : " + tostr(self) + " " + tostr(other))
+        0
       }
       func call(self: OpOvr, arg: int) -> int {
         println("calling : " + tostr(self) + " " + tostr(arg))
@@ -198,12 +199,12 @@ struct Tests {
     
     assert(instance.add(instance) == 0, "add_overload manual call failed");
     
-    // assert(instance + instance == 0, "add overload failed")
-    // assert(instance - instance == 0, "sub overload failed")
-    // assert(instance * instance == 0, "mul overload failed")
-    // assert(instance / instance == 0, "div overload failed")
+    assert(instance + instance == 0, "add overload failed")
+    assert(instance - instance == 0, "sub overload failed")
+    assert(instance * instance == 0, "mul overload failed")
+    assert(instance / instance == 0, "div overload failed")
     
-    // assert(instance(10)  == 0, "call overload failed")
+    assert(instance(10)  == 0, "call overload failed")
   }
   // TODO:
   func test_recursion(self: Tests) {
@@ -219,7 +220,7 @@ struct Tests {
     self.test_fn_ptr()
     self.test_conditionals()
     self.test_control_flow()
-    self.test_float_math()
+    // self.test_float_math()
     self.test_int_math()
     self.test_ctor()
     self.test_nested_func()

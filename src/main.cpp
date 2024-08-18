@@ -9,7 +9,6 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <iterator>
 #include <memory>
 #include <string>
 #include <vector>
@@ -127,7 +126,7 @@ int main(int argc, char **argv) {
 
   if (ast) {
 
-    // serialize_ast(ast);
+    serialize_ast(ast);
 
     ast->Execute();
   } else {
