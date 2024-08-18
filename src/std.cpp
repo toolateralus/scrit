@@ -7,7 +7,7 @@
 #include "value.hpp"
 #include <cmath>
 #include <iostream>
-#include <ranges>
+#include <random>
 #include <vector>
 
 #ifdef __linux__
@@ -216,6 +216,21 @@ REGISTER_FUNCTION(floor, "float", {"float"}) {
     return undefined;
   }
   return Ctx::CreateFloat(std::floor(f));
+}
+
+
+REGISTER_FUNCTION(rand, "int", {}) {
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+  std::uniform_int_distribution<int> dist;
+  return Ctx::CreateInt(dist(gen));
+}
+
+REGISTER_FUNCTION(randf, "float", {}) {
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+  std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+  return Ctx::CreateFloat(dist(gen));
 }
 
 REGISTER_FUNCTION(bitwise_or, "int", {"int", "int"}) {
