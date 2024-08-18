@@ -94,6 +94,14 @@ function(draw_pixel) {
   return Ctx::Null();
 }
 
+function(get_screen_width) {
+  return Ctx::CreateInt(GetScreenWidth());
+}
+
+function(get_screen_height) {
+  return Ctx::CreateInt(GetScreenHeight());
+}
+
 function(is_key_down) {
   auto key = string_to_key(args[0]->Cast<String_T>()->value);
   return Ctx::CreateBool(IsKeyDown(key));
@@ -218,6 +226,11 @@ extern "C" ScritModDef *InitScritModule_raylib() {
   
   def->AddFunction("get_scroll", CREATE_FUNCTION(get_scroll, "float", {}));
   def->AddFunction("get_mouse_position", CREATE_FUNCTION(get_mouse_position, "array", {}));
+  
+  def->AddFunction("get_screen_width", CREATE_FUNCTION(get_screen_width, "int", {}));
+  def->AddFunction("get_screen_height", CREATE_FUNCTION(get_screen_height, "int", {}));
+  def->AddFunction("draw_pixel", CREATE_FUNCTION(draw_pixel, "null", {"int", "int" "any"})); 
+  
   //def->AddVariable("Colors", colors(), Mutability::Const);
   return def;
 }
