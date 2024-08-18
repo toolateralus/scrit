@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
 
   if (ast) {
 
-    // serialize_ast(ast);
+    serialize_ast(ast);
 
     ast->Execute();
   } else {
