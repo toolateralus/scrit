@@ -12,10 +12,9 @@ let files : array<string> = dir_files(working_dir).where(
   }
 )
 
-
 let mut output : string = "# Examples\nThis is a list of examples written in scrit.\n To refresh these links, run `scrit refresh.scrit` from this directory.\n\n"
 
-for let i = 0, i < files.len(), ++i{
+for let i = 0, i < files.len(), ++i {
   let file: string = files[i]
   let link : string = "[" + file.without(".scrit") + "](" + file + ")\n\n"
   output += link

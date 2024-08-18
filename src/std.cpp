@@ -210,3 +210,51 @@ REGISTER_FUNCTION(readch, "string", {}) {
   char ch = getchar();
   return Ctx::CreateString(string(1, ch));
 }
+
+
+REGISTER_FUNCTION(bitwise_or, "int", {"int", "int"}) {
+  int64_t a, b;
+  if (args.empty() || !Ctx::TryGetInt(args[0], a) || !Ctx::TryGetInt(args[1], b)) {
+    return undefined;
+  }
+  return Ctx::CreateInt(a | b);
+}
+
+REGISTER_FUNCTION(bitwise_and, "int", {"int", "int"}) {
+  int64_t a, b;
+  if (args.empty() || !Ctx::TryGetInt(args[0], a) || !Ctx::TryGetInt(args[1], b)) {
+    return undefined;
+  }
+  return Ctx::CreateInt(a & b);
+}
+
+REGISTER_FUNCTION(shift_right, "int", {"int", "int"}) {
+  int64_t a, b;
+  if (args.empty() || !Ctx::TryGetInt(args[0], a) || !Ctx::TryGetInt(args[1], b)) {
+    return undefined;
+  }
+  return Ctx::CreateInt(a >> b);
+}
+
+REGISTER_FUNCTION(shift_left, "int", {"int", "int"}) {
+  int64_t a, b;
+  if (args.empty() || !Ctx::TryGetInt(args[0], a) || !Ctx::TryGetInt(args[1], b)) {
+    return undefined;
+  }
+  return Ctx::CreateInt(a << b);
+}
+
+REGISTER_FUNCTION(bitwise_not, "int", {"int"}) {
+  int64_t a;
+  if (args.empty() || !Ctx::TryGetInt(args[0], a)) {
+    return undefined;
+  }
+  return Ctx::CreateInt(~a);
+}
+REGISTER_FUNCTION(bitwise_xor, "int", {"int", "int"}) {
+  int64_t a, b;
+  if (args.empty() || !Ctx::TryGetInt(args[0], a) || !Ctx::TryGetInt(args[1], b)) {
+    return undefined;
+  }
+  return Ctx::CreateInt(a ^ b);
+}
