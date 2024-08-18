@@ -77,6 +77,15 @@ function(begin_drawing) {
   return Ctx::Null();
 }
 
+function(get_mouse_position) {
+  auto x = GetMouseX();
+  auto y = GetMouseY();
+  auto arr = Ctx::CreateArray();
+  arr->Push(Ctx::CreateInt(x));
+  arr->Push(Ctx::CreateInt(y));
+  return arr;
+}
+
 function(is_key_down) {
   auto key = string_to_key(args[0]->Cast<String_T>()->value);
   return Ctx::CreateBool(IsKeyDown(key));
@@ -97,6 +106,10 @@ function(is_key_pressed) {
 function(end_drawing) {
   EndDrawing();
   return Ctx::Null();
+}
+
+function(get_scroll) {
+  return Ctx::CreateFloat(GetMouseWheelMove());
 }
 
 function(clear_background) {
@@ -195,6 +208,8 @@ extern "C" ScritModDef *InitScritModule_raylib() {
   def->AddFunction("is_key_released", CREATE_FUNCTION(is_key_released, "bool", {"string"}));
   def->AddFunction("set_target_fps", CREATE_FUNCTION(set_target_fps, "null", {"int"}));
   
+  def->AddFunction("get_scroll", CREATE_FUNCTION(get_scroll, "float", {}));
+  def->AddFunction("get_mouse_position", CREATE_FUNCTION(get_mouse_position, "array", {}));
   //def->AddVariable("Colors", colors(), Mutability::Const);
   return def;
 }
