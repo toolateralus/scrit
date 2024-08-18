@@ -12,29 +12,78 @@ struct Vec2 {
 	y: float
 }
 
-let pos = Vec2(-0.7, 0.0)
-let size = Vec2(4.0, 2.0)
+func lerp(a: float, b: float, t: float) -> float {
+  return a + t * (b - a)
+}
+func get_color(t: float) -> array<int> {
+	let r = 0
+	let g = 0
+	let b = 0
+
+	if t < 0.5 {
+		b = int(lerp(255.0, 0.0, t * 2.0))
+		g = int(lerp(0.0, 255.0, t * 2.0))
+	} else {
+		g = int(lerp(255.0, 0.0, (t - 0.5) * 2.0))
+		r = int(lerp(0.0, 255.0, (t - 0.5) * 2.0))
+	}
+
+	return [r, g, b, 255]
+}
+
+let view_pos = Vec2(-0.7, 0.0)
+let view_size = Vec2(4.0, 2.0)
 let screen_width = 800
 let screen_height = 400
 let buffer_width = 200
 let buffer_height = 100
-let max_iterations = 20
+let mut max_iterations = 100
 
 let mut buffer : array<int>
 for let i = 0, i < buffer_height * buffer_width, i++ {
 	buffer.push(-1)
 }
 
-func draw_to_buffer(x: int, y: int) {
+func render_rect(x: int, y: int, size: int) {
 	let normal_x = float(x) / float(buffer_width) - 0.5
+	let real = normal_x * view_size.x + view_pos.x
 	let normal_y = float(y) / float(buffer_height) - 0.5
-	let real = normal_x * size.x + pos.x
-	let imaginary = normal_y * size.y + pos.y
-	let mut its = mandelbrot_iterations(Complex(real,  imaginary), max_iterations)
-	buffer[y * buffer_width + x] = its
+	let imaginary = normal_y * view_size.y + view_pos.y
+	let its = mandelbrot_iterations(Complex(real,  imaginary), max_iterations)
+	for let i = y, i < y + size, i++ {
+		if i < 0 || i >= buffer_height{
+			break
+		}
+		for let j = x, j < x + size, j++ {
+			if j < 0 || j >= buffer_width{
+				break
+			}
+			buffer[i * buffer_width + j] = its
+		}
+	}
 }
 
-func render_buffer() {
+func render_first_pass(size: int) {
+	for let mut x = 0, x < buffer_width, x += size {
+		for let mut y = 0, y < buffer_height, y += size {
+			render_rect(x, y, size)
+		}
+	}
+}
+
+func render_other_pass(size: int) {
+	let width_chunks = buffer_width / size
+	let height_chunks = buffer_height / size
+	for let mut x = 0, x < width_chunks, x++ {
+		for let mut y = 0, y < height_chunks, y++ {
+			if (x.mod(2) != 0) || (y.mod(2) != 0) {
+				render_rect(x * size, y * size, size)
+			}
+		}
+	}
+}
+
+func draw_buffer() {
 	let rect_w = screen_width / buffer_width + 1
 	let rect_h = screen_height / buffer_height + 1
 	let mut x = 0
@@ -42,12 +91,11 @@ func render_buffer() {
 	for cell : buffer {
 		let screen_y = y * screen_height / buffer_height
 		let screen_x = x * screen_width / buffer_width
-		let mut color = [255,255,255,255]
+		let mut color : array<int> = [255,255,255,255]
 		if cell == -1 {
 			color = [0,0,0,255]
 		}
 		draw_rectangle(screen_x, screen_y, rect_w, rect_h, color)
-
 		x++
 		if x >= buffer_width {
 			x = 0
@@ -64,17 +112,28 @@ func main() {
 	end_drawing()
 	let mut y = 0
 	let mut running = true
+	let mut pass = 0
+	let mut size = 0
 	for running {
 		running = !window_should_close()
-		for let x = 0, x < buffer_width, x++ {
-			draw_to_buffer(x, y)
+		if is_key_pressed("a") {
+			pass = 0
 		}
-		y++
-		if y >= buffer_height {
-			y = 0
+		if pass == 0 {
+			size = 1
+			for size <= buffer_height && size <= buffer_width {
+				size *= 2
+			}
+			size /= 2
+			render_first_pass(size)
+			pass++
+		} else if size > 1 {
+			size /= 2
+			render_other_pass(size)
+			pass++
 		}
 		begin_drawing()
-		render_buffer()
+		draw_buffer()
 		end_drawing()
 	}
 }
