@@ -229,7 +229,7 @@ extern "C" ScritModDef *InitScritModule_raylib() {
   
   def->AddFunction("get_screen_width", CREATE_FUNCTION(get_screen_width, "int", {}));
   def->AddFunction("get_screen_height", CREATE_FUNCTION(get_screen_height, "int", {}));
-  def->AddFunction("draw_pixel", CREATE_FUNCTION(draw_pixel, "null", {"int", "int" "any"})); 
+  def->AddFunction("draw_pixel", CREATE_FUNCTION(draw_pixel, "null", {"int", "int", "any"})); 
   
   //def->AddVariable("Colors", colors(), Mutability::Const);
   return def;
