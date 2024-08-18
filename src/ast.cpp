@@ -1293,16 +1293,19 @@ Value Constructor::Evaluate() {
     if (type->Equals(v->type.get()))
       return v->Clone();
     else if ((type->Name() == "int" || type->Name() == "float") &&
-             (v->type->Name() == "int" || v->type->Name() == "float")) {
+         (v->type->Name() == "int" || v->type->Name() == "float")) {
       if (type->Name() == "float" && v->type->Name() == "int") {
-        return Ctx::CreateFloat(v->Cast<Int_T>()->value);
+      return Ctx::CreateFloat(v->Cast<Int_T>()->value);
       } else if (type->Name() == "int" && v->type->Name() == "float") {
-        return Ctx::CreateFloat(v->Cast<Float_T>()->value);
+      return Ctx::CreateFloat(v->Cast<Float_T>()->value);
       } else {
-        throw std::runtime_error("cannot explicitly convert between: " + v->type->Name() + " to: " + type->Name());
+      throw std::runtime_error("cannot explicitly convert between: " + v->type->Name() + " to: " + type->Name());
       }
     }
-
+    else {
+      throw std::runtime_error("cannot explicitly convert between: " + v->type->Name() + " to: " + type->Name());
+    }
+    
     // creating an array type with a constructor
     // array<string>("", "", "").. etc.
     // I believe this will elude the type checker, so this needs to be more
