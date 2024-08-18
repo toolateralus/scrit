@@ -86,6 +86,14 @@ function(get_mouse_position) {
   return arr;
 }
 
+function(draw_pixel) {
+  int64_t x = args[0]->Cast<Int_T>()->value;
+  int64_t y = args[1]->Cast<Int_T>()->value;
+  Color color = color_from_val(args[2]);
+  DrawPixel(x, y, color);
+  return Ctx::Null();
+}
+
 function(is_key_down) {
   auto key = string_to_key(args[0]->Cast<String_T>()->value);
   return Ctx::CreateBool(IsKeyDown(key));
