@@ -1,0 +1,37 @@
+using system
+import "mandelbrot_lib.scrit"
+if !file_exists("mandelbrot_lib.scrit") {
+	println("please execute from examples directory")
+	exit(1)
+}
+
+struct Vec2 {
+	x: float
+	y: float
+}
+
+let pos = Vec2(-0.7, 0.0)
+let size = Vec2(4.0, 2.0)
+
+let screen_width = 120.0
+let screen_height = 30.0
+
+let max_iterations = 100
+
+for let screen_y = 0.0, screen_y < screen_height, screen_y++ {
+  let normal_y = screen_y / screen_height - 0.5
+  let imaginary = normal_y * size.y + pos.y
+  for let screen_x = 0.0, screen_x < screen_width, screen_x++ {
+    let normal_x = screen_x / screen_width - 0.5
+    let real = normal_x * size.x + pos.x
+    let mut its = mandelbrot_iterations(Complex(real,  imaginary), max_iterations)
+    if (its == -1) {
+      print("\e[40m ")
+    } else {
+	    its *= 7
+      its /= max_iterations
+      print("\e[4" + tostr(its + 1) + "m ")
+    }
+  }
+  println("\e[40m")
+}

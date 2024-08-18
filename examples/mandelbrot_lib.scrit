@@ -1,0 +1,34 @@
+struct Complex {
+  r: float
+  i: float
+  func tostr(self: Complex) -> string {
+    return tostr(self.r) + " + " + tostr(self.i) + "i"
+  }
+}
+
+func square(self: Complex) -> Complex {
+  let r = self.r * self.r - self.i * self.i
+  let i = 2.0 * self.i * self.r
+  return Complex(r, i)
+}
+
+func add(self: Complex, other: Complex) -> Complex {
+  return Complex(self.r + other.r, self.i + other.i) 
+}
+
+func sqr_mag(self: Complex) -> float {
+  return self.r * self.r + self.i * self.i
+}
+
+func mandelbrot_iterations(c: Complex, max_iterations: int) -> int {
+  let mut z = Complex()
+  let mut res = -1
+  for let n = 0, n < max_iterations, n++ {
+    if sqr_mag(z) >= 4.0 {
+      res = n
+      break
+    }
+    z = z.square().add(c)
+  }
+  return res
+}
