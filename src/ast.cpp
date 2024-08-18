@@ -93,9 +93,9 @@ ObjectInitializer::ObjectInitializer(SourceInfo &info, const Type &type,
 Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args,
            TypeArgsPtr &&type_args)
     : Expression(info, operand->type), Statement(info) {
-  
+
   auto value = operand->Evaluate();
-  
+
   if (!value) {
     // a bit of specific code for functor objects.
     if (auto object = std::dynamic_pointer_cast<Object_T>(value);
@@ -103,7 +103,7 @@ Call::Call(SourceInfo &info, ExpressionPtr &&operand, ArgumentsPtr &&args,
       value = object->GetMember("call");
     }
   }
-  
+
   if (!value)
     throw std::runtime_error("couldnt find function... call at\n" +
                              operand->srcInfo.ToString());
@@ -131,12 +131,13 @@ Assignment::Assignment(SourceInfo &info, const Type &type, IdentifierPtr &&iden,
     : Statement(info), iden(std::move(iden)), expr(std::move(expr)),
       type(type) {}
 
-// TODO: see "EvaluateType" for info, but fix the lack of typing on dot expressions at parse time.
-// For now, Match statements must cast their values I guess (might work?)
-DotExpr::DotExpr(SourceInfo &info, ExpressionPtr &&left,
-                 ExpressionPtr &&right)
-    : left(std::move(left)), right(std::move(right)), Expression(info, nullptr) {
-    //this->type = EvaluateType();
+// TODO: see "EvaluateType" for info, but fix the lack of typing on dot
+// expressions at parse time. For now, Match statements must cast their values I
+// guess (might work?)
+DotExpr::DotExpr(SourceInfo &info, ExpressionPtr &&left, ExpressionPtr &&right)
+    : left(std::move(left)), right(std::move(right)),
+      Expression(info, nullptr) {
+  // this->type = EvaluateType();
 }
 DotAssignment::DotAssignment(SourceInfo &info, ExpressionPtr &&dot,
                              ExpressionPtr &&value)
@@ -683,19 +684,19 @@ Value EvaluateWithinObject(Scope &scope, Value object,
 
 Value DotExpr::Evaluate() {
   auto lvalue = left->Evaluate();
-  
+
   if (lvalue->GetPrimitiveType() != PrimitiveType::Object) {
     throw std::runtime_error("invalid lhs on dot operation : " +
-                             TypeToString(lvalue->GetPrimitiveType())
-                            + '\n' + lvalue->ToString());
+                             TypeToString(lvalue->GetPrimitiveType()) + '\n' +
+                             lvalue->ToString());
   }
-  
+
   auto object = static_cast<Object_T *>(lvalue.get());
 
   auto scope = object->scope;
 
   auto result = EvaluateWithinObject(scope, lvalue, right);
-  
+
   return result;
 }
 void DotExpr::Assign(Value value) {
@@ -765,7 +766,8 @@ Value BinExpr::Evaluate() {
   auto right = this->right->Evaluate();
 
   if (!left->type->Equals(right->type.get())) {
-    throw TypeError(left->type, right->type, "Mismatched types in binary expression.");
+    throw TypeError(left->type, right->type,
+                    "Mismatched types in binary expression.");
   }
 
   switch (op) {
@@ -1067,7 +1069,8 @@ ExecutionResult Declaration::Execute() {
   auto value = this->expr->Evaluate();
 
   if (type && !type->Equals(value->type.get())) {
-    throw TypeError(type, value->type, "Mismatched types in declaration :: " + name);
+    throw TypeError(type, value->type,
+                    "Mismatched types in declaration :: " + name);
   }
 
   ApplyCopySemantics(value);
@@ -1247,9 +1250,9 @@ StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
 
   auto last_scope = ASTNode::context.CurrentScope();
   ASTNode::context.SetCurrentScope(scope);
-  
+
   vector<unique_ptr<Declaration>> declarations;
-  
+
   for (auto &statement : statements) {
     if (auto decl = dynamic_cast<Declaration *>(statement.get())) {
       decl->Execute();
@@ -1257,7 +1260,7 @@ StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
           static_cast<Declaration *>(statement.release())));
     }
   }
-  
+
   auto type = make_shared<StructType>(name, std::move(declarations),
                                       template_args, scope);
 
@@ -1270,26 +1273,40 @@ Constructor::Constructor(SourceInfo &info, const Type &type,
     : Expression(info, type), args(std::move(args)) {}
 Value Constructor::Evaluate() {
   auto structType = std::dynamic_pointer_cast<StructType>(type);
-  
+
   if (structType) {
     // TODO; figure out why constructing structs results in empty objects.
     return structType->Construct(args);
   }
-  
+
   // default construction, such as
   // int()
   // string()
   // array<int>() ... etc.
   if (!structType && args->values.empty()) {
     return type->Default();
-  // Copy construction.
-  // Fix this atrocious condition, we shouldn't have to double evaluate arguments.
-  } else if (!structType && args->values.size() > 0 && type->Equals(args->values[0]->Evaluate()->type.get())) {
-    return args->values[0]->Evaluate()->Clone();
-  
-  // creating an array type with a constructor
-  // array<string>("", "", "").. etc.
-  // I believe this will elude the type checker, so this needs to be more rigid in checking
+    // Copy construction.
+    // Fix this atrocious condition, we shouldn't have to double evaluate
+    // arguments.
+  } else if (!structType && args->values.size() > 0) {
+    auto v = args->values[0]->Evaluate();
+    if (type->Equals(v->type.get()))
+      return v->Clone();
+    else if ((type->Name() == "int" || type->Name() == "float") &&
+             (v->type->Name() == "int" || v->type->Name() == "float")) {
+      if (type->Name() == "float" && v->type->Name() == "int") {
+        return Ctx::CreateFloat(v->Cast<Int_T>()->value);
+      } else if (type->Name() == "int" && v->type->Name() == "float") {
+        return Ctx::CreateFloat(v->Cast<Float_T>()->value);
+      } else {
+        throw std::runtime_error("cannot explicitly convert between: " + v->type->Name() + " to: " + type->Name());
+      }
+    }
+
+    // creating an array type with a constructor
+    // array<string>("", "", "").. etc.
+    // I believe this will elude the type checker, so this needs to be more
+    // rigid in checking
   } else if (std::dynamic_pointer_cast<ArrayType>(type)) {
     auto _array = Array_T::New(args->values);
     _array->type = type;
@@ -1297,8 +1314,6 @@ Value Constructor::Evaluate() {
   } else {
     throw std::runtime_error("Couldn't construct object: " + type->Name());
   }
-  
-  
 }
 auto Parameters::Clone() -> unique_ptr<Parameters> {
   auto clone = std::make_unique<Parameters>(this->srcInfo);
@@ -1414,9 +1429,8 @@ RangeBasedFor::RangeBasedFor(SourceInfo &info, vector<string> &names,
     : Statement(info), names(names), rhs(std::move(rhs)),
       block(std::move(block)) {}
 
-
-// How can we make this possible? we can't evaluate every dot expression at parse-time.. 
-// Objects are declared but their values are not yet constructed.
+// How can we make this possible? we can't evaluate every dot expression at
+// parse-time.. Objects are declared but their values are not yet constructed.
 // TODO: fix this
 Type DotExpr::EvaluateType() const {
   auto left = this->left->Evaluate();
@@ -1430,6 +1444,8 @@ Type DotExpr::EvaluateType() const {
     }
     ASTNode::context.SetCurrentScope(last_scope);
   } else {
-    throw TypeError(left->type, "Invalid dot expression! must target an object to get a property or field.. got: " + left->type->Name());
+    throw TypeError(left->type, "Invalid dot expression! must target an object "
+                                "to get a property or field.. got: " +
+                                    left->type->Name());
   }
 }

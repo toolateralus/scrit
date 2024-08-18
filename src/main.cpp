@@ -125,9 +125,7 @@ int main(int argc, char **argv) {
   auto ast = parser.Parse(std::move(tokens));
 
   if (ast) {
-
-    serialize_ast(ast);
-
+    //serialize_ast(ast);
     ast->Execute();
   } else {
     std::cout << "Parsing failed\n";
