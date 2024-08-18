@@ -1,52 +1,113 @@
-
 using system
-using std::string
 using std::array
+using std::string
 
-func buildScript(name: string) -> string {
-  return "sudo clang++ -std=c++26 -shared -fPIC -o /usr/local/scrit/modules/" + name + ".dll " + name + ".cpp" + " -lscrit"
+func buildScript(name: string, use_makefile: bool = true) -> string {
+  if !use_makefile {
+    return "MODULE_NAME=" + name + "\n" + "sudo clang++ -std=c++23 -shared -fPIC -o /usr/local/scrit/modules/$(MODULE_NAME).dll"
+  } else {
+    return "COMPILER:=clang++\n" +
+          "COMPILER_FLAGS:= -std=c++23\n" +
+          "LINKER_FLAGS:= -lscrit\n" +
+          "\n" +
+          "MODULE_NAME:=" + name + "\n" +
+          "\n" +
+          "all: $(MODULE_NAME).dll\n" +
+          "\n" +
+          "$(MODULE_NAME).dll: $(MODULE_NAME).cpp\n" +
+          "\tsudo $(COMPILER) -shared -fPIC -o /usr/local/scrit/modules/$(MODULE_NAME).dll $< $(COMPILER_FLAGS) $(LINKER_FLAGS)\n" +
+          "\n" +
+          "clean:\n" +
+          "\tsudo rm -f /usr/local/scrit/modules/$(MODULE_NAME).dll\n";  
+  }
 }
 
 func cppBoilerplate(name: string) -> string {
-return "#include <scrit/scritmod.hpp>
-// provide your function and object definitions here.
-// Note that these will stay alive in the language until the using ... statement goes out of scope.
-static Value doSomething(std::vector<Value> values) {
-  return Value_T::VNULL;
-}
+  return  "
+    // If you don't have this header, make sure to run 'install.sh' in the 'scrit' root dir.
+    #include <scrit/scritmod.hpp>
+    
+    static Value doSomething(std::vector<Value> values) {
+      return Ctx::Null();
+    }
+    
+    // If your module belongs in a namespace, use '_SR_' to denote '::' where neccesary.
+    // So, for 'std::array' module, you would do 
 
-// Link your module with your definitions here
-// note: if you intend to namespace your module, use _SR_ where there would be a ::.
-// so if we wanted std::myStdModule::doSomething
-// youd do InitScritModule_funnyModuleName_SR_myStdModule()
+    // InitScritModule_std_SR_array
 
-extern \"C\" ScritModDef* InitScritModule_" + name + "() {
-  ScritModDef *def = CreateModDef();
-  *def->description = \"your description here\";
-                                                                // return type
-                                                                            // parameter types.
-  def->AddFunction(\"doSomething\", CREATE_FUNCTION(doSomething, \"string\", {\"string\"}))
-  return def;
-}"
+    extern \"C\" ScritModDef* InitScritModule_" + name + "() {
+      ScritModDef *def = CreateModDef();
+      *def->description = \"your description here\";
+
+      // Here is a basic example of just adding a pure function to a module, 
+      // that will be available anywhere imported;
+    
+      // now, when this is imported, the global scope will contain doSomething
+      def->AddFunction(\"doSomething\", CREATE_FUNCTION(doSomething, \"null\", {\"any\", \"any\"}));
+        
+      // Note: you can do this with objects, values, functions, and types.
+
+    
+      // Adding functions to a type within a namespace:
+      // Here we add some methods to an existing type, which will make it available
+      // to any object of that type.
+
+      // While it may seem redundant, you must create an instance of the type you are targeting.
+
+      // The interpreter will shell this off and get the data out, and ignore the actual 
+      // unique type instance.
+      auto array = std::make_shared<ArrayType>();
+                                                            // return type
+                                                                    // argument types.
+                                                                    // any will allow any type.
+      array->Set(\"doSomething\", CREATE_CALLABLE(doSomething, \"null\", {\"any\", \"any\"}));
+
+      // tell the interpreter we want this module to exist within std::array, and if it doesn't exist,
+      // it will create it.
+      def->SetNamespace(\"std::array\");
+
+      // Using a mix of these examples is very possible, adding methods to types not in namespaces, 
+      // creating custom objects that inherit from `Values::Value_T`,
+      // creating custom types that inherit      from `Values::Type`, etc.
+      // There are a TON of possibilities!
+      // have fun :D
+      return def;
+    }"
 }
 
 func createModule(name: string) -> int {
   let path = dir_current() + "/" + name
-  let cppPath = path + "/" + name + ".cpp"
-  let bashPath = path + "/build.sh"
+  let cpp_path = path + "/" + name + ".cpp"
+  let build_script_path = path + "/Makefile"
   dir_create(path)
-  file_write(bashPath, buildScript())
-  file_write(cppPath, cppBoilerplate(name))
-  println("module: " + name + " created!")
-  return syscall("chmod +x " + bashPath)
+  
+  println("Use a makefile, or a bash script? enter [Make / Bash]\n Makefiles are encouraged for incremental build!")
+  let input = readln()
+  if input == "Make" {
+    file_write(build_script_path, buildScript(name, true))
+  } else if input == "Bash" {
+    file_write(build_script_path, buildScript(name, false))
+  } else {
+    println("Invalid input: " + input + ". Try again!")
+    exit(0)
+  }
+  file_write(cpp_path, cppBoilerplate(name))
+  return 0
 }
 
-func() {
-  if args.len() > 0 {
-    createModule(args[0])
-  } else {
-    println("provide an argument for your module name.")
-  }
-}()
+println("Enter a module name")
+let name = readln()
+
+println(name)
+println("are you sure you want this module name?")
+println("type [y/n] and press enter")
+
+let input = readln()
+if (input == "y") {
+  createModule(name)
+} else {
+  println("Aborted")
+}
 
 

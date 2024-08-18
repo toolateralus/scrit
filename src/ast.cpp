@@ -1247,17 +1247,18 @@ StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
 
   auto last_scope = ASTNode::context.CurrentScope();
   ASTNode::context.SetCurrentScope(scope);
-
+  
   vector<unique_ptr<Declaration>> declarations;
-
+  
   for (auto &statement : statements) {
     if (auto decl = dynamic_cast<Declaration *>(statement.get())) {
       decl->Execute();
       declarations.push_back(std::unique_ptr<Declaration>(
           static_cast<Declaration *>(statement.release())));
+      decl->Execute();
     }
   }
-
+  
   auto type = make_shared<StructType>(name, std::move(declarations),
                                       template_args, scope);
 

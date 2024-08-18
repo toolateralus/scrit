@@ -10,6 +10,12 @@ let i = func() -> int {
   let inner = 0
 }
 
+let tuple = (0,1,2,3)
+
+// yes this has weird syntax with no let.
+// this is to be fixed.
+k,v,p,d = tuple
+
 
 let j => { return 0 } // fails to get type info
 let k => 1

@@ -10,11 +10,7 @@ let colors = {
   reset: string = "\e[0m"
 }
 
-for i : colors {
-  // deconstruct the tuple the language returns. note: this will be available as
-  // for k, v : colors 
-  // in the future.
-  k, v = i 
+for k,v : colors {
   print(v)
   print(k)
 }

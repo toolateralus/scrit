@@ -1,11 +1,20 @@
-# Example code
+# Examples
+This is a list of examples written in scrit.
+ To refresh these links, run `scrit refresh.scrit` from this directory.
 
-This is a set of some basic examples to get started with scrit lang.
+[decls](decls.scrit)
 
-Note that these examples are very subject to change as the language is very new and unrefined, and much of this may be outdated.
-I will try my best to at least make note of deprecated examples when the time comes, if not fix them vigilantly.
+[iterate-object](iterate-object.scrit)
 
+[match](match.scrit)
 
-[class](class.scrit)
-[static](static.scrit)
-[some](some.scrit)
+[impl](impl.scrit)
+
+[tuple](tuple.scrit)
+
+[struct](struct.scrit)
+
+[refresh](refresh.scrit)
+
+[colors](colors.scrit)
+

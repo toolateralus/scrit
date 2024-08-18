@@ -11,3 +11,7 @@ cd ../string
 
 cd ../array
 ./build.sh || { echo "Error building array mod"; exit 1; }
+
+cd ../raylib
+make -j24
+

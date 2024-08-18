@@ -121,9 +121,8 @@ regular object.
 ```rust
 
 let object = {
-  member = 10 // if this were to be mutated, it would need
-  mut member = 10
-  
+  member = 100
+
   // for methods, we need to explicitly take self as a parameter.
   // If not, the interpeter will pass it to it, and it will throw an error complaining about too many arguments being passed to a function.
   func method(self: object) {
@@ -131,6 +130,7 @@ let object = {
   }
   
   // to make mutations to self, simply declare a mut param.
+  // Note that there's (at the time of writing this) a bug where dot expressions bypass mutability semantuics.
   func method1(mut self: object) {
     self.member = 100
   }
@@ -152,33 +152,29 @@ let map = {}
 
 value = 10
 
-// this fails, because we have a strict type system.
-// we cannot declare variables in this fashion.
-// this is to be worked on, to make dictionaries cheap and easy.
 map["myKey"] = value
 
-
-// prints null or throws an error complaining about not finding the variable.
 println(map["myKey"])
 
 // prints 10
 ```
-
-
 
 ## structs
 
 structs are currently the only way to define a custom type.
 They do not have oop features like inheritance, but they do have member methods.
 
-They work just like [objects](#objects), except they are strongly typed, and not treated as a generic object.
+They work just like [objects](#objects), except they are strongly typed, and not treated as a generic object, although they are technically the same
+layout in memory, just with a specific prototype (ish)
 
 ```rust
 
 struct MyStruct {
   func print_members(self: MyStruct) {
-    // this return tuples, key being a string, and v being 
-    // whatever type that field is.
+    // Note: iterating over an object returns (string, T) where T is whatever type of the field at the strings identifier.
+    // for k, v ... 
+    // Just deconstructs those tuples into two usable identifiers.
+    // This can be done with normal tuples.
     for k,v : self {
       println(k + ": " + v.tostr())
     }
@@ -204,8 +200,6 @@ i++
 i++
 ```
   
-#
-  
 ## free functions 
 
 ### function typing & inferred 'null' return type.
@@ -220,6 +214,22 @@ has a type of `func() -> null`
 
 has a type of `func() -> int`
 
+`let n = func() -> int { 0 }`
+
+this function executes in place, much like a nameless block scope in C/C++.
+
+```go
+func() {
+ // some scrit code.
+}()
+```
+
+would be equivalent to:
+```
+{
+    // some C code.
+}
+```
   
 ### parameterized function
 
@@ -261,7 +271,8 @@ funcName(null, null, 2)
 
 all types can be default constructed with this syntax
 
-`let i : int` 
+`let i : int`
+
 
 or in an object 
 ```go
@@ -275,7 +286,13 @@ however, explicit constructors can be used.
 
 `let i = int() // defaults to 0`
 
+`let i = int(i) // this is a copy constructor.`
+
 `let instance = MyStruct()`
+
+`let instance = MyStruct(instance) // again a copy constructor.` 
+
+Note that the copy constructors are doing the same thing as calling `.clone()` on any object or value.
 
 and for structs, explicit constructors will instantiate members in the order they were declared. so, for this struct:
 
@@ -305,7 +322,7 @@ func() {
 
 // assign the func to a var, a fn pointer.
 
-f = func() {
+let f : func() -> null = func() {
   
 }
 ```
@@ -335,7 +352,7 @@ f = func() {
   ```
   3. normal style with declaration, condition, increment
   ```go
-  for i=0, i<10, i=i+1 {
+  for let i=0, i<10, i=i+1 {
     println(i)
   }
   ```
@@ -345,7 +362,7 @@ f = func() {
 
 
 ``` go
-o = { 
+let o = { 
   field1 = 0 
   field2 = 10
   func method() {
@@ -361,23 +378,21 @@ o = {
 if you want to assign an object that may be null  only when it is null you may use `??=`
 
 ``` js
-myObject = { someThing = 20 }
+let myObject = { someThing = 20 }
 
 myObject ??= { somethingElse = 10}
 
 println(myObject) 
 
 // this will print
-// { someThing = 20 }
+// { "someThing":  20 }
 // because myObject was not null when ??= was used
 
 
 myObject = null
 
 
-myObject ??=  {
-  
-}
+myObject ??=  {}
 
 println(myObject)
 
@@ -398,7 +413,6 @@ println(myValue)
 
 // this will print 10 because the lhs was null
 
-
 myValue = 10
 
 myOtherValue = myValue ?? 200
@@ -415,8 +429,9 @@ scrit has a rust-like pattern matching system using the `match` keyword.
 the syntax is nearly identical to `rust`.
 
 
-
 It can be used as an expression as such:
+
+> Note: all values returned by the right hand sides of the branches, like `=> ...` must be of the same type.
 ```rust
 variable = match some_expression {
   0 => 1
@@ -479,12 +494,12 @@ evaluate to the same value have been defined. beware!
 
 ## Property fields
 declaring a variable like
-`f => ..some expression..`
+`let f => ..some expression..`
 will result in a `property` which is calculated each time it is used. properties are read only
 
 this syntax produces the same effect
 ``` go
-f => {
+let f => {
   ... some lambda body...
 }
 ```
@@ -492,10 +507,10 @@ f => {
 example:
 
 ```go
-vec2 = {
-  x = 0,
-  y = 0,
-  mag => sqrt(x*x + y*y)
+let mut vec2 = {
+  x : int = 0,
+  y : int = 0,
+  mag : int => sqrt(x*x + y*y)
 }
 
 vec2.x = 10
