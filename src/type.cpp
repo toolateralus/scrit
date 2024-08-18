@@ -319,6 +319,7 @@ StructType::StructType(const string &name,
       if (!scope) {
         throw std::runtime_error("Failed to get scope for struct type.");
       }
+      
 }
 
 Value StructType::Default() {
