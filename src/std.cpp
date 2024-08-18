@@ -210,7 +210,13 @@ REGISTER_FUNCTION(readch, "string", {}) {
   return Ctx::CreateString(string(1, ch));
 }
 
-
+REGISTER_FUNCTION(floor, "float", {"float"}) {
+  double f;
+  if (args.empty() || !Ctx::TryGetFloat(args[0], f)) {
+    return undefined;
+  }
+  return Ctx::CreateFloat(std::floor(f));
+}
 
 REGISTER_FUNCTION(bitwise_or, "int", {"int", "int"}) {
   int64_t a, b;
