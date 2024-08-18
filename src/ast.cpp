@@ -1255,7 +1255,6 @@ StructDeclaration::StructDeclaration(SourceInfo &info, const string &name,
       decl->Execute();
       declarations.push_back(std::unique_ptr<Declaration>(
           static_cast<Declaration *>(statement.release())));
-      decl->Execute();
     }
   }
   

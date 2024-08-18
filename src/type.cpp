@@ -323,8 +323,14 @@ StructType::StructType(const string &name,
 }
 
 Value StructType::Default() {
-  auto object = Ctx::CreateObject(scope->Clone());
+  auto object = Ctx::CreateObject();
   object->type = shared_from_this();
+  auto last_scope = ASTNode::context.CurrentScope();
+  ASTNode::context.SetCurrentScope(object->scope);
+  for (const auto &field : fields) {
+    field->Execute();
+  }
+  ASTNode::context.SetCurrentScope(last_scope);
   return object;
 }
 

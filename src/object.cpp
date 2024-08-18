@@ -91,9 +91,9 @@ Value Object_T::CallOpOverload(Value &arg, const string &op_key) {
     throw std::runtime_error("Couldn't find operator overload: " + op_key);
   }
   
-  Scope_T &_scope = type_assoc ? type->Scope() : *scope;
+  Scope_T &assoc_scope = type_assoc ? type->Scope() : *scope;
   
-  auto [it, found] = scope->Find(op_key);
+  auto [it, found] = assoc_scope.Find(op_key);
   
   if (!found || it->second->GetPrimitiveType() != PrimitiveType::Callable) {
     throw std::runtime_error("Operator overload was not a callable");
