@@ -7,7 +7,10 @@
 #include "value.hpp"
 #include <cmath>
 #include <iostream>
+#include <memory>
 #include <random>
+#include <stdexcept>
+#include <thread>
 #include <vector>
 
 #ifdef __linux__
@@ -149,6 +152,51 @@ double
   a = args[0]->Cast<Float_T>()->value,
   b = args[1]->Cast<Float_T>()->value;
  return Ctx::CreateFloat(atan2(a, b));
+}
+
+static std::vector<std::thread> threads = {};
+static std::vector<std::unique_ptr<std::mutex>> mutexes = {};
+
+REGISTER_FUNCTION(create_thread, "int", {"any"}) {
+  auto idx = Ctx::CreateInt(threads.size());
+  if (auto func = std::dynamic_pointer_cast<Callable_T>(args[0])) {
+    threads.push_back(std::thread([func = std::move(func)]() mutable {
+      auto args = std::vector<Value>();
+      func->Call(args);
+    }));
+  } else {
+    throw std::runtime_error("Must pass a func() {} to create_thread");
+  }
+  
+  return idx;
+}
+
+REGISTER_FUNCTION(join_thread, "null", {"int"}) {
+  auto idx = args[0]->Cast<Int_T>()->value;
+  auto &thread = threads.at(idx);
+  thread.join();
+  threads.erase(threads.begin() + idx);
+  return Ctx::Null();
+}
+
+REGISTER_FUNCTION(create_mutex, "int", {}) {
+  auto idx = Ctx::CreateInt(mutexes.size());
+  mutexes.push_back(std::make_unique<std::mutex>());
+  return idx;
+}
+
+REGISTER_FUNCTION(lock_mutex, "null", {"int"}) {
+  auto idx = args[0]->Cast<Int_T>()->value;
+  auto &mutex = mutexes.at(idx);
+  mutex->lock();
+  return Ctx::Null();
+}
+
+REGISTER_FUNCTION(unlock_mutex, "null", {"int"}) {
+  auto idx = args[0]->Cast<Int_T>()->value;
+  auto &mutex = mutexes.at(idx);
+  mutex->unlock();
+  return Ctx::Null();
 }
 
 REGISTER_FUNCTION(get, "any", {"any", "int"}) {
