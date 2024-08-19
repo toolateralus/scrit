@@ -20,38 +20,22 @@ let mut max_iterations = 100
 let mut tex: object
 
 func render_rect(x: int, y: int, size: int) {
-	let normal_x = float(x) / float(width) - 0.5
+	let normal_x = float(x * size) / float(width) - 0.5
 	let real = normal_x * view_size.x + view_pos.x
-	let normal_y = float(y) / float(height) - 0.5
+	let normal_y = float(y * size) / float(height) - 0.5
 	let imaginary = normal_y * view_size.y + view_pos.y
 	let its = mandelbrot_iterations(Complex(real,  imaginary), max_iterations)
 	let num = (its * 255) / max_iterations
 	let color = [num, num, num, 255]
-	draw_rectangle(x, y, size, size, color)
-}
-
-func render_first_pass(size: int) {
-	for let mut x = 0, x < width, x += size {
-		for let mut y = 0, y < height, y += size {
-			render_rect(x, y, size)
-		}
-	}
-}
-
-func render_other_pass(size: int) {
-	let width_chunks = width / size
-	let height_chunks = height / size
-	for let mut x = 0, x < width_chunks, x++ {
-		for let mut y = 0, y < height_chunks, y++ {
-			if (x.mod(2) != 0) || (y.mod(2) != 0) {
-				render_rect(x * size, y * size, size)
-			}
-		}
-	}
+	draw_rectangle(x * size, y * size, size, size, color)
 }
 
 let mut prend_pass = 0
-let mut prend_size = 0
+let mut prend_size : int = 0
+let mut prend_width = 0
+let mut prend_height = 0
+let mut prend_x = 0
+let mut prend_y = 0
 func progressive_render() {
 	if prend_pass == 0 {
 		prend_size = 1
@@ -59,12 +43,36 @@ func progressive_render() {
 			prend_size *= 2
 		}
 		prend_size /= 2
-		render_first_pass(prend_size)
+		prend_width = width / prend_size 
+		prend_height = height / prend_size 
+		
+		for let mut x = 0, x < prend_width, x++ {
+			for let mut y = 0, y < prend_height, y++ {
+				render_rect(x, y, prend_size)
+			}
+		}
+
 		prend_pass++
+		prend_x = 0
+		prend_y = 0
 	} else if prend_size > 1 {
-		prend_size /= 2
-		render_other_pass(prend_size)
-		prend_pass++
+		if prend_y == 0 && prend_x == 0 {
+			prend_size /= 2
+			prend_width = width / prend_size 
+			prend_height = height / prend_size 
+		}
+		if (prend_x.mod(2) != 0) || (prend_y.mod(2) != 0) {
+			render_rect(prend_x, prend_y, prend_size)
+		}
+		prend_x++
+		if prend_x > prend_width {
+			prend_x = 0
+			prend_y++
+			if prend_y == prend_height {
+				prend_y = 0
+				prend_passes++
+			}
+		}
 	}
 }
 
