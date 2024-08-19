@@ -22,7 +22,7 @@ func sqr_mag(self: Complex) -> float {
 
 func mandelbrot_iterations(c: Complex, max_iterations: int) -> int {
   let mut z = Complex()
-  let mut res = -1
+  let mut res = 0
   for let n = 0, n < max_iterations, n++ {
     if sqr_mag(z) >= 4.0 {
       res = n

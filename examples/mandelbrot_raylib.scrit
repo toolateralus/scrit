@@ -14,47 +14,33 @@ struct Vec2 {
 
 let view_pos = Vec2(-0.743643887037151, 0.13182590420533)
 let view_size = Vec2(4.0, 2.0)
-let screen_width = 800
-let screen_height = 400
-let buffer_width = 100
-let buffer_height = 50
+let width = 800
+let height = 400
 let mut max_iterations = 100
-
-let mut buffer : array<int>
-for let i = 0, i < buffer_height * buffer_width, i++ {
-	buffer.push(-1)
-}
+let mut tex: object
 
 func render_rect(x: int, y: int, size: int) {
-	let normal_x = float(x) / float(buffer_width) - 0.5
+	let normal_x = float(x) / float(width) - 0.5
 	let real = normal_x * view_size.x + view_pos.x
-	let normal_y = float(y) / float(buffer_height) - 0.5
+	let normal_y = float(y) / float(height) - 0.5
 	let imaginary = normal_y * view_size.y + view_pos.y
 	let its = mandelbrot_iterations(Complex(real,  imaginary), max_iterations)
-	for let i = y, i < y + size, i++ {
-		if i < 0 || i >= buffer_height{
-			break
-		}
-		for let j = x, j < x + size, j++ {
-			if j < 0 || j >= buffer_width{
-				break
-			}
-			buffer[i * buffer_width + j] = its
-		}
-	}
+	let num = (its * 255) / max_iterations
+	let color = [num, num, num, 255]
+	draw_rectangle(x, y, size, size, color)
 }
 
 func render_first_pass(size: int) {
-	for let mut x = 0, x < buffer_width, x += size {
-		for let mut y = 0, y < buffer_height, y += size {
+	for let mut x = 0, x < width, x += size {
+		for let mut y = 0, y < height, y += size {
 			render_rect(x, y, size)
 		}
 	}
 }
 
 func render_other_pass(size: int) {
-	let width_chunks = buffer_width / size
-	let height_chunks = buffer_height / size
+	let width_chunks = width / size
+	let height_chunks = height / size
 	for let mut x = 0, x < width_chunks, x++ {
 		for let mut y = 0, y < height_chunks, y++ {
 			if (x.mod(2) != 0) || (y.mod(2) != 0) {
@@ -64,34 +50,12 @@ func render_other_pass(size: int) {
 	}
 }
 
-func draw_buffer() {
-	let rect_w = screen_width / buffer_width + 1
-	let rect_h = screen_height / buffer_height + 1
-	let mut x = 0
-	let mut y = 0
-	for its : buffer {
-		let screen_y = y * screen_height / buffer_height
-		let screen_x = x * screen_width / buffer_width
-		let mut color : array<int> = [0,0,0,255]
-		if its > -1 {
-			let num = (its * 255) / max_iterations
-			color = [num, num, num, 255]
-		}
-		draw_rectangle(screen_x, screen_y, rect_w, rect_h, color)
-		x++
-		if x >= buffer_width {
-			x = 0
-			y++
-		}
-	}
-}
-
 let mut prend_pass = 0
 let mut prend_size = 0
 func progressive_render() {
 	if prend_pass == 0 {
 		prend_size = 1
-		for prend_size <= buffer_height && prend_size <= buffer_width {
+		for prend_size <= height && prend_size <= width {
 			prend_size *= 2
 		}
 		prend_size /= 2
@@ -106,7 +70,8 @@ func progressive_render() {
 
 
 func main() {
-	init_window(screen_width, screen_height, "mandelbrot")
+	init_window(width, height, "mandelbrot")
+	tex = load_render_texture(width, height)
 	begin_drawing()
 	clear_background([0,0,0,255])
 	end_drawing()
@@ -114,9 +79,11 @@ func main() {
 	let mut running = true
 	for running {
 		running = !window_should_close()
-		progressive_render()
 		begin_drawing()
-		draw_buffer()
+		begin_texture_mode(tex)
+		progressive_render()
+		end_texture_mode()
+		draw_texture(tex, 0, 0, [255,255,255,255])
 		end_drawing()
 	}
 }
