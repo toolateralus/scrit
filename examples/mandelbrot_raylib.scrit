@@ -12,6 +12,11 @@ struct Vec2 {
 	y: float
 }
 
+func scale(vec: Vec2, factor: float) {
+	vec.x *= factor
+	vec.y *= factor
+}
+
 let view_pos = Vec2(-0.743643887037151, 0.13182590420533)
 let view_size = Vec2(4.0, 2.0)
 let width = 800
@@ -70,7 +75,7 @@ func progressive_render() {
 			prend_y++
 			if prend_y == prend_height {
 				prend_y = 0
-				prend_passes++
+				prend_pass++
 			}
 		}
 	}
@@ -86,6 +91,14 @@ func main() {
 		running = !window_should_close()
 		begin_drawing()
 		begin_texture_mode(tex)
+		let scroll = get_scroll()
+		if scroll > 0.0 {
+			view_size.scale(0.8)
+			prend_pass = 0
+		} else if scroll < 0.0 {
+			view_size.scale(1.25)
+			prend_pass = 0
+		}
 		progressive_render()
 		end_texture_mode()
 		clear_background([0,0,0,255])
