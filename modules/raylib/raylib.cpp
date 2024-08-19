@@ -21,70 +21,79 @@ static auto color_to_val(const Color &color) -> Value {
   return arr;
 };
 
-static auto color_from_val(const Value &color) -> Color {
-  if (auto col = std::dynamic_pointer_cast<Array_T>(color)) {
-    return Color(col->values[0]->Cast<Int_T>()->value,
-                 col->values[1]->Cast<Int_T>()->value,
-                 col->values[2]->Cast<Int_T>()->value,
-                 col->values[3]->Cast<Int_T>()->value);
+static auto color_from_val(const Value &val) -> Color {
+  if (auto arr = std::dynamic_pointer_cast<Array_T>(val)) {
+    return Color(arr->values[0]->Cast<Int_T>()->value,
+                 arr->values[1]->Cast<Int_T>()->value,
+                 arr->values[2]->Cast<Int_T>()->value,
+                 arr->values[3]->Cast<Int_T>()->value);
   }
   return WHITE;
 }
 
-                                            
+static auto rect_from_val(const Value &val) -> Rectangle {
+  if (auto arr = std::dynamic_pointer_cast<Array_T>(val)) {
+    return Rectangle(arr->values[0]->Cast<Int_T>()->value,
+                     arr->values[1]->Cast<Int_T>()->value,
+                     arr->values[2]->Cast<Int_T>()->value,
+                     arr->values[3]->Cast<Int_T>()->value);
+  }
+  return Rectangle();
+}
+
+static auto vec2_from_val(const Value &val) -> Vector2 {
+  if (auto arr = std::dynamic_pointer_cast<Array_T>(val)) {
+    return Vector2(arr->values[0]->Cast<Int_T>()->value,
+                   arr->values[1]->Cast<Int_T>()->value);
+  }
+  return Vector2();
+}
+
 struct RenderTexture_T : Object_T {
-  RenderTexture texture;
-  Image image;
-  Color *pixels;
-  RenderTexture_T(int width, int height):
-        texture(LoadRenderTexture(width, height)) {
-    image = GenImageColor(width, height, BLANK);
-    pixels = (Color *)image.data;
-  }
-  ~RenderTexture_T() {
-    UnloadImage(image);
-    UnloadRenderTexture(texture);
-  }
-  void draw(int x, int y) const {
-    UpdateTexture(texture.texture, image.data);
-    DrawTexture(texture.texture, x, y, WHITE);
-  }
-  void write_pixel(int x, int y, Color color) {
-    int index = y * image.width + x;
-    pixels[index] = color;
-  }
-  Value Clone() override {
-    return shared_from_this();
-  }
+  RenderTexture2D texture;
+  RenderTexture_T(int width, int height)
+      : texture(LoadRenderTexture(width, height)) {}
+  ~RenderTexture_T() { UnloadRenderTexture(texture); }
+  Value Clone() override { return shared_from_this(); }
   string ToString() const override { return "RenderTexture.ToString()"; }
   bool Equals(Value) override { return false; }
 };
 
-function(create_render_texture) {
+function(load_render_texture) {
   auto width = args[0]->Cast<Int_T>()->value;
   auto height = args[1]->Cast<Int_T>()->value;
   auto renderTexture = std::make_shared<RenderTexture_T>(width, height);
   return renderTexture;
 }
 
-function(render_texture_draw) {
+function(draw_texture) {
   auto renderTexture = std::dynamic_pointer_cast<RenderTexture_T>(args[0]);
-  auto x = args[1]->Cast<Int_T>()->value;
-  auto y = args[2]->Cast<Int_T>()->value;
-  renderTexture->draw(x, y);
-  return Ctx::Null();
-}
-
-function(render_texture_write_pixel) {
-  auto renderTexture = std::dynamic_pointer_cast<RenderTexture_T>(args[0]);
-  if (!renderTexture)  {
-    return Ctx::Null();
-  }
-  
   auto x = args[1]->Cast<Int_T>()->value;
   auto y = args[2]->Cast<Int_T>()->value;
   auto color = color_from_val(args[3]);
-  renderTexture->write_pixel(x, y, color);
+  DrawTexture(renderTexture->texture.texture, x, y, color);
+  return Ctx::Null();
+}
+
+function(draw_texture_pro) {
+  auto tex = std::dynamic_pointer_cast<RenderTexture_T>(args[0]);
+  auto src = rect_from_val(args[1]);
+  auto dst = rect_from_val(args[2]);
+  auto org = vec2_from_val(args[3]);
+  auto rot = args[4]->Cast<Float_T>()->value;
+  auto col = color_from_val(args[5]);
+  DrawTexturePro(tex->texture.texture, src, dst, org, rot, col);
+  return Ctx::Null();
+}
+
+function(begin_texture_mode) {
+  auto renderTexture = std::dynamic_pointer_cast<RenderTexture_T>(args[0]);
+  BeginTextureMode(renderTexture->texture);
+  return Ctx::Null();
+}
+
+function(end_texture_mode) {
+  EndTextureMode();
   return Ctx::Null();
 }
 
@@ -309,7 +318,7 @@ function(set_target_fps) {
 
 extern "C" ScritModDef *InitScritModule_raylib() {
   ScritModDef *def = CreateModDef();
-  
+
   *def->description = "raylib bindings for 'scrit' language.";
   def->AddFunction("init_window", CREATE_FUNCTION(init_window, "null",
                                                   {"int", "int", "string"}));
@@ -353,14 +362,20 @@ extern "C" ScritModDef *InitScritModule_raylib() {
                    CREATE_FUNCTION(draw_pixel, "null", {"int", "int", "any"}));
 
   def->AddFunction(
-      "create_render_texture",
-      CREATE_FUNCTION(create_render_texture, "object", {"int", "int"}));
-  def->AddFunction("render_texture_draw",
-                   CREATE_FUNCTION(render_texture_draw, "null",
-                                   {"object", "int", "int"}));
-  def->AddFunction("render_texture_write_pixel",
-                   CREATE_FUNCTION(render_texture_write_pixel, "null",
-                                   {"object", "int", "int", "any"}));
+      "load_render_texture",
+      CREATE_FUNCTION(load_render_texture, "object", {"int", "int"}));
+  def->AddFunction(
+      "draw_texture",
+      CREATE_FUNCTION(draw_texture, "null", {"object", "int", "int", "any"}));
+  def->AddFunction(
+      "begin_texture_mode",
+      CREATE_FUNCTION(begin_texture_mode, "null", {"object", "any"}));
+  def->AddFunction("end_texture_mode",
+                   CREATE_FUNCTION(end_texture_mode, "null", {"object"}));
+  def->AddFunction(
+      "draw_texture_pro",
+      CREATE_FUNCTION(draw_texture_pro, "null",
+                      {"object", "any", "any", "any", "float", "any"}));
 
   // def->AddVariable("Colors", colors(), Mutability::Const);
   return def;
