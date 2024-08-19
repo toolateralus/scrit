@@ -21,14 +21,32 @@ static auto color_to_val(const Color &color) -> Value {
   return arr;
 };
 
-static auto color_from_val(const Value &color) -> Color {
-  if (auto col = std::dynamic_pointer_cast<Array_T>(color)) {
-    return Color(col->values[0]->Cast<Int_T>()->value,
-                 col->values[1]->Cast<Int_T>()->value,
-                 col->values[2]->Cast<Int_T>()->value,
-                 col->values[3]->Cast<Int_T>()->value);
+static auto color_from_val(const Value &val) -> Color {
+  if (auto arr = std::dynamic_pointer_cast<Array_T>(val)) {
+    return Color(arr->values[0]->Cast<Int_T>()->value,
+                 arr->values[1]->Cast<Int_T>()->value,
+                 arr->values[2]->Cast<Int_T>()->value,
+                 arr->values[3]->Cast<Int_T>()->value);
   }
   return WHITE;
+}
+
+static auto rect_from_val(const Value &val) -> Rectangle {
+  if (auto arr = std::dynamic_pointer_cast<Array_T>(val)) {
+    return Rectangle(arr->values[0]->Cast<Int_T>()->value,
+                     arr->values[1]->Cast<Int_T>()->value,
+                     arr->values[2]->Cast<Int_T>()->value,
+                     arr->values[3]->Cast<Int_T>()->value);
+  }
+  return Rectangle();
+}
+
+static auto vec2_from_val(const Value &val) -> Vector2 {
+  if (auto arr = std::dynamic_pointer_cast<Array_T>(val)) {
+    return Vector2(arr->values[0]->Cast<Int_T>()->value,
+                   arr->values[1]->Cast<Int_T>()->value);
+  }
+  return Vector2();
 }
 
 struct RenderTexture_T : Object_T {
@@ -54,6 +72,17 @@ function(draw_texture) {
   auto y = args[2]->Cast<Int_T>()->value;
   auto color = color_from_val(args[3]);
   DrawTexture(renderTexture->texture.texture, x, y, color);
+  return Ctx::Null();
+}
+
+function(draw_texture_pro) {
+  auto tex = std::dynamic_pointer_cast<RenderTexture_T>(args[0]);
+  auto src = rect_from_val(args[1]);
+  auto dst = rect_from_val(args[2]);
+  auto org = vec2_from_val(args[3]);
+  auto rot = args[4]->Cast<Float_T>()->value;
+  auto col = color_from_val(args[5]);
+  DrawTexturePro(tex->texture.texture, src, dst, org, rot, col);
   return Ctx::Null();
 }
 
@@ -341,9 +370,12 @@ extern "C" ScritModDef *InitScritModule_raylib() {
   def->AddFunction(
       "begin_texture_mode",
       CREATE_FUNCTION(begin_texture_mode, "null", {"object", "any"}));
+  def->AddFunction("end_texture_mode",
+                   CREATE_FUNCTION(end_texture_mode, "null", {"object"}));
   def->AddFunction(
-      "end_texture_mode",
-      CREATE_FUNCTION(end_texture_mode, "null", {"object"}));
+      "draw_texture_pro",
+      CREATE_FUNCTION(draw_texture_pro, "null",
+                      {"object", "any", "any", "any", "float", "any"}));
 
   // def->AddVariable("Colors", colors(), Mutability::Const);
   return def;

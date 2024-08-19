@@ -72,9 +72,6 @@ func progressive_render() {
 func main() {
 	init_window(width, height, "mandelbrot")
 	tex = load_render_texture(width, height)
-	begin_drawing()
-	clear_background([0,0,0,255])
-	end_drawing()
 	let mut y = 0
 	let mut running = true
 	for running {
@@ -83,6 +80,7 @@ func main() {
 		begin_texture_mode(tex)
 		progressive_render()
 		end_texture_mode()
+		clear_background([0,0,0,255])
 		draw_texture(tex, 0, 0, [255,255,255,255])
 		end_drawing()
 	}
