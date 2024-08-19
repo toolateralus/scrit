@@ -12,31 +12,12 @@ struct Vec2 {
 	y: float
 }
 
-func lerp(a: float, b: float, t: float) -> float {
-  return a + t * (b - a)
-}
-func get_color(t: float) -> array<int> {
-	let r = 0
-	let g = 0
-	let b = 0
-
-	if t < 0.5 {
-		b = int(lerp(255.0, 0.0, t * 2.0))
-		g = int(lerp(0.0, 255.0, t * 2.0))
-	} else {
-		g = int(lerp(255.0, 0.0, (t - 0.5) * 2.0))
-		r = int(lerp(0.0, 255.0, (t - 0.5) * 2.0))
-	}
-
-	return [r, g, b, 255]
-}
-
-let view_pos = Vec2(-0.7, 0.0)
+let view_pos = Vec2(-0.743643887037151, 0.13182590420533)
 let view_size = Vec2(4.0, 2.0)
 let screen_width = 800
 let screen_height = 400
-let buffer_width = 200
-let buffer_height = 100
+let buffer_width = 100
+let buffer_height = 50
 let mut max_iterations = 100
 
 let mut buffer : array<int>
@@ -94,7 +75,7 @@ func draw_buffer() {
 		let mut color : array<int> = [0,0,0,255]
 		if its > -1 {
 			let num = (its * 255) / max_iterations
-			color = [num,num,num,255]
+			color = [num, num, num, 255]
 		}
 		draw_rectangle(screen_x, screen_y, rect_w, rect_h, color)
 		x++
@@ -102,6 +83,24 @@ func draw_buffer() {
 			x = 0
 			y++
 		}
+	}
+}
+
+let mut prend_pass = 0
+let mut prend_size = 0
+func progressive_render() {
+	if prend_pass == 0 {
+		prend_size = 1
+		for prend_size <= buffer_height && prend_size <= buffer_width {
+			prend_size *= 2
+		}
+		prend_size /= 2
+		render_first_pass(prend_size)
+		prend_pass++
+	} else if prend_size > 1 {
+		prend_size /= 2
+		render_other_pass(prend_size)
+		prend_pass++
 	}
 }
 
@@ -113,26 +112,9 @@ func main() {
 	end_drawing()
 	let mut y = 0
 	let mut running = true
-	let mut pass = 0
-	let mut size = 0
 	for running {
 		running = !window_should_close()
-		if is_key_pressed("a") {
-			pass = 0
-		}
-		if pass == 0 {
-			size = 1
-			for size <= buffer_height && size <= buffer_width {
-				size *= 2
-			}
-			size /= 2
-			render_first_pass(size)
-			pass++
-		} else if size > 1 {
-			size /= 2
-			render_other_pass(size)
-			pass++
-		}
+		progressive_render()
 		begin_drawing()
 		draw_buffer()
 		end_drawing()
