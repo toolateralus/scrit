@@ -6,7 +6,13 @@ This is a list of examples written in scrit.
 
 [iterate-object](iterate-object.scrit)
 
+[mandelbrot_lib](mandelbrot_lib.scrit)
+
 [match](match.scrit)
+
+[mandelbrot_raylib](mandelbrot_raylib.scrit)
+
+[mandelbrot_term](mandelbrot_term.scrit)
 
 [impl](impl.scrit)
 
