@@ -1,6 +1,6 @@
 COMPILER:=clang++
-COMPILER_FLAGS:= -g -std=c++23
-LINKER_FLAGS:= -lscrit -lraylib -lm
+COMPILER_FLAGS:= -g -std=c++23 -fPIC
+LINKER_FLAGS:= -lscrit /usr/local/lib/libraylib.a -lm
 
 MODULE_NAME:=raylib
 
